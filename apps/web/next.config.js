@@ -4,7 +4,6 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/config.ts');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
   reactStrictMode: true,
   eslint: {
     ignoreDuringBuilds: true,
