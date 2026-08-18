@@ -1,0 +1,398 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  telegramId    String?   @unique
+  role          String    @default("user")
+  hasOnboarded  Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  tenantMembers TenantMember[]
+  sentInvites   Invite[]
+  assignedTasks Task[]
+  taskComments  TaskComment[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  domain    String?  @unique
+  logo      String?
+  settings  String?
+
+  // Telegram bot integration
+  telegramBotToken       String?
+  telegramWebhookSecret  String?
+  telegramBotUsername    String?
+
+  // WhatsApp Business API (360dialog)
+  whatsappApiKey         String?
+  whatsappAppId          String?
+  whatsappWebhookSecret  String?
+  whatsappPhoneNumberId  String?
+  whatsappPhoneNumber    String?
+  whatsappWabaId         String?  // WhatsApp Business Account ID
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members        TenantMember[]
+  invites        Invite[]
+  contacts       Contact[]
+  tags           Tag[]
+  activities     Activity[]
+  pipelines      Pipeline[]
+  deals          Deal[]
+  tasks          Task[]
+  telegramChats  TelegramChat[]
+  whatsappChats  WhatsAppChat[]
+  automationRules AutomationRule[]
+  automationLogs  AutomationLog[]
+}
+
+model TelegramChat {
+  id           String   @id @default(cuid())
+  tenantId     String
+  telegramId   Int      // Telegram user/chat ID
+  firstName    String?
+  lastName     String?
+  username     String?
+  contactId    String?  // Linked CRM contact
+  firstSeenAt  DateTime @default(now())
+  lastMessageAt DateTime @default(now())
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contact Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, telegramId])
+  @@index([tenantId])
+  @@index([contactId])
+}
+
+model WhatsAppChat {
+  id           String   @id @default(cuid())
+  tenantId     String
+  phoneNumber  String   // WhatsApp phone number (E.164 format)
+  name         String?  // Contact name from WhatsApp profile
+  contactId    String?  // Linked CRM contact
+  firstSeenAt  DateTime @default(now())
+  lastMessageAt DateTime @default(now())
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contact Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, phoneNumber])
+  @@index([tenantId])
+  @@index([contactId])
+}
+
+model TenantMember {
+  id        String   @id @default(cuid())
+  userId    String
+  tenantId  String
+  role      String   @default("member")
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tenantId])
+}
+
+model Invite {
+  id         String   @id @default(cuid())
+  email      String
+  tenantId   String
+  role       String   @default("member")
+  token      String   @unique
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  invitedById String
+  createdAt  DateTime @default(now())
+
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invitedBy User  @relation(fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@unique([email, tenantId])
+}
+
+model Contact {
+  id        String   @id @default(cuid())
+  tenantId  String
+  firstName String
+  lastName  String?
+  email     String?
+  phone     String?
+  company   String?
+  position  String?
+  notes     String?
+  source    String?
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tags     ContactTag[]
+  activities Activity[]
+  deals    Deal[]
+  telegramChats TelegramChat[]
+  whatsappChats WhatsAppChat[]
+
+  @@index([tenantId])
+  @@index([tenantId, email])
+  @@index([tenantId, company])
+  @@index([tenantId, status])
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  color     String?
+  createdAt DateTime @default(now())
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contacts ContactTag[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+}
+
+model ContactTag {
+  id        String   @id @default(cuid())
+  contactId String
+  tagId     String
+  createdAt DateTime @default(now())
+
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([contactId, tagId])
+}
+
+model Activity {
+  id        String   @id @default(cuid())
+  tenantId  String
+  contactId String
+  type      String
+  title     String
+  body      String?
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([contactId])
+  @@index([contactId, date])
+}
+
+model Pipeline {
+  id         String   @id @default(cuid())
+  tenantId   String
+  name       String
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  stages PipelineStage[]
+  deals   Deal[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+}
+
+model PipelineStage {
+  id         String   @id @default(cuid())
+  pipelineId String
+  name       String
+  order      Int
+  color      String?
+  createdAt  DateTime @default(now())
+
+  pipeline Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  deals    Deal[]
+
+  @@index([pipelineId])
+}
+
+model Deal {
+  id                 String    @id @default(cuid())
+  tenantId           String
+  pipelineId         String
+  stageId            String
+  title              String
+  value              Float?
+  currency           String    @default("UAH")
+  probability        Int       @default(50)
+  contactId          String?
+  company            String?
+  expectedCloseDate  DateTime?
+  actualCloseDate    DateTime?
+  status             String    @default("open")
+  winReason          String?
+  lossReason         String?
+  notes              String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  tenant   Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  pipeline Pipeline      @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  stage    PipelineStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  contact  Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  products DealProduct[]
+
+  @@index([tenantId])
+  @@index([tenantId, pipelineId])
+  @@index([tenantId, stageId])
+  @@index([tenantId, status])
+}
+
+model DealProduct {
+  id        String  @id @default(cuid())
+  dealId    String
+  name      String
+  quantity  Int     @default(1)
+  price     Float
+  createdAt DateTime @default(now())
+
+  deal Deal @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  @@index([dealId])
+}
+
+model Task {
+  id            String    @id @default(cuid())
+  tenantId      String
+  title         String
+  description   String?
+  type          String    @default("task")
+  status        String    @default("todo")
+  priority      String    @default("medium")
+  dueDate       DateTime?
+  reminderAt    DateTime?
+  assigneeId    String?
+  contactId     String?
+  dealId        String?
+  isRecurring   Boolean   @default(false)
+  recurrenceRule String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assignee User?    @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
+  comments TaskComment[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, assigneeId])
+  @@index([tenantId, dueDate])
+}
+
+model TaskComment {
+  id        String   @id @default(cuid())
+  taskId    String
+  authorId  String?
+  body      String
+  createdAt DateTime @default(now())
+
+  task   Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author User? @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([taskId])
+}
+
+model AutomationRule {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  description String?
+  enabled     Boolean  @default(true)
+
+  // Trigger: when deal moves from stageX to stageY
+  triggerType    String   // "stage_change", "deal_created", "deal_won", "deal_lost", "timer"
+  fromStageId    String?  // null = any stage
+  toStageId      String?  // null = any stage
+
+  // Action
+  actionType     String   // "set_field", "create_task", "send_notification", "move_deal", "send_message"
+  actionConfig   String   // JSON config for the action
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, triggerType])
+}
+
+model AutomationLog {
+  id          String   @id @default(cuid())
+  tenantId    String
+  ruleId      String?
+  dealId      String?
+  triggerType String
+  actionType  String
+  result      String   // "success", "error"
+  details     String?  // JSON details
+  executedAt  DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, executedAt])
+}

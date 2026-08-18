@@ -1,0 +1,69 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isTenantMember(tenantId) {
+      return isAuthenticated() && exists(/databases/$(database)/documents/tenants/$(tenantId)/members/$(request.auth.uid));
+    }
+
+    function isTenantAdmin(tenantId) {
+      return isAuthenticated() && get(/databases/$(database)/documents/tenants/$(tenantId)/members/$(request.auth.uid)).data.role in ['owner', 'admin'];
+    }
+
+    // Tenants
+    match /tenants/{tenantId} {
+      allow read: if isTenantMember(tenantId);
+      allow write: if isTenantAdmin(tenantId);
+      
+      // Members subcollection
+      match /members/{userId} {
+        allow read: if isTenantMember(tenantId);
+        allow write: if isTenantAdmin(tenantId);
+      }
+    }
+
+    // Contacts
+    match /contacts/{contactId} {
+      allow read, write: if isTenantMember(resource.data.tenantId);
+    }
+
+    // Deals
+    match /deals/{dealId} {
+      allow read, write: if isTenantMember(resource.data.tenantId);
+    }
+
+    // Tasks
+    match /tasks/{taskId} {
+      allow read, write: if isTenantMember(resource.data.tenantId);
+    }
+
+    // Activities
+    match /activities/{activityId} {
+      allow read, write: if isTenantMember(resource.data.tenantId);
+    }
+
+    // Messages
+    match /messages/{messageId} {
+      allow read, write: if isTenantMember(resource.data.tenantId);
+    }
+
+    // Pipelines
+    match /pipelines/{pipelineId} {
+      allow read, write: if isTenantMember(resource.data.tenantId);
+    }
+
+    // Documents
+    match /documents/{documentId} {
+      allow read, write: if isTenantMember(resource.data.tenantId);
+    }
+
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

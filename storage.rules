@@ -1,0 +1,29 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isTenantMember(tenantId) {
+      return isAuthenticated() && firestore.exists(/databases/(default)/documents/tenants/$(tenantId)/members/$(request.auth.uid));
+    }
+
+    // Tenant-specific files
+    match /tenants/{tenantId}/{allPaths=**} {
+      allow read, write: if isTenantMember(tenantId);
+    }
+
+    // Public assets (logos, etc.)
+    match /public/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // Deny all other access
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

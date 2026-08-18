@@ -1,0 +1,14 @@
+{
+  "Colors": {
+    "brand/500": { "value": "#3B5BFF", "type": "color" },
+    "brand/600": { "value": "#2D48E8", "type": "color" },
+    "success/500": { "value": "#10B981", "type": "color" },
+    "warning/500": { "value": "#F59E0B", "type": "color" },
+    "danger/500": { "value": "#EF4444", "type": "color" },
+    "info/500": { "value": "#3B82F6", "type": "color" },
+    "ai/500": { "value": "#8B5CF6", "type": "color" },
+    "neutral/50": { "value": "#FAFAF9", "type": "color" },
+    "neutral/400": { "value": "#A8A29E", "type": "color" },
+    "neutral/950": { "value": "#0C0A09", "type": "color" }
+  }
+}

@@ -1,0 +1,95 @@
+# Docker Compose for Local Development
+# Usage: docker compose up -d
+
+services:
+  # Firebase Emulators
+  firebase-emulator:
+    image: firebase:emulator
+    build:
+      context: .
+      dockerfile: Dockerfile.firebase
+    ports:
+      - '4000:4000' # UI
+      - '8080:8080' # Firestore
+      - '9099:9099' # Auth
+      - '5001:5001' # Functions
+      - '9199:9199' # Storage
+    volumes:
+      - ./firebase.json:/firebase/firebase.json
+      - ./firestore.rules:/firebase/firestore.rules
+      - ./storage.rules:/firebase/storage.rules
+    environment:
+      - FIREBASE_PROJECT_ID=ai-powered-crm-5af65
+      - EMULATOR_HOST=localhost
+
+  # Ollama (Local LLM)
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - '11434:11434'
+    volumes:
+      - ollama-data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  # Web App (Development)
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile.dev
+    ports:
+      - '3000:3000'
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/apps/web/node_modules
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:4000
+      - NEXT_PUBLIC_FIREBASE_EMULATOR_HOST=firebase-emulator
+    depends_on:
+      - api
+      - firebase-emulator
+
+  # API Server (Development)
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile.dev
+    ports:
+      - '4000:4000'
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/apps/api/node_modules
+    environment:
+      - NODE_ENV=development
+      - PORT=4000
+      - FIREBASE_EMULATOR_HOST=firebase-emulator:8080
+      - OLLAMA_BASE_URL=http://ollama:11434
+    depends_on:
+      - firebase-emulator
+      - ollama
+
+  # Telegram Bot (Development)
+  bot:
+    build:
+      context: .
+      dockerfile: apps/bot/Dockerfile.dev
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/apps/bot/node_modules
+    environment:
+      - NODE_ENV=development
+      - API_URL=http://api:4000
+    depends_on:
+      - api
+
+volumes:
+  ollama-data:
