@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
+import { pathToFileURL } from 'node:url';
 
 const prisma = new PrismaClient();
 const ALGORITHM = 'aes-256-gcm';
@@ -10,11 +11,14 @@ if (!ENCRYPTION_KEY || ENCRYPTION_KEY.length !== 64) {
   process.exit(1);
 }
 
-function deriveKey(keyHex) {
+// NOTE: key derivation MUST stay identical to getEncryptionKey() in
+// apps/web/src/lib/encryption.ts (Buffer.from(key, 'hex')).
+// See migration.test.ts "key-derivation parity" — it fails if these diverge.
+export function deriveKey(keyHex) {
   return Buffer.from(keyHex, 'hex');
 }
 
-function isEncrypted(value) {
+export function isEncrypted(value) {
   if (!value || value.length < 20) return false;
   const parts = value.split(':');
   if (parts.length !== 3) return false;
@@ -28,7 +32,7 @@ function isEncrypted(value) {
   }
 }
 
-function encrypt(text) {
+export function encrypt(text) {
   const key = deriveKey(ENCRYPTION_KEY);
   const iv = crypto.randomBytes(16);
   const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
@@ -38,62 +42,71 @@ function encrypt(text) {
   return `${iv.toString('hex')}:${tag.toString('hex')}:${encrypted}`;
 }
 
-console.log('=== Migration: Encrypt plaintext AI keys ===\n');
+export async function main() {
+  console.log('=== Migration: Encrypt plaintext AI keys ===\n');
 
-const tenants = await prisma.tenant.findMany({
-  select: {
-    id: true,
-    name: true,
-    geminiApiKey: true,
-    aiApiKey: true,
-  },
-});
+  const tenants = await prisma.tenant.findMany({
+    select: {
+      id: true,
+      name: true,
+      geminiApiKey: true,
+      aiApiKey: true,
+    },
+  });
 
-console.log(`Found ${tenants.length} tenants\n`);
+  console.log(`Found ${tenants.length} tenants\n`);
 
-let migrated = 0;
-let skipped = 0;
-let errors = 0;
+  let migrated = 0;
+  let skipped = 0;
+  let errors = 0;
 
-for (const tenant of tenants) {
-  const updates = {};
+  for (const tenant of tenants) {
+    const updates = {};
 
-  if (tenant.aiApiKey && !isEncrypted(tenant.aiApiKey)) {
-    updates.aiApiKey = encrypt(tenant.aiApiKey);
-    console.log(`[${tenant.name}] aiApiKey: plaintext → encrypted`);
-  } else if (tenant.aiApiKey) {
-    console.log(`[${tenant.name}] aiApiKey: already encrypted`);
-  }
-
-  if (tenant.geminiApiKey && !isEncrypted(tenant.geminiApiKey)) {
-    updates.geminiApiKey = encrypt(tenant.geminiApiKey);
-    console.log(`[${tenant.name}] geminiApiKey: plaintext → encrypted`);
-  } else if (tenant.geminiApiKey) {
-    console.log(`[${tenant.name}] geminiApiKey: already encrypted`);
-  }
-
-  if (Object.keys(updates).length > 0) {
-    try {
-      await prisma.tenant.update({
-        where: { id: tenant.id },
-        data: updates,
-      });
-      migrated++;
-      console.log(`  ✓ Migrated\n`);
-    } catch (err) {
-      errors++;
-      console.error(`  ✗ Error: ${err}\n`);
+    if (tenant.aiApiKey && !isEncrypted(tenant.aiApiKey)) {
+      updates.aiApiKey = encrypt(tenant.aiApiKey);
+      console.log(`[${tenant.name}] aiApiKey: plaintext → encrypted`);
+    } else if (tenant.aiApiKey) {
+      console.log(`[${tenant.name}] aiApiKey: already encrypted`);
     }
-  } else {
-    skipped++;
-    console.log(`  → Skipped (no plaintext keys)\n`);
+
+    if (tenant.geminiApiKey && !isEncrypted(tenant.geminiApiKey)) {
+      updates.geminiApiKey = encrypt(tenant.geminiApiKey);
+      console.log(`[${tenant.name}] geminiApiKey: plaintext → encrypted`);
+    } else if (tenant.geminiApiKey) {
+      console.log(`[${tenant.name}] geminiApiKey: already encrypted`);
+    }
+
+    if (Object.keys(updates).length > 0) {
+      try {
+        await prisma.tenant.update({
+          where: { id: tenant.id },
+          data: updates,
+        });
+        migrated++;
+        console.log(`  ✓ Migrated\n`);
+      } catch (err) {
+        errors++;
+        console.error(`  ✗ Error: ${err}\n`);
+      }
+    } else {
+      skipped++;
+      console.log(`  → Skipped (no plaintext keys)\n`);
+    }
   }
+
+  console.log('=== Summary ===');
+  console.log(`Total tenants: ${tenants.length}`);
+  console.log(`Migrated: ${migrated}`);
+  console.log(`Skipped: ${skipped}`);
+  console.log(`Errors: ${errors}`);
+
+  await prisma.$disconnect();
+  return { total: tenants.length, migrated, skipped, errors };
 }
 
-console.log('=== Summary ===');
-console.log(`Total tenants: ${tenants.length}`);
-console.log(`Migrated: ${migrated}`);
-console.log(`Skipped: ${skipped}`);
-console.log(`Errors: ${errors}`);
-
-await prisma.$disconnect();
+// Run only when executed directly (`node scripts/migrate-encrypt-keys.mjs`),
+// not when imported (e.g. by tests probing its pure functions).
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  await main();
+}
