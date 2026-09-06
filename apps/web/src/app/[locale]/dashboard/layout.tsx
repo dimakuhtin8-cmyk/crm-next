@@ -1,38 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 
 import { Header } from './header';
 import { Sidebar } from './sidebar';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [onboardingChecked, setOnboardingChecked] = useState(false);
 
-  // Close mobile menu on route change
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [pathname]);
 
-  // Check onboarding status
-  useEffect(() => {
-    if (onboardingChecked) return;
-    fetch('/api/onboarding')
-      .then((r) => r.json())
-      .then((data) => {
-        if (!data.hasOnboarded) {
-          router.replace('/onboarding');
-        }
-        setOnboardingChecked(true);
-      })
-      .catch(() => setOnboardingChecked(true));
-  }, [onboardingChecked, router]);
-
-  // Close mobile menu on escape
   useEffect(() => {
     function handleEscape(e: KeyboardEvent) {
       if (e.key === 'Escape') setMobileMenuOpen(false);
@@ -54,10 +36,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Sidebar */}
       <div
         className={`
-          fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-200 ease-out
+          fixed inset-y-0 left-0 z-50 transform transition-all duration-300 ease-out
           lg:relative lg:translate-x-0
           ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
-          ${sidebarCollapsed ? 'lg:w-[72px]' : 'lg:w-64'}
+          ${sidebarCollapsed ? 'lg:w-[72px]' : 'lg:w-[260px]'}
         `}
       >
         <Sidebar
@@ -75,7 +57,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           onSidebarToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
         <main className="flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+          <div className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8">
             {children}
           </div>
         </main>

@@ -6,8 +6,8 @@
   "description": "AI-First CRM for Ukraine — Zero-Touch, Native Messaging, AI Co-Pilot",
   "scripts": {
     "dev": "turbo run dev",
-    "build": "cd packages/database && npx prisma generate && cd ../.. && pnpm --filter @crm-next/web build",
-    "start": "pnpm --filter @crm-next/web start",
+    "build": "npx prisma generate --schema=packages/database/prisma/schema.prisma && pnpm --filter @crm-next/web build",
+    "start": "cd apps/web && npx next start -H 0.0.0.0 -p 3000",
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
     "clean": "turbo run clean && rm -rf node_modules",

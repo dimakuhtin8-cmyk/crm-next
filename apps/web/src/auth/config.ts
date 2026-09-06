@@ -1,4 +1,3 @@
-import { PrismaAdapter } from '@auth/prisma-adapter';
 import { prisma } from '@crm-next/database';
 import { compare } from 'bcryptjs';
 import NextAuth from 'next-auth';
@@ -9,9 +8,9 @@ import { z } from 'zod';
 import type { NextAuthConfig } from 'next-auth';
 
 const config: NextAuthConfig = {
-  adapter: PrismaAdapter(prisma) as ReturnType<typeof PrismaAdapter>,
   session: {
     strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   pages: {
     signIn: '/auth/login',
@@ -56,6 +55,54 @@ const config: NextAuthConfig = {
     }),
   ],
   callbacks: {
+    async signIn({ user, account }) {
+      if (account?.provider && account.provider !== 'credentials' && user?.email) {
+        try {
+          let existingUser = await prisma.user.findUnique({
+            where: { email: user.email },
+            include: { tenantMembers: true },
+          });
+
+          if (!existingUser) {
+            existingUser = await prisma.user.create({
+              data: {
+                email: user.email,
+                name: user.name,
+                image: user.image,
+                emailVerified: new Date(),
+                hasOnboarded: true,
+              },
+              include: { tenantMembers: true },
+            });
+
+            // Auto-create tenant for new user
+            const slug = user.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+            const tenant = await prisma.tenant.create({
+              data: {
+                name: user.name || user.email.split('@')[0],
+                slug: `${slug}-${Date.now()}`,
+                members: {
+                  create: {
+                    userId: existingUser.id,
+                    role: 'owner',
+                  },
+                },
+              },
+            });
+
+            // Store tenant info in token
+            (user as Record<string, unknown>).tenantId = tenant.id;
+            (user as Record<string, unknown>).tenantSlug = tenant.slug;
+          }
+
+          user.id = existingUser.id;
+        } catch (error) {
+          console.error('[Auth] signIn error:', error);
+        }
+      }
+      return true;
+    },
+
     async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id;

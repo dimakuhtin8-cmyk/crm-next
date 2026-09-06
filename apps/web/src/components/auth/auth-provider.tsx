@@ -1,6 +1,6 @@
 'use client';
 
-import { useSession, signOut as nextAuthSignOut } from 'next-auth/react';
+import { useSession, signIn as nextAuthSignIn, signOut as nextAuthSignOut } from 'next-auth/react';
 import { createContext, useContext, useState, type ReactNode } from 'react';
 
 interface User {
@@ -41,17 +41,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     setError(null);
     try {
-      const res = await fetch('/uk/api/auth/callback/credentials', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+      const result = await nextAuthSignIn('credentials', {
+        email,
+        password,
+        redirect: false,
       });
 
-      const data = await res.json();
-
-      if (data.error) {
-        setError(data.error);
-        throw new Error(data.error);
+      if (result?.error) {
+        setError('Невірний email або пароль');
+        throw new Error('Невірний email або пароль');
       }
 
       await update();
@@ -65,8 +63,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (email: string, password: string, name: string) => {
     setError(null);
     try {
-      const res = await fetch('/uk/api/auth/register', {
+      const res = await fetch('/api/auth/register', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password }),
       });
@@ -88,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginGoogle = async () => {
     setError(null);
-    window.location.href = '/uk/api/auth/signin/google?callbackUrl=/dashboard';
+    await nextAuthSignIn('google', { callbackUrl: '/dashboard' });
   };
 
   const logout = async () => {

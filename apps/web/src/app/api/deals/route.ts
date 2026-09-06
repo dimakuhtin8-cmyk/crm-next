@@ -1,61 +1,88 @@
+/**
+ * Deals API — CRUD для угод
+ * 
+ * GET /api/deals — Список угод (кэширован)
+ * POST /api/deals — Створення угоди (інвалідує кеш)
+ */
+
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-
-import type { NextRequest} from 'next/server';
-
+import type { NextRequest } from 'next/server';
 import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
+import { cachedGet, cacheKeys, TTL, cacheTags, invalidateCacheByTag } from '@/lib/cache';
+import { apiSuccess } from '@/lib/errors';
+import { withAuth } from '@/lib/auth-guard';
 
 /**
- * GET /api/deals — List deals (tenant-scoped, with filters)
+ * GET /api/deals — List deals (кэширован)
  */
-export async function GET(request: NextRequest) {
+async function GETHandler(request: NextRequest) {
   const csrfError = csrfProtection(request);
   if (csrfError) return csrfError;
 
-  try {
-    const tq = await getTenantQuery(request);
-    if (!tq) return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
-
-    const { searchParams } = new URL(request.url);
-    const search = searchParams.get('search') || undefined;
-    const pipelineId = searchParams.get('pipelineId') || undefined;
-    const stageId = searchParams.get('stageId') || undefined;
-    const status = searchParams.get('status') || undefined;
-    const contactId = searchParams.get('contactId') || undefined;
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '100');
-    const skip = (page - 1) * limit;
-
-    const where: Record<string, unknown> = {};
-    if (search) where.OR = [
-      { title: { contains: search } },
-      { company: { contains: search } },
-    ];
-    if (pipelineId) where.pipelineId = pipelineId;
-    if (stageId) where.stageId = stageId;
-    if (status) where.status = status;
-    if (contactId) where.contactId = contactId;
-
-    const [deals, total] = await Promise.all([
-      tq.deal.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-      }),
-      tq.deal.count({ where }),
-    ]);
-
-    return NextResponse.json({ deals, total, page, limit });
-  } catch (error) {
-    console.error('List deals error:', error);
-    return NextResponse.json({ error: 'Помилка отримання списку угод' }, { status: 500 });
+  const tq = await getTenantQuery(request);
+  if (!tq) {
+    return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
   }
+
+  const { searchParams } = new URL(request.url);
+  const search = searchParams.get('search') || undefined;
+  const pipelineId = searchParams.get('pipelineId') || undefined;
+  const stageId = searchParams.get('stageId') || undefined;
+  const status = searchParams.get('status') || undefined;
+  const contactId = searchParams.get('contactId') || undefined;
+  const page = parseInt(searchParams.get('page') || '1');
+  const limit = parseInt(searchParams.get('limit') || '100');
+
+  // Генерируем ключ кэша на основе параметров
+  const cacheKey = cacheKeys.deals(
+    tq.tenantId,
+    `${search || ''}:${pipelineId || ''}:${stageId || ''}:${status || ''}:${contactId || ''}:${page}:${limit}`
+  );
+
+  // Кэшируем результат
+  const data = await cachedGet(
+    cacheKey,
+    TTL.DEALS,
+    [cacheTags.DEALS, cacheTags.DASHBOARD],
+    async () => {
+      const skip = (page - 1) * limit;
+      const where: Record<string, unknown> = {};
+      
+      if (search) where.OR = [
+        { title: { contains: search } },
+        { company: { contains: search } },
+      ];
+      if (pipelineId) where.pipelineId = pipelineId;
+      if (stageId) where.stageId = stageId;
+      if (status) where.status = status;
+      if (contactId) where.contactId = contactId;
+
+      const [deals, total] = await Promise.all([
+        tq.deal.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit,
+          include: {
+            stage: { select: { name: true, color: true } },
+            pipeline: { select: { name: true } },
+            contact: { select: { firstName: true, lastName: true } },
+          },
+        }),
+        tq.deal.count({ where }),
+      ]);
+
+      return { deals, total, page, limit };
+    }
+  );
+
+  return apiSuccess(data);
 }
 
 /**
- * POST /api/deals — Create deal
+ * POST /api/deals — Create deal (інвалідує кеш)
  */
 const createDealSchema = z.object({
   title: z.string().min(1).max(200),
@@ -75,37 +102,40 @@ const createDealSchema = z.object({
   })).optional(),
 });
 
-export async function POST(request: NextRequest) {
+async function POSTHandler(request: NextRequest) {
   const csrfError = csrfProtection(request);
   if (csrfError) return csrfError;
 
-  try {
-    const tq = await getTenantQuery(request);
-    if (!tq) return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
-
-    const body = await request.json();
-    const parsed = createDealSchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Невірні дані', details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
-    }
-
-    const { products, ...dealData } = parsed.data;
-
-    const deal = await tq.deal.create({
-      data: {
-        ...dealData,
-        expectedCloseDate: dealData.expectedCloseDate ? new Date(dealData.expectedCloseDate) : null,
-        products: products?.length ? { create: products } : undefined,
-      } as never,
-      include: { products: true, stage: true, pipeline: true },
-    });
-
-    return NextResponse.json({ deal }, { status: 201 });
-  } catch (error) {
-    console.error('Create deal error:', error);
-    return NextResponse.json({ error: 'Помилка створення угоди' }, { status: 500 });
+  const tq = await getTenantQuery(request);
+  if (!tq) {
+    return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
   }
+
+  const body = await request.json();
+  const parsed = createDealSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: 'Невірні дані', details: parsed.error.flatten().fieldErrors },
+      { status: 400 }
+    );
+  }
+
+  const { products, ...dealData } = parsed.data;
+
+  const deal = await tq.deal.create({
+    data: {
+      ...dealData,
+      expectedCloseDate: dealData.expectedCloseDate ? new Date(dealData.expectedCloseDate) : null,
+      products: products?.length ? { create: products } : undefined,
+    } as never,
+    include: { products: true, stage: true, pipeline: true },
+  });
+
+  // Інвалідуємо кеш угод
+  await invalidateCacheByTag(cacheTags.DEALS);
+
+  return apiSuccess({ deal }, 201);
 }
+
+export const GET = withAuth()(GETHandler);
+export const POST = withAuth({ permission: 'deal:create' })(POSTHandler);

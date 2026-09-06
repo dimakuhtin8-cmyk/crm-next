@@ -216,8 +216,11 @@ async function handleCallbackData(
 ) {
   if (data.startsWith('task_done:')) {
     const taskId = data.replace('task_done:', '');
+    // Tenant-scoped: a foreign taskId must not be completable via bot callback
+    const ownedTask = await prisma.task.findFirst({ where: { id: taskId, tenantId }, select: { id: true } });
+    if (!ownedTask) return;
     await prisma.task.update({ where: { id: taskId }, data: { status: 'done' } });
-    const task = await prisma.task.findUnique({ where: { id: taskId } });
+    const task = await prisma.task.findFirst({ where: { id: taskId, tenantId } });
     await sendTextMessage(phoneNumberId, accessToken, chat.phoneNumber,
       `✅ *${task?.title || 'Задачу'}* позначено як виконану!`,
     );

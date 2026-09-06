@@ -6,6 +6,7 @@ import type { NextRequest} from 'next/server';
 
 import { extractUserId } from '@/lib/auth-utils';
 import { csrfProtection } from '@/lib/csrf';
+import { encrypt } from '@/lib/encryption';
 import { hasMinRole, getUserRole } from '@/lib/rbac';
 
 interface Params {
@@ -74,6 +75,10 @@ const updateTenantSchema = z.object({
   domain: z.string().url().optional().nullable(),
   logo: z.string().url().optional().nullable(),
   settings: z.string().optional().nullable(),
+  geminiApiKey: z.string().optional().nullable(),
+  aiProvider: z.string().optional().nullable(),
+  aiModel: z.string().optional().nullable(),
+  aiApiKey: z.string().optional().nullable(),
 });
 
 export async function PUT(request: NextRequest, { params }: Params) {
@@ -105,7 +110,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
       );
     }
 
-    const { name, slug, domain, logo, settings } = parsed.data;
+    const { name, slug, domain, logo, settings, geminiApiKey, aiProvider, aiModel, aiApiKey } = parsed.data;
 
     // Check slug uniqueness if changing
     if (slug) {
@@ -141,6 +146,12 @@ export async function PUT(request: NextRequest, { params }: Params) {
         ...(domain !== undefined && { domain: domain || null }),
         ...(logo !== undefined && { logo: logo || null }),
         ...(settings !== undefined && { settings: settings || null }),
+        // API keys are stored encrypted, like everywhere else (see ai/quick-setup).
+        // Non-empty values are encrypted; explicit null clears the key.
+        ...(geminiApiKey ? { geminiApiKey: encrypt(geminiApiKey) } : geminiApiKey === null ? { geminiApiKey: null } : {}),
+        ...(aiProvider !== undefined && { aiProvider: aiProvider || 'gemini' }),
+        ...(aiModel !== undefined && { aiModel: aiModel || null }),
+        ...(aiApiKey ? { aiApiKey: encrypt(aiApiKey) } : aiApiKey === null ? { aiApiKey: null } : {}),
       },
     });
 

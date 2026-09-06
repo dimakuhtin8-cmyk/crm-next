@@ -3,16 +3,49 @@
  *
  * All data queries MUST use these helpers to ensure tenant isolation.
  * This prevents cross-tenant data leaks.
+ *
+ * Supports external databases:
+ * - "shared" → default Prisma client (all tenants in one DB)
+ * - "postgresql" / "mysql" / "mariadb" / "sqlserver" → dedicated Prisma client per tenant
  */
 
 import { prisma } from '@crm-next/database';
+import { getTenantDbClient, type DatabaseType } from '@crm-next/database/tenant-db';
 
 import type { NextRequest } from 'next/server';
 
 import { extractUser } from '@/lib/auth-utils';
 import { getUserRole } from '@/lib/rbac';
+import { decrypt, isEncrypted } from '@/lib/encryption';
 
 type PrismaClient = typeof prisma;
+
+/**
+ * Error thrown when a record does not belong to the current tenant.
+ * Carries Prisma code 'P2025' (record not found) so existing route
+ * catch-blocks treat it as "not found" instead of leaking existence.
+ */
+export function tenantScopeError(): Error {
+  return Object.assign(new Error('Record not found in tenant scope'), { code: 'P2025' });
+}
+
+type OwnedModel = 'contact' | 'task' | 'tag' | 'pipeline' | 'deal';
+
+/**
+ * Verify that a record with the given id belongs to the tenant.
+ * Throws tenantScopeError() otherwise.
+ */
+async function assertOwned(
+  db: PrismaClient,
+  model: OwnedModel,
+  id: string,
+  tenantId: string,
+): Promise<void> {
+  const found = await (db[model] as {
+    findFirst: (args: unknown) => Promise<{ id: string } | null>;
+  }).findFirst({ where: { id, tenantId }, select: { id: true } });
+  if (!found) throw tenantScopeError();
+}
 
 /**
  * Get tenant ID from request and verify membership
@@ -31,41 +64,83 @@ export async function getTenantId(request: NextRequest): Promise<string | null> 
 }
 
 /**
+ * Get the Prisma client for a specific tenant
+ * Checks if tenant has external DB configured, falls back to shared DB
+ */
+async function getDbForTenant(tenantId: string): Promise<PrismaClient> {
+  try {
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { databaseUrl: true, databaseType: true },
+    });
+
+    if (!tenant?.databaseUrl || !tenant.databaseType || tenant.databaseType === 'shared') {
+      return prisma;
+    }
+
+    // databaseUrl is stored encrypted (see PUT /api/tenant/database);
+    // fall back to plaintext for URLs written before encryption.
+    let databaseUrl = tenant.databaseUrl;
+    if (isEncrypted(databaseUrl)) {
+      databaseUrl = decrypt(databaseUrl);
+    }
+
+    return getTenantDbClient(
+      { databaseUrl, databaseType: tenant.databaseType as DatabaseType },
+      prisma
+    );
+  } catch {
+    return prisma;
+  }
+}
+
+/**
  * Create a tenant-scoped query helper
  *
  * Usage:
- *   const tenantQuery = createTenantQuery(tenantId);
- *   const contacts = await tenantQuery.contact.findMany();
+ *   const tq = await createTenantQuery(tenantId);
+ *   const contacts = await tq.contact.findMany();
+ *
+ * For external DBs, pass the resolved Prisma client:
+ *   const db = await getDbForTenant(tenantId);
+ *   const tq = createTenantQuery(tenantId, db);
  */
-export function createTenantQuery(tenantId: string) {
+export function createTenantQuery(tenantId: string, db: PrismaClient = prisma) {
   return {
     tenantId,
 
     // Contact queries
     contact: {
       findMany: (args?: { where?: Record<string, unknown>; orderBy?: Record<string, string>; skip?: number; take?: number }) =>
-        prisma.contact.findMany({
+        db.contact.findMany({
           ...args,
           where: { ...args?.where, tenantId } as never,
         }),
       findFirst: (args?: { where?: Record<string, unknown> }) =>
-        prisma.contact.findFirst({
+        db.contact.findFirst({
           ...args,
           where: { ...args?.where, tenantId } as never,
         }),
-      findUnique: (args: { where: { id: string } }) =>
-        prisma.contact.findUnique(args),
+      findUnique: (args: { where: { id: string }; select?: Record<string, unknown>; include?: Record<string, unknown> }) =>
+        db.contact.findFirst({
+          ...args,
+          where: { id: args.where.id, tenantId },
+        } as never),
       create: (args: { data: Record<string, unknown> }) =>
-        prisma.contact.create({
+        db.contact.create({
           ...args,
           data: { ...args.data, tenantId },
         } as never),
-      update: (args: { where: { id: string }; data: Record<string, unknown> }) =>
-        prisma.contact.update(args as never),
-      delete: (args: { where: { id: string } }) =>
-        prisma.contact.delete(args),
+      update: async (args: { where: { id: string }; data: Record<string, unknown> }) => {
+        await assertOwned(db, 'contact', args.where.id, tenantId);
+        return db.contact.update(args as never);
+      },
+      delete: async (args: { where: { id: string } }) => {
+        await assertOwned(db, 'contact', args.where.id, tenantId);
+        return db.contact.delete(args);
+      },
       count: (args?: { where?: Record<string, unknown> }) =>
-        prisma.contact.count({
+        db.contact.count({
           ...args,
           where: { ...args?.where, tenantId } as never,
         }),
@@ -74,65 +149,87 @@ export function createTenantQuery(tenantId: string) {
     // Task queries
     task: {
       findMany: (args?: { where?: Record<string, unknown>; orderBy?: Record<string, string>; skip?: number; take?: number; include?: Record<string, unknown> }) =>
-        prisma.task.findMany({
+        db.task.findMany({
           ...args,
           where: { ...args?.where, tenantId } as never,
         }),
       findFirst: (args?: { where?: Record<string, unknown>; include?: Record<string, unknown> }) =>
-        prisma.task.findFirst({
+        db.task.findFirst({
           ...args,
           where: { ...args?.where, tenantId } as never,
         }),
-      findUnique: (args: { where: { id: string }; include?: Record<string, unknown> }) =>
-        prisma.task.findUnique(args as never),
+      findUnique: (args: { where: { id: string }; select?: Record<string, unknown>; include?: Record<string, unknown> }) =>
+        db.task.findFirst({
+          ...args,
+          where: { id: args.where.id, tenantId },
+        } as never),
       create: (args: { data: Record<string, unknown> }) =>
-        prisma.task.create({
+        db.task.create({
           ...args,
           data: { ...args.data, tenantId },
         } as never),
-      update: (args: { where: { id: string }; data: Record<string, unknown> }) =>
-        prisma.task.update(args as never),
-      delete: (args: { where: { id: string } }) =>
-        prisma.task.delete(args),
+      update: async (args: { where: { id: string }; data: Record<string, unknown> }) => {
+        await assertOwned(db, 'task', args.where.id, tenantId);
+        return db.task.update(args as never);
+      },
+      delete: async (args: { where: { id: string } }) => {
+        await assertOwned(db, 'task', args.where.id, tenantId);
+        return db.task.delete(args);
+      },
       count: (args?: { where?: Record<string, unknown> }) =>
-        prisma.task.count({
+        db.task.count({
           ...args,
           where: { ...args?.where, tenantId } as never,
         }),
     },
 
-    // TaskComment queries
+    // TaskComment queries (no tenantId in schema — ownership verified via parent task)
     taskComment: {
-      findMany: (args?: { where?: Record<string, unknown>; orderBy?: Record<string, string> }) =>
-        prisma.taskComment.findMany({
+      findMany: async (args?: { where?: Record<string, unknown>; orderBy?: Record<string, string> }) => {
+        const taskId = args?.where?.taskId as string | undefined;
+        if (!taskId) throw tenantScopeError();
+        await assertOwned(db, 'task', taskId, tenantId);
+        return db.taskComment.findMany({
           ...args,
           where: { ...args?.where } as never,
-        }),
-      create: (args: { data: Record<string, unknown> }) =>
-        prisma.taskComment.create({
+        });
+      },
+      create: async (args: { data: Record<string, unknown> }) => {
+        const taskId = args.data.taskId as string | undefined;
+        if (!taskId) throw tenantScopeError();
+        await assertOwned(db, 'task', taskId, tenantId);
+        return db.taskComment.create({
           ...args,
-        } as never),
-      delete: (args: { where: { id: string } }) =>
-        prisma.taskComment.delete(args),
+        } as never);
+      },
+      delete: async (args: { where: { id: string } }) => {
+        const existing = await db.taskComment.findUnique({
+          where: { id: args.where.id },
+          select: { taskId: true },
+        });
+        if (!existing) throw tenantScopeError();
+        await assertOwned(db, 'task', existing.taskId, tenantId);
+        return db.taskComment.delete(args);
+      },
     },
 
     // Tenant queries
     tenant: {
       findUnique: (args: { where: { id: string }; include?: Record<string, boolean> }) =>
-        prisma.tenant.findUnique(args as never),
+        db.tenant.findUnique(args as never),
       update: (args: { where: { id: string }; data: Record<string, unknown> }) =>
-        prisma.tenant.update(args as never),
+        db.tenant.update(args as never),
     },
 
     // Member queries
     member: {
       findMany: () =>
-        prisma.tenantMember.findMany({
+        db.tenantMember.findMany({
           where: { tenantId },
           include: { user: { select: { id: true, name: true, email: true, image: true } } },
         }),
       findFirst: (args?: { where?: Record<string, unknown>; include?: Record<string, unknown> }) =>
-        prisma.tenantMember.findFirst({
+        db.tenantMember.findFirst({
           ...args,
           where: { ...args?.where, tenantId } as never,
         }),
@@ -141,57 +238,85 @@ export function createTenantQuery(tenantId: string) {
     // Tag queries
     tag: {
       findMany: (args?: { where?: Record<string, unknown>; orderBy?: Record<string, string> }) =>
-        prisma.tag.findMany({
+        db.tag.findMany({
           ...args,
           where: { ...args?.where, tenantId } as never,
         }),
       findFirst: (args?: { where?: Record<string, unknown> }) =>
-        prisma.tag.findFirst({
+        db.tag.findFirst({
           ...args,
           where: { ...args?.where, tenantId } as never,
         }),
+      findUnique: (args: { where: { id: string }; select?: Record<string, unknown> }) =>
+        db.tag.findFirst({
+          ...args,
+          where: { id: args.where.id, tenantId },
+        } as never),
       create: (args: { data: Record<string, unknown> }) =>
-        prisma.tag.create({
+        db.tag.create({
           ...args,
           data: { ...args.data, tenantId },
         } as never),
-      delete: (args: { where: { id: string } }) =>
-        prisma.tag.delete(args),
+      delete: async (args: { where: { id: string } }) => {
+        await assertOwned(db, 'tag', args.where.id, tenantId);
+        return db.tag.delete(args);
+      },
     },
 
-    // ContactTag queries
+    // ContactTag queries (no tenantId in schema — ownership verified via parent contact + tag)
     contactTag: {
-      findMany: (args?: { where?: Record<string, unknown> }) =>
-        prisma.contactTag.findMany({
+      findMany: async (args?: { where?: Record<string, unknown> }) => {
+        const contactId = args?.where?.contactId as string | undefined;
+        if (!contactId) throw tenantScopeError();
+        await assertOwned(db, 'contact', contactId, tenantId);
+        return db.contactTag.findMany({
           ...args,
           where: { ...args?.where } as never,
-        }),
-      create: (args: { data: Record<string, unknown> }) =>
-        prisma.contactTag.create({
+        });
+      },
+      create: async (args: { data: Record<string, unknown> }) => {
+        const contactId = args.data.contactId as string | undefined;
+        const tagId = args.data.tagId as string | undefined;
+        if (!contactId || !tagId) throw tenantScopeError();
+        await assertOwned(db, 'contact', contactId, tenantId);
+        await assertOwned(db, 'tag', tagId, tenantId);
+        return db.contactTag.create({
           ...args,
-        } as never),
-      delete: (args: { where: { id: string } }) =>
-        prisma.contactTag.delete(args),
-      deleteMany: (args: { where: Record<string, unknown> }) =>
-        prisma.contactTag.deleteMany({
+        } as never);
+      },
+      delete: async (args: { where: { id: string } }) => {
+        const existing = await db.contactTag.findUnique({
+          where: { id: args.where.id },
+          select: { contactId: true },
+        });
+        if (!existing) throw tenantScopeError();
+        await assertOwned(db, 'contact', existing.contactId, tenantId);
+        return db.contactTag.delete(args);
+      },
+      deleteMany: async (args: { where: Record<string, unknown> }) => {
+        const contactId = args.where?.contactId as string | undefined;
+        if (!contactId) throw tenantScopeError();
+        await assertOwned(db, 'contact', contactId, tenantId);
+        return db.contactTag.deleteMany({
           ...args,
-        } as never),
+        } as never);
+      },
     },
 
     // Activity queries
     activity: {
       findMany: (args?: { where?: Record<string, unknown>; orderBy?: Record<string, string>; skip?: number; take?: number }) =>
-        prisma.activity.findMany({
+        db.activity.findMany({
           ...args,
           where: { ...args?.where, tenantId } as never,
         }),
       create: (args: { data: Record<string, unknown> }) =>
-        prisma.activity.create({
+        db.activity.create({
           ...args,
           data: { ...args.data, tenantId },
         } as never),
       count: (args?: { where?: Record<string, unknown> }) =>
-        prisma.activity.count({
+        db.activity.count({
           ...args,
           where: { ...args?.where, tenantId } as never,
         }),
@@ -200,100 +325,159 @@ export function createTenantQuery(tenantId: string) {
     // Pipeline queries
     pipeline: {
       findMany: (args?: { where?: Record<string, unknown>; include?: Record<string, unknown>; orderBy?: Record<string, string> }) =>
-        prisma.pipeline.findMany({
+        db.pipeline.findMany({
           ...args,
           where: { ...args?.where, tenantId } as never,
         }),
       findFirst: (args?: { where?: Record<string, unknown>; include?: Record<string, unknown> }) =>
-        prisma.pipeline.findFirst({
+        db.pipeline.findFirst({
           ...args,
           where: { ...args?.where, tenantId } as never,
         }),
-      findUnique: (args: { where: { id: string }; include?: Record<string, unknown> }) =>
-        prisma.pipeline.findUnique(args as never),
+      findUnique: (args: { where: { id: string }; select?: Record<string, unknown>; include?: Record<string, unknown> }) =>
+        db.pipeline.findFirst({
+          ...args,
+          where: { id: args.where.id, tenantId },
+        } as never),
       create: (args: { data: Record<string, unknown>; include?: Record<string, unknown> }) =>
-        prisma.pipeline.create({
+        db.pipeline.create({
           ...args,
           data: { ...args.data, tenantId },
         } as never),
-      update: (args: { where: { id: string }; data: Record<string, unknown> }) =>
-        prisma.pipeline.update(args as never),
-      delete: (args: { where: { id: string } }) =>
-        prisma.pipeline.delete(args),
+      update: async (args: { where: { id: string }; data: Record<string, unknown> }) => {
+        await assertOwned(db, 'pipeline', args.where.id, tenantId);
+        return db.pipeline.update(args as never);
+      },
+      delete: async (args: { where: { id: string } }) => {
+        await assertOwned(db, 'pipeline', args.where.id, tenantId);
+        return db.pipeline.delete(args);
+      },
     },
 
-    // PipelineStage queries
+    // PipelineStage queries (no tenantId in schema — ownership verified via parent pipeline)
     pipelineStage: {
-      findMany: (args?: { where?: Record<string, unknown>; orderBy?: Record<string, string> }) =>
-        prisma.pipelineStage.findMany({
+      findMany: async (args?: { where?: Record<string, unknown>; orderBy?: Record<string, string> }) => {
+        const pipelineId = args?.where?.pipelineId as string | undefined;
+        if (!pipelineId) throw tenantScopeError();
+        await assertOwned(db, 'pipeline', pipelineId, tenantId);
+        return db.pipelineStage.findMany({
           ...args,
           where: { ...args?.where } as never,
-        }),
-      create: (args: { data: Record<string, unknown> }) =>
-        prisma.pipelineStage.create({
+        });
+      },
+      create: async (args: { data: Record<string, unknown> }) => {
+        const pipelineId = args.data.pipelineId as string | undefined;
+        if (!pipelineId) throw tenantScopeError();
+        await assertOwned(db, 'pipeline', pipelineId, tenantId);
+        return db.pipelineStage.create({
           ...args,
-        } as never),
-      update: (args: { where: { id: string }; data: Record<string, unknown> }) =>
-        prisma.pipelineStage.update(args as never),
-      delete: (args: { where: { id: string } }) =>
-        prisma.pipelineStage.delete(args),
-      deleteMany: (args: { where: Record<string, unknown> }) =>
-        prisma.pipelineStage.deleteMany({
+        } as never);
+      },
+      update: async (args: { where: { id: string }; data: Record<string, unknown> }) => {
+        const existing = await db.pipelineStage.findUnique({
+          where: { id: args.where.id },
+          select: { pipelineId: true },
+        });
+        if (!existing) throw tenantScopeError();
+        await assertOwned(db, 'pipeline', existing.pipelineId, tenantId);
+        return db.pipelineStage.update(args as never);
+      },
+      delete: async (args: { where: { id: string } }) => {
+        const existing = await db.pipelineStage.findUnique({
+          where: { id: args.where.id },
+          select: { pipelineId: true },
+        });
+        if (!existing) throw tenantScopeError();
+        await assertOwned(db, 'pipeline', existing.pipelineId, tenantId);
+        return db.pipelineStage.delete(args);
+      },
+      deleteMany: async (args: { where: Record<string, unknown> }) => {
+        const pipelineId = args.where?.pipelineId as string | undefined;
+        if (!pipelineId) throw tenantScopeError();
+        await assertOwned(db, 'pipeline', pipelineId, tenantId);
+        return db.pipelineStage.deleteMany({
           ...args,
-        } as never),
+        } as never);
+      },
     },
 
     // Deal queries
     deal: {
       findMany: (args?: { where?: Record<string, unknown>; orderBy?: Record<string, string>; skip?: number; take?: number; include?: Record<string, unknown> }) =>
-        prisma.deal.findMany({
+        db.deal.findMany({
           ...args,
           where: { ...args?.where, tenantId } as never,
         }),
       findFirst: (args?: { where?: Record<string, unknown>; include?: Record<string, unknown> }) =>
-        prisma.deal.findFirst({
+        db.deal.findFirst({
           ...args,
           where: { ...args?.where, tenantId } as never,
         }),
-      findUnique: (args: { where: { id: string }; include?: Record<string, unknown> }) =>
-        prisma.deal.findUnique(args as never),
+      findUnique: (args: { where: { id: string }; select?: Record<string, unknown>; include?: Record<string, unknown> }) =>
+        db.deal.findFirst({
+          ...args,
+          where: { id: args.where.id, tenantId },
+        } as never),
       create: (args: { data: Record<string, unknown>; include?: Record<string, unknown> }) =>
-        prisma.deal.create({
+        db.deal.create({
           ...args,
           data: { ...args.data, tenantId },
         } as never),
-      update: (args: { where: { id: string }; data: Record<string, unknown> }) =>
-        prisma.deal.update(args as never),
-      delete: (args: { where: { id: string } }) =>
-        prisma.deal.delete(args),
+      update: async (args: { where: { id: string }; data: Record<string, unknown> }) => {
+        await assertOwned(db, 'deal', args.where.id, tenantId);
+        return db.deal.update(args as never);
+      },
+      delete: async (args: { where: { id: string } }) => {
+        await assertOwned(db, 'deal', args.where.id, tenantId);
+        return db.deal.delete(args);
+      },
       count: (args?: { where?: Record<string, unknown> }) =>
-        prisma.deal.count({
+        db.deal.count({
           ...args,
           where: { ...args?.where, tenantId } as never,
         }),
       groupBy: (args: { by: string[]; where?: Record<string, unknown>; _sum?: Record<string, boolean>; _count?: Record<string, boolean> }) =>
-        prisma.deal.groupBy({
+        db.deal.groupBy({
           ...args,
           where: { ...args.where, tenantId } as never,
         } as never),
     },
 
-    // DealProduct queries
+    // DealProduct queries (no tenantId in schema — ownership verified via parent deal)
     dealProduct: {
-      findMany: (args?: { where?: Record<string, unknown> }) =>
-        prisma.dealProduct.findMany({
+      findMany: async (args?: { where?: Record<string, unknown> }) => {
+        const dealId = args?.where?.dealId as string | undefined;
+        if (!dealId) throw tenantScopeError();
+        await assertOwned(db, 'deal', dealId, tenantId);
+        return db.dealProduct.findMany({
           ...args,
-        }),
-      create: (args: { data: Record<string, unknown> }) =>
-        prisma.dealProduct.create({
+        });
+      },
+      create: async (args: { data: Record<string, unknown> }) => {
+        const dealId = args.data.dealId as string | undefined;
+        if (!dealId) throw tenantScopeError();
+        await assertOwned(db, 'deal', dealId, tenantId);
+        return db.dealProduct.create({
           ...args,
-        } as never),
-      delete: (args: { where: { id: string } }) =>
-        prisma.dealProduct.delete(args),
-      deleteMany: (args: { where: Record<string, unknown> }) =>
-        prisma.dealProduct.deleteMany({
+        } as never);
+      },
+      delete: async (args: { where: { id: string } }) => {
+        const existing = await db.dealProduct.findUnique({
+          where: { id: args.where.id },
+          select: { dealId: true },
+        });
+        if (!existing) throw tenantScopeError();
+        await assertOwned(db, 'deal', existing.dealId, tenantId);
+        return db.dealProduct.delete(args);
+      },
+      deleteMany: async (args: { where: Record<string, unknown> }) => {
+        const dealId = args.where?.dealId as string | undefined;
+        if (!dealId) throw tenantScopeError();
+        await assertOwned(db, 'deal', dealId, tenantId);
+        return db.dealProduct.deleteMany({
           ...args,
-        } as never),
+        } as never);
+      },
     },
   };
 }
@@ -301,9 +485,14 @@ export function createTenantQuery(tenantId: string) {
 /**
  * Validate tenant access from request
  * Returns tenantQuery if valid, null if not
+ *
+ * Automatically resolves external DB if configured for the tenant
  */
 export async function getTenantQuery(request: NextRequest) {
   const tenantId = await getTenantId(request);
   if (!tenantId) return null;
-  return createTenantQuery(tenantId);
+
+  // Resolve the correct Prisma client for this tenant
+  const db = await getDbForTenant(tenantId);
+  return createTenantQuery(tenantId, db);
 }

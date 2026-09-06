@@ -4,12 +4,13 @@ import type { NextRequest} from 'next/server';
 
 import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
+import { withAuth } from '@/lib/auth-guard';
 
 /**
  * GET /api/contacts/dedup — Find potential duplicates
  * Checks for contacts with matching email, phone, or name+company
  */
-export async function GET(request: NextRequest) {
+async function GETHandler(request: NextRequest) {
   const csrfError = csrfProtection(request);
   if (csrfError) return csrfError;
 
@@ -85,3 +86,5 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export const GET = withAuth()(GETHandler);

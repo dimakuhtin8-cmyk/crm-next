@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 
 import { Button, Card, CardContent, Input } from '@/components/ui';
+import { Save, FileText, Trash2 } from 'lucide-react';
 
 const KPDocument = dynamic(() => import('@/components/pdf/kp-document').then((m) => m.KPDocument), { ssr: false });
 const KPDownloadLink = dynamic(() => import('@/components/pdf/kp-document').then((m) => m.KPDownloadLink), { ssr: false });
@@ -12,6 +13,14 @@ interface Product {
   name: string;
   quantity: number;
   price: number;
+}
+
+interface Template {
+  id: string;
+  name: string;
+  type: 'kp' | 'contract' | 'invoice';
+  content: Record<string, unknown>;
+  createdAt: string;
 }
 
 export default function DocumentsPage() {
@@ -23,6 +32,16 @@ export default function DocumentsPage() {
   const [validUntil, setValidUntil] = useState('');
   const [notes, setNotes] = useState('');
   const [showPreview, setShowPreview] = useState(false);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [templateName, setTemplateName] = useState('');
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/documents/templates')
+      .then(r => r.json())
+      .then(data => setTemplates(data.templates || []))
+      .catch(() => {});
+  }, []);
 
   const total = products.reduce((sum, p) => sum + p.price * p.quantity, 0);
 
@@ -45,6 +64,46 @@ export default function DocumentsPage() {
     notes: notes || undefined,
   };
 
+  const handleSaveTemplate = async () => {
+    if (!templateName.trim()) return;
+    try {
+      const res = await fetch('/api/documents/templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: templateName,
+          type: 'kp',
+          content: { title, company, description, products, currency, validUntil, notes },
+        }),
+      });
+      if (res.ok) {
+        const { template } = await res.json();
+        setTemplates(prev => [...prev, template]);
+        setShowSaveTemplate(false);
+        setTemplateName('');
+      }
+    } catch {}
+  };
+
+  const handleLoadTemplate = (tpl: Template) => {
+    const c = tpl.content as Record<string, string>;
+    setTitle(c.title || '');
+    setCompany(c.company || '');
+    setDescription(c.description || '');
+    setProducts((c.products as Product[]) || [{ name: '', quantity: 1, price: 0 }]);
+    setCurrency(c.currency || 'UAH');
+    setValidUntil(c.validUntil || '');
+    setNotes(c.notes || '');
+  };
+
+  const handleDeleteTemplate = async (id: string) => {
+    if (!confirm('Видалити шаблон?')) return;
+    try {
+      await fetch(`/api/documents/templates?id=${id}`, { method: 'DELETE' });
+      setTemplates(prev => prev.filter(t => t.id !== id));
+    } catch {}
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
@@ -53,6 +112,36 @@ export default function DocumentsPage() {
           <p className="text-foreground-muted">Створення КП та документів у PDF</p>
         </div>
       </div>
+
+      {/* Templates */}
+      {templates.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <FileText className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">Шаблони</span>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {templates.map((tpl) => (
+                <div key={tpl.id} className="flex items-center gap-1 group">
+                  <button
+                    onClick={() => handleLoadTemplate(tpl)}
+                    className="px-3 py-1.5 text-sm rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-colors"
+                  >
+                    {tpl.name}
+                  </button>
+                  <button
+                    onClick={() => handleDeleteTemplate(tpl.id)}
+                    className="p-1 rounded text-foreground-muted hover:text-danger opacity-0 group-hover:opacity-100 transition-all"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Form */}
@@ -129,7 +218,26 @@ export default function DocumentsPage() {
               {showPreview ? 'Приховати попередній перегляд' : 'Попередній перегляд'}
             </Button>
             <KPDownloadLink data={data} />
+            <Button variant="outline" onClick={() => setShowSaveTemplate(!showSaveTemplate)}>
+              <Save className="h-4 w-4 mr-1" />
+              Зберегти як шаблон
+            </Button>
           </div>
+
+          {showSaveTemplate && (
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Назва шаблону"
+                    value={templateName}
+                    onChange={(e) => setTemplateName(e.target.value)}
+                  />
+                  <Button onClick={handleSaveTemplate} disabled={!templateName.trim()}>Зберегти</Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Preview */}

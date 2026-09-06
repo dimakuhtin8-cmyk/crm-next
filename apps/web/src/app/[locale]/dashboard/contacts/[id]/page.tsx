@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import { Button, Input, Badge, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
+import { InlineEdit } from '@/components/inline-edit';
 import { cn } from '@/lib/utils';
 
 interface Contact {
@@ -59,6 +60,8 @@ export default function ContactDetailPage() {
   const [showActivityForm, setShowActivityForm] = useState(false);
   const [activityForm, setActivityForm] = useState({ type: 'note', title: '', body: '' });
   const [activityLoading, setActivityLoading] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -108,6 +111,33 @@ export default function ContactDetailPage() {
       await fetch(`/api/contacts/${contactId}`, { method: 'DELETE' });
       router.push('/dashboard/contacts');
     } catch {}
+  };
+
+  const handleInlineSave = async (field: string, value: string) => {
+    const res = await fetch(`/api/contacts/${contactId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [field]: value || null }),
+    });
+    if (res.ok) {
+      setContact(prev => prev ? { ...prev, [field]: value || null } : prev);
+    }
+  };
+
+  const handleAnalyze = async () => {
+    setAiLoading(true);
+    try {
+      const res = await fetch('/api/ai', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'analyze', data: { contactId } }),
+      });
+      const json = await res.json();
+      if (res.ok) setAiAnalysis(json.result);
+    } catch {} finally {
+      setAiLoading(false);
+    }
   };
 
   if (loading) {
@@ -167,56 +197,73 @@ export default function ContactDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
+                <InlineEdit
+                  label="Ім'я"
+                  value={contact.firstName}
+                  onSave={(v) => handleInlineSave('firstName', v)}
+                />
+                <InlineEdit
+                  label="Прізвище"
+                  value={contact.lastName}
+                  onSave={(v) => handleInlineSave('lastName', v)}
+                  emptyText="—"
+                />
+                <InlineEdit
+                  label="Email"
+                  value={contact.email}
+                  onSave={(v) => handleInlineSave('email', v)}
+                  type="email"
+                  emptyText="—"
+                />
+                <InlineEdit
+                  label="Телефон"
+                  value={contact.phone}
+                  onSave={(v) => handleInlineSave('phone', v)}
+                  type="phone"
+                  emptyText="—"
+                />
+                <InlineEdit
+                  label="Компанія"
+                  value={contact.company}
+                  onSave={(v) => handleInlineSave('company', v)}
+                  emptyText="—"
+                />
+                <InlineEdit
+                  label="Посада"
+                  value={contact.position}
+                  onSave={(v) => handleInlineSave('position', v)}
+                  emptyText="—"
+                />
                 <div>
-                  <p className="text-sm text-foreground-muted">Ім'я</p>
-                  <p className="font-medium">{contact.firstName}</p>
+                  <p className="text-xs text-foreground-muted mb-1">Статус</p>
+                  <select
+                    value={contact.status}
+                    onChange={(e) => handleInlineSave('status', e.target.value)}
+                    className="h-8 rounded-lg border border-border bg-background px-2 text-sm"
+                  >
+                    <option value="active">Активний</option>
+                    <option value="inactive">Неактивний</option>
+                    <option value="lead">Лід</option>
+                    <option value="client">Клієнт</option>
+                  </select>
                 </div>
-                <div>
-                  <p className="text-sm text-foreground-muted">Прізвище</p>
-                  <p className="font-medium">{contact.lastName || '—'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-foreground-muted">Email</p>
-                  <p className="font-medium">
-                    {contact.email ? (
-                      <a href={`mailto:${contact.email}`} className="text-primary hover:underline">{contact.email}</a>
-                    ) : '—'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-foreground-muted">Телефон</p>
-                  <p className="font-medium">
-                    {contact.phone ? (
-                      <a href={`tel:${contact.phone}`} className="text-primary hover:underline">{contact.phone}</a>
-                    ) : '—'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-foreground-muted">Компанія</p>
-                  <p className="font-medium">{contact.company || '—'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-foreground-muted">Посада</p>
-                  <p className="font-medium">{contact.position || '—'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-foreground-muted">Статус</p>
-                  <Badge variant={statusConfig[contact.status]?.variant || 'outline'}>
-                    {statusConfig[contact.status]?.label || contact.status}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-sm text-foreground-muted">Джерело</p>
-                  <p className="font-medium">{contact.source || '—'}</p>
-                </div>
+                <InlineEdit
+                  label="Джерело"
+                  value={contact.source}
+                  onSave={(v) => handleInlineSave('source', v)}
+                  emptyText="—"
+                />
               </div>
 
-              {contact.notes && (
-                <div className="pt-4 border-t border-border">
-                  <p className="text-sm text-foreground-muted mb-1">Нотатки</p>
-                  <p className="text-sm whitespace-pre-wrap">{contact.notes}</p>
-                </div>
-              )}
+              <div className="pt-4 border-t border-border">
+                <InlineEdit
+                  label="Нотатки"
+                  value={contact.notes}
+                  onSave={(v) => handleInlineSave('notes', v)}
+                  type="textarea"
+                  emptyText="Додати нотатки..."
+                />
+              </div>
 
               <div className="pt-4 border-t border-border flex gap-4 text-xs text-foreground-muted">
                 <span>Створено: {new Date(contact.createdAt).toLocaleDateString('uk')}</span>
@@ -246,6 +293,27 @@ export default function ContactDetailPage() {
               </CardContent>
             </Card>
           )}
+
+          {/* AI Analysis */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-base">🤖 AI-аналіз</CardTitle>
+              <Button size="sm" variant="outline" onClick={handleAnalyze} disabled={aiLoading}>
+                {aiLoading ? 'Аналіз...' : 'Проаналізувати'}
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {aiAnalysis ? (
+                <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap text-sm">
+                  {aiAnalysis}
+                </div>
+              ) : (
+                <p className="text-sm text-foreground-muted">
+                  AI проаналізує активності, угоди та історію контакту і запропонує рекомендації.
+                </p>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Activity sidebar */}

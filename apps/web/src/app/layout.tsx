@@ -1,14 +1,9 @@
 import { Geist, Geist_Mono } from 'next/font/google';
-import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
 
 import './globals.css';
-import { Providers } from './providers';
-
-import type { Metadata, Viewport } from 'next';
-
 import { ThemeProvider } from '@/components/theme-provider';
 
+import type { Metadata, Viewport } from 'next';
 
 const geist = Geist({
   subsets: ['latin'],
@@ -39,13 +34,11 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const messages = await getMessages();
-
   return (
     <html lang="uk" className="dark" suppressHydrationWarning>
       <head>
@@ -53,11 +46,7 @@ export default async function RootLayout({
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
       <body className={`${geist.variable} ${geistMono.variable} font-sans bg-background text-foreground antialiased`} suppressHydrationWarning>
-        <NextIntlClientProvider messages={messages}>
-          <ThemeProvider>
-            <Providers>{children}</Providers>
-          </ThemeProvider>
-        </NextIntlClientProvider>
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

@@ -5,6 +5,7 @@ import type { NextRequest} from 'next/server';
 
 import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
+import { withAuth } from '@/lib/auth-guard';
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -13,7 +14,7 @@ interface Params {
 /**
  * GET /api/deals/[id] — Get deal details
  */
-export async function GET(request: NextRequest, { params }: Params) {
+async function GETHandler(request: NextRequest, { params }: Params) {
   const csrfError = csrfProtection(request);
   if (csrfError) return csrfError;
 
@@ -60,7 +61,7 @@ const updateDealSchema = z.object({
   })).optional(),
 });
 
-export async function PUT(request: NextRequest, { params }: Params) {
+async function PUTHandler(request: NextRequest, { params }: Params) {
   const csrfError = csrfProtection(request);
   if (csrfError) return csrfError;
 
@@ -79,6 +80,15 @@ export async function PUT(request: NextRequest, { params }: Params) {
     }
 
     const { products, ...dealData } = parsed.data;
+
+    // Ownership check BEFORE any product mutations
+    const owned = await tq.deal.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!owned) {
+      return NextResponse.json({ error: 'Угоду не знайдено' }, { status: 404 });
+    }
 
     // Handle close date and status
     if (dealData.status === 'won' || dealData.status === 'lost') {
@@ -122,7 +132,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
 /**
  * DELETE /api/deals/[id] — Delete deal
  */
-export async function DELETE(request: NextRequest, { params }: Params) {
+async function DELETEHandler(request: NextRequest, { params }: Params) {
   const csrfError = csrfProtection(request);
   if (csrfError) return csrfError;
 
@@ -131,6 +141,13 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     if (!tq) return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
 
     const { id } = await params;
+    const owned = await tq.deal.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!owned) {
+      return NextResponse.json({ error: 'Угоду не знайдено' }, { status: 404 });
+    }
     await tq.deal.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -138,3 +155,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Помилка видалення угоди' }, { status: 500 });
   }
 }
+
+export const GET = withAuth()(GETHandler);
+export const PUT = withAuth({ permission: 'deal:update' })(PUTHandler);
+export const DELETE = withAuth({ permission: 'deal:delete' })(DELETEHandler);

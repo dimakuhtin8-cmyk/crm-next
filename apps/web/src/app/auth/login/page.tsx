@@ -1,18 +1,33 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
 
 import { useAuth } from '@/components/auth/auth-provider';
 import { TelegramLoginButton } from '@/components/auth/telegram-login-button';
 
+const OAUTH_ERRORS: Record<string, string> = {
+  Configuration: 'Помилка конфігурації сервера. Зверніться до адміністратора.',
+  AccessDenied: 'Доступ відхилено.',
+  Verification: 'Посилання для верифікації вже використане або прострочене.',
+  Default: 'Помилка авторизації. Спробуйте ще раз.',
+};
+
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login, loginGoogle, error, clearError, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const oauthError = searchParams.get('error');
+    if (oauthError) {
+      // OAuth error will be displayed via the auth context error
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

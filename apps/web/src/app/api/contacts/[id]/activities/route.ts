@@ -5,6 +5,7 @@ import type { NextRequest} from 'next/server';
 
 import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
+import { withAuth } from '@/lib/auth-guard';
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -13,7 +14,7 @@ interface Params {
 /**
  * GET /api/contacts/[id]/activities — List activities for contact
  */
-export async function GET(request: NextRequest, { params }: Params) {
+async function GETHandler(request: NextRequest, { params }: Params) {
   const csrfError = csrfProtection(request);
   if (csrfError) return csrfError;
 
@@ -49,7 +50,7 @@ const createActivitySchema = z.object({
   date: z.string().optional(),
 });
 
-export async function POST(request: NextRequest, { params }: Params) {
+async function POSTHandler(request: NextRequest, { params }: Params) {
   const csrfError = csrfProtection(request);
   if (csrfError) return csrfError;
 
@@ -88,3 +89,6 @@ export async function POST(request: NextRequest, { params }: Params) {
     );
   }
 }
+
+export const GET = withAuth()(GETHandler);
+export const POST = withAuth({ permission: 'activity:create' })(POSTHandler);

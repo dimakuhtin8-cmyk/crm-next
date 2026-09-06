@@ -1,0 +1,10 @@
+[phases.install]
+cmds = ["pnpm install", "npx prisma generate --schema=packages/database/prisma/schema.prisma"]
+
+[phases.build]
+cmds = [
+  "pnpm --filter @crm-next/web build",
+]
+
+[phases.start]
+cmd = "cd apps/web && npx next start -H 0.0.0.0 -p 3000"

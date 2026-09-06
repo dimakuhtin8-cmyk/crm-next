@@ -63,7 +63,7 @@ export async function GET(request: NextRequest, { params }: Params) {
  */
 const inviteSchema = z.object({
   email: z.string().email(),
-  role: z.enum(['member', 'admin']).default('member'),
+  role: z.enum(['member', 'admin', 'viewer']).default('member'),
 });
 
 export async function POST(request: NextRequest, { params }: Params) {

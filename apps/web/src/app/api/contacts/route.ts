@@ -4,12 +4,22 @@ import { z } from 'zod';
 import type { NextRequest} from 'next/server';
 
 import { csrfProtection } from '@/lib/csrf';
+import { decrypt } from '@/lib/encryption';
 import { getTenantQuery } from '@/lib/tenant-query';
+import { withAuth } from '@/lib/auth-guard';
+
+function safeDecrypt(value: string): string {
+  try {
+    return decrypt(value);
+  } catch {
+    return '[повреждён]';
+  }
+}
 
 /**
  * GET /api/contacts — List contacts (tenant-scoped, with search/filters)
  */
-export async function GET(request: NextRequest) {
+async function GETHandler(request: NextRequest) {
   const csrfError = csrfProtection(request);
   if (csrfError) return csrfError;
 
@@ -62,7 +72,14 @@ export async function GET(request: NextRequest) {
       tq.contact.count({ where }),
     ]);
 
-    return NextResponse.json({ contacts, total, page, limit });
+    // Decrypt sensitive fields
+    const decryptedContacts = contacts.map((contact: Record<string, unknown>) => ({
+      ...contact,
+      phone: contact.phone ? safeDecrypt(contact.phone as string) : contact.phone,
+      notes: contact.notes ? safeDecrypt(contact.notes as string) : contact.notes,
+    }));
+
+    return NextResponse.json({ contacts: decryptedContacts, total, page, limit });
   } catch (error) {
     console.error('List contacts error:', error);
     return NextResponse.json(
@@ -88,7 +105,7 @@ const createContactSchema = z.object({
   tagIds: z.array(z.string()).optional(),
 });
 
-export async function POST(request: NextRequest) {
+async function POSTHandler(request: NextRequest) {
   const csrfError = csrfProtection(request);
   if (csrfError) return csrfError;
 
@@ -109,14 +126,36 @@ export async function POST(request: NextRequest) {
 
     const { tagIds, ...contactData } = parsed.data;
 
+    // Encrypt sensitive fields before saving
+    const { encrypt } = await import('@/lib/encryption');
+    const encryptedData = {
+      ...contactData,
+      phone: contactData.phone ? encrypt(contactData.phone) : contactData.phone,
+      notes: contactData.notes ? encrypt(contactData.notes) : contactData.notes,
+    };
+
     const contact = await (tq.contact as unknown as {
       create: (args: { data: Record<string, unknown>; include?: Record<string, unknown> }) => Promise<unknown>;
     }).create({
       data: {
-        ...contactData,
+        ...encryptedData,
         tags: tagIds?.length ? { create: tagIds.map((tagId) => ({ tagId })) } : undefined,
       },
       include: { tags: { include: { tag: true } } },
+    });
+
+    // Audit log
+    const { logAuditEvent, extractRequestMeta } = await import('@/lib/audit');
+    const meta = extractRequestMeta(request);
+    const userId = (tq as unknown as { userId: string }).userId;
+    await logAuditEvent({
+      tenantId: (tq as unknown as { tenantId: string }).tenantId,
+      userId,
+      action: 'create',
+      entity: 'contact',
+      entityId: (contact as { id: string }).id,
+      newValues: { firstName: contactData.firstName, email: contactData.email, company: contactData.company },
+      ...meta,
     });
 
     return NextResponse.json({ contact }, { status: 201 });
@@ -128,3 +167,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const GET = withAuth()(GETHandler);
+export const POST = withAuth({ permission: 'contact:create' })(POSTHandler);

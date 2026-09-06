@@ -49,6 +49,11 @@ export default function ContactsPage() {
   const [filterTag, setFilterTag] = useState(searchParams.get('tag') || '');
   const [page, setPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
+  
+  // Bulk operations state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [showBulkActions, setShowBulkActions] = useState(false);
 
   useEffect(() => {
     fetchTags();
@@ -102,6 +107,75 @@ export default function ContactsPage() {
 
   const getName = (c: Contact) => `${c.firstName} ${c.lastName || ''}`.trim();
 
+  // Bulk operations
+  const toggleSelectAll = () => {
+    if (selectedIds.size === contacts.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(contacts.map(c => c.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    setSelectedIds(next);
+  };
+
+  const handleBulkDelete = async () => {
+    if (!confirm(`Видалити ${selectedIds.size} контактів?`)) return;
+    
+    setBulkLoading(true);
+    try {
+      await fetch('/api/contacts/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'delete',
+          ids: Array.from(selectedIds),
+        }),
+      });
+      setSelectedIds(new Set());
+      fetchContacts();
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
+  const handleBulkStatus = async (status: string) => {
+    setBulkLoading(true);
+    try {
+      await fetch('/api/contacts/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'updateStatus',
+          ids: Array.from(selectedIds),
+          data: { status },
+        }),
+      });
+      setSelectedIds(new Set());
+      fetchContacts();
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
+  const handleExport = async () => {
+    const res = await fetch('/api/contacts/export?format=csv');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `contacts-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -111,6 +185,14 @@ export default function ContactsPage() {
           <p className="text-foreground-muted">{total} контактів</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={handleExport}>
+            <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Експорт
+          </Button>
           <Link href="/dashboard/contacts/import">
             <Button variant="outline">
               <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -132,6 +214,53 @@ export default function ContactsPage() {
           </Link>
         </div>
       </div>
+
+      {/* Bulk Actions Bar */}
+      {selectedIds.size > 0 && (
+        <Card className="border-primary bg-primary/5">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-medium">
+                  Обрано: {selectedIds.size} контактів
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedIds(new Set())}
+                >
+                  Скасувати вибір
+                </Button>
+              </div>
+              <div className="flex items-center gap-2">
+                <select
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      handleBulkStatus(e.target.value);
+                      e.target.value = '';
+                    }
+                  }}
+                  className="h-8 rounded-lg border border-border bg-background px-2 text-sm"
+                >
+                  <option value="">Змінити статус...</option>
+                  <option value="active">Активний</option>
+                  <option value="inactive">Неактивний</option>
+                  <option value="lead">Лід</option>
+                  <option value="client">Клієнт</option>
+                </select>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleBulkDelete}
+                  disabled={bulkLoading}
+                >
+                  {bulkLoading ? 'Видалення...' : 'Видалити'}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Search + Filters */}
       <Card>
@@ -236,22 +365,44 @@ export default function ContactsPage() {
         <div className="space-y-2">
           {/* Table header */}
           <div className="grid grid-cols-12 gap-4 px-4 py-2 text-xs font-medium text-foreground-muted">
+            <div className="col-span-1">
+              <input
+                type="checkbox"
+                checked={selectedIds.size === contacts.length && contacts.length > 0}
+                onChange={toggleSelectAll}
+                className="h-4 w-4 rounded border-border"
+              />
+            </div>
             <div className="col-span-3">Ім'я</div>
             <div className="col-span-2">Компанія</div>
             <div className="col-span-2">Email</div>
             <div className="col-span-2">Телефон</div>
             <div className="col-span-1">Статус</div>
-            <div className="col-span-2">Теги</div>
+            <div className="col-span-1">Теги</div>
           </div>
 
           {/* Rows */}
           {contacts.map((contact) => (
             <div
               key={contact.id}
-              className="grid grid-cols-12 gap-4 px-4 py-3 bg-card rounded-lg border border-border hover:bg-secondary/50 transition-colors cursor-pointer items-center"
-              onClick={() => router.push(`/dashboard/contacts/${contact.id}`)}
+              className={cn(
+                'grid grid-cols-12 gap-4 px-4 py-3 bg-card rounded-lg border border-border hover:bg-secondary/50 transition-colors cursor-pointer items-center',
+                selectedIds.has(contact.id) && 'border-primary bg-primary/5'
+              )}
             >
-              <div className="col-span-3">
+              <div className="col-span-1">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.has(contact.id)}
+                  onChange={() => toggleSelect(contact.id)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="h-4 w-4 rounded border-border"
+                />
+              </div>
+              <div
+                className="col-span-3"
+                onClick={() => router.push(`/dashboard/contacts/${contact.id}`)}
+              >
                 <div className="flex items-center gap-3">
                   <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
                     {contact.firstName.charAt(0)}
@@ -265,26 +416,41 @@ export default function ContactsPage() {
                 </div>
               </div>
 
-              <div className="col-span-2 text-sm text-foreground-muted truncate">
+              <div
+                className="col-span-2 text-sm text-foreground-muted truncate"
+                onClick={() => router.push(`/dashboard/contacts/${contact.id}`)}
+              >
                 {contact.company || '—'}
               </div>
 
-              <div className="col-span-2 text-sm truncate">
+              <div
+                className="col-span-2 text-sm truncate"
+                onClick={() => router.push(`/dashboard/contacts/${contact.id}`)}
+              >
                 {contact.email || '—'}
               </div>
 
-              <div className="col-span-2 text-sm truncate">
+              <div
+                className="col-span-2 text-sm truncate"
+                onClick={() => router.push(`/dashboard/contacts/${contact.id}`)}
+              >
                 {contact.phone || '—'}
               </div>
 
-              <div className="col-span-1">
+              <div
+                className="col-span-1"
+                onClick={() => router.push(`/dashboard/contacts/${contact.id}`)}
+              >
                 <Badge variant={statusConfig[contact.status]?.variant || 'outline'} className="text-xs">
                   {statusConfig[contact.status]?.label || contact.status}
                 </Badge>
               </div>
 
-              <div className="col-span-2 flex gap-1 flex-wrap">
-                {contact.tags?.slice(0, 3).map((ct) => (
+              <div
+                className="col-span-1 flex gap-1 flex-wrap"
+                onClick={() => router.push(`/dashboard/contacts/${contact.id}`)}
+              >
+                {contact.tags?.slice(0, 2).map((ct) => (
                   <Badge
                     key={ct.tag.id}
                     variant="outline"
@@ -294,8 +460,8 @@ export default function ContactsPage() {
                     {ct.tag.name}
                   </Badge>
                 ))}
-                {(contact.tags?.length || 0) > 3 && (
-                  <Badge variant="outline" className="text-xs">+{contact.tags!.length - 3}</Badge>
+                {(contact.tags?.length || 0) > 2 && (
+                  <Badge variant="outline" className="text-xs">+{contact.tags!.length - 2}</Badge>
                 )}
               </div>
             </div>

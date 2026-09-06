@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest} from 'next/server';
 
 import { getTenantQuery } from '@/lib/tenant-query';
+import { withAuth } from '@/lib/auth-guard';
 
 /**
  * GET /api/tasks/reminders — Get tasks with upcoming reminders
@@ -10,7 +11,7 @@ import { getTenantQuery } from '@/lib/tenant-query';
  *   - hours: how far ahead to look (default 24)
  *   - includeOverdue: include past reminders that weren't dismissed (default true)
  */
-export async function GET(request: NextRequest) {
+async function GETHandler(request: NextRequest) {
   try {
     const tq = await getTenantQuery(request);
     if (!tq) return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
@@ -49,3 +50,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Помилка отримання нагадувань' }, { status: 500 });
   }
 }
+
+export const GET = withAuth()(GETHandler);

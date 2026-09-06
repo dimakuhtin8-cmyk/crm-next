@@ -6,6 +6,14 @@ import { useState, useEffect } from 'react';
 
 import { Button, Input, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 
+interface TeamMember {
+  id: string;
+  name: string | null;
+  email: string | null;
+  image: string | null;
+  role: string;
+}
+
 interface TaskFormProps {
   taskId?: string;
   initialData?: {
@@ -25,6 +33,14 @@ export function TaskForm({ taskId, initialData }: TaskFormProps) {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+
+  useEffect(() => {
+    fetch('/api/team', { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => setTeamMembers(data.members || []))
+      .catch(() => {});
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +73,7 @@ export function TaskForm({ taskId, initialData }: TaskFormProps) {
               <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Тип</label>
                 <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
@@ -70,10 +86,22 @@ export function TaskForm({ taskId, initialData }: TaskFormProps) {
                   <option value="low">Низький</option><option value="medium">Середній</option><option value="high">Високий</option><option value="urgent">Терміново</option>
                 </select>
               </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Статус</label>
                 <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                   <option value="todo">До виконання</option><option value="in_progress">В роботі</option><option value="done">Готово</option><option value="cancelled">Скасовано</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Відповідальний</label>
+                <select value={form.assigneeId} onChange={(e) => setForm({ ...form, assigneeId: e.target.value })} className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                  <option value="">Не призначено</option>
+                  {teamMembers.map((m) => (
+                    <option key={m.id} value={m.id}>{m.name || m.email}</option>
+                  ))}
                 </select>
               </div>
             </div>

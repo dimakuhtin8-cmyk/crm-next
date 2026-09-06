@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -17,6 +17,9 @@ model User {
   telegramId    String?   @unique
   role          String    @default("user")
   hasOnboarded  Boolean   @default(false)
+  // 2FA TOTP: secret stored encrypted, enabled only after confirm
+  twoFactorSecret  String?
+  twoFactorEnabled Boolean  @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -82,7 +85,35 @@ model Tenant {
   whatsappWebhookSecret  String?
   whatsappPhoneNumberId  String?
   whatsappPhoneNumber    String?
-  whatsappWabaId         String?  // WhatsApp Business Account ID
+  whatsappWabaId        String?  // WhatsApp Business Account ID
+
+  // AI (Google Gemini)
+  geminiApiKey           String?
+
+  // AI Provider settings
+  aiProvider             String?  @default("gemini")
+  aiModel                String?
+  aiApiKey               String?  // Generic field for any AI provider's key (encrypted)
+  aiFallbackProvider     String?  // Fallback provider when primary fails
+
+  // AI Usage limits (per-day, per-tenant)
+  aiDailyLimit           Int      @default(1500)
+
+  // Billing
+  plan                   String   @default("free") // "free" | "starter" | "professional" | "enterprise"
+  stripeCustomerId       String?  @unique
+  subscriptionId         String?  // Stripe subscription ID
+  subscriptionStatus     String?  @default("active") // "active" | "canceled" | "past_due" | "trialing" | "incomplete"
+  subscriptionEndsAt     DateTime? // When current period ends
+  trialEndsAt            DateTime? // Trial end date
+  planLimits             String?   // JSON: { maxUsers, maxDeals, maxAiRequests, maxContacts }
+
+  // External database connection
+  databaseUrl            String?  // Connection string to client's own database
+  databaseType           String?  @default("shared") // "shared" | "postgresql" | "mysql" | "mariadb" | "sqlserver"
+  databaseStatus         String?  @default("active") // "active" | "error" | "migrating"
+  databaseLastError      String?  // Last connection/migration error
+  databaseConnectedAt    DateTime? // Last successful connection check
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -99,6 +130,10 @@ model Tenant {
   whatsappChats  WhatsAppChat[]
   automationRules AutomationRule[]
   automationLogs  AutomationLog[]
+  aiUsageLogs     AiUsageLog[]
+  aiUsageCounters AiUsageCounter[]
+  payments         Payment[]
+  auditLogs        AuditLog[]
 }
 
 model TelegramChat {
@@ -179,6 +214,8 @@ model Contact {
   notes     String?
   source    String?
   status    String   @default("active")
+  aiSummary String?
+  aiAnalyzedAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -222,14 +259,16 @@ model ContactTag {
 }
 
 model Activity {
-  id        String   @id @default(cuid())
-  tenantId  String
-  contactId String
-  type      String
-  title     String
-  body      String?
-  date      DateTime @default(now())
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  tenantId   String
+  contactId  String
+  type       String
+  title      String
+  body       String?
+  aiTags     String?
+  aiPriority String?
+  date       DateTime @default(now())
+  createdAt  DateTime @default(now())
 
   tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
@@ -286,6 +325,8 @@ model Deal {
   winReason          String?
   lossReason         String?
   notes              String?
+  aiScore            Int?
+  aiScoredAt         DateTime?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -395,4 +436,97 @@ model AutomationLog {
 
   @@index([tenantId])
   @@index([tenantId, executedAt])
+}
+
+model AiUsageLog {
+  id          String   @id @default(cuid())
+  tenantId    String
+  provider    String
+  model       String
+  status      String   // "success" | "error" | "rate_limited" | "timeout"
+  durationMs  Int      // Request duration in milliseconds
+  promptPreview String? // First 100 chars of prompt (no sensitive data)
+  errorMessage String? // Error message if status != "success"
+  tokensIn    Int?     // Input tokens (if available)
+  tokensOut   Int?     // Output tokens (if available)
+  createdAt   DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, provider])
+  @@index([tenantId, status])
+}
+
+model AiUsageCounter {
+  id        String   @id @default(cuid())
+  tenantId  String
+  provider  String
+  date      String   // "YYYY-MM-DD"
+  requests  Int      @default(0)
+  tokensIn  Int      @default(0)
+  tokensOut Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, provider, date])
+  @@index([tenantId])
+  @@index([tenantId, date])
+}
+
+model Payment {
+  id                String   @id @default(cuid())
+  tenantId          String
+  stripePaymentId   String?  @unique
+  stripeInvoiceId   String?
+  amount            Int      // Amount in cents
+  currency          String   @default("usd")
+  status            String   // "succeeded" | "pending" | "failed" | "refunded"
+  description       String?
+  planId            String?  // Which plan was purchased
+  periodStart       DateTime?
+  periodEnd         DateTime?
+  invoiceUrl        String?  // URL to download invoice PDF
+  createdAt         DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, status])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  tenantId    String
+  userId      String?
+  action      String   // "create" | "update" | "delete" | "login" | "logout" | "invite" | "role_change"
+  entity      String   // "contact" | "deal" | "task" | "member" | "settings" | "auth"
+  entityId    String?  // ID of the affected entity
+  oldValues   String?  // JSON: previous state (for updates)
+  newValues   String?  // JSON: new state (for creates/updates)
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, action])
+  @@index([tenantId, entity])
+  @@index([tenantId, userId])
+}
+
+model StripeWebhookEvent {
+  id              String   @id @default(cuid())
+  stripeEventId   String   @unique
+  eventType       String
+  status          String   @default("pending")
+  processedAt     DateTime @default(now())
+
+  @@index([stripeEventId])
+  @@index([eventType])
 }

@@ -1,21 +1,36 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useCallback, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 
 import { Button, Input } from '@/components/ui';
 import { TelegramLoginWidget, type TelegramAuthData } from '@/components/auth/telegram-login-widget';
 
+const OAUTH_ERRORS: Record<string, string> = {
+  Configuration: 'Помилка конфігурації сервера. Зверніться до адміністратора.',
+  AccessDenied: 'Доступ відхилено.',
+  Verification: 'Посилання для верифікації вже використане або прострочене.',
+  Default: 'Помилка авторизації. Спробуйте ще раз.',
+};
+
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [mode, setMode] = useState<'password' | 'magic-link'>('password');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    const oauthError = searchParams.get('error');
+    if (oauthError) {
+      setError(OAUTH_ERRORS[oauthError] || `Помилка: ${oauthError}`);
+    }
+  }, [searchParams]);
 
   const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -156,6 +171,14 @@ export default function LoginPage() {
               required
               autoComplete="current-password"
             />
+          )}
+
+          {mode === 'password' && (
+            <div className="text-right">
+              <Link href="/auth/forgot-password" className="text-sm text-foreground-muted hover:text-foreground">
+                Забули пароль?
+              </Link>
+            </div>
           )}
 
           <Button type="submit" className="w-full" disabled={isLoading}>
