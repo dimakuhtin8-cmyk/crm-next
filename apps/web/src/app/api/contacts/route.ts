@@ -41,15 +41,20 @@ async function GETHandler(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     const where: Record<string, unknown> = {};
+    // OR-условия (search, dataFilter) собираются в AND, чтобы не затирать
+    // друг друга одним ключом where.OR (см. баг search+member).
+    const andConditions: Record<string, unknown>[] = [];
 
     if (search) {
-      where.OR = [
-        { firstName: { contains: search } },
-        { lastName: { contains: search } },
-        { email: { contains: search } },
-        { phone: { contains: search } },
-        { company: { contains: search } },
-      ];
+      andConditions.push({
+        OR: [
+          { firstName: { contains: search } },
+          { lastName: { contains: search } },
+          { email: { contains: search } },
+          { phone: { contains: search } },
+          { company: { contains: search } },
+        ],
+      });
     }
 
     if (company) {
@@ -68,9 +73,12 @@ async function GETHandler(request: NextRequest) {
     const dataFilterParam = searchParams.get('_dataFilter');
     if (dataFilterParam) {
       try {
-        const dataFilter = JSON.parse(dataFilterParam);
-        Object.assign(where, dataFilter);
+        andConditions.push(JSON.parse(dataFilterParam));
       } catch {}
+    }
+
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
     }
 
     const [contacts, total] = await Promise.all([

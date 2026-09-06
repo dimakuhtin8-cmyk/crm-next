@@ -56,19 +56,27 @@ async function GETHandler(request: NextRequest) {
     async () => {
       const skip = (page - 1) * limit;
       const where: Record<string, unknown> = {};
-      
-      if (search) where.OR = [
-        { title: { contains: search } },
-        { company: { contains: search } },
-      ];
+      // OR-условия (search, dataFilter) собираются в AND, чтобы не затирать
+      // друг друга одним ключом where.OR (см. баг search+member).
+      const andConditions: Record<string, unknown>[] = [];
+
+      if (search) andConditions.push({
+        OR: [
+          { title: { contains: search } },
+          { company: { contains: search } },
+        ],
+      });
       if (pipelineId) where.pipelineId = pipelineId;
       if (stageId) where.stageId = stageId;
       if (status) where.status = status;
       if (contactId) where.contactId = contactId;
       if (dataFilterParam) {
         try {
-          Object.assign(where, JSON.parse(dataFilterParam));
+          andConditions.push(JSON.parse(dataFilterParam));
         } catch {}
+      }
+      if (andConditions.length > 0) {
+        where.AND = andConditions;
       }
 
       const [deals, total] = await Promise.all([
