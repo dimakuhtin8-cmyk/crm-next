@@ -28,6 +28,8 @@ model User {
   tenantMembers TenantMember[]
   sentInvites   Invite[]
   assignedTasks Task[]
+  ownedContacts Contact[]
+  ownedDeals    Deal[]
   taskComments  TaskComment[]
 }
 
@@ -220,6 +222,8 @@ model Contact {
   updatedAt DateTime @updatedAt
 
   tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  owner    User?    @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  ownerId  String?
   tags     ContactTag[]
   activities Activity[]
   deals    Deal[]
@@ -230,6 +234,7 @@ model Contact {
   @@index([tenantId, email])
   @@index([tenantId, company])
   @@index([tenantId, status])
+  @@index([tenantId, ownerId])
 }
 
 model Tag {
@@ -334,12 +339,15 @@ model Deal {
   pipeline Pipeline      @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
   stage    PipelineStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
   contact  Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  owner    User?         @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  ownerId  String?
   products DealProduct[]
 
   @@index([tenantId])
   @@index([tenantId, pipelineId])
   @@index([tenantId, stageId])
   @@index([tenantId, status])
+  @@index([tenantId, ownerId])
 }
 
 model DealProduct {

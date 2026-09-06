@@ -25,7 +25,13 @@ async function GETHandler(request: NextRequest, { params }: Params) {
     const { id } = await params;
     const deal = await tq.deal.findUnique({
       where: { id },
-      include: { products: true, stage: true, pipeline: true, contact: true },
+      include: {
+        products: true,
+        stage: true,
+        pipeline: true,
+        contact: true,
+        owner: { select: { id: true, name: true, email: true, image: true } },
+      },
     });
 
     if (!deal) return NextResponse.json({ error: 'Угоду не знайдено' }, { status: 404 });
@@ -53,6 +59,7 @@ const updateDealSchema = z.object({
   winReason: z.string().max(500).optional().nullable(),
   lossReason: z.string().max(500).optional().nullable(),
   notes: z.string().max(5000).optional().nullable(),
+  ownerId: z.string().optional().nullable(),
   products: z.array(z.object({
     id: z.string().optional(),
     name: z.string().min(1).max(200),
@@ -79,7 +86,7 @@ async function PUTHandler(request: NextRequest, { params }: Params) {
       );
     }
 
-    const { products, ...dealData } = parsed.data;
+    const { products, ownerId: requestedOwnerId, ...dealData } = parsed.data;
 
     // Ownership check BEFORE any product mutations
     const owned = await tq.deal.findUnique({
@@ -88,6 +95,20 @@ async function PUTHandler(request: NextRequest, { params }: Params) {
     });
     if (!owned) {
       return NextResponse.json({ error: 'Угоду не знайдено' }, { status: 404 });
+    }
+
+    // Owner reassignment allowed only for admin+.
+    const dealUpdateData = { ...dealData } as Record<string, unknown>;
+    if (requestedOwnerId !== undefined) {
+      const { extractUserId } = await import('@/lib/auth-utils');
+      const { getUserRole } = await import('@/lib/rbac');
+      const updaterId = await extractUserId(request);
+      const updaterTenant = (tq as unknown as { tenantId: string }).tenantId;
+      const updaterRole = updaterId ? await getUserRole(updaterId, updaterTenant) : null;
+      if (updaterRole !== 'owner' && updaterRole !== 'admin') {
+        return NextResponse.json({ error: 'Призначати власника може лише admin' }, { status: 403 });
+      }
+      dealUpdateData.ownerId = requestedOwnerId;
     }
 
     // Handle close date and status
@@ -118,7 +139,7 @@ async function PUTHandler(request: NextRequest, { params }: Params) {
       update: (args: { where: { id: string }; data: Record<string, unknown>; include?: Record<string, unknown> }) => Promise<unknown>;
     }).update({
       where: { id },
-      data: dealData as Record<string, unknown>,
+      data: dealUpdateData,
       include: { products: true, stage: true, pipeline: true, contact: true },
     });
 

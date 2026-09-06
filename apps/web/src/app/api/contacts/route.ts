@@ -5,6 +5,8 @@ import type { NextRequest} from 'next/server';
 
 import { csrfProtection } from '@/lib/csrf';
 import { decrypt } from '@/lib/encryption';
+import { extractUserId } from '@/lib/auth-utils';
+import { getUserRole } from '@/lib/rbac';
 import { getTenantQuery } from '@/lib/tenant-query';
 import { withAuth } from '@/lib/auth-guard';
 
@@ -62,12 +64,22 @@ async function GETHandler(request: NextRequest) {
       where.tags = { some: { tag: { name: tag } } };
     }
 
+    // Apply RBAC data filter (injected by withAuth, field: ownerId)
+    const dataFilterParam = searchParams.get('_dataFilter');
+    if (dataFilterParam) {
+      try {
+        const dataFilter = JSON.parse(dataFilterParam);
+        Object.assign(where, dataFilter);
+      } catch {}
+    }
+
     const [contacts, total] = await Promise.all([
       tq.contact.findMany({
         where,
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
+        include: { owner: { select: { id: true, name: true, email: true, image: true } } },
       }),
       tq.contact.count({ where }),
     ]);
@@ -102,6 +114,7 @@ const createContactSchema = z.object({
   notes: z.string().max(5000).optional().nullable(),
   source: z.string().max(50).optional().nullable(),
   status: z.enum(['active', 'inactive', 'lead', 'client']).default('active'),
+  ownerId: z.string().optional().nullable(),
   tagIds: z.array(z.string()).optional(),
 });
 
@@ -124,7 +137,21 @@ async function POSTHandler(request: NextRequest) {
       );
     }
 
-    const { tagIds, ...contactData } = parsed.data;
+    const { tagIds, ownerId: requestedOwnerId, ...contactData } = parsed.data;
+
+    // Owner resolution: explicit ownerId allowed only for admin+ (backend-validated,
+    // never trust the frontend picker). member assigning to someone else → 403.
+    // Default: the creator becomes the owner.
+    const creatorId = await extractUserId(request);
+    const tenantId = (tq as unknown as { tenantId: string }).tenantId;
+    let ownerId: string | null = creatorId;
+    if (requestedOwnerId !== undefined && requestedOwnerId !== null) {
+      const role = creatorId ? await getUserRole(creatorId, tenantId) : null;
+      if (role !== 'owner' && role !== 'admin') {
+        return NextResponse.json({ error: 'Призначати власника може лише admin' }, { status: 403 });
+      }
+      ownerId = requestedOwnerId;
+    }
 
     // Encrypt sensitive fields before saving
     const { encrypt } = await import('@/lib/encryption');
@@ -139,6 +166,7 @@ async function POSTHandler(request: NextRequest) {
     }).create({
       data: {
         ...encryptedData,
+        ownerId,
         tags: tagIds?.length ? { create: tagIds.map((tagId) => ({ tagId })) } : undefined,
       },
       include: { tags: { include: { tag: true } } },
@@ -168,5 +196,5 @@ async function POSTHandler(request: NextRequest) {
   }
 }
 
-export const GET = withAuth()(GETHandler);
+export const GET = withAuth({ dataFilter: true, dataField: 'ownerId' })(GETHandler);
 export const POST = withAuth({ permission: 'contact:create' })(POSTHandler);

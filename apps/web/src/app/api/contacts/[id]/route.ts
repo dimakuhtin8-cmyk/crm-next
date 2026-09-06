@@ -6,6 +6,8 @@ import type { NextRequest} from 'next/server';
 import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
 import { decrypt, encrypt } from '@/lib/encryption';
+import { extractUserId } from '@/lib/auth-utils';
+import { getUserRole } from '@/lib/rbac';
 import { withAuth } from '@/lib/auth-guard';
 
 function safeDecrypt(value: string): string {
@@ -36,6 +38,7 @@ async function GETHandler(request: NextRequest, { params }: Params) {
     const { id } = await params;
     const contact = await tq.contact.findUnique({
       where: { id },
+      include: { owner: { select: { id: true, name: true, email: true, image: true } } },
     });
 
     if (!contact) {
@@ -71,6 +74,7 @@ const updateContactSchema = z.object({
   notes: z.string().max(5000).optional().nullable(),
   source: z.string().max(50).optional().nullable(),
   status: z.enum(['active', 'inactive', 'lead', 'client']).optional(),
+  ownerId: z.string().optional().nullable(),
   tagIds: z.array(z.string()).optional(),
 });
 
@@ -94,11 +98,22 @@ async function PUTHandler(request: NextRequest, { params }: Params) {
       );
     }
 
-    const { tagIds, ...contactData } = parsed.data;
+    const { tagIds, ownerId: requestedOwnerId, ...contactData } = parsed.data;
+
+    // Owner resolution on update: explicit ownerId allowed only for admin+.
+    const updateData = { ...contactData } as Record<string, unknown>;
+    if (requestedOwnerId !== undefined) {
+      const updaterId = await extractUserId(request);
+      const updaterTenant = (tq as unknown as { tenantId: string }).tenantId;
+      const updaterRole = updaterId ? await getUserRole(updaterId, updaterTenant) : null;
+      if (updaterRole !== 'owner' && updaterRole !== 'admin') {
+        return NextResponse.json({ error: 'Призначати власника може лише admin' }, { status: 403 });
+      }
+      updateData.ownerId = requestedOwnerId;
+    }
 
     // Encrypt PII on update — same as POST /api/contacts.
     // Reads (GET list/[id]) decrypt via safeDecrypt.
-    const updateData = { ...contactData } as Record<string, unknown>;
     if (typeof updateData.phone === 'string' && updateData.phone) {
       updateData.phone = encrypt(updateData.phone);
     }

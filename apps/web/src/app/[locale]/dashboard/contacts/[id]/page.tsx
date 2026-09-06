@@ -6,7 +6,15 @@ import Link from 'next/link';
 
 import { Button, Input, Badge, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { InlineEdit } from '@/components/inline-edit';
+import { OwnerPicker, useTeam } from '@/components/owner-picker';
 import { cn } from '@/lib/utils';
+
+interface Owner {
+  id: string;
+  name: string | null;
+  email: string | null;
+  image: string | null;
+}
 
 interface Contact {
   id: string;
@@ -19,6 +27,8 @@ interface Contact {
   notes: string | null;
   source: string | null;
   status: string;
+  ownerId: string | null;
+  owner?: Owner | null;
   createdAt: string;
   updatedAt: string;
   tags?: Array<{ tag: { id: string; name: string; color: string | null } }>;
@@ -62,6 +72,8 @@ export default function ContactDetailPage() {
   const [activityLoading, setActivityLoading] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
+  const { currentRole } = useTeam();
+  const canManageOwner = currentRole === 'owner' || currentRole === 'admin';
 
   useEffect(() => {
     fetchData();
@@ -122,6 +134,15 @@ export default function ContactDetailPage() {
     if (res.ok) {
       setContact(prev => prev ? { ...prev, [field]: value || null } : prev);
     }
+  };
+
+  const handleOwnerSave = async (ownerId: string | null) => {
+    const res = await fetch(`/api/contacts/${contactId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ownerId }),
+    });
+    if (res.ok) fetchData();
   };
 
   const handleAnalyze = async () => {
@@ -252,6 +273,11 @@ export default function ContactDetailPage() {
                   value={contact.source}
                   onSave={(v) => handleInlineSave('source', v)}
                   emptyText="—"
+                />
+                <OwnerPicker
+                  value={contact.ownerId}
+                  onChange={handleOwnerSave}
+                  canManage={canManageOwner}
                 />
               </div>
 

@@ -111,12 +111,12 @@ export function createTenantQuery(tenantId: string, db: PrismaClient = prisma) {
 
     // Contact queries
     contact: {
-      findMany: (args?: { where?: Record<string, unknown>; orderBy?: Record<string, string>; skip?: number; take?: number }) =>
+      findMany: (args?: { where?: Record<string, unknown>; orderBy?: Record<string, string>; skip?: number; take?: number; include?: Record<string, unknown> }) =>
         db.contact.findMany({
           ...args,
           where: { ...args?.where, tenantId } as never,
         }),
-      findFirst: (args?: { where?: Record<string, unknown> }) =>
+      findFirst: (args?: { where?: Record<string, unknown>; include?: Record<string, unknown> }) =>
         db.contact.findFirst({
           ...args,
           where: { ...args?.where, tenantId } as never,

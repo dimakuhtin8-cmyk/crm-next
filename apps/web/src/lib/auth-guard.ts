@@ -22,6 +22,12 @@ interface AuthGuardOptions {
   minRole?: TenantRole;
   /** Автоматически добавить data visibility filter в query params (для GET) */
   dataFilter?: boolean;
+  /**
+   * Поле принадлежности для dataFilter (per-модель).
+   * Task → 'assigneeId' (дефолт), Contact/Deal → 'ownerId'.
+   * Саму функцию buildDataFilter() не дублируем — поле настраивается здесь.
+   */
+  dataField?: string;
   /** Имя query параметра для tenantId (по умолчанию из tenant-query) */
   tenantIdParam?: string;
 }
@@ -74,7 +80,7 @@ export function withAuth(options: AuthGuardOptions = {}) {
       if (options.dataFilter && request.method === 'GET') {
         const role = await getUserRole(user.id, tenantId);
         if (role) {
-          const filter = buildDataFilter(role, user.id);
+          const filter = buildDataFilter(role, user.id, options.dataField ?? 'assigneeId');
           if (filter) {
             const url = new URL(request.url);
             url.searchParams.set('_dataFilter', JSON.stringify(filter));

@@ -5,6 +5,14 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import { Button, Badge, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
+import { OwnerPicker, useTeam } from '@/components/owner-picker';
+
+interface Owner {
+  id: string;
+  name: string | null;
+  email: string | null;
+  image: string | null;
+}
 
 interface Deal {
   id: string;
@@ -13,6 +21,8 @@ interface Deal {
   currency: string;
   probability: number;
   status: string;
+  ownerId: string | null;
+  owner?: Owner | null;
   expectedCloseDate: string | null;
   actualCloseDate: string | null;
   winReason: string | null;
@@ -41,6 +51,8 @@ export default function DealDetailPage() {
   const dealId = params.id as string;
   const [deal, setDeal] = useState<Deal | null>(null);
   const [loading, setLoading] = useState(true);
+  const { currentRole } = useTeam();
+  const canManageOwner = currentRole === 'owner' || currentRole === 'admin';
 
   useEffect(() => { fetchDeal(); }, [dealId]);
 
@@ -73,6 +85,15 @@ export default function DealDetailPage() {
     if (!confirm('Видалити угоду?')) return;
     await fetch(`/api/deals/${dealId}`, { method: 'DELETE' });
     router.push('/dashboard/deals');
+  };
+
+  const handleOwnerSave = async (ownerId: string | null) => {
+    await fetch(`/api/deals/${dealId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ownerId }),
+    });
+    fetchDeal();
   };
 
   if (loading) return <div className="max-w-4xl mx-auto"><div className="h-8 bg-muted rounded w-1/3 animate-pulse" /></div>;
@@ -143,6 +164,13 @@ export default function DealDetailPage() {
                   <p className="text-sm">{deal.status === 'won' ? deal.winReason : deal.lossReason}</p>
                 </div>
               )}
+              <div className="pt-4 border-t border-border">
+                <OwnerPicker
+                  value={deal.ownerId}
+                  onChange={handleOwnerSave}
+                  canManage={canManageOwner}
+                />
+              </div>
             </CardContent>
           </Card>
 

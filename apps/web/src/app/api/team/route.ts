@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getTenantQuery } from '@/lib/tenant-query';
+import { extractUserId } from '@/lib/auth-utils';
+import { getUserRole } from '@/lib/rbac';
 import { withAuth } from '@/lib/auth-guard';
 
 /**
@@ -29,7 +31,11 @@ async function GETHandler(request: NextRequest) {
       role: m.role,
     }));
 
-    return NextResponse.json({ members });
+    // Current user's role — UI uses it to hide owner-reassign controls from members.
+    const userId = await extractUserId(request);
+    const currentRole = userId ? await getUserRole(userId, tenantId) : null;
+
+    return NextResponse.json({ members, currentRole });
   } catch (error) {
     console.error('Get team error:', error);
     return NextResponse.json({ error: 'Помилка отримання команди' }, { status: 500 });
