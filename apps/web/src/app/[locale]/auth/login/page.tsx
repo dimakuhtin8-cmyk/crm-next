@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 
-import { Button, Input } from '@/components/ui';
 import { TelegramLoginWidget, type TelegramAuthData } from '@/components/auth/telegram-login-widget';
 
 const OAUTH_ERRORS: Record<string, string> = {
@@ -125,7 +124,13 @@ export default function LoginPage() {
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
           <Link href="/" className="inline-flex items-center gap-2">
-            <svg className="h-8 w-8 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              className="h-8 w-8 text-indigo-500"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
             </svg>
             <span className="text-xl font-bold">CRM-Next</span>
@@ -133,7 +138,7 @@ export default function LoginPage() {
           <h1 className="mt-6 text-2xl font-bold">
             {mode === 'password' ? 'Увійти в акаунт' : 'Вхід по посиланню'}
           </h1>
-          <p className="mt-2 text-foreground-secondary">
+          <p className="mt-2 text-muted-foreground">
             {mode === 'password'
               ? 'Введіть свої дані для входу'
               : 'Вкажіть email — надішлемо посилання для входу без пароля'}
@@ -142,8 +147,8 @@ export default function LoginPage() {
 
         {(error || success) && (
           <div
-            className={`rounded-lg p-3 text-sm ${
-              error ? 'border-danger/20 bg-danger-light text-danger' : 'border-success/20 bg-success-light text-success'
+            className={`rounded-lg border p-3 text-sm ${
+              error ? 'border-red-500/20 bg-red-500/10 text-red-500' : 'border-green-500/20 bg-green-500/10 text-green-600'
             }`}
           >
             {error || success}
@@ -151,39 +156,55 @@ export default function LoginPage() {
         )}
 
         <form onSubmit={mode === 'password' ? handlePasswordLogin : handleMagicLink} className="space-y-4">
-          <Input
-            label="Email"
-            type="email"
-            placeholder="your@email.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            autoComplete="email"
-          />
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              placeholder="your@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete="email"
+              className="mt-1 flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
 
           {mode === 'password' && (
-            <Input
-              label="Пароль"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-            />
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium">
+                Пароль
+              </label>
+              <input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+                className="mt-1 flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
           )}
 
           {mode === 'password' && (
             <div className="text-right">
-              <Link href="/uk/auth/forgot-password" className="text-sm text-foreground-muted hover:text-foreground">
+              <Link href="/uk/auth/forgot-password" className="text-sm text-muted-foreground hover:text-foreground">
                 Забули пароль?
               </Link>
             </div>
           )}
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="flex h-10 w-full items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 hover:bg-indigo-500 disabled:opacity-50"
+          >
             {isLoading ? 'Зачекайте...' : mode === 'password' ? 'Увійти' : 'Отримати посилання'}
-          </Button>
+          </button>
         </form>
 
         <div className="relative">
@@ -191,15 +212,15 @@ export default function LoginPage() {
             <div className="w-full border-t border-border" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="bg-background px-2 text-foreground-secondary">або</span>
+            <span className="bg-background px-2 text-muted-foreground">або</span>
           </div>
         </div>
 
-        <Button
-          variant="outline"
-          className="w-full"
+        <button
+          type="button"
           onClick={handleGoogleLogin}
           disabled={isLoading}
+          className="flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground hover:bg-secondary disabled:opacity-50"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -208,9 +229,9 @@ export default function LoginPage() {
             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
           </svg>
           Увійти через Google
-        </Button>
+        </button>
 
-        <div className="text-center text-sm text-foreground-secondary">
+        <div className="text-center text-sm text-muted-foreground">
           або
         </div>
 
@@ -219,14 +240,14 @@ export default function LoginPage() {
           onAuth={handleTelegramAuth}
         />
 
-        <p className="text-center text-sm text-foreground-secondary">
+        <p className="text-center text-sm text-muted-foreground">
           {mode === 'password' ? (
             <>
               Хочете ввійти без пароля?{' '}
               <button
                 type="button"
                 onClick={() => setMode('magic-link')}
-                className="text-primary hover:text-primary-hover font-medium"
+                className="text-indigo-500 hover:text-indigo-400 font-medium"
               >
                 Отримати посилання
               </button>
@@ -237,7 +258,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setMode('password')}
-                className="text-primary hover:text-primary-hover font-medium"
+                className="text-indigo-500 hover:text-indigo-400 font-medium"
               >
                 Увійти паролем
               </button>
@@ -245,9 +266,9 @@ export default function LoginPage() {
           )}
         </p>
 
-        <p className="text-center text-sm text-foreground-secondary">
+        <p className="text-center text-sm text-muted-foreground">
           Ще немає акаунту?{' '}
-          <Link href="/uk/auth/register" className="text-primary hover:text-primary-hover font-medium">
+          <Link href="/uk/auth/register" className="text-indigo-500 hover:text-indigo-400 font-medium">
             Зареєструватися
           </Link>
         </p>
