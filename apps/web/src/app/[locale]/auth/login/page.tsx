@@ -175,7 +175,7 @@ export default function LoginPage() {
 
           {mode === 'password' && (
             <div className="text-right">
-              <Link href="/auth/forgot-password" className="text-sm text-foreground-muted hover:text-foreground">
+              <Link href="/uk/auth/forgot-password" className="text-sm text-foreground-muted hover:text-foreground">
                 Забули пароль?
               </Link>
             </div>
