@@ -1,0 +1,146 @@
+import { HugeiconsIcon } from '@hugeicons/react';
+import {
+  Home01Icon,
+  UserMultipleIcon,
+  ChartBarLineIcon,
+  Task01Icon,
+  BubbleChatIcon,
+  AnalyticsUpIcon,
+  Activity04Icon,
+  Settings02Icon,
+  Search01Icon,
+  Add01Icon,
+  Notification01Icon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  Cancel01Icon,
+  CheckmarkCircle02Icon,
+  AlertCircleIcon,
+  Delete02Icon,
+  Edit02Icon,
+  Copy01Icon,
+  Download01Icon,
+  Upload01Icon,
+  FilterIcon,
+  SortByUpIcon,
+  RefreshIcon,
+  ArrowLeft02Icon,
+  ArrowRight02Icon,
+  Calendar03Icon,
+  Clock01Icon,
+  Mail01Icon,
+  AiPhone01Icon,
+  Building06Icon,
+  Tag01Icon,
+  File01Icon,
+  Image01Icon,
+  AttachmentIcon,
+  SendIcon,
+  MoreHorizontalCircleIcon,
+  UserCircleIcon,
+  Shield01Icon,
+  MoonIcon,
+  SunIcon,
+  ComputerIcon,
+  Menu01Icon,
+  ArrowDown01Icon,
+  ArrowUp01Icon,
+  PlayIcon,
+  PauseIcon,
+  StopIcon,
+  Loading03Icon,
+  ArrowDataTransferVerticalIcon,
+  KanbanIcon,
+  PieChart01Icon,
+  CustomerServiceIcon,
+  WhatsappIcon,
+  TelegramIcon,
+  AiChatIcon,
+  AiBrain01Icon,
+  BoltIcon,
+  CircleDotIcon,
+} from '@hugeicons/core-free-icons';
+
+export {
+  Home01Icon,
+  UserMultipleIcon,
+  ChartBarLineIcon,
+  Task01Icon,
+  BubbleChatIcon,
+  AnalyticsUpIcon,
+  Activity04Icon,
+  Settings02Icon,
+  Search01Icon,
+  Add01Icon,
+  Notification01Icon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  Cancel01Icon,
+  CheckmarkCircle02Icon,
+  AlertCircleIcon,
+  Delete02Icon,
+  Edit02Icon,
+  Copy01Icon,
+  Download01Icon,
+  Upload01Icon,
+  FilterIcon,
+  SortByUpIcon,
+  RefreshIcon,
+  ArrowLeft02Icon,
+  ArrowRight02Icon,
+  Calendar03Icon,
+  Clock01Icon,
+  Mail01Icon,
+  AiPhone01Icon,
+  Building06Icon,
+  Tag01Icon,
+  File01Icon,
+  Image01Icon,
+  AttachmentIcon,
+  SendIcon,
+  MoreHorizontalCircleIcon,
+  UserCircleIcon,
+  Shield01Icon,
+  MoonIcon,
+  SunIcon,
+  ComputerIcon,
+  Menu01Icon,
+  ArrowDown01Icon,
+  ArrowUp01Icon,
+  PlayIcon,
+  PauseIcon,
+  StopIcon,
+  Loading03Icon,
+  ArrowDataTransferVerticalIcon,
+  KanbanIcon,
+  PieChart01Icon,
+  CustomerServiceIcon,
+  WhatsappIcon,
+  TelegramIcon,
+  AiChatIcon,
+  AiBrain01Icon,
+  BoltIcon,
+  CircleDotIcon,
+};
+
+export type IconComponent = typeof Home01Icon;
+
+export interface IconProps {
+  icon: IconComponent;
+  size?: number;
+  color?: string;
+  strokeWidth?: number;
+  className?: string;
+}
+
+export function Icon({ icon, size = 20, color = 'currentColor', strokeWidth = 1.5, className }: IconProps) {
+  return (
+    <HugeiconsIcon
+      icon={icon}
+      size={size}
+      color={color}
+      strokeWidth={strokeWidth}
+      className={className}
+    />
+  );
+}

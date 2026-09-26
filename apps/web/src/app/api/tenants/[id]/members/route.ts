@@ -6,7 +6,8 @@ import type { NextRequest} from 'next/server';
 
 import { extractUserId } from '@/lib/auth-utils';
 import { csrfProtection } from '@/lib/csrf';
-import { hasMinRole, getUserRole } from '@/lib/rbac';
+import { hasMinRole, getUserRole, canManageRole, type TenantRole } from '@/lib/rbac';
+import { logAuditEvent, extractRequestMeta } from '@/lib/audit';
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -57,7 +58,7 @@ export async function GET(request: NextRequest, { params }: Params) {
  */
 const addMemberSchema = z.object({
   email: z.string().email(),
-  role: z.enum(['member', 'admin']).default('member'),
+  role: z.enum(['member', 'admin', 'viewer']).default('member'),
 });
 
 export async function POST(request: NextRequest, { params }: Params) {
@@ -122,6 +123,18 @@ export async function POST(request: NextRequest, { params }: Params) {
           select: { id: true, name: true, email: true, image: true },
         },
       },
+    });
+
+    // Audit log
+    const meta = extractRequestMeta(request);
+    await logAuditEvent({
+      tenantId: id,
+      userId,
+      action: 'create',
+      entity: 'member',
+      entityId: member.id,
+      newValues: { email, role, userName: user.name },
+      ...meta,
     });
 
     return NextResponse.json({ member }, { status: 201 });

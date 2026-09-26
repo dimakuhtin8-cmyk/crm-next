@@ -60,13 +60,31 @@ export async function POST(request: NextRequest) {
     // Хэшируем пароль
     const passwordHash = await hash(password, 12);
 
-    // Создаем пользователя
+    // Создаем пользователя + тенант автоматически
+    const slug = sanitizedEmail.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
     const user = await prisma.user.create({
       data: {
         name: sanitizedName,
         email: sanitizedEmail,
         password: passwordHash,
-        emailVerified: new Date(), // для email/password сразу верифицируем
+        emailVerified: new Date(),
+        hasOnboarded: true,
+        tenantMembers: {
+          create: {
+            tenant: {
+              create: {
+                name: sanitizedName || sanitizedEmail.split('@')[0],
+                slug: `${slug}-${Date.now()}`,
+              },
+            },
+            role: 'owner',
+          },
+        },
+      },
+      include: {
+        tenantMembers: {
+          include: { tenant: { select: { id: true, slug: true } } },
+        },
       },
     });
 

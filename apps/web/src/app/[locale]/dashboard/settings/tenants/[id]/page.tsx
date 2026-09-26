@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { AI_PROVIDERS, getProvider } from '@/lib/ai/providers';
 
 interface Tenant {
   id: string;
@@ -13,6 +14,10 @@ interface Tenant {
   domain: string | null;
   logo: string | null;
   settings: string | null;
+  geminiApiKey: string | null;
+  aiProvider: string | null;
+  aiModel: string | null;
+  aiApiKey: string | null;
   createdAt: string;
   members: Array<{
     id: string;
@@ -29,7 +34,7 @@ export default function TenantDetailPage() {
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ name: '', slug: '', domain: '' });
+  const [form, setForm] = useState({ name: '', slug: '', domain: '', geminiApiKey: '', aiProvider: 'gemini', aiModel: '', aiApiKey: '' });
   const [error, setError] = useState<string | null>(null);
   const [newMemberEmail, setNewMemberEmail] = useState('');
   const [addingMember, setAddingMember] = useState(false);
@@ -47,6 +52,10 @@ export default function TenantDetailPage() {
         name: data.tenant.name,
         slug: data.tenant.slug,
         domain: data.tenant.domain || '',
+        geminiApiKey: data.tenant.geminiApiKey || '',
+        aiProvider: data.tenant.aiProvider || 'gemini',
+        aiModel: data.tenant.aiModel || '',
+        aiApiKey: data.tenant.aiApiKey || '',
       });
     } catch (error) {
       console.error('Failed to fetch tenant:', error);
@@ -67,6 +76,10 @@ export default function TenantDetailPage() {
           name: form.name,
           slug: form.slug,
           domain: form.domain || null,
+          geminiApiKey: form.geminiApiKey || null,
+          aiProvider: form.aiProvider || 'gemini',
+          aiModel: form.aiModel || null,
+          aiApiKey: form.aiApiKey || null,
         }),
       });
 
@@ -224,6 +237,131 @@ export default function TenantDetailPage() {
               </div>
               <Button variant="outline" onClick={() => setEditing(true)}>
                 Редагувати
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* AI Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle>AI-налаштування</CardTitle>
+          <CardDescription>Оберіть AI-провайдера та введіть API-ключ для AI-функцій CRM</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {editing ? (
+            <>
+              {/* Provider selector */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">AI-провайдер</label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {AI_PROVIDERS.filter(p => p.id !== 'custom').map((provider) => (
+                    <button
+                      key={provider.id}
+                      type="button"
+                      onClick={() => setForm(prev => ({ ...prev, aiProvider: provider.id, aiModel: provider.models[0]?.id || '' }))}
+                      className={`p-3 rounded-lg border text-left transition-all ${
+                        form.aiProvider === provider.id
+                          ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                          : 'border-border hover:border-primary/50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <img src={provider.logo} alt={provider.name} className="h-5 w-5 shrink-0" />
+                        <span className="text-xs font-medium leading-tight">{provider.name}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Selected provider info */}
+              {(() => {
+                const selectedProvider = getProvider(form.aiProvider);
+                if (!selectedProvider) return null;
+                return (
+                  <div className="p-3 bg-secondary/50 rounded-lg text-xs text-muted-foreground">
+                    {selectedProvider.description}
+                    <br />
+                    Безкоштовний тариф: {selectedProvider.freeQuota}
+                  </div>
+                );
+              })()}
+
+              {/* Model selector */}
+              {(() => {
+                const selectedProvider = getProvider(form.aiProvider);
+                if (!selectedProvider || selectedProvider.models.length <= 1) return null;
+                return (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Модель</label>
+                    <select
+                      value={form.aiModel}
+                      onChange={(e) => setForm(prev => ({ ...prev, aiModel: e.target.value }))}
+                      className="w-full p-2 rounded-md border border-border bg-background text-sm"
+                    >
+                      {selectedProvider.models.map((model) => (
+                        <option key={model.id} value={model.id}>
+                          {model.name} — {model.description}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                );
+              })()}
+
+              {/* API Key input */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">API-ключ</label>
+                <Input
+                  type="password"
+                  value={form.aiApiKey || form.geminiApiKey}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (form.aiProvider === 'gemini') {
+                      setForm(prev => ({ ...prev, geminiApiKey: val, aiApiKey: val }));
+                    } else {
+                      setForm(prev => ({ ...prev, aiApiKey: val, geminiApiKey: val }));
+                    }
+                  }}
+                  placeholder={getProvider(form.aiProvider)?.keyPlaceholder || 'your-api-key'}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Ваш ключ зберігається тільки у вашій компанії. Він не передається третім особам.
+                </p>
+              </div>
+
+              {/* Get key link */}
+              {getProvider(form.aiProvider)?.keyUrl && (
+                <a
+                  href={getProvider(form.aiProvider)!.keyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                >
+                  Отримати API-ключ {getProvider(form.aiProvider)!.name} →
+                </a>
+              )}
+            </>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{getProvider(tenant.aiProvider || 'gemini')?.logo || '🔷'}</span>
+                  <span className="font-medium">{getProvider(tenant.aiProvider || 'gemini')?.name || 'Gemini'}</span>
+                </div>
+                <span className={`text-xs px-2 py-1 rounded-full ${(tenant.aiApiKey || tenant.geminiApiKey) ? 'bg-green-500/10 text-green-600' : 'bg-yellow-500/10 text-yellow-600'}`}>
+                  {(tenant.aiApiKey || tenant.geminiApiKey) ? '✅ Підключено' : '⚠️ Не налаштовано'}
+                </span>
+              </div>
+              {(tenant.aiApiKey || tenant.geminiApiKey) && (
+                <p className="text-xs text-muted-foreground">
+                  Ключ: ••••{(tenant.aiApiKey || tenant.geminiApiKey || '').slice(-4)}
+                </p>
+              )}
+              <Button variant="outline" onClick={() => setEditing(true)}>
+                Налаштувати
               </Button>
             </div>
           )}

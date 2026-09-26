@@ -9,3 +9,5 @@ export { Dropdown } from './dropdown';
 export { EmptyState } from './empty-state';
 export { Table } from './table';
 export { Tooltip } from './tooltip';
+export { Label } from './label';
+export { Select } from './select';

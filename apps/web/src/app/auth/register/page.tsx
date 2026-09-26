@@ -185,7 +185,7 @@ export default function RegisterPage() {
 
         <p className="text-center text-sm text-muted-foreground">
           Вже є акаунт?{' '}
-          <Link href="/login" className="text-indigo-500 hover:text-indigo-400">
+          <Link href="/uk/auth/login" className="text-indigo-500 hover:text-indigo-400">
             Увійти
           </Link>
         </p>

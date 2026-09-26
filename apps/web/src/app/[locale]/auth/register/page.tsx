@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 
 import { Button, Input } from '@/components/ui';
+import { TelegramLoginWidget, type TelegramAuthData } from '@/components/auth/telegram-login-widget';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -64,6 +65,32 @@ export default function RegisterPage() {
       setIsLoading(false);
     }
   };
+
+  const handleTelegramAuth = useCallback(async (data: TelegramAuthData) => {
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      const res = await fetch('/uk/api/auth/callback/telegram', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      const result = await res.json();
+
+      if (result.success) {
+        router.push('/dashboard');
+        router.refresh();
+      } else {
+        setError(result.error || 'Ошибка авторизации через Telegram');
+      }
+    } catch {
+      setError('Помилка з\'єднання. Спробуйте ще раз.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [router]);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-4">
@@ -149,6 +176,20 @@ export default function RegisterPage() {
           </svg>
           Зареєструватися через Google
         </Button>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-border" />
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="bg-background px-2 text-foreground-secondary">або</span>
+          </div>
+        </div>
+
+        <TelegramLoginWidget
+          botUsername={process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || ''}
+          onAuth={handleTelegramAuth}
+        />
 
         <p className="text-center text-sm text-foreground-secondary">
           Вже є акаунт?{' '}

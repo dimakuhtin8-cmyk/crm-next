@@ -6,6 +6,7 @@ import type { NextRequest} from 'next/server';
 import { getAutomationRules, createAutomationRule, deleteAutomationRule, toggleAutomationRule } from '@/lib/automation/engine';
 import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
+import { withAuth } from '@/lib/auth-guard';
 
 /**
  * GET /api/automation/rules — List automation rules
@@ -41,7 +42,7 @@ const createRuleSchema = z.object({
   actionConfig: z.record(z.unknown()),
 });
 
-export async function POST(request: NextRequest) {
+async function POSTHandler(request: NextRequest) {
   const csrfError = csrfProtection(request);
   if (csrfError) return csrfError;
 
@@ -68,6 +69,8 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export const POST = withAuth({ permission: 'settings:update' })(POSTHandler);
+
 /**
  * PATCH /api/automation/rules — Toggle rule enabled/disabled
  */
@@ -76,7 +79,7 @@ const toggleRuleSchema = z.object({
   enabled: z.boolean(),
 });
 
-export async function PATCH(request: NextRequest) {
+async function PATCHHandler(request: NextRequest) {
   const csrfError = csrfProtection(request);
   if (csrfError) return csrfError;
 
@@ -100,6 +103,8 @@ export async function PATCH(request: NextRequest) {
   }
 }
 
+export const PATCH = withAuth({ permission: 'settings:update' })(PATCHHandler);
+
 /**
  * DELETE /api/automation/rules — Delete automation rule
  */
@@ -107,7 +112,7 @@ const deleteRuleSchema = z.object({
   ruleId: z.string(),
 });
 
-export async function DELETE(request: NextRequest) {
+async function DELETEHandler(request: NextRequest) {
   const csrfError = csrfProtection(request);
   if (csrfError) return csrfError;
 
@@ -128,3 +133,5 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Помилка видалення правила' }, { status: 500 });
   }
 }
+
+export const DELETE = withAuth({ permission: 'settings:update' })(DELETEHandler);

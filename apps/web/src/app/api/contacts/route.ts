@@ -4,12 +4,24 @@ import { z } from 'zod';
 import type { NextRequest} from 'next/server';
 
 import { csrfProtection } from '@/lib/csrf';
+import { decrypt } from '@/lib/encryption';
+import { extractUserId } from '@/lib/auth-utils';
+import { getUserRole } from '@/lib/rbac';
 import { getTenantQuery } from '@/lib/tenant-query';
+import { withAuth } from '@/lib/auth-guard';
+
+function safeDecrypt(value: string): string {
+  try {
+    return decrypt(value);
+  } catch {
+    return '[повреждён]';
+  }
+}
 
 /**
  * GET /api/contacts — List contacts (tenant-scoped, with search/filters)
  */
-export async function GET(request: NextRequest) {
+async function GETHandler(request: NextRequest) {
   const csrfError = csrfProtection(request);
   if (csrfError) return csrfError;
 
@@ -29,15 +41,20 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     const where: Record<string, unknown> = {};
+    // OR-условия (search, dataFilter) собираются в AND, чтобы не затирать
+    // друг друга одним ключом where.OR (см. баг search+member).
+    const andConditions: Record<string, unknown>[] = [];
 
     if (search) {
-      where.OR = [
-        { firstName: { contains: search } },
-        { lastName: { contains: search } },
-        { email: { contains: search } },
-        { phone: { contains: search } },
-        { company: { contains: search } },
-      ];
+      andConditions.push({
+        OR: [
+          { firstName: { contains: search } },
+          { lastName: { contains: search } },
+          { email: { contains: search } },
+          { phone: { contains: search } },
+          { company: { contains: search } },
+        ],
+      });
     }
 
     if (company) {
@@ -52,17 +69,37 @@ export async function GET(request: NextRequest) {
       where.tags = { some: { tag: { name: tag } } };
     }
 
+    // Apply RBAC data filter (injected by withAuth, field: ownerId)
+    const dataFilterParam = searchParams.get('_dataFilter');
+    if (dataFilterParam) {
+      try {
+        andConditions.push(JSON.parse(dataFilterParam));
+      } catch {}
+    }
+
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
+    }
+
     const [contacts, total] = await Promise.all([
       tq.contact.findMany({
         where,
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
+        include: { owner: { select: { id: true, name: true, email: true, image: true } } },
       }),
       tq.contact.count({ where }),
     ]);
 
-    return NextResponse.json({ contacts, total, page, limit });
+    // Decrypt sensitive fields
+    const decryptedContacts = contacts.map((contact: Record<string, unknown>) => ({
+      ...contact,
+      phone: contact.phone ? safeDecrypt(contact.phone as string) : contact.phone,
+      notes: contact.notes ? safeDecrypt(contact.notes as string) : contact.notes,
+    }));
+
+    return NextResponse.json({ contacts: decryptedContacts, total, page, limit });
   } catch (error) {
     console.error('List contacts error:', error);
     return NextResponse.json(
@@ -85,10 +122,11 @@ const createContactSchema = z.object({
   notes: z.string().max(5000).optional().nullable(),
   source: z.string().max(50).optional().nullable(),
   status: z.enum(['active', 'inactive', 'lead', 'client']).default('active'),
+  ownerId: z.string().optional().nullable(),
   tagIds: z.array(z.string()).optional(),
 });
 
-export async function POST(request: NextRequest) {
+async function POSTHandler(request: NextRequest) {
   const csrfError = csrfProtection(request);
   if (csrfError) return csrfError;
 
@@ -107,16 +145,53 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { tagIds, ...contactData } = parsed.data;
+    const { tagIds, ownerId: requestedOwnerId, ...contactData } = parsed.data;
+
+    // Owner resolution: explicit ownerId allowed only for admin+ (backend-validated,
+    // never trust the frontend picker). member assigning to someone else → 403.
+    // Default: the creator becomes the owner.
+    const creatorId = await extractUserId(request);
+    const tenantId = (tq as unknown as { tenantId: string }).tenantId;
+    let ownerId: string | null = creatorId;
+    if (requestedOwnerId !== undefined && requestedOwnerId !== null) {
+      const role = creatorId ? await getUserRole(creatorId, tenantId) : null;
+      if (role !== 'owner' && role !== 'admin') {
+        return NextResponse.json({ error: 'Призначати власника може лише admin' }, { status: 403 });
+      }
+      ownerId = requestedOwnerId;
+    }
+
+    // Encrypt sensitive fields before saving
+    const { encrypt } = await import('@/lib/encryption');
+    const encryptedData = {
+      ...contactData,
+      phone: contactData.phone ? encrypt(contactData.phone) : contactData.phone,
+      notes: contactData.notes ? encrypt(contactData.notes) : contactData.notes,
+    };
 
     const contact = await (tq.contact as unknown as {
       create: (args: { data: Record<string, unknown>; include?: Record<string, unknown> }) => Promise<unknown>;
     }).create({
       data: {
-        ...contactData,
+        ...encryptedData,
+        ownerId,
         tags: tagIds?.length ? { create: tagIds.map((tagId) => ({ tagId })) } : undefined,
       },
       include: { tags: { include: { tag: true } } },
+    });
+
+    // Audit log
+    const { logAuditEvent, extractRequestMeta } = await import('@/lib/audit');
+    const meta = extractRequestMeta(request);
+    const userId = (tq as unknown as { userId: string }).userId;
+    await logAuditEvent({
+      tenantId: (tq as unknown as { tenantId: string }).tenantId,
+      userId,
+      action: 'create',
+      entity: 'contact',
+      entityId: (contact as { id: string }).id,
+      newValues: { firstName: contactData.firstName, email: contactData.email, company: contactData.company },
+      ...meta,
     });
 
     return NextResponse.json({ contact }, { status: 201 });
@@ -128,3 +203,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const GET = withAuth({ dataFilter: true, dataField: 'ownerId' })(GETHandler);
+export const POST = withAuth({ permission: 'contact:create' })(POSTHandler);

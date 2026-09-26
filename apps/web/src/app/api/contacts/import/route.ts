@@ -4,12 +4,13 @@ import type { NextRequest} from 'next/server';
 
 import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
+import { withAuth } from '@/lib/auth-guard';
 
 /**
  * POST /api/contacts/import — Import contacts from CSV
  * Accepts JSON array of rows with column mapping
  */
-export async function POST(request: NextRequest) {
+async function POSTHandler(request: NextRequest) {
   const csrfError = csrfProtection(request);
   if (csrfError) return csrfError;
 
@@ -86,3 +87,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = withAuth({ permission: 'contact:create' })(POSTHandler);

@@ -6,11 +6,12 @@ import type { NextRequest} from 'next/server';
 import { csrfProtection } from '@/lib/csrf';
 import { notifyTaskEvent } from '@/lib/telegram/notifications';
 import { getTenantQuery } from '@/lib/tenant-query';
+import { withAuth } from '@/lib/auth-guard';
 
 /**
  * GET /api/tasks — List tasks (tenant-scoped, with filters)
  */
-export async function GET(request: NextRequest) {
+async function GETHandler(request: NextRequest) {
   const csrfError = csrfProtection(request);
   if (csrfError) return csrfError;
 
@@ -43,6 +44,15 @@ export async function GET(request: NextRequest) {
     if (dealId) where.dealId = dealId;
     if (dueBefore) where.dueDate = { ...(where.dueDate as Record<string, unknown> || {}), lte: new Date(dueBefore) };
     if (dueAfter) where.dueDate = { ...(where.dueDate as Record<string, unknown> || {}), gte: new Date(dueAfter) };
+
+    // Apply RBAC data filter (injected by withAuth)
+    const dataFilterParam = searchParams.get('_dataFilter');
+    if (dataFilterParam) {
+      try {
+        const dataFilter = JSON.parse(dataFilterParam);
+        Object.assign(where, dataFilter);
+      } catch {}
+    }
 
     const [tasks, total] = await Promise.all([
       tq.task.findMany({
@@ -79,7 +89,7 @@ const createTaskSchema = z.object({
   recurrenceRule: z.string().max(100).optional().nullable(),
 });
 
-export async function POST(request: NextRequest) {
+async function POSTHandler(request: NextRequest) {
   const csrfError = csrfProtection(request);
   if (csrfError) return csrfError;
 
@@ -127,3 +137,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Помилка створення задачі' }, { status: 500 });
   }
 }
+
+export const GET = withAuth({ dataFilter: true })(GETHandler);
+export const POST = withAuth({ permission: 'task:create' })(POSTHandler);

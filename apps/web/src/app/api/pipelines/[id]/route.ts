@@ -5,6 +5,7 @@ import type { NextRequest} from 'next/server';
 
 import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
+import { withAuth } from '@/lib/auth-guard';
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -13,7 +14,7 @@ interface Params {
 /**
  * GET /api/pipelines/[id] — Get pipeline with stages
  */
-export async function GET(request: NextRequest, { params }: Params) {
+async function GETHandler(request: NextRequest, { params }: Params) {
   const csrfError = csrfProtection(request);
   if (csrfError) return csrfError;
 
@@ -47,7 +48,7 @@ const updatePipelineSchema = z.object({
   })).optional(),
 });
 
-export async function PUT(request: NextRequest, { params }: Params) {
+async function PUTHandler(request: NextRequest, { params }: Params) {
   const csrfError = csrfProtection(request);
   if (csrfError) return csrfError;
 
@@ -63,6 +64,15 @@ export async function PUT(request: NextRequest, { params }: Params) {
         { error: 'Невірні дані', details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
+    }
+
+    // Ownership check BEFORE any stage mutations
+    const owned = await tq.pipeline.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!owned) {
+      return NextResponse.json({ error: 'Воронку не знайдено' }, { status: 404 });
     }
 
     if (parsed.data.name) {
@@ -97,7 +107,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
 /**
  * DELETE /api/pipelines/[id] — Delete pipeline
  */
-export async function DELETE(request: NextRequest, { params }: Params) {
+async function DELETEHandler(request: NextRequest, { params }: Params) {
   const csrfError = csrfProtection(request);
   if (csrfError) return csrfError;
 
@@ -116,6 +126,16 @@ export async function DELETE(request: NextRequest, { params }: Params) {
       );
     }
 
+    // Ownership check (deal.count is tenant-scoped, so a foreign id yields 0 —
+    // verify explicitly to avoid deleting another tenant's pipeline)
+    const owned = await tq.pipeline.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!owned) {
+      return NextResponse.json({ error: 'Воронку не знайдено' }, { status: 404 });
+    }
+
     await tq.pipeline.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -123,3 +143,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Помилка видалення воронки' }, { status: 500 });
   }
 }
+
+export const GET = withAuth()(GETHandler);
+export const PUT = withAuth({ permission: 'pipeline:update' })(PUTHandler);
+export const DELETE = withAuth({ permission: 'pipeline:delete' })(DELETEHandler);

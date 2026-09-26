@@ -273,8 +273,11 @@ async function handleCallbackQuery(tenantId: string, query: TelegramCallbackQuer
 
   if (data.startsWith('task_done:')) {
     const taskId = data.replace('task_done:', '');
+    // Tenant-scoped: a foreign taskId must not be completable via bot callback
+    const ownedTask = await prisma.task.findFirst({ where: { id: taskId, tenantId }, select: { id: true } });
+    if (!ownedTask) return;
     await prisma.task.update({ where: { id: taskId }, data: { status: 'done' } });
-    const task = await prisma.task.findUnique({ where: { id: taskId } });
+    const task = await prisma.task.findFirst({ where: { id: taskId, tenantId } });
     await editMessageText(tenant.telegramBotToken, chatId, query.message!.message_id,
       `✅ <b>${task?.title || 'Задачу'}</b> позначено як виконану!`,
       { parse_mode: 'HTML' },
@@ -284,8 +287,8 @@ async function handleCallbackQuery(tenantId: string, query: TelegramCallbackQuer
 
   if (data.startsWith('deal:')) {
     const dealId = data.replace('deal:', '');
-    const deal = await prisma.deal.findUnique({
-      where: { id: dealId },
+    const deal = await prisma.deal.findFirst({
+      where: { id: dealId, tenantId },
       include: { stage: true },
     });
 

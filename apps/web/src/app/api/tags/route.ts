@@ -5,11 +5,12 @@ import type { NextRequest} from 'next/server';
 
 import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
+import { withAuth } from '@/lib/auth-guard';
 
 /**
  * GET /api/tags — List tags (tenant-scoped)
  */
-export async function GET(request: NextRequest) {
+async function GETHandler(request: NextRequest) {
   const csrfError = csrfProtection(request);
   if (csrfError) return csrfError;
 
@@ -33,6 +34,8 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export const GET = withAuth()(GETHandler);
+
 /**
  * POST /api/tags — Create tag
  */
@@ -41,7 +44,7 @@ const createTagSchema = z.object({
   color: z.string().max(7).optional(),
 });
 
-export async function POST(request: NextRequest) {
+async function POSTHandler(request: NextRequest) {
   const csrfError = csrfProtection(request);
   if (csrfError) return csrfError;
 
@@ -84,3 +87,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = withAuth({ permission: 'contact:update' })(POSTHandler);

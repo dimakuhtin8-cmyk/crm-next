@@ -6,6 +6,7 @@ import type { NextRequest} from 'next/server';
 import { extractUserId } from '@/lib/auth-utils';
 import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
+import { withAuth } from '@/lib/auth-guard';
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -23,6 +24,14 @@ export async function GET(request: NextRequest, { params }: Params) {
     if (!tq) return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
 
     const { id } = await params;
+    // Ownership check: comments of a foreign task must not leak
+    const owned = await tq.task.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!owned) {
+      return NextResponse.json({ error: 'Задачу не знайдено' }, { status: 404 });
+    }
     const comments = await tq.taskComment.findMany({
       where: { taskId: id },
       orderBy: { createdAt: 'asc' },
@@ -42,7 +51,7 @@ const createCommentSchema = z.object({
   body: z.string().min(1).max(5000),
 });
 
-export async function POST(request: NextRequest, { params }: Params) {
+async function POSTHandler(request: NextRequest, { params }: Params) {
   const csrfError = csrfProtection(request);
   if (csrfError) return csrfError;
 
@@ -52,6 +61,15 @@ export async function POST(request: NextRequest, { params }: Params) {
 
     const { id } = await params;
     const userId = await extractUserId(request);
+
+    // Ownership check: cannot comment on a foreign task
+    const owned = await tq.task.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!owned) {
+      return NextResponse.json({ error: 'Задачу не знайдено' }, { status: 404 });
+    }
 
     const body = await request.json();
     const parsed = createCommentSchema.safeParse(body);
@@ -76,3 +94,5 @@ export async function POST(request: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Помилка створення коментаря' }, { status: 500 });
   }
 }
+
+export const POST = withAuth({ permission: 'task:update' })(POSTHandler);

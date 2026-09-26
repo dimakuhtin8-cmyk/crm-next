@@ -17,7 +17,7 @@ export async function notifyTaskEvent(
   });
   if (!tenant?.whatsappApiKey || !tenant.whatsappPhoneNumberId) return;
 
-  const task = await prisma.task.findUnique({ where: { id: taskId } });
+  const task = await prisma.task.findFirst({ where: { id: taskId, tenantId } });
   if (!task) return;
 
   const text = taskNotificationText({
@@ -52,7 +52,7 @@ export async function notifyDealEvent(
   });
   if (!tenant?.whatsappApiKey || !tenant.whatsappPhoneNumberId) return;
 
-  const deal = await prisma.deal.findUnique({ where: { id: dealId } });
+  const deal = await prisma.deal.findFirst({ where: { id: dealId, tenantId } });
   if (!deal) return;
 
   const text = dealNotificationText({

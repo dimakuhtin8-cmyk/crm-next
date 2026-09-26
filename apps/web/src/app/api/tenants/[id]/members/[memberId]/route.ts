@@ -70,16 +70,39 @@ export async function PUT(request: NextRequest, { params }: Params) {
       );
     }
 
-    // Cannot change owner role
+    // Owner management: only an owner may touch another owner,
+    // and the last owner can never be demoted.
     if (targetMember.role === 'owner') {
+      if (requesterRole !== 'owner') {
+        return NextResponse.json(
+          { error: 'Недостатньо прав для зміни ролі власника' },
+          { status: 403 }
+        );
+      }
+      const ownerCount = await prisma.tenantMember.count({
+        where: { tenantId, role: 'owner' },
+      });
+      if (ownerCount <= 1) {
+        return NextResponse.json(
+          { error: 'Не можна понизити останнього власника' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Desired-role check: actor must strictly outrank the NEW role.
+    // (Previously only the target's CURRENT role was checked, so an admin
+    // could appoint another admin.)
+    if (!canManageRole(requesterRole, role)) {
       return NextResponse.json(
-        { error: 'Не можна змінювати роль власника' },
-        { status: 400 }
+        { error: 'Недостатньо прав для призначення цієї ролі' },
+        { status: 403 }
       );
     }
 
-    // Check hierarchy
-    if (!canManageRole(requesterRole, targetMember.role as TenantRole)) {
+    // Check hierarchy against the target's current role
+    // (skipped for owner→owner, handled above)
+    if (targetMember.role !== 'owner' && !canManageRole(requesterRole, targetMember.role as TenantRole)) {
       return NextResponse.json(
         { error: 'Недостатньо прав для зміни ролі' },
         { status: 403 }
@@ -143,12 +166,24 @@ export async function DELETE(request: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'Учасника не знайдено' }, { status: 404 });
     }
 
-    // Cannot remove owner
+    // Owner removal: only an owner may remove another owner,
+    // and the last owner can never be removed.
     if (targetMember.role === 'owner') {
-      return NextResponse.json(
-        { error: 'Не можна видаляти власника' },
-        { status: 400 }
-      );
+      if (requesterRole !== 'owner') {
+        return NextResponse.json(
+          { error: 'Недостатньо прав для видалення власника' },
+          { status: 403 }
+        );
+      }
+      const ownerCount = await prisma.tenantMember.count({
+        where: { tenantId, role: 'owner' },
+      });
+      if (ownerCount <= 1) {
+        return NextResponse.json(
+          { error: 'Не можна видалити останнього власника' },
+          { status: 400 }
+        );
+      }
     }
 
     // Cannot remove self (use leave instead)
@@ -159,8 +194,8 @@ export async function DELETE(request: NextRequest, { params }: Params) {
       );
     }
 
-    // Check hierarchy
-    if (!canManageRole(requesterRole, targetMember.role as TenantRole)) {
+    // Check hierarchy (skipped for owner→owner, handled above)
+    if (targetMember.role !== 'owner' && !canManageRole(requesterRole, targetMember.role as TenantRole)) {
       return NextResponse.json(
         { error: 'Недостатньо прав для видалення учасника' },
         { status: 403 }

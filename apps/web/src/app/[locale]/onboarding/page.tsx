@@ -15,6 +15,13 @@ const DEFAULT_STAGES = [
   'Лід', 'Кваліфікація', 'Пропозиція', 'Переговори', 'Завершено',
 ];
 
+const BENEFITS = [
+  'Автоматичне розподілення задач по етапах воронки',
+  'Шаблони документів та КП за 1 клік',
+  'AI-аналітика та рекомендації по угодам',
+  'Нагадування про важливі дії та дедлайни',
+];
+
 export default function OnboardingPage() {
   const router = useRouter();
   const [step, setStep] = useState(0);
@@ -22,18 +29,27 @@ export default function OnboardingPage() {
   const [industry, setIndustry] = useState('');
   const [stages, setStages] = useState<string[]>(DEFAULT_STAGES);
   const [loading, setLoading] = useState(false);
+  const [showSkipConfirm, setShowSkipConfirm] = useState(false);
 
   const handleSubmit = async () => {
     setLoading(true);
     try {
       const res = await fetch('/api/onboarding', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ companyName, industry, pipelineStages: stages }),
       });
+      const data = await res.json();
       if (res.ok) {
-        router.push('/dashboard');
+        window.location.href = '/dashboard';
+      } else {
+        console.error('Onboarding error:', data);
+        alert(data.error || 'Помилка збереження. Спробуйте ще раз.');
       }
+    } catch (err) {
+      console.error('Network error:', err);
+      alert('Помилка з\'єднання. Перевірте чи ви увійшли в систему.');
     } finally {
       setLoading(false);
     }
@@ -72,10 +88,46 @@ export default function OnboardingPage() {
                 <Button onClick={() => setStep(1)} className="w-full" size="lg">
                   Почати налаштування
                 </Button>
-                <Button onClick={handleSubmit} variant="ghost" className="w-full">
+                <Button onClick={() => setShowSkipConfirm(true)} variant="ghost" className="w-full">
                   Пропустити налаштування
                 </Button>
               </div>
+
+              {/* Skip confirmation modal */}
+              {showSkipConfirm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground-inverse/50 backdrop-blur-sm">
+                  <Card className="w-full max-w-md mx-4">
+                    <CardContent className="p-6 space-y-4">
+                      <div className="text-center">
+                        <div className="text-3xl mb-2">💡</div>
+                        <h3 className="text-lg font-bold">Пропустити налаштування?</h3>
+                        <p className="text-foreground-muted text-sm mt-2">
+                          Налаштування займає лише 2 хвилини і дає переваги:
+                        </p>
+                      </div>
+                      <ul className="space-y-2">
+                        {BENEFITS.map((benefit, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm">
+                            <span className="text-primary mt-0.5">✓</span>
+                            <span>{benefit}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <p className="text-foreground-muted text-xs text-center">
+                        Ви зможете налаштувати це пізніше в Налаштуваннях
+                      </p>
+                      <div className="flex gap-3">
+                        <Button onClick={() => setShowSkipConfirm(false)} variant="outline" className="flex-1">
+                          Все ж таки налаштувати
+                        </Button>
+                        <Button onClick={handleSubmit} variant="ghost" className="flex-1">
+                          Пропустити
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
             </div>
           )}
 

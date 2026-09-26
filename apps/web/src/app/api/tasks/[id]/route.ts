@@ -6,6 +6,7 @@ import type { NextRequest} from 'next/server';
 import { csrfProtection } from '@/lib/csrf';
 import { notifyTaskEvent } from '@/lib/telegram/notifications';
 import { getTenantQuery } from '@/lib/tenant-query';
+import { withAuth } from '@/lib/auth-guard';
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -14,7 +15,7 @@ interface Params {
 /**
  * GET /api/tasks/[id] — Get task details with comments
  */
-export async function GET(request: NextRequest, { params }: Params) {
+async function GETHandler(request: NextRequest, { params }: Params) {
   const csrfError = csrfProtection(request);
   if (csrfError) return csrfError;
 
@@ -71,7 +72,7 @@ function getNextDueDate(dueDate: Date, rule: string): Date | null {
   return next;
 }
 
-export async function PUT(request: NextRequest, { params }: Params) {
+async function PUTHandler(request: NextRequest, { params }: Params) {
   const csrfError = csrfProtection(request);
   if (csrfError) return csrfError;
 
@@ -92,6 +93,15 @@ export async function PUT(request: NextRequest, { params }: Params) {
     const data = { ...parsed.data } as Record<string, unknown>;
     if (parsed.data.dueDate !== undefined) data.dueDate = parsed.data.dueDate ? new Date(parsed.data.dueDate) : null;
     if (parsed.data.reminderAt !== undefined) data.reminderAt = parsed.data.reminderAt ? new Date(parsed.data.reminderAt) : null;
+
+    // Ownership check BEFORE update
+    const owned = await tq.task.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!owned) {
+      return NextResponse.json({ error: 'Задачу не знайдено' }, { status: 404 });
+    }
 
     const task = await tq.task.update({
       where: { id },
@@ -141,7 +151,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
 /**
  * DELETE /api/tasks/[id] — Delete task
  */
-export async function DELETE(request: NextRequest, { params }: Params) {
+async function DELETEHandler(request: NextRequest, { params }: Params) {
   const csrfError = csrfProtection(request);
   if (csrfError) return csrfError;
 
@@ -150,6 +160,13 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     if (!tq) return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
 
     const { id } = await params;
+    const owned = await tq.task.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!owned) {
+      return NextResponse.json({ error: 'Задачу не знайдено' }, { status: 404 });
+    }
     await tq.task.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -157,3 +174,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Помилка видалення задачі' }, { status: 500 });
   }
 }
+
+export const GET = withAuth()(GETHandler);
+export const PUT = withAuth({ permission: 'task:update' })(PUTHandler);
+export const DELETE = withAuth({ permission: 'task:delete' })(DELETEHandler);

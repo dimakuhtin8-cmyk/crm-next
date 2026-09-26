@@ -5,11 +5,12 @@ import type { NextRequest} from 'next/server';
 
 import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
+import { withAuth } from '@/lib/auth-guard';
 
 /**
  * GET /api/pipelines — List pipelines with stages
  */
-export async function GET(request: NextRequest) {
+async function GETHandler(request: NextRequest) {
   const csrfError = csrfProtection(request);
   if (csrfError) return csrfError;
 
@@ -42,7 +43,7 @@ const createPipelineSchema = z.object({
   })).min(1).max(20),
 });
 
-export async function POST(request: NextRequest) {
+async function POSTHandler(request: NextRequest) {
   const csrfError = csrfProtection(request);
   if (csrfError) return csrfError;
 
@@ -88,3 +89,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Помилка створення воронки' }, { status: 500 });
   }
 }
+
+export const GET = withAuth()(GETHandler);
+export const POST = withAuth({ permission: 'pipeline:create' })(POSTHandler);

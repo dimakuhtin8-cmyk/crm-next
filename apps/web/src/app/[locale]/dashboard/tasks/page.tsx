@@ -50,7 +50,9 @@ export default function TasksPage() {
   const [filterPriority, setFilterPriority] = useState('');
   const [page, setPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
-  const [view, setView] = useState<'list' | 'kanban'>('list');
+  const [view, setView] = useState<'list' | 'kanban' | 'calendar'>('list');
+  const [draggedTask, setDraggedTask] = useState<Task | null>(null);
+  const [dragOverStatus, setDragOverStatus] = useState<string | null>(null);
 
   useEffect(() => { fetchTasks(); }, [page, filterStatus, filterPriority]);
 
@@ -90,6 +92,74 @@ export default function TasksPage() {
 
   const isOverdue = (t: Task) => t.dueDate && t.status !== 'done' && t.status !== 'cancelled' && new Date(t.dueDate) < new Date();
 
+  // Drag-and-drop handlers
+  const handleDragStart = (task: Task) => setDraggedTask(task);
+  const handleDragEnd = () => {
+    setDraggedTask(null);
+    setDragOverStatus(null);
+  };
+  const handleDragOver = (e: React.DragEvent, status: string) => {
+    e.preventDefault();
+    setDragOverStatus(status);
+  };
+  const handleDragLeave = () => setDragOverStatus(null);
+
+  const handleDrop = async (newStatus: string) => {
+    if (!draggedTask || draggedTask.status === newStatus) {
+      handleDragEnd();
+      return;
+    }
+    // Optimistic update
+    setTasks((prev) =>
+      prev.map((t) => (t.id === draggedTask.id ? { ...t, status: newStatus } : t))
+    );
+    try {
+      await fetch(`/api/tasks/${draggedTask.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+    } catch {
+      fetchTasks();
+    }
+    handleDragEnd();
+  };
+
+  // Calendar helpers
+  const getCalendarDays = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startOffset = firstDay.getDay();
+    const days: Array<{ date: Date; tasks: Task[]; isCurrentMonth: boolean }> = [];
+    
+    // Previous month padding
+    for (let i = startOffset - 1; i >= 0; i--) {
+      const date = new Date(year, month, -i);
+      days.push({ date, tasks: tasks.filter(t => t.dueDate && isSameDay(new Date(t.dueDate), date)), isCurrentMonth: false });
+    }
+    
+    // Current month
+    for (let d = 1; d <= lastDay.getDate(); d++) {
+      const date = new Date(year, month, d);
+      days.push({ date, tasks: tasks.filter(t => t.dueDate && isSameDay(new Date(t.dueDate), date)), isCurrentMonth: true });
+    }
+    
+    // Next month padding
+    const remaining = 42 - days.length;
+    for (let d = 1; d <= remaining; d++) {
+      const date = new Date(year, month + 1, d);
+      days.push({ date, tasks: tasks.filter(t => t.dueDate && isSameDay(new Date(t.dueDate), date)), isCurrentMonth: false });
+    }
+    
+    return days;
+  };
+
+  const isSameDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+
   // Kanban: group tasks by status
   const kanbanColumns = Object.entries(statusConfig).map(([key, cfg]) => ({
     key,
@@ -118,6 +188,12 @@ export default function TasksPage() {
               className={cn('px-3 py-1.5 text-sm transition-colors', view === 'kanban' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-secondary')}
             >
               Канбан
+            </button>
+            <button
+              onClick={() => setView('calendar')}
+              className={cn('px-3 py-1.5 text-sm transition-colors', view === 'calendar' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-secondary')}
+            >
+              Календар
             </button>
           </div>
           <Link href="/dashboard/tasks/new">
@@ -232,7 +308,16 @@ export default function TasksPage() {
         ) : (
           <div className="flex gap-4 overflow-x-auto pb-4">
             {kanbanColumns.map((col) => (
-              <div key={col.key} className={cn('flex-shrink-0 w-72 flex flex-col rounded-xl border border-border bg-secondary/30')}>
+              <div
+                key={col.key}
+                onDragOver={(e) => handleDragOver(e, col.key)}
+                onDragLeave={handleDragLeave}
+                onDrop={() => handleDrop(col.key)}
+                className={cn(
+                  'flex-shrink-0 w-72 flex flex-col rounded-xl border border-border bg-secondary/30 transition-colors',
+                  dragOverStatus === col.key && 'border-primary bg-primary/5 ring-2 ring-primary/20',
+                )}
+              >
                 <div className={cn('flex items-center justify-between p-3 border-b border-border border-t-2', col.color)}>
                   <div className="flex items-center gap-2">
                     <h3 className="font-medium text-sm">{col.label}</h3>
@@ -243,10 +328,14 @@ export default function TasksPage() {
                   {col.tasks.map((task) => (
                     <div
                       key={task.id}
+                      draggable
+                      onDragStart={() => handleDragStart(task)}
+                      onDragEnd={handleDragEnd}
                       onClick={() => router.push(`/dashboard/tasks/${task.id}`)}
                       className={cn(
                         'p-3 bg-card rounded-lg border border-border cursor-pointer hover:shadow-md transition-all',
                         isOverdue(task) && 'border-l-2 border-l-danger',
+                        draggedTask?.id === task.id && 'opacity-50 scale-95',
                       )}
                     >
                       <div className="flex items-center gap-2 mb-1">
@@ -270,6 +359,65 @@ export default function TasksPage() {
               </div>
             ))}
           </div>
+        )
+      )}
+
+      {/* CALENDAR VIEW */}
+      {view === 'calendar' && (
+        loading ? (
+          <div className="h-96 bg-muted rounded-lg animate-pulse" />
+        ) : (
+          <Card>
+            <div className="p-4 border-b border-border">
+              <h2 className="font-semibold">
+                {new Date().toLocaleDateString('uk-UA', { month: 'long', year: 'numeric' })}
+              </h2>
+            </div>
+            <div className="grid grid-cols-7 gap-px bg-border">
+              {['Нд', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'].map((day) => (
+                <div key={day} className="bg-background p-2 text-center text-xs font-medium text-foreground-muted">
+                  {day}
+                </div>
+              ))}
+              {getCalendarDays().map((day, i) => {
+                const isToday = isSameDay(day.date, new Date());
+                return (
+                  <div
+                    key={i}
+                    className={cn(
+                      'bg-background p-2 min-h-[80px]',
+                      !day.isCurrentMonth && 'text-foreground-muted/50',
+                    )}
+                  >
+                    <div className={cn(
+                      'text-sm font-medium mb-1',
+                      isToday && 'bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center',
+                    )}>
+                      {day.date.getDate()}
+                    </div>
+                    <div className="space-y-1">
+                      {day.tasks.slice(0, 3).map((task) => (
+                        <div
+                          key={task.id}
+                          onClick={() => router.push(`/dashboard/tasks/${task.id}`)}
+                          className={cn(
+                            'text-xs p-1 rounded truncate cursor-pointer hover:bg-secondary/50',
+                            task.status === 'done' ? 'line-through text-foreground-muted' : 'bg-primary/10',
+                            isOverdue(task) && 'bg-danger/10 text-danger',
+                          )}
+                        >
+                          {task.title}
+                        </div>
+                      ))}
+                      {day.tasks.length > 3 && (
+                        <p className="text-xs text-foreground-muted">+{day.tasks.length - 3}</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
         )
       )}
 

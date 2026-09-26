@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { Phone, Mail, Users, CheckSquare, StickyNote, MessageSquare } from 'lucide-react';
 
 import { Button, Card, CardContent, Badge } from '@/components/ui';
 import { cn } from '@/lib/utils';
@@ -15,13 +16,13 @@ interface Activity {
   contactId: string | null;
 }
 
-const typeConfig: Record<string, { icon: string; color: string; label: string }> = {
-  call: { icon: '📞', color: 'bg-info/10 text-info border-info/20', label: 'Дзвінок' },
-  email: { icon: '✉️', color: 'bg-primary/10 text-primary border-primary/20', label: 'Лист' },
-  meeting: { icon: '🤝', color: 'bg-warning/10 text-warning border-warning/20', label: 'Зустріч' },
-  task: { icon: '📋', color: 'bg-secondary text-foreground-muted border-border', label: 'Задача' },
-  note: { icon: '📝', color: 'bg-success/10 text-success border-success/20', label: 'Нотатка' },
-  sms: { icon: '💬', color: 'bg-danger/10 text-danger border-danger/20', label: 'SMS' },
+const typeConfig: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
+  call: { icon: <Phone className="w-4 h-4" />, color: 'bg-info/10 text-info border-info/20', label: 'Дзвінок' },
+  email: { icon: <Mail className="w-4 h-4" />, color: 'bg-primary/10 text-primary border-primary/20', label: 'Лист' },
+  meeting: { icon: <Users className="w-4 h-4" />, color: 'bg-warning/10 text-warning border-warning/20', label: 'Зустріч' },
+  task: { icon: <CheckSquare className="w-4 h-4" />, color: 'bg-secondary text-foreground-muted border-border', label: 'Задача' },
+  note: { icon: <StickyNote className="w-4 h-4" />, color: 'bg-success/10 text-success border-success/20', label: 'Нотатка' },
+  sms: { icon: <MessageSquare className="w-4 h-4" />, color: 'bg-danger/10 text-danger border-danger/20', label: 'SMS' },
 };
 
 export default function TimelinePage() {
@@ -71,12 +72,12 @@ export default function TimelinePage() {
             className="h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="">Всі типи</option>
-            <option value="call">📞 Дзвінки</option>
-            <option value="email">✉️ Листи</option>
-            <option value="meeting">🤝 Зустрічі</option>
-            <option value="task">📋 Задачі</option>
-            <option value="note">📝 Нотатки</option>
-            <option value="sms">💬 SMS</option>
+            <option value="call">Дзвінки</option>
+            <option value="email">Листи</option>
+            <option value="meeting">Зустрічі</option>
+            <option value="task">Задачі</option>
+            <option value="note">Нотатки</option>
+            <option value="sms">SMS</option>
           </select>
         </div>
       </div>
