@@ -5,7 +5,7 @@ import { z } from 'zod';
 import type { NextRequest} from 'next/server';
 
 import { csrfProtection } from '@/lib/csrf';
-import { getSessionToken } from '@/lib/auth-utils';
+import { extractUserId } from '@/lib/auth-utils';
 import { checkRateLimit, getRateLimitHeaders, RATE_LIMITS } from '@/lib/rate-limit';
 
 /**
@@ -17,16 +17,7 @@ export async function GET(request: NextRequest) {
 
   try {
     // Get user from session (simplified — in real app use auth())
-    const token = getSessionToken(request);
-    if (!token) {
-      return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
-    }
-
-    const { jwtVerify } = await import('jose');
-    const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET);
-    const { payload } = await jwtVerify(token, secret);
-    const userId = payload.id as string;
-
+    const userId = await extractUserId(request);
     if (!userId) {
       return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
     }
@@ -104,16 +95,7 @@ export async function POST(request: NextRequest) {
     const { name, slug, domain } = parsed.data;
 
     // Get user from session
-    const token = getSessionToken(request);
-    if (!token) {
-      return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
-    }
-
-    const { jwtVerify } = await import('jose');
-    const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET);
-    const { payload } = await jwtVerify(token, secret);
-    const userId = payload.id as string;
-
+    const userId = await extractUserId(request);
     if (!userId) {
       return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
     }

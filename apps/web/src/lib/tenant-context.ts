@@ -3,8 +3,7 @@
  */
 
 import { prisma } from '@crm-next/database';
-import { jwtVerify } from 'jose';
-import { cookies } from 'next/headers';
+import { auth } from '@/auth/config';
 
 export interface Tenant {
   id: string;
@@ -16,19 +15,13 @@ export interface Tenant {
 }
 
 /**
- * Get current tenant from JWT token (server-side)
+ * Get current tenant from session (server-side).
+ * Uses NextAuth auth() so both JWE sessions and custom JWTs resolve.
  */
 export async function getCurrentTenant(): Promise<Tenant | null> {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('authjs.session-token')?.value
-      ?? cookieStore.get('__Secure-authjs.session-token')?.value;
-    if (!token) return null;
-
-    const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET);
-    const { payload } = await jwtVerify(token, secret);
-
-    const tenantId = payload.tenantId as string | undefined;
+    const session = await auth();
+    const tenantId = (session as unknown as { tenantId?: string } | null)?.tenantId;
     if (!tenantId) return null;
 
     const tenant = await prisma.tenant.findUnique({

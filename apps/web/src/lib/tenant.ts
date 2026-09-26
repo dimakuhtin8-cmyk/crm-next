@@ -9,9 +9,9 @@
  */
 
 import { prisma } from '@crm-next/database';
-import { jwtVerify } from 'jose';
-
 import type { NextRequest } from 'next/server';
+
+import { extractUser } from '@/lib/auth-utils';
 
 export interface TenantContext {
   tenantId: string | null;
@@ -71,17 +71,8 @@ async function extractFromDomain(hostname: string): Promise<string | null> {
  * Extract tenant from JWT token
  */
 async function extractFromJWT(request: NextRequest): Promise<string | null> {
-  const token = request.cookies.get('authjs.session-token')?.value
-    ?? request.cookies.get('__Secure-authjs.session-token')?.value;
-  if (!token) return null;
-
-  try {
-    const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET);
-    const { payload } = await jwtVerify(token, secret);
-    return (payload.tenantId as string) || null;
-  } catch {
-    return null;
-  }
+  const user = await extractUser(request);
+  return user?.tenantId || null;
 }
 
 /**

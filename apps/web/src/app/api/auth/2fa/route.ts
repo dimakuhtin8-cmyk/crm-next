@@ -11,27 +11,22 @@
  */
 
 import { NextResponse } from 'next/server';
+
+import type { NextRequest } from 'next/server';
 import { prisma } from '@crm-next/database';
 import { encrypt, decrypt } from '@/lib/encryption';
+import { extractUser } from '@/lib/auth-utils';
 import { generateTOTPSecret, verifyTOTP } from '@/lib/totp';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const url = new URL(request.url);
     const action = url.searchParams.get('action') || 'setup';
 
-    // Get user from session
-    const cookieHeader = request.headers.get('cookie') || '';
-    const tokenMatch = cookieHeader.match(/authjs\.session-token=([^;]+)/);
-    if (!tokenMatch) {
-      return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
-    }
-
-    const { jwtVerify } = await import('jose');
-    const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET);
-    const { payload } = await jwtVerify(tokenMatch[1], secret);
-    const userId = payload.id as string;
-    const tenantId = payload.tenantId as string;
+    // Get user from session (handles both NextAuth JWE and custom JWTs)
+    const session = await extractUser(request);
+    const userId = session?.id;
+    const tenantId = session?.tenantId;
 
     if (!userId || !tenantId) {
       return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
@@ -50,7 +45,8 @@ export async function POST(request: Request) {
         });
 
         const issuer = 'CRM-Next';
-        const account = (payload.email as string) || userId;
+        const dbUser = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+        const account = dbUser?.email || userId;
         const otpauthUrl =
           `otpauth://totp/${encodeURIComponent(issuer)}:${encodeURIComponent(account)}` +
           `?secret=${totpSecret}&issuer=${encodeURIComponent(issuer)}`;

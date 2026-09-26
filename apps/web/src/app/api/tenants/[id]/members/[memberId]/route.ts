@@ -5,7 +5,7 @@ import { z } from 'zod';
 import type { NextRequest} from 'next/server';
 
 import { csrfProtection } from '@/lib/csrf';
-import { getSessionToken } from '@/lib/auth-utils';
+import { extractUserId } from '@/lib/auth-utils';
 import { canManageRole, getUserRole, type TenantRole } from '@/lib/rbac';
 
 interface Params {
@@ -38,15 +38,10 @@ export async function PUT(request: NextRequest, { params }: Params) {
     const { role } = parsed.data;
 
     // Get requester from token
-    const token = getSessionToken(request);
-    if (!token) {
+    const requesterId = await extractUserId(request);
+    if (!requesterId) {
       return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
     }
-
-    const { jwtVerify } = await import('jose');
-    const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET);
-    const { payload } = await jwtVerify(token, secret);
-    const requesterId = payload.id as string;
 
     // Check requester has permission
     const requesterRole = await getUserRole(requesterId, tenantId);
@@ -142,15 +137,10 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     const { id: tenantId, memberId } = await params;
 
     // Get requester from token
-    const token = getSessionToken(request);
-    if (!token) {
+    const requesterId = await extractUserId(request);
+    if (!requesterId) {
       return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
     }
-
-    const { jwtVerify } = await import('jose');
-    const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET);
-    const { payload } = await jwtVerify(token, secret);
-    const requesterId = payload.id as string;
 
     // Check requester has permission
     const requesterRole = await getUserRole(requesterId, tenantId);
