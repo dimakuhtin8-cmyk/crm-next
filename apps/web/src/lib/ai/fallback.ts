@@ -64,7 +64,7 @@ export async function loadFallbackConfig(tenantId: string): Promise<FallbackConf
     tenantId,
     primaryProvider: tenant.aiProvider || 'gemini',
     primaryApiKey: primaryKey,
-    primaryModel: tenant.aiModel || getProvider(tenant.aiProvider || 'gemini')?.models[0]?.id || 'gemini-2.0-flash',
+    primaryModel: tenant.aiModel || getProvider(tenant.aiProvider || 'gemini')?.models[0]?.id || 'gemini-2.5-flash',
     fallbackProvider: tenant.aiFallbackProvider || undefined,
     fallbackApiKey: primaryKey, // Same key, different provider
     fallbackModel: undefined,

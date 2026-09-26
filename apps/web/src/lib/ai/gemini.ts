@@ -50,7 +50,7 @@ function resolveConfig(
     return null;
   }
 
-  const model = tenantAiModel || provider.models[0]?.id || 'gemini-2.0-flash';
+  const model = tenantAiModel || provider.models[0]?.id || 'gemini-2.5-flash';
   return { provider, apiKey, model };
 }
 

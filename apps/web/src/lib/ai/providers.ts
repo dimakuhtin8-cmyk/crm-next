@@ -30,9 +30,11 @@ export const AI_PROVIDERS: AiProvider[] = [
     keyPrefixes: ['AIza', 'AQ.'],
     freeQuota: '15 запитів/хв, 1500/день',
     models: [
-      { id: 'gemini-2.5-pro', name: 'Gemini 3.1 Pro', description: 'Розширені можливості (розв\'язання складних задач)' },
-      { id: 'gemini-2.5-flash', name: 'Gemini 3.6 Flash', description: 'Новинка — універсальна допомога' },
-      { id: 'gemini-2.0-flash-lite', name: 'Gemini 3.5 Flash-Lite', description: 'Найшвидші відповіді' },
+      { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', description: 'Універсальна, швидка (перевірено за API)' },
+      { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', description: 'Розширені можливості (перевірено за API)' },
+      { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash-Lite', description: 'Найшвидші відповіді (перевірено за API)' },
+      { id: 'gemini-3-flash-preview', name: 'Gemini 3 Flash (preview)', description: 'Попередня версія нового покоління' },
+      { id: 'gemini-3.1-pro-preview', name: 'Gemini 3.1 Pro (preview)', description: 'Попередня флагманська версія' },
     ],
   },
   {
