@@ -374,7 +374,7 @@ export function Sidebar({ collapsed = false, onToggle, onMobileClose }: SidebarP
               <p className="text-xs text-white/50 truncate">{user.email}</p>
             </div>
             <button
-              onClick={() => signOut({ callbackUrl: '/auth/login' })}
+              onClick={() => signOut({ callbackUrl: '/uk/auth/login' })}
               className="rounded-lg p-1.5 text-white/50 transition-all duration-200 hover:bg-danger/20 hover:text-danger"
               title="Вийти"
             >

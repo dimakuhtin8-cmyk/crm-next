@@ -404,7 +404,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
                     <button
                       onClick={() => {
                         setIsProfileOpen(false);
-                        signOut({ callbackUrl: '/auth/login' });
+                        signOut({ callbackUrl: '/uk/auth/login' });
                       }}
                       className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-danger hover:bg-danger-light transition-all duration-150"
                     >

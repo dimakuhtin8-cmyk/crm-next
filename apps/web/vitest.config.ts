@@ -6,12 +6,14 @@ export default defineConfig({
     environment: 'node',
     globals: true,
     include: ['src/**/*.test.ts'],
-    // Integration tests share one SQLite DB (dev.db) and wipe tables in
+    // Integration tests share one Postgres DB (crm_test) and wipe tables in
     // beforeAll/afterAll — files MUST run sequentially, otherwise they
     // delete each other's fixtures mid-run (flaky 401s).
+    // crm_test is separate from crm_dev so tests never touch dev data.
     fileParallelism: false,
     env: {
       ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+      DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/crm_test',
     },
   },
   resolve: {

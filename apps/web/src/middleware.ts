@@ -52,6 +52,12 @@ export function middleware(request: NextRequest) {
     const redirectUrl = new URL(`/uk${pathname}`, request.url);
     return NextResponse.redirect(redirectUrl, 301);
   }
+
+  // === REDIRECT: legacy /auth без locale → /uk/auth (legacy-страницы удалены) ===
+  if (pathname === '/auth' || pathname.startsWith('/auth/')) {
+    const redirectUrl = new URL(`/uk${pathname}`, request.url);
+    return NextResponse.redirect(redirectUrl, 301);
+  }
   
   // Rate Limiting только для API routes
   if (pathname.startsWith('/api/')) {
