@@ -24,10 +24,14 @@ async function POSTHandler(request: NextRequest) {
       return NextResponse.json({ error: 'Невідомий провайдер' }, { status: 400 });
     }
 
-    // Validate key prefix if provider has one
-    if (providerConfig.keyPrefix && !apiKey.startsWith(providerConfig.keyPrefix)) {
+    // Validate key prefix if provider has one (supports multiple, e.g. AIza + AQ. for Gemini)
+    const acceptedPrefixes = [
+      providerConfig.keyPrefix,
+      ...(providerConfig.keyPrefixes || []),
+    ].filter(Boolean);
+    if (acceptedPrefixes.length > 0 && !acceptedPrefixes.some((p) => apiKey.startsWith(p))) {
       return NextResponse.json({
-        error: `Невірний формат ключа. Ключ ${providerConfig.name} повинен починатися з "${providerConfig.keyPrefix}"`,
+        error: `Невірний формат ключа. Ключ ${providerConfig.name} повинен починатися з "${acceptedPrefixes.join('" або "')}"`,
       }, { status: 400 });
     }
 

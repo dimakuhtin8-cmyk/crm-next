@@ -6,6 +6,8 @@ export interface AiProvider {
   keyUrl: string;
   keyPlaceholder: string;
   keyPrefix: string;
+  /** Extra accepted prefixes (Google also issues AQ.* keys). */
+  keyPrefixes?: string[];
   models: AiModel[];
   freeQuota: string;
 }
@@ -23,8 +25,9 @@ export const AI_PROVIDERS: AiProvider[] = [
     logo: '/logos/gemini.webp',
     description: 'Від Google. Найкраще розуміє українську мову. 1M контекст.',
     keyUrl: 'https://aistudio.google.com/apikey',
-    keyPlaceholder: 'AIza...',
+    keyPlaceholder: 'AIza... / AQ....',
     keyPrefix: 'AIza',
+    keyPrefixes: ['AIza', 'AQ.'],
     freeQuota: '15 запитів/хв, 1500/день',
     models: [
       { id: 'gemini-2.5-pro', name: 'Gemini 3.1 Pro', description: 'Розширені можливості (розв\'язання складних задач)' },
