@@ -44,25 +44,29 @@ interface SessionPayload {
  *    verified via jwtVerify as a fallback.
  */
 async function verifySession(request: CookieCarrier): Promise<SessionPayload | null> {
-  // 1. NextAuth session (JWE)
-  try {
-    const decoded = await getToken({
-      req: request as unknown as Parameters<typeof getToken>[0]['req'],
-      secret: process.env.NEXTAUTH_SECRET,
-    });
-    if (decoded) {
-      const t = decoded as unknown as Record<string, unknown>;
-      const id = (t.id as string) || (decoded.sub as string);
-      if (id) {
-        return {
-          id,
-          tenantId: t.tenantId as string | undefined,
-          tenantSlug: t.tenantSlug as string | undefined,
-        };
+  // 1. NextAuth session (JWE). getToken does NOT auto-detect the __Secure-
+  // prefix, so try both cookie flavors explicitly (https prod vs localhost).
+  for (const secureCookie of [true, false]) {
+    try {
+      const decoded = await getToken({
+        req: request as unknown as Parameters<typeof getToken>[0]['req'],
+        secret: process.env.NEXTAUTH_SECRET,
+        secureCookie,
+      });
+      if (decoded) {
+        const t = decoded as unknown as Record<string, unknown>;
+        const id = (t.id as string) || (decoded.sub as string);
+        if (id) {
+          return {
+            id,
+            tenantId: t.tenantId as string | undefined,
+            tenantSlug: t.tenantSlug as string | undefined,
+          };
+        }
       }
+    } catch {
+      // try next flavor, then JWS fallback
     }
-  } catch {
-    // fall through to JWS check
   }
 
   // 2. Custom HS256 JWT fallback
