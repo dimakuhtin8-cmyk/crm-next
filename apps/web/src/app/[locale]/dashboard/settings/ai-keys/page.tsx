@@ -37,6 +37,7 @@ export default function AiKeysSettingsPage() {
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const currentProvider = getProvider(selectedProvider);
 
@@ -63,8 +64,8 @@ export default function AiKeysSettingsPage() {
     }
   }, [selectedProvider, currentProvider, selectedModel]);
 
-  const handleTestKey = async () => {
-    if (!apiKey.trim()) return;
+  const handleTestKey = async (): Promise<TestResult | null> => {
+    if (!apiKey.trim()) return null;
     setTesting(true);
     setTestResult(null);
 
@@ -79,17 +80,20 @@ export default function AiKeysSettingsPage() {
           model: selectedModel || undefined,
         }),
       });
-      const result = await res.json();
+      const result = (await res.json()) as TestResult;
       setTestResult(result);
+      return result;
     } catch {
-      setTestResult({
+      const fallback: TestResult = {
         status: 'error',
         message: 'Помилка з\'єднання з сервером',
         provider: selectedProvider,
         model: selectedModel || 'unknown',
         lastChecked: new Date(),
         latencyMs: 0,
-      });
+      };
+      setTestResult(fallback);
+      return fallback;
     } finally {
       setTesting(false);
     }
@@ -97,16 +101,18 @@ export default function AiKeysSettingsPage() {
 
   const handleSave = async () => {
     if (!apiKey.trim()) return;
+    setSaveError(null);
 
-    // If not tested yet, require test first
-    if (!testResult) {
-      await handleTestKey();
-      return;
+    // First click tests the key AND continues to save — no dead clicks.
+    let result = testResult;
+    if (!result) {
+      result = await handleTestKey();
+      if (!result) return;
     }
 
     // If test failed, require explicit confirmation
-    if (testResult.status === 'error') {
-      if (!window.confirm('Тест показав помилку. Зберегти попри помилку?')) {
+    if (result.status === 'error') {
+      if (!window.confirm(`Тест показав помилку: ${result.message}. Зберегти попри помилку?`)) {
         return;
       }
     }
@@ -130,8 +136,13 @@ export default function AiKeysSettingsPage() {
         setShowKey(false);
         setTestResult(null);
         setTimeout(() => setSaved(false), 3000);
+      } else {
+        const data = await res.json().catch(() => null);
+        setSaveError(data?.error || `Не вдалося зберегти (статус ${res.status})`);
       }
-    } catch {} finally {
+    } catch {
+      setSaveError('Помилка з\'єднання з сервером');
+    } finally {
       setSaving(false);
     }
   };
@@ -316,6 +327,14 @@ export default function AiKeysSettingsPage() {
               )}
             </Button>
           </div>
+
+          {/* Save error (previously swallowed silently) */}
+          {saveError && (
+            <div className="p-3 rounded-xl border border-red-500/30 bg-red-500/5">
+              <p className="text-sm font-medium text-red-800 dark:text-red-200">Не збережено</p>
+              <p className="text-xs text-foreground-muted mt-0.5">{saveError}</p>
+            </div>
+          )}
 
           {/* Test Result */}
           {testResult && (
