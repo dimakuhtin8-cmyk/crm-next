@@ -5,6 +5,7 @@ import { z } from 'zod';
 import type { NextRequest} from 'next/server';
 
 import { csrfProtection } from '@/lib/csrf';
+import { getSessionToken } from '@/lib/auth-utils';
 import { canManageRole, getUserRole, type TenantRole } from '@/lib/rbac';
 
 interface Params {
@@ -37,7 +38,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
     const { role } = parsed.data;
 
     // Get requester from token
-    const token = request.cookies.get('authjs.session-token')?.value;
+    const token = getSessionToken(request);
     if (!token) {
       return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
     }
@@ -141,7 +142,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     const { id: tenantId, memberId } = await params;
 
     // Get requester from token
-    const token = request.cookies.get('authjs.session-token')?.value;
+    const token = getSessionToken(request);
     if (!token) {
       return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
     }

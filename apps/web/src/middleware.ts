@@ -33,7 +33,8 @@ export function middleware(request: NextRequest) {
   }
 
   // === AUTH GUARD: защищаем dashboard маршруты ===
-  const sessionToken = request.cookies.get('authjs.session-token')?.value;
+  const sessionToken = request.cookies.get('authjs.session-token')?.value
+    ?? request.cookies.get('__Secure-authjs.session-token')?.value;
   const isDashboard = /^\/[^/]+\/dashboard/.test(pathname);
   const isAuthRoute = /^\/[^/]+\/auth\//.test(pathname);
   const isApiAuth = pathname.startsWith('/api/auth');

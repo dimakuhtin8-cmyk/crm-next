@@ -71,7 +71,8 @@ async function extractFromDomain(hostname: string): Promise<string | null> {
  * Extract tenant from JWT token
  */
 async function extractFromJWT(request: NextRequest): Promise<string | null> {
-  const token = request.cookies.get('authjs.session-token')?.value;
+  const token = request.cookies.get('authjs.session-token')?.value
+    ?? request.cookies.get('__Secure-authjs.session-token')?.value;
   if (!token) return null;
 
   try {

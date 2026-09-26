@@ -5,6 +5,7 @@ import { z } from 'zod';
 import type { NextRequest} from 'next/server';
 
 import { csrfProtection } from '@/lib/csrf';
+import { getSessionToken } from '@/lib/auth-utils';
 import { checkRateLimit, getRateLimitHeaders, RATE_LIMITS } from '@/lib/rate-limit';
 
 /**
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
 
   try {
     // Get user from session (simplified — in real app use auth())
-    const token = request.cookies.get('authjs.session-token')?.value;
+    const token = getSessionToken(request);
     if (!token) {
       return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
     }
@@ -103,7 +104,7 @@ export async function POST(request: NextRequest) {
     const { name, slug, domain } = parsed.data;
 
     // Get user from session
-    const token = request.cookies.get('authjs.session-token')?.value;
+    const token = getSessionToken(request);
     if (!token) {
       return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
     }

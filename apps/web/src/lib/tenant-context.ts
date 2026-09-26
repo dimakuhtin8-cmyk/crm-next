@@ -21,7 +21,8 @@ export interface Tenant {
 export async function getCurrentTenant(): Promise<Tenant | null> {
   try {
     const cookieStore = await cookies();
-    const token = cookieStore.get('authjs.session-token')?.value;
+    const token = cookieStore.get('authjs.session-token')?.value
+      ?? cookieStore.get('__Secure-authjs.session-token')?.value;
     if (!token) return null;
 
     const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET);
