@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 
+import { QuickCreatePopover, QuickContactForm } from '@/components/quick-create';
 import { Button, Input, Badge, Card, CardContent } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
@@ -27,14 +28,15 @@ interface Tag {
   color: string | null;
 }
 
-const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'success' }> = {
+const statusConfig: Record<
+  string,
+  { label: string; variant: 'default' | 'secondary' | 'outline' | 'success' }
+> = {
   active: { label: 'Активний', variant: 'success' },
   inactive: { label: 'Неактивний', variant: 'secondary' },
   lead: { label: 'Лід', variant: 'default' },
   client: { label: 'Клієнт', variant: 'outline' },
 };
-
-const tagColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 
 export default function ContactsPage() {
   const router = useRouter();
@@ -49,11 +51,20 @@ export default function ContactsPage() {
   const [filterTag, setFilterTag] = useState(searchParams.get('tag') || '');
   const [page, setPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
-  
+
   // Bulk operations state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
-  const [showBulkActions, setShowBulkActions] = useState(false);
+
+  // Quick-create popover
+  const [quickOpen, setQuickOpen] = useState(false);
+  const quickBtnRef = useRef<HTMLButtonElement>(null);
+
+  const handleQuickCreated = () => {
+    setQuickOpen(false);
+    setPage(1);
+    fetchContacts();
+  };
 
   useEffect(() => {
     fetchTags();
@@ -68,7 +79,9 @@ export default function ContactsPage() {
       const res = await fetch('/api/tags');
       const data = await res.json();
       setTags(data.tags || []);
-    } catch {}
+    } catch {
+      // теги просто не покажем
+    }
   };
 
   const fetchContacts = async () => {
@@ -86,6 +99,7 @@ export default function ContactsPage() {
       setContacts(data.contacts || []);
       setTotal(data.total || 0);
     } catch {
+      // список просто останется пустым
     } finally {
       setLoading(false);
     }
@@ -97,14 +111,6 @@ export default function ContactsPage() {
     fetchContacts();
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Видалити контакт "${name}"?`)) return;
-    try {
-      await fetch(`/api/contacts/${id}`, { method: 'DELETE' });
-      fetchContacts();
-    } catch {}
-  };
-
   const getName = (c: Contact) => `${c.firstName} ${c.lastName || ''}`.trim();
 
   // Bulk operations
@@ -112,7 +118,7 @@ export default function ContactsPage() {
     if (selectedIds.size === contacts.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(contacts.map(c => c.id)));
+      setSelectedIds(new Set(contacts.map((c) => c.id)));
     }
   };
 
@@ -128,7 +134,7 @@ export default function ContactsPage() {
 
   const handleBulkDelete = async () => {
     if (!confirm(`Видалити ${selectedIds.size} контактів?`)) return;
-    
+
     setBulkLoading(true);
     try {
       await fetch('/api/contacts/bulk', {
@@ -186,7 +192,13 @@ export default function ContactsPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleExport}>
-            <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              className="h-4 w-4 mr-2"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
               <polyline points="7 10 12 15 17 10" />
               <line x1="12" y1="15" x2="12" y2="3" />
@@ -195,7 +207,13 @@ export default function ContactsPage() {
           </Button>
           <Link href="/dashboard/contacts/import">
             <Button variant="outline">
-              <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                className="h-4 w-4 mr-2"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                 <polyline points="7 10 12 15 17 10" />
                 <line x1="12" y1="15" x2="12" y2="3" />
@@ -203,15 +221,27 @@ export default function ContactsPage() {
               Імпорт
             </Button>
           </Link>
-          <Link href="/dashboard/contacts/new">
-            <Button>
-              <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              Додати контакт
-            </Button>
-          </Link>
+          <Button ref={quickBtnRef} onClick={() => setQuickOpen(true)}>
+            <svg
+              className="h-4 w-4 mr-2"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Додати контакт
+          </Button>
+          <QuickCreatePopover
+            anchorEl={quickBtnRef.current}
+            open={quickOpen}
+            onClose={() => setQuickOpen(false)}
+            title="Новий контакт"
+          >
+            <QuickContactForm onCreated={handleQuickCreated} />
+          </QuickCreatePopover>
         </div>
       </div>
 
@@ -221,14 +251,8 @@ export default function ContactsPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <span className="text-sm font-medium">
-                  Обрано: {selectedIds.size} контактів
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedIds(new Set())}
-                >
+                <span className="text-sm font-medium">Обрано: {selectedIds.size} контактів</span>
+                <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>
                   Скасувати вибір
                 </Button>
               </div>
@@ -293,7 +317,13 @@ export default function ContactsPage() {
               onClick={() => setShowFilters(!showFilters)}
               className={cn(showFilters && 'bg-primary-light')}
             >
-              <svg className="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                className="h-4 w-4 mr-1"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
               </svg>
               Фільтри
@@ -304,7 +334,10 @@ export default function ContactsPage() {
             <div className="flex gap-3 mt-3 pt-3 border-t border-border">
               <select
                 value={filterStatus}
-                onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }}
+                onChange={(e) => {
+                  setFilterStatus(e.target.value);
+                  setPage(1);
+                }}
                 className="h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 <option value="">Всі статуси</option>
@@ -316,12 +349,17 @@ export default function ContactsPage() {
 
               <select
                 value={filterTag}
-                onChange={(e) => { setFilterTag(e.target.value); setPage(1); }}
+                onChange={(e) => {
+                  setFilterTag(e.target.value);
+                  setPage(1);
+                }}
                 className="h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 <option value="">Всі теги</option>
                 {tags.map((tag) => (
-                  <option key={tag.id} value={tag.name}>{tag.name}</option>
+                  <option key={tag.id} value={tag.name}>
+                    {tag.name}
+                  </option>
                 ))}
               </select>
 
@@ -329,7 +367,11 @@ export default function ContactsPage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => { setFilterStatus(''); setFilterTag(''); setPage(1); }}
+                  onClick={() => {
+                    setFilterStatus('');
+                    setFilterTag('');
+                    setPage(1);
+                  }}
                 >
                   Скинути фільтри
                 </Button>
@@ -349,16 +391,20 @@ export default function ContactsPage() {
       ) : contacts.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
-            <svg className="h-12 w-12 mx-auto text-foreground-muted mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <svg
+              className="h-12 w-12 mx-auto text-foreground-muted mb-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
               <circle cx="9" cy="7" r="4" />
               <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
               <path d="M16 3.13a4 4 0 0 1 0 7.75" />
             </svg>
             <p className="text-foreground-muted mb-4">Контактів не знайдено</p>
-            <Link href="/dashboard/contacts/new">
-              <Button>Додати перший контакт</Button>
-            </Link>
+            <Button onClick={() => setQuickOpen(true)}>Додати перший контакт</Button>
           </CardContent>
         </Card>
       ) : (
@@ -387,7 +433,7 @@ export default function ContactsPage() {
               key={contact.id}
               className={cn(
                 'grid grid-cols-12 gap-4 px-4 py-3 bg-card rounded-lg border border-border hover:bg-secondary/50 transition-colors cursor-pointer items-center',
-                selectedIds.has(contact.id) && 'border-primary bg-primary/5'
+                selectedIds.has(contact.id) && 'border-primary bg-primary/5',
               )}
             >
               <div className="col-span-1">
@@ -441,7 +487,10 @@ export default function ContactsPage() {
                 className="col-span-1"
                 onClick={() => router.push(`/dashboard/contacts/${contact.id}`)}
               >
-                <Badge variant={statusConfig[contact.status]?.variant || 'outline'} className="text-xs">
+                <Badge
+                  variant={statusConfig[contact.status]?.variant || 'outline'}
+                  className="text-xs"
+                >
                   {statusConfig[contact.status]?.label || contact.status}
                 </Badge>
               </div>
@@ -455,13 +504,17 @@ export default function ContactsPage() {
                     key={ct.tag.id}
                     variant="outline"
                     className="text-xs"
-                    style={ct.tag.color ? { borderColor: ct.tag.color, color: ct.tag.color } : undefined}
+                    style={
+                      ct.tag.color ? { borderColor: ct.tag.color, color: ct.tag.color } : undefined
+                    }
                   >
                     {ct.tag.name}
                   </Badge>
                 ))}
                 {(contact.tags?.length || 0) > 2 && (
-                  <Badge variant="outline" className="text-xs">+{contact.tags!.length - 2}</Badge>
+                  <Badge variant="outline" className="text-xs">
+                    +{contact.tags!.length - 2}
+                  </Badge>
                 )}
               </div>
             </div>

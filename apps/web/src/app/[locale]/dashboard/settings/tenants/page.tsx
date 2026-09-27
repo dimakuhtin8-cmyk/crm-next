@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+
+import { QuickCreatePopover, QuickTenantForm } from '@/components/quick-create';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface Tenant {
   id: string;
@@ -19,6 +21,15 @@ export default function TenantsListPage() {
   const router = useRouter();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Quick-create popover
+  const [quickOpen, setQuickOpen] = useState(false);
+  const quickBtnRef = useRef<HTMLButtonElement>(null);
+
+  const handleQuickCreated = () => {
+    setQuickOpen(false);
+    fetchTenants();
+  };
 
   useEffect(() => {
     fetchTenants();
@@ -53,24 +64,26 @@ export default function TenantsListPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Компанії</h1>
-          <p className="text-muted-foreground">
-            Управління компаніями та командами
-          </p>
+          <p className="text-muted-foreground">Управління компаніями та командами</p>
         </div>
-        <Button onClick={() => router.push('/dashboard/settings/tenants/new')}>
+        <Button ref={quickBtnRef} onClick={() => setQuickOpen(true)}>
           Створити компанію
         </Button>
+        <QuickCreatePopover
+          anchorEl={quickBtnRef.current}
+          open={quickOpen}
+          onClose={() => setQuickOpen(false)}
+          title="Нова компанія"
+        >
+          <QuickTenantForm onCreated={handleQuickCreated} />
+        </QuickCreatePopover>
       </div>
 
       {tenants.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground mb-4">
-              У вас ще немає компаній
-            </p>
-            <Button onClick={() => router.push('/dashboard/settings/tenants/new')}>
-              Створити першу компанію
-            </Button>
+            <p className="text-muted-foreground mb-4">У вас ще немає компаній</p>
+            <Button onClick={() => setQuickOpen(true)}>Створити першу компанію</Button>
           </CardContent>
         </Card>
       ) : (
@@ -84,9 +97,7 @@ export default function TenantsListPage() {
               <CardContent className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <span className="text-lg font-bold text-primary">
-                      {tenant.name.charAt(0)}
-                    </span>
+                    <span className="text-lg font-bold text-primary">{tenant.name.charAt(0)}</span>
                   </div>
                   <div>
                     <h3 className="font-semibold">{tenant.name}</h3>

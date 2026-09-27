@@ -26,6 +26,12 @@ import { useState, useRef, useEffect } from 'react';
 
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { useNotifications } from '@/components/notifications-provider';
+import {
+  QuickCreatePopover,
+  QuickContactForm,
+  QuickDealForm,
+  QuickTaskForm,
+} from '@/components/quick-create';
 import { useTheme } from '@/components/theme-provider';
 import { Avatar } from '@/components/ui';
 import { cn } from '@/lib/utils';
@@ -168,29 +174,39 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
   const quickActions = [
     {
       label: 'Новий контакт',
-      href: '/dashboard/contacts/new',
+      type: 'contact' as const,
+      href: null as string | null,
       icon: Users,
       color: 'text-[#111214]',
     },
     {
       label: 'Нова угода',
-      href: '/dashboard/deals/new',
+      type: 'deal' as const,
+      href: null as string | null,
       icon: TrendingUp,
       color: 'text-[#111214]',
     },
     {
       label: 'Нова задача',
-      href: '/dashboard/tasks/new',
+      type: 'task' as const,
+      href: null as string | null,
       icon: CheckSquare,
       color: 'text-[#111214]',
     },
     {
       label: 'Повідомлення',
+      type: null,
       href: '/dashboard/messages',
       icon: MessageSquare,
       color: 'text-[#111214]',
     },
   ];
+
+  // Quick-create popover anchored to the clicked dropdown item
+  const [headerQuick, setHeaderQuick] = useState<{
+    type: 'contact' | 'deal' | 'task';
+    anchor: HTMLElement | null;
+  } | null>(null);
 
   return (
     <>
@@ -254,19 +270,35 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
                     <p className="px-3 py-2 text-xs font-semibold text-foreground-muted uppercase tracking-wider">
                       Швидкі дії
                     </p>
-                    {quickActions.map((action) => (
-                      <Link
-                        key={action.href}
-                        href={action.href}
-                        onClick={() => setIsQuickOpen(false)}
-                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-secondary transition-all duration-150"
-                      >
-                        <div className={cn('p-1.5 rounded-lg bg-secondary', action.color)}>
-                          <action.icon className="h-4 w-4" />
-                        </div>
-                        <span>{action.label}</span>
-                      </Link>
-                    ))}
+                    {quickActions.map((action) =>
+                      action.type ? (
+                        <button
+                          key={action.label}
+                          onClick={(e) => {
+                            setIsQuickOpen(false);
+                            setHeaderQuick({ type: action.type, anchor: e.currentTarget });
+                          }}
+                          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-secondary transition-all duration-150"
+                        >
+                          <div className={cn('p-1.5 rounded-lg bg-secondary', action.color)}>
+                            <action.icon className="h-4 w-4" />
+                          </div>
+                          <span>{action.label}</span>
+                        </button>
+                      ) : (
+                        <Link
+                          key={action.label}
+                          href={action.href || '/dashboard'}
+                          onClick={() => setIsQuickOpen(false)}
+                          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-secondary transition-all duration-150"
+                        >
+                          <div className={cn('p-1.5 rounded-lg bg-secondary', action.color)}>
+                            <action.icon className="h-4 w-4" />
+                          </div>
+                          <span>{action.label}</span>
+                        </Link>
+                      ),
+                    )}
                   </div>
                 </div>
               </>
@@ -607,6 +639,26 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
           </div>
         </div>
       )}
+
+      {/* Quick-create popover (anchored to the clicked menu item) */}
+      <QuickCreatePopover
+        anchorEl={headerQuick?.anchor || null}
+        open={headerQuick !== null}
+        onClose={() => setHeaderQuick(null)}
+        title={
+          headerQuick?.type === 'contact'
+            ? 'Новий контакт'
+            : headerQuick?.type === 'deal'
+              ? 'Нова угода'
+              : 'Нова задача'
+        }
+      >
+        {headerQuick?.type === 'contact' && (
+          <QuickContactForm onCreated={() => setHeaderQuick(null)} />
+        )}
+        {headerQuick?.type === 'deal' && <QuickDealForm onCreated={() => setHeaderQuick(null)} />}
+        {headerQuick?.type === 'task' && <QuickTaskForm onCreated={() => setHeaderQuick(null)} />}
+      </QuickCreatePopover>
     </>
   );
 }

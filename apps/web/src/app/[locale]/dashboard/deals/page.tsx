@@ -1,8 +1,5 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import {
   DndContext,
   DragOverlay,
@@ -17,7 +14,6 @@ import {
 } from '@dnd-kit/core';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import {
-  TrendingUp,
   Plus,
   Bot,
   Settings,
@@ -27,11 +23,13 @@ import {
   ArrowRight,
   MoreHorizontal,
   GripVertical,
-  DollarSign,
-  Target,
-  BarChart3,
 } from 'lucide-react';
-import { Button, Card, CardContent, Badge } from '@/components/ui';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+import { QuickCreatePopover, QuickDealForm } from '@/components/quick-create';
+import { Button } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
 interface Pipeline {
@@ -83,12 +81,6 @@ function getScoreColor(score: number) {
   return 'bg-rose-500/10 text-rose-600 dark:text-rose-400';
 }
 
-function getScoreRing(score: number) {
-  if (score >= 80) return 'border-emerald-500';
-  if (score >= 50) return 'border-amber-500';
-  return 'border-rose-500';
-}
-
 function DraggableDeal({
   deal,
   isDragging,
@@ -116,7 +108,7 @@ function DraggableDeal({
       onClick={onClick}
       className={cn(
         'kanban-card group cursor-grab active:cursor-grabbing',
-        isDragging && 'opacity-40 ring-2 ring-primary shadow-lg z-50'
+        isDragging && 'opacity-40 ring-2 ring-primary shadow-lg z-50',
       )}
     >
       <div className="flex items-start gap-2">
@@ -138,7 +130,7 @@ function DraggableDeal({
               <span
                 className={cn(
                   'inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-lg',
-                  getScoreColor(deal.aiScore)
+                  getScoreColor(deal.aiScore),
                 )}
               >
                 <div
@@ -147,8 +139,8 @@ function DraggableDeal({
                     deal.aiScore >= 80
                       ? 'bg-emerald-500'
                       : deal.aiScore >= 50
-                      ? 'bg-amber-500'
-                      : 'bg-rose-500'
+                        ? 'bg-amber-500'
+                        : 'bg-rose-500',
                   )}
                 />
                 AI {deal.aiScore}%
@@ -208,7 +200,7 @@ function DroppableStage({
         'flex-shrink-0 w-80 flex flex-col rounded-2xl border transition-all duration-200',
         isOver
           ? 'border-primary bg-primary/5 shadow-lg shadow-primary/10 scale-[1.01]'
-          : 'border-border bg-background-secondary/50'
+          : 'border-border bg-background-secondary/50',
       )}
     >
       {children}
@@ -222,14 +214,23 @@ export default function DealsPage() {
   const [selectedPipeline, setSelectedPipeline] = useState<Pipeline | null>(null);
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [search] = useState('');
   const [activeDeal, setActiveDeal] = useState<Deal | null>(null);
   const [overStageId, setOverStageId] = useState<string | null>(null);
   const [scoringDeals, setScoringDeals] = useState(false);
 
+  // Quick-create popover
+  const [quickOpen, setQuickOpen] = useState(false);
+  const quickBtnRef = useRef<HTMLButtonElement>(null);
+
+  const handleQuickCreated = () => {
+    setQuickOpen(false);
+    fetchDeals();
+  };
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } })
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
   );
 
   useEffect(() => {
@@ -247,7 +248,9 @@ export default function DealsPage() {
       const p = data.pipelines || [];
       setPipelines(p);
       if (p.length > 0) setSelectedPipeline(p[0]);
-    } catch {} finally {
+    } catch {
+      // воронки просто не покажем
+    } finally {
       setLoading(false);
     }
   };
@@ -261,7 +264,9 @@ export default function DealsPage() {
       const data = await res.json();
       // GET /api/deals отвечает через apiSuccess: { success, data: { deals } }
       setDeals(data.data?.deals || data.deals || []);
-    } catch {}
+    } catch {
+      // сделки просто не обновятся
+    }
   };
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
@@ -296,23 +301,18 @@ export default function DealsPage() {
         fetchDeals();
       }
     },
-    [fetchDeals]
+    [fetchDeals],
   );
 
-  const getStageDeals = (stageId: string) =>
-    deals.filter((d) => d.stageId === stageId);
+  const getStageDeals = (stageId: string) => deals.filter((d) => d.stageId === stageId);
 
   const getStageTotal = (stageId: string) =>
     getStageDeals(stageId).reduce((sum, d) => sum + (d.value || 0), 0);
 
-  const getTotalPipelineValue = () =>
-    deals.reduce((sum, d) => sum + (d.value || 0), 0);
+  const getTotalPipelineValue = () => deals.reduce((sum, d) => sum + (d.value || 0), 0);
 
   const getWeightedValue = (stageId: string) =>
-    getStageDeals(stageId).reduce(
-      (sum, d) => sum + (d.value || 0) * (d.probability / 100),
-      0
-    );
+    getStageDeals(stageId).reduce((sum, d) => sum + (d.value || 0) * (d.probability / 100), 0);
 
   const getConversionRate = (fromStageIdx: number) => {
     if (fromStageIdx === 0) return 100;
@@ -336,6 +336,7 @@ export default function DealsPage() {
       });
       if (res.ok) fetchDeals();
     } catch {
+      // оценка просто не выполнится
     } finally {
       setScoringDeals(false);
     }
@@ -361,18 +362,12 @@ export default function DealsPage() {
         <div>
           <h1 className="text-2xl font-bold">Воронка продажів</h1>
           <p className="text-foreground-muted mt-1">
-            {deals.length} угод на суму{' '}
-            {currencySymbols.UAH}
+            {deals.length} угод на суму {currencySymbols.UAH}
             {getTotalPipelineValue().toLocaleString('uk')}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleScoreAll}
-            disabled={scoringDeals}
-          >
+          <Button variant="outline" size="sm" onClick={handleScoreAll} disabled={scoringDeals}>
             <Bot className="h-4 w-4 mr-1.5" />
             {scoringDeals ? 'Оцінка...' : 'AI Оцінити все'}
           </Button>
@@ -381,12 +376,18 @@ export default function DealsPage() {
               <Settings className="h-4 w-4" />
             </Button>
           </Link>
-          <Link href="/dashboard/deals/new">
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-1.5" />
-              Нова угода
-            </Button>
-          </Link>
+          <Button ref={quickBtnRef} size="sm" onClick={() => setQuickOpen(true)}>
+            <Plus className="h-4 w-4 mr-1.5" />
+            Нова угода
+          </Button>
+          <QuickCreatePopover
+            anchorEl={quickBtnRef.current}
+            open={quickOpen}
+            onClose={() => setQuickOpen(false)}
+            title="Нова угода"
+          >
+            <QuickDealForm onCreated={handleQuickCreated} />
+          </QuickCreatePopover>
         </div>
       </div>
 
@@ -401,7 +402,7 @@ export default function DealsPage() {
                 'px-4 py-1.5 rounded-lg text-sm font-medium transition-all',
                 selectedPipeline?.id === p.id
                   ? 'bg-background text-foreground shadow-sm'
-                  : 'text-foreground-muted hover:text-foreground'
+                  : 'text-foreground-muted hover:text-foreground',
               )}
             >
               {p.name}
@@ -436,7 +437,7 @@ export default function DealsPage() {
                         <div
                           className={cn(
                             'h-3 w-3 rounded-full shadow-sm',
-                            `bg-gradient-to-br ${stageColors[stageIdx % stageColors.length]}`
+                            `bg-gradient-to-br ${stageColors[stageIdx % stageColors.length]}`,
                           )}
                         />
                         <h3 className="font-semibold text-sm">{stage.name}</h3>
@@ -453,9 +454,7 @@ export default function DealsPage() {
                       <div>
                         <p className="text-xs text-foreground-muted">Сума</p>
                         <p className="text-sm font-bold text-foreground">
-                          {total > 0
-                            ? `${currencySymbols.UAH}${total.toLocaleString('uk')}`
-                            : '—'}
+                          {total > 0 ? `${currencySymbols.UAH}${total.toLocaleString('uk')}` : '—'}
                         </p>
                       </div>
                       <div className="h-6 w-px bg-border" />
@@ -478,8 +477,8 @@ export default function DealsPage() {
                             conversion >= 50
                               ? 'text-success'
                               : conversion >= 25
-                              ? 'text-warning'
-                              : 'text-danger'
+                                ? 'text-warning'
+                                : 'text-danger',
                           )}
                         >
                           {conversion}% конверсія
@@ -525,7 +524,12 @@ export default function DealsPage() {
                     )}
                     <div className="flex flex-wrap items-center gap-1.5">
                       {activeDeal.aiScore != null && (
-                        <span className={cn('inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-lg', getScoreColor(activeDeal.aiScore))}>
+                        <span
+                          className={cn(
+                            'inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-lg',
+                            getScoreColor(activeDeal.aiScore),
+                          )}
+                        >
                           AI {activeDeal.aiScore}%
                         </span>
                       )}

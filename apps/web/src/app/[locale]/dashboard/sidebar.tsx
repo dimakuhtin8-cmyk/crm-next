@@ -1,10 +1,5 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { signOut, useSession } from 'next-auth/react';
-import { useTranslations } from 'next-intl';
-import { useState, useEffect, useRef } from 'react';
 import {
   LayoutDashboard,
   Users,
@@ -22,11 +17,6 @@ import {
   Plus,
   LogOut,
   ChevronLeft,
-  Briefcase,
-  Target,
-  Phone,
-  Mail,
-  Calendar,
   Database,
   Activity,
   Webhook,
@@ -34,8 +24,13 @@ import {
   Gauge,
   Bell,
 } from 'lucide-react';
-import { Avatar } from '@/components/ui';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { signOut, useSession } from 'next-auth/react';
+import { useState, useEffect, useRef } from 'react';
+
 import { useNotifications } from '@/components/notifications-provider';
+import { Avatar } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
 interface Tenant {
@@ -54,7 +49,6 @@ interface SidebarProps {
 export function Sidebar({ collapsed = false, onToggle, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const t = useTranslations();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [currentTenant, setCurrentTenant] = useState<Tenant | null>(null);
   const [tenantOpen, setTenantOpen] = useState(false);
@@ -135,7 +129,12 @@ export function Sidebar({ collapsed = false, onToggle, onMobileClose }: SidebarP
       label: 'Комунікації',
       items: [
         { name: 'Таймлайн', href: '/dashboard/timeline', icon: Clock },
-        { name: 'Повідомлення', href: '/dashboard/messages', icon: MessageSquare, badge: unreadMessages },
+        {
+          name: 'Повідомлення',
+          href: '/dashboard/messages',
+          icon: MessageSquare,
+          badge: unreadMessages,
+        },
         { name: 'Сповіщення', href: '/dashboard/notifications', icon: Bell, badge: unreadApp },
         { name: 'Документи', href: '/dashboard/documents', icon: FileText },
       ],
@@ -175,12 +174,15 @@ export function Sidebar({ collapsed = false, onToggle, onMobileClose }: SidebarP
     <aside
       className={cn(
         'flex h-full flex-col border-r border-black bg-[#0C0C0D] text-white transition-all duration-300 ease-out',
-        collapsed ? 'w-[72px]' : 'w-[260px]'
+        collapsed ? 'w-[72px]' : 'w-[260px]',
       )}
     >
       {/* Logo */}
       <div className="flex h-16 items-center gap-3 border-b border-white/10 px-5">
-        <Link href="/dashboard" className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[#FFC700] shadow-[0_8px_20px_-8px_rgba(255,199,0,0.7)]">
+        <Link
+          href="/dashboard"
+          className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[#FFC700] shadow-[0_8px_20px_-8px_rgba(255,199,0,0.7)]"
+        >
           <Zap className="h-5 w-5 text-[#111214]" strokeWidth={2.5} />
         </Link>
         {!collapsed && (
@@ -207,7 +209,7 @@ export function Sidebar({ collapsed = false, onToggle, onMobileClose }: SidebarP
             <ChevronDown
               className={cn(
                 'h-4 w-4 text-white/50 transition-transform duration-200',
-                tenantOpen && 'rotate-180'
+                tenantOpen && 'rotate-180',
               )}
             />
           </button>
@@ -228,13 +230,17 @@ export function Sidebar({ collapsed = false, onToggle, onMobileClose }: SidebarP
                         'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-all duration-150',
                         currentTenant.id === tenant.id
                           ? 'bg-[#FFC700] font-semibold text-[#111214]'
-                          : 'text-white hover:bg-white/10'
+                          : 'text-white hover:bg-white/10',
                       )}
                     >
-                      <div className={cn(
-                        'flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-xs font-bold',
-                        currentTenant.id === tenant.id ? 'bg-black/10 text-[#111214]' : 'bg-white/10 text-[#FFC700]'
-                      )}>
+                      <div
+                        className={cn(
+                          'flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-xs font-bold',
+                          currentTenant.id === tenant.id
+                            ? 'bg-black/10 text-[#111214]'
+                            : 'bg-white/10 text-[#FFC700]',
+                        )}
+                      >
                         {tenant.name.charAt(0)}
                       </div>
                       <span className="truncate">{tenant.name}</span>
@@ -242,7 +248,7 @@ export function Sidebar({ collapsed = false, onToggle, onMobileClose }: SidebarP
                   ))}
                   <div className="mt-1 border-t border-white/10 pt-1">
                     <Link
-                      href="/dashboard/settings/tenants/new"
+                      href="/dashboard/settings/tenants"
                       onClick={() => setTenantOpen(false)}
                       className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-white/60 transition-all duration-150 hover:bg-white/10 hover:text-white"
                     >
@@ -300,17 +306,15 @@ export function Sidebar({ collapsed = false, onToggle, onMobileClose }: SidebarP
                         ? 'bg-[#FFC700] font-semibold text-[#111214] shadow-[0_8px_20px_-10px_rgba(255,199,0,0.8)]'
                         : 'text-white/65 hover:bg-white/10 hover:text-white',
                       item.accent && !isActive && 'text-[#FFC700]/80 hover:text-[#FFC700]',
-                      collapsed && 'justify-center px-2'
+                      collapsed && 'justify-center px-2',
                     )}
                     title={collapsed ? item.name : undefined}
                   >
                     <item.icon
                       className={cn(
                         'h-5 w-5 flex-shrink-0 transition-colors duration-200',
-                        isActive
-                          ? 'text-[#111214]'
-                          : 'text-white/50 group-hover:text-white',
-                        item.accent && !isActive && 'text-[#FFC700]/70 group-hover:text-[#FFC700]'
+                        isActive ? 'text-[#111214]' : 'text-white/50 group-hover:text-white',
+                        item.accent && !isActive && 'text-[#FFC700]/70 group-hover:text-[#FFC700]',
                       )}
                     />
                     {!collapsed && (
@@ -344,7 +348,7 @@ export function Sidebar({ collapsed = false, onToggle, onMobileClose }: SidebarP
             pathname.startsWith('/dashboard/settings')
               ? 'bg-[#FFC700] font-semibold text-[#111214]'
               : 'text-white/65 hover:bg-white/10 hover:text-white',
-            collapsed && 'justify-center px-2'
+            collapsed && 'justify-center px-2',
           )}
           title={collapsed ? 'Налаштування' : undefined}
         >
@@ -356,14 +360,14 @@ export function Sidebar({ collapsed = false, onToggle, onMobileClose }: SidebarP
           onClick={onToggle}
           className={cn(
             'hidden lg:flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/65 transition-all duration-200 hover:bg-white/10 hover:text-white',
-            collapsed && 'justify-center px-2'
+            collapsed && 'justify-center px-2',
           )}
           title={collapsed ? 'Розгорнути' : 'Згорнути'}
         >
           <ChevronLeft
             className={cn(
               'h-5 w-5 flex-shrink-0 transition-transform duration-300',
-              collapsed && 'rotate-180'
+              collapsed && 'rotate-180',
             )}
           />
           {!collapsed && <span>Згорнути</span>}

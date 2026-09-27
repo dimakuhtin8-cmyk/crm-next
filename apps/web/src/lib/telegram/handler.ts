@@ -300,7 +300,7 @@ async function handleCallbackQuery(tenantId: string, query: TelegramCallbackQuer
       tenant.telegramBotToken,
       chatId,
       query.message!.message_id,
-      '💡 Створення угоди доступне в веб-додатку:\nhttps://crm-next.example.com/dashboard/deals/new',
+      '💡 Створення угоди доступне в веб-додатку (сторінка угод, кнопка «Нова угода»).',
       { reply_markup: { inline_keyboard: [[{ text: '◀️ Назад', callback_data: 'deals' }]] } },
     );
     return;
@@ -310,7 +310,7 @@ async function handleCallbackQuery(tenantId: string, query: TelegramCallbackQuer
       tenant.telegramBotToken,
       chatId,
       query.message!.message_id,
-      '💡 Створення задачі доступне в веб-додатку:\nhttps://crm-next.example.com/dashboard/tasks/new',
+      '💡 Створення задачі доступне в веб-додатку (сторінка задач, кнопка «Нова задача»).',
       { reply_markup: { inline_keyboard: [[{ text: '◀️ Назад', callback_data: 'tasks' }]] } },
     );
     return;
