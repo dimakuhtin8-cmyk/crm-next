@@ -259,7 +259,8 @@ export default function DealsPage() {
       if (search) params.set('search', search);
       const res = await fetch(`/api/deals?${params}`);
       const data = await res.json();
-      setDeals(data.deals || []);
+      // GET /api/deals отвечает через apiSuccess: { success, data: { deals } }
+      setDeals(data.data?.deals || data.deals || []);
     } catch {}
   };
 

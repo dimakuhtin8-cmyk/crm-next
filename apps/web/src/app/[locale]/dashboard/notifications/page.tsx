@@ -39,7 +39,24 @@ const typeIcons: Record<string, React.ReactNode> = {
   follow_up: <Repeat className="h-4 w-4" />,
 };
 
+interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: string;
+  link: string | null;
+  read: boolean;
+  createdAt: string;
+}
+
 type Filter = 'all' | 'overdue' | 'upcoming';
+
+const appTypeConfig: Record<string, string> = {
+  info: 'bg-[#111214] text-[#FFC700]',
+  success: 'bg-success/10 text-success',
+  warning: 'bg-warning/10 text-warning',
+  error: 'bg-danger/10 text-danger',
+};
 
 function formatDateTime(value: string | null) {
   if (!value) return '—';
@@ -54,6 +71,7 @@ function formatDateTime(value: string | null) {
 export default function NotificationsPage() {
   const [overdue, setOverdue] = useState<ReminderTask[]>([]);
   const [upcoming, setUpcoming] = useState<ReminderTask[]>([]);
+  const [appNotifs, setAppNotifs] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>('all');
 
@@ -66,7 +84,24 @@ export default function NotificationsPage() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+
+    // In-app системні сповіщення (автоматизації, інтеграції)
+    fetch('/api/notifications')
+      .then((r) => r.json())
+      .then((data) => setAppNotifs(data.notifications || []))
+      .catch(() => {});
   }, []);
+
+  const markAllRead = async () => {
+    try {
+      await fetch('/api/notifications', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      setAppNotifs([]);
+    } catch {}
+  };
 
   const visible = useMemo(() => {
     const withFlag = [
@@ -124,6 +159,41 @@ export default function NotificationsPage() {
           </button>
         ))}
       </div>
+
+      {appNotifs.length > 0 && (
+        <Card className="overflow-hidden">
+          <div className="flex items-center justify-between border-b border-border px-4 py-3 sm:px-5">
+            <h3 className="text-sm font-bold">Системні сповіщення</h3>
+            <button
+              onClick={markAllRead}
+              className="text-xs font-semibold text-foreground-muted underline-offset-4 hover:text-[#111214] hover:underline"
+            >
+              Прочитати всі
+            </button>
+          </div>
+          <div className="divide-y divide-border">
+            {appNotifs.map((n) => (
+              <div key={n.id} className="flex items-start gap-3 px-4 py-3.5 sm:px-5">
+                <span className={cn('mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg', appTypeConfig[n.type] || appTypeConfig.info)}>
+                  <Bell className="h-4 w-4" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold">{n.title}</span>
+                  <span className="block text-xs text-foreground-muted mt-0.5">{n.message}</span>
+                  <span className="block text-[11px] text-foreground-muted/70 mt-1">
+                    {formatDateTime(n.createdAt)}
+                    {n.link && (
+                      <Link href={n.link} className="ml-2 font-semibold text-[#111214] underline-offset-4 hover:underline">
+                        Відкрити →
+                      </Link>
+                    )}
+                  </span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {loading ? (
         <div className="space-y-3">
