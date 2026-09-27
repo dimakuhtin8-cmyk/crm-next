@@ -218,13 +218,7 @@ export default function CopilotPage() {
   })();
 
   return (
-    <div className="w-full h-[calc(100dvh-130px)] min-h-[520px] flex flex-col gap-4">
-      {/* Header */}
-      <div className="shrink-0">
-        <h1 className="text-2xl font-bold">AI Co-Pilot</h1>
-        <p className="text-foreground-muted">Штучний інтелект для генерації, аналізу та пошуку</p>
-      </div>
-
+    <div className="w-full h-[calc(100dvh-112px)] min-h-[480px] flex flex-col gap-4">
       {/* Quick Setup Panel */}
       {aiStatus === 'no-key' && (
         <Card className="shrink-0 border-primary/30 bg-gradient-to-br from-primary/5 to-background overflow-hidden">
