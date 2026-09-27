@@ -36,14 +36,33 @@ interface QueueStats {
 
 export default function QueuesPage() {
   const [stats, setStats] = useState<QueueStats | null>(null);
+  const [jobs, setJobs] = useState<Array<{
+    id: string; type: string; status: string; priority: string;
+    attempts: number; maxAttempts: number; lastError: string | null;
+    createdAt: string; startedAt: string | null; completedAt: string | null;
+  }>>([]);
   const [loading, setLoading] = useState(true);
   const [clearing, setClearing] = useState(false);
 
   useEffect(() => {
-    fetchStats();
-    const interval = setInterval(fetchStats, 3000);
+    fetchAll();
+    const interval = setInterval(fetchAll, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  const fetchAll = async () => {
+    await Promise.all([fetchStats(), fetchJobs()]);
+  };
+
+  const fetchJobs = async () => {
+    try {
+      const res = await fetch('/api/queue/jobs?limit=20');
+      if (res.ok) {
+        const data = await res.json();
+        setJobs(data.jobs || []);
+      }
+    } catch {}
+  };
 
   const fetchStats = async () => {
     try {
@@ -90,7 +109,7 @@ export default function QueuesPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={fetchStats}>
+          <Button variant="outline" onClick={fetchAll}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Оновити
           </Button>
@@ -199,6 +218,53 @@ export default function QueuesPage() {
             </CardContent>
           </Card>
 
+          {/* Останні задачі (реальні дані з БД) */}
+          <Card>
+            <CardContent className="p-4">
+              <h3 className="font-semibold mb-4">Останні задачі</h3>
+              {jobs.length === 0 ? (
+                <p className="text-sm text-foreground-muted">Задач поки немає. Вони з'являться при спрацюванні автоматизацій.</p>
+              ) : (
+                <div className="space-y-2">
+                  {jobs.map((job) => (
+                    <div key={job.id} className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50 text-sm">
+                      <Badge variant={
+                        job.status === 'completed' ? 'success'
+                        : job.status === 'failed' ? 'danger'
+                        : job.status === 'processing' ? 'info'
+                        : 'secondary'
+                      }>
+                        {job.status}
+                      </Badge>
+                      <span className="font-medium">{job.type}</span>
+                      <span className="text-foreground-muted text-xs">
+                        {job.attempts}/{job.maxAttempts} спроб
+                      </span>
+                      {job.lastError && (
+                        <span className="text-danger text-xs truncate flex-1" title={job.lastError}>
+                          {job.lastError.slice(0, 120)}
+                        </span>
+                      )}
+                      <span className="ml-auto flex items-center gap-2">
+                        <span className="text-foreground-muted text-xs">
+                          {new Date(job.createdAt).toLocaleString('uk', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        {job.type === 'export' && job.status === 'completed' && (
+                          <a
+                            href={`/api/queue/jobs/${job.id}/download`}
+                            className="text-xs font-medium text-primary hover:underline"
+                          >
+                            Скачати
+                          </a>
+                        )}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Інформація */}
           <Card>
             <CardContent className="p-4">
@@ -206,7 +272,7 @@ export default function QueuesPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-foreground-muted mb-1">Движок</p>
-                  <p className="font-medium">In-Memory Queue</p>
+                  <p className="font-medium">Postgres + зовнішній планувальник</p>
                 </div>
                 <div>
                   <p className="text-foreground-muted mb-1">Retry стратегія</p>

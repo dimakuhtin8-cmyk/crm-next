@@ -181,3 +181,63 @@ docker compose -f docker-compose.prod.yml down
 git checkout <previous-commit>
 docker compose -f docker-compose.prod.yml up -d --build
 ```
+
+---
+
+## Внешний планировщик (обязательно для очереди и timer-автоматизаций)
+
+Фоновые задачи живут в таблице `QueueJob` (Postgres) и обрабатываются
+роутом `POST /api/queue/process`, а timer-правила — роутом
+`POST /api/automation/tick`. Оба вызываются ТОЛЬКО внешним планировщиком
+(Vercel Hobby cron для этого не годится — лимит 1-2 запуска в день).
+
+Оба роута защищены заголовком `x-cron-secret: <CRON_SECRET>`
+(`CRON_SECRET` — переменная окружения на сервере, сгенерируй:
+`openssl rand -hex 32`).
+
+### Вариант A: GitHub Actions (рекомендуется)
+
+Создай `.github/workflows/scheduler.yml` в репозитории:
+
+```yaml
+name: scheduler
+on:
+  schedule:
+    - cron: '*/5 * * * *'   # очередь — каждые 5 минут
+    - cron: '17 * * * *'    # timer-автоматизации — раз в час
+  workflow_dispatch: {}     # + ручной запуск из UI
+
+jobs:
+  queue:
+    if: github.event.schedule == '*/5 * * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -sS -X POST "${APP_URL}/api/queue/process" -H "x-cron-secret: ${CRON_SECRET}" -H 'Content-Type: application/json' -d '{"limit": 10}'
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+
+  tick:
+    if: github.event.schedule == '17 * * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -sS -X POST "${APP_URL}/api/automation/tick" -H "x-cron-secret: ${CRON_SECRET}"
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+```
+
+Секреты `APP_URL` (https://твой-домен) и `CRON_SECRET` (тот же, что на
+сервере) добавь в GitHub → Settings → Secrets and variables → Actions.
+
+### Вариант B: cron-job.org (без кода)
+
+Создай два задания с теми же URL, методом POST и заголовком
+`x-cron-secret`: `queue/process` — каждые 5 минут,
+`automation/tick` — раз в час.
+
+### Проверка
+
+Ответ роутов — JSON со статистикой вида
+`{"success": true, "processed": N, "succeeded": M, "failed": K}`.
+Мониторинг: Dashboard → Черги задач + таблица `QueueJob`.

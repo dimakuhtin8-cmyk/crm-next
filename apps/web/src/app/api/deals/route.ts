@@ -170,6 +170,29 @@ async function POSTHandler(request: NextRequest) {
   // Інвалідуємо кеш угод
   await invalidateCacheByTag(cacheTags.DEALS);
 
+  // deal_created trigger (fire-and-forget, must not fail the request)
+  {
+    const created = deal as unknown as {
+      id: string; title: string; value: number | null; stageId: string | null;
+      contactId: string | null; status: string;
+    };
+    const tenantId = (tq as unknown as { tenantId: string }).tenantId;
+    import('@/lib/automation/engine')
+      .then(({ executeAutomations }) =>
+        executeAutomations(tenantId, 'deal_created', {
+          dealId: created.id,
+          tenantId,
+          title: created.title,
+          value: created.value,
+          stageId: created.stageId,
+          previousStageId: null,
+          contactId: created.contactId,
+          status: created.status,
+        })
+      )
+      .catch((err) => console.error('Automation error:', err));
+  }
+
   return apiSuccess({ deal }, 201);
 }
 

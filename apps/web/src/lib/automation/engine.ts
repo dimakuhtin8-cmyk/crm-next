@@ -118,24 +118,27 @@ async function executeCreateTask(deal: DealContext, config: Record<string, unkno
 async function executeSendNotification(deal: DealContext, config: Record<string, unknown>) {
   const { channel, message } = config;
   const text = (typeof message === 'string' ? message : `Угода "${deal.title}" оновлена`) as string;
+  const { enqueueJob } = await import('@/lib/queues');
 
-  // Send via Telegram if configured
-  if (channel === 'telegram' || channel === 'all') {
-    try {
-      const { notifyDealEvent } = await import('@/lib/telegram/notifications');
-      await notifyDealEvent(deal.tenantId, deal.dealId, 'stage_changed');
-    } catch {}
+  // Telegram/WhatsApp → фоновая задача (не блокируем основной запрос,
+  // падение мессенджера уходит в retry, а не роняет действие пользователя).
+  if (channel === 'telegram' || channel === 'whatsapp' || channel === 'all' || !channel) {
+    await enqueueJob(deal.tenantId, 'send_message', { tenantId: deal.tenantId, text }, { priority: 'normal' });
   }
 
-  // Send via WhatsApp if configured
-  if (channel === 'whatsapp' || channel === 'all') {
-    try {
-      const { notifyDealEvent } = await import('@/lib/whatsapp/notifications');
-      await notifyDealEvent(deal.tenantId, deal.dealId, 'stage_changed');
-    } catch {}
+  // In-app уведомления владельцам/админам тенанта.
+  const owners = await prisma.tenantMember.findMany({
+    where: { tenantId: deal.tenantId, role: { in: ['owner', 'admin'] } },
+    select: { userId: true },
+  });
+  for (const o of owners) {
+    await enqueueJob(
+      deal.tenantId,
+      'notification',
+      { tenantId: deal.tenantId, userId: o.userId, title: 'Автоматизація', message: text, type: 'info' },
+      { priority: 'low' }
+    );
   }
-
-  console.log(`Notification sent: ${text}`);
 }
 
 async function executeMoveDeal(deal: DealContext, config: Record<string, unknown>) {
@@ -149,9 +152,23 @@ async function executeMoveDeal(deal: DealContext, config: Record<string, unknown
 }
 
 async function executeSendMessage(deal: DealContext, config: Record<string, unknown>) {
-  const { template, recipient } = config;
-  // Placeholder for message sending logic
-  console.log(`Message would be sent: template=${template}, recipient=${recipient}, deal=${deal.title}`);
+  const { template, recipient, chatId } = config;
+  const text = (typeof template === 'string' && template
+    ? template
+    : `Угода "${deal.title}": ${deal.status}`) as string;
+  // В очередь вместо синхронной отправки — см. executeSendNotification.
+  const { enqueueJob } = await import('@/lib/queues');
+  await enqueueJob(
+    deal.tenantId,
+    'send_message',
+    {
+      tenantId: deal.tenantId,
+      text,
+      ...(typeof recipient === 'string' || typeof recipient === 'number' ? { chatId: recipient } : {}),
+      ...(typeof chatId === 'string' || typeof chatId === 'number' ? { chatId } : {}),
+    },
+    { priority: 'normal' }
+  );
 }
 
 async function logExecution(

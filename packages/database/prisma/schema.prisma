@@ -30,6 +30,7 @@ model User {
   assignedTasks Task[]
   ownedContacts Contact[]
   ownedDeals    Deal[]
+  notifications Notification[]
   taskComments  TaskComment[]
 }
 
@@ -135,6 +136,8 @@ model Tenant {
   aiUsageLogs     AiUsageLog[]
   aiUsageCounters AiUsageCounter[]
   aiProviderKeys  AiProviderKey[]
+  queueJobs       QueueJob[]
+  notifications   Notification[]
   payments         Payment[]
   auditLogs        AuditLog[]
 }
@@ -483,6 +486,48 @@ model AiUsageCounter {
   @@unique([tenantId, provider, date])
   @@index([tenantId])
   @@index([tenantId, date])
+}
+
+model QueueJob {
+  id           String    @id @default(cuid())
+  tenantId     String
+  type         String    // 'email' | 'ai' | 'export' | 'notification' | 'send_message'
+  payload      String    // JSON
+  status       String    @default("pending") // pending | processing | completed | failed
+  priority     String    @default("normal")  // high | normal | low
+  attempts     Int       @default(0)
+  maxAttempts  Int       @default(3)
+  lastError    String?
+  // JSON-результат (напр. { fileName, mime, size, contentBase64 } для export).
+  // Файлового хранилища нет — скачивание отдаёт API-роут из этого поля.
+  result       String?
+  nextRetryAt  DateTime?
+  createdAt    DateTime  @default(now())
+  startedAt    DateTime?
+  completedAt  DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status])
+  @@index([status, nextRetryAt])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  tenantId  String
+  userId    String
+  title     String
+  message   String
+  type      String   @default("info") // info | success | warning | error
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, userId, read])
+  @@index([userId, read])
 }
 
 model AiProviderKey {

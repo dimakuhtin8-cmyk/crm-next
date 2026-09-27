@@ -143,6 +143,30 @@ async function PUTHandler(request: NextRequest, { params }: Params) {
       include: { products: true, stage: true, pipeline: true, contact: true },
     });
 
+    // deal_won / deal_lost triggers (fire-and-forget, must not fail the request)
+    const updated = deal as unknown as {
+      id: string; title: string; value: number | null; stageId: string | null;
+      contactId: string | null; status: string;
+    };
+    if (dealUpdateData.status === 'won' || dealUpdateData.status === 'lost') {
+      const trigger = dealUpdateData.status === 'won' ? 'deal_won' : 'deal_lost';
+      const tenantId = (tq as unknown as { tenantId: string }).tenantId;
+      import('@/lib/automation/engine')
+        .then(({ executeAutomations }) =>
+          executeAutomations(tenantId, trigger, {
+            dealId: updated.id,
+            tenantId,
+            title: updated.title,
+            value: updated.value,
+            stageId: updated.stageId,
+            previousStageId: null,
+            contactId: updated.contactId,
+            status: updated.status,
+          })
+        )
+        .catch((err) => console.error('Automation error:', err));
+    }
+
     return NextResponse.json({ deal });
   } catch (error) {
     console.error('Update deal error:', error);

@@ -1,26 +1,19 @@
 /**
- * Job Queue — система фоновых задач
- * 
- * Архитектура:
- * - In-Memory Queue (для dev и small deployments)
- * - При масштабировании → Redis + BullMQ
- * 
- * Типы задач:
- * - email: отправка email
- * - ai: AI-обработка (скоринг, анализ)
- * - export: экспорт данных
- * - notification: уведомления
- * - cleanup: очистка данных
- * 
- * Возможности:
- * - Retry с Exponential Backoff
- * - Приоритеты (high, normal, low)
- * - Rate limiting
- * - Progress tracking
- * - Job dependencies
+ * Job Queue — фоновая обработка поверх Postgres (Neon).
+ *
+ * Почему не in-memory: на Vercel serverless функция замораживается между
+ * запросами — Map/setInterval не переживают заморозку. Задания живут в
+ * таблице QueueJob, обрабатываются через POST /api/queue/process,
+ * который дёргает внешний планировщик (см. DEPLOYMENT.md).
+ *
+ * Сохранённые концепции из прошлой in-memory реализации:
+ * - приоритеты high/normal/low, FIFO при равном приоритете
+ * - retry с exponential backoff (2^attempts * 1000мс)
+ * - таймаут выполнения через Promise.race
+ * - maxAttempts (по умолчанию 3)
  */
 
-import crypto from 'crypto';
+import { prisma } from '@crm-next/database';
 import { createLogger } from '@/lib/logging/logger';
 
 const log = createLogger({ service: 'queue' });
@@ -32,6 +25,7 @@ export type JobStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'ret
 
 export interface Job<T = any> {
   id: string;
+  tenantId: string;
   type: string;
   data: T;
   status: JobStatus;
@@ -40,7 +34,6 @@ export interface Job<T = any> {
   maxAttempts: number;
   lastError?: string;
   result?: any;
-  progress?: number;
   createdAt: Date;
   startedAt?: Date;
   completedAt?: Date;
@@ -60,313 +53,8 @@ export interface QueueStats {
   total: number;
 }
 
-// ============ Queue Class ============
+// ============ Job Type Definitions (payloads) ============
 
-class JobQueue {
-  private jobs = new Map<string, Job>();
-  private handlers = new Map<string, JobHandler>();
-  private processing = false;
-  private processInterval: NodeJS.Timeout | null = null;
-  private stats = {
-    completed: 0,
-    failed: 0,
-  };
-
-  constructor() {
-    // Запускаем обработчик каждую секунду
-    this.processInterval = setInterval(() => this.processNext(), 1000);
-  }
-
-  /**
-   * Зарегистрировать обработчик для типа задачи
-   */
-  registerHandler<T>(type: string, handler: JobHandler<T>): void {
-    this.handlers.set(type, handler);
-    log.info({ type }, 'Зареєстровано обробник черги');
-  }
-
-  /**
-   * Добавить задачу в очередь
-   */
-  addJob<T>(
-    type: string,
-    data: T,
-    options: {
-      priority?: JobPriority;
-      timeout?: number;
-      maxAttempts?: number;
-      delay?: number; // ms
-    } = {}
-  ): Job<T> {
-    const job: Job<T> = {
-      id: crypto.randomUUID(),
-      type,
-      data,
-      status: 'pending',
-      priority: options.priority || 'normal',
-      attempts: 0,
-      maxAttempts: options.maxAttempts || 3,
-      createdAt: new Date(),
-      timeout: options.timeout || 30000, // 30 секунд по умолчанию
-    };
-
-    if (options.delay) {
-      job.nextRetryAt = new Date(Date.now() + options.delay);
-    }
-
-    this.jobs.set(job.id, job);
-
-    log.info({
-      jobId: job.id,
-      type,
-      priority: job.priority,
-    }, 'Задачу додано в чергу');
-
-    return job;
-  }
-
-  /**
-   * Получить статус задачи
-   */
-  getJob(jobId: string): Job | undefined {
-    return this.jobs.get(jobId);
-  }
-
-  /**
-   * Отменить задачу
-   */
-  cancelJob(jobId: string): boolean {
-    const job = this.jobs.get(jobId);
-    if (!job) return false;
-
-    if (job.status === 'processing') {
-      // Нельзя отменить выполняющуюся задачу
-      return false;
-    }
-
-    job.status = 'failed';
-    job.lastError = 'Cancelled by user';
-    this.jobs.delete(jobId);
-    
-    return true;
-  }
-
-  /**
-   * Получить статистику
-   */
-  getStats(): QueueStats {
-    let pending = 0;
-    let processing = 0;
-    let failed = 0;
-
-    for (const job of this.jobs.values()) {
-      switch (job.status) {
-        case 'pending':
-        case 'retrying':
-          pending++;
-          break;
-        case 'processing':
-          processing++;
-          break;
-        case 'failed':
-          failed++;
-          break;
-      }
-    }
-
-    return {
-      pending,
-      processing,
-      completed: this.stats.completed,
-      failed: this.stats.failed + failed,
-      total: this.jobs.size + this.stats.completed + this.stats.failed,
-    };
-  }
-
-  /**
-   * Очистить завершённые задачи
-   */
-  cleanup(maxAge: number = 60 * 60 * 1000): number { // 1 час
-    let count = 0;
-    const now = Date.now();
-
-    for (const [id, job] of this.jobs.entries()) {
-      if (job.status === 'completed' || job.status === 'failed') {
-        const age = now - job.createdAt.getTime();
-        if (age > maxAge) {
-          this.jobs.delete(id);
-          count++;
-        }
-      }
-    }
-
-    return count;
-  }
-
-  /**
-   * Обработать следующую задачу
-   */
-  private async processNext(): Promise<void> {
-    if (this.processing) return;
-    
-    // Найти задачу с наивысшим приоритетом
-    const job = this.findNextJob();
-    if (!job) return;
-
-    this.processing = true;
-
-    try {
-      await this.processJob(job);
-    } finally {
-      this.processing = false;
-    }
-  }
-
-  /**
-   * Найти следующую задачу для обработки
-   */
-  private findNextJob(): Job | null {
-    let nextJob: Job | null = null;
-    const now = Date.now();
-
-    for (const job of this.jobs.values()) {
-      // Пропускаем не pending задачи
-      if (job.status !== 'pending' && job.status !== 'retrying') {
-        continue;
-      }
-
-      // Проверяем delay
-      if (job.nextRetryAt && job.nextRetryAt.getTime() > now) {
-        continue;
-      }
-
-      // Проверяем приоритет
-      if (!nextJob) {
-        nextJob = job;
-        continue;
-      }
-
-      const priorityOrder = { high: 0, normal: 1, low: 2 };
-      const currentPriority = priorityOrder[job.priority];
-      const nextPriority = priorityOrder[nextJob.priority];
-
-      if (currentPriority < nextPriority) {
-        nextJob = job;
-      } else if (currentPriority === nextPriority) {
-        // FIFO для одинакового приоритета
-        if (job.createdAt < nextJob.createdAt) {
-          nextJob = job;
-        }
-      }
-    }
-
-    return nextJob;
-  }
-
-  /**
-   * Обработать задачу
-   */
-  private async processJob(job: Job): Promise<void> {
-    const handler = this.handlers.get(job.type);
-    if (!handler) {
-      job.status = 'failed';
-      job.lastError = `No handler for job type: ${job.type}`;
-      this.stats.failed++;
-      this.jobs.delete(job.id);
-      
-      log.error({
-        jobId: job.id,
-        type: job.type,
-      }, 'Немає обробника для типу задачі');
-      
-      return;
-    }
-
-    job.status = 'processing';
-    job.startedAt = new Date();
-    job.attempts++;
-
-    log.info({
-      jobId: job.id,
-      type: job.type,
-      attempt: job.attempts,
-    }, 'Початок обробки задачі');
-
-    try {
-      // Timeout protection
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Job timeout')), job.timeout);
-      });
-
-      const result = await Promise.race([
-        handler(job),
-        timeoutPromise,
-      ]);
-
-      job.status = 'completed';
-      job.result = result;
-      job.completedAt = new Date();
-      this.stats.completed++;
-      this.jobs.delete(job.id);
-
-      const duration = job.completedAt.getTime() - job.startedAt.getTime();
-
-      log.info({
-        jobId: job.id,
-        type: job.type,
-        duration,
-      }, 'Задачу виконано');
-    } catch (err: any) {
-      job.lastError = err.message;
-
-      if (job.attempts < job.maxAttempts) {
-        // Retry с Exponential Backoff
-        const delay = Math.pow(2, job.attempts - 1) * 1000;
-        job.status = 'retrying';
-        job.nextRetryAt = new Date(Date.now() + delay);
-
-        log.warn({
-          jobId: job.id,
-          type: job.type,
-          attempt: job.attempts,
-          nextRetry: job.nextRetryAt,
-          error: err.message,
-        }, 'Задачу буде повторено');
-      } else {
-        // Все попытки исчерпаны
-        job.status = 'failed';
-        this.stats.failed++;
-        this.jobs.delete(job.id);
-
-        log.error({
-          jobId: job.id,
-          type: job.type,
-          attempts: job.attempts,
-          error: err.message,
-        }, 'Задачу не вдалося виконати');
-      }
-    }
-  }
-
-  /**
-   * Уничтожить очередь
-   */
-  destroy(): void {
-    if (this.processInterval) {
-      clearInterval(this.processInterval);
-    }
-  }
-}
-
-// ============ Singleton Instance ============
-
-export const queue = new JobQueue();
-
-// ============ Job Type Definitions ============
-
-/**
- * Email Job
- */
 export interface EmailJobData {
   to: string | string[];
   subject: string;
@@ -376,9 +64,6 @@ export interface EmailJobData {
   replyTo?: string;
 }
 
-/**
- * AI Job
- */
 export interface AIJobData {
   action: 'score' | 'analyze' | 'recommend' | 'summarize';
   entityType: 'deal' | 'contact';
@@ -387,9 +72,6 @@ export interface AIJobData {
   model?: string;
 }
 
-/**
- * Export Job
- */
 export interface ExportJobData {
   entityType: 'contacts' | 'deals' | 'tasks';
   format: 'csv' | 'xlsx' | 'json';
@@ -398,9 +80,6 @@ export interface ExportJobData {
   tenantId: string;
 }
 
-/**
- * Notification Job
- */
 export interface NotificationJobData {
   userId: string;
   title: string;
@@ -409,69 +88,321 @@ export interface NotificationJobData {
   link?: string;
 }
 
-// ============ Register Default Handlers ============
+export interface SendMessageJobData {
+  tenantId: string;
+  text: string;
+  chatId?: string | number;
+}
 
-// Email handler (заглушка — в проде интеграция с Resend/SendGrid)
-queue.registerHandler<EmailJobData>('email', async (job) => {
-  log.info({ jobId: job.id, to: job.data.to }, 'Email відправлено');
-  // TODO: Реальная отправка email
-  return { sent: true };
-});
+// ============ Handler Registry (code-level, safe for serverless) ============
 
-// AI handler
-queue.registerHandler<AIJobData>('ai', async (job) => {
-  log.info({ jobId: job.id, action: job.data.action }, 'AI обробку виконано');
-  // TODO: Реальная AI обработка
-  return { processed: true };
-});
+const handlers = new Map<string, JobHandler>();
 
-// Export handler
-queue.registerHandler<ExportJobData>('export', async (job) => {
-  log.info({ jobId: job.id, format: job.data.format }, 'Експорт виконано');
-  // TODO: Реальный экспорт
-  return { fileUrl: '/exports/file.csv' };
-});
+export function registerHandler<T>(type: string, handler: JobHandler<T>): void {
+  handlers.set(type, handler as JobHandler);
+  log.info({ type }, 'Зареєстровано обробник черги');
+}
 
-// Notification handler
-queue.registerHandler<NotificationJobData>('notification', async (job) => {
-  log.info({ jobId: job.id, userId: job.data.userId }, 'Сповіщення надіслано');
-  // TODO: Реальная отправка уведомлений
-  return { sent: true };
-});
+// ============ DB mapping ============
 
-// Cleanup handler
-queue.registerHandler('cleanup', async (job) => {
-  const cleaned = queue.cleanup();
-  log.info({ cleaned }, 'Очищено завершені задачі');
-  return { cleaned };
-});
+function toJob(row: {
+  id: string;
+  tenantId: string;
+  type: string;
+  payload: string;
+  status: string;
+  priority: string;
+  attempts: number;
+  maxAttempts: number;
+  lastError: string | null;
+  result: string | null;
+  nextRetryAt: Date | null;
+  createdAt: Date;
+  startedAt: Date | null;
+  completedAt: Date | null;
+}): Job {
+  let data: any = {};
+  let result: any = undefined;
+  try {
+    data = JSON.parse(row.payload);
+  } catch {}
+  try {
+    result = row.result ? JSON.parse(row.result) : undefined;
+  } catch {}
+  return {
+    id: row.id,
+    tenantId: row.tenantId,
+    type: row.type,
+    data,
+    status: row.status as JobStatus,
+    priority: row.priority as JobPriority,
+    attempts: row.attempts,
+    maxAttempts: row.maxAttempts,
+    lastError: row.lastError || undefined,
+    result,
+    createdAt: row.createdAt,
+    startedAt: row.startedAt || undefined,
+    completedAt: row.completedAt || undefined,
+    nextRetryAt: row.nextRetryAt || undefined,
+  };
+}
 
-// ============ Convenience Functions ============
+// ============ Enqueue ============
 
-/**
- * Отправить email
- */
-export function sendEmail(data: EmailJobData): Job {
-  return queue.addJob('email', data, { priority: 'normal' });
+export async function enqueueJob<T>(
+  tenantId: string,
+  type: string,
+  data: T,
+  options: {
+    priority?: JobPriority;
+    timeout?: number;
+    maxAttempts?: number;
+    delayMs?: number;
+  } = {}
+): Promise<Job<T>> {
+  const row = await prisma.queueJob.create({
+    data: {
+      tenantId,
+      type,
+      payload: JSON.stringify(data ?? {}),
+      status: 'pending',
+      priority: options.priority || 'normal',
+      maxAttempts: options.maxAttempts || 3,
+      nextRetryAt: options.delayMs ? new Date(Date.now() + options.delayMs) : null,
+    },
+  });
+
+  log.info({ jobId: row.id, type, priority: row.priority }, 'Задачу додано в чергу');
+
+  return { ...toJob(row), timeout: options.timeout || 30000 } as Job<T>;
+}
+
+// ============ Stats & Cleanup ============
+
+export async function getQueueStats(tenantId?: string): Promise<QueueStats> {
+  const where = tenantId ? { tenantId } : {};
+  const [pending, processing, completed, failed, total] = await Promise.all([
+    prisma.queueJob.count({ where: { ...where, status: 'pending' } }),
+    prisma.queueJob.count({ where: { ...where, status: 'processing' } }),
+    prisma.queueJob.count({ where: { ...where, status: 'completed' } }),
+    prisma.queueJob.count({ where: { ...where, status: 'failed' } }),
+    prisma.queueJob.count({ where }),
+  ]);
+  return { pending, processing, completed, failed, total };
+}
+
+export async function cleanupQueue(tenantId?: string, maxAgeMs: number = 60 * 60 * 1000): Promise<number> {
+  const cutoff = new Date(Date.now() - maxAgeMs);
+  const res = await prisma.queueJob.deleteMany({
+    where: {
+      ...(tenantId ? { tenantId } : {}),
+      status: { in: ['completed', 'failed'] },
+      createdAt: { lt: cutoff },
+    },
+  });
+  return res.count;
+}
+
+// ============ Claim & Process ============
+
+const PRIORITY_ORDER: Record<JobPriority, number> = { high: 0, normal: 1, low: 2 };
+const STUCK_PROCESSING_MS = 10 * 60 * 1000; // зависшие processing старше 10 мин — вернуть в pending
+
+export interface ProcessResult {
+  processed: number;
+  succeeded: number;
+  failed: number;
+  errors: Array<{ jobId: string; error: string }>;
 }
 
 /**
- * AI обработка
+ * Reset stuck 'processing' jobs (crashed workers) back to pending.
  */
-export function processAI(data: AIJobData): Job {
-  return queue.addJob('ai', data, { priority: 'high', timeout: 60000 });
+async function resetStuckJobs(tenantId?: string): Promise<number> {
+  const res = await prisma.queueJob.updateMany({
+    where: {
+      ...(tenantId ? { tenantId } : {}),
+      status: 'processing',
+      startedAt: { lt: new Date(Date.now() - STUCK_PROCESSING_MS) },
+    },
+    data: { status: 'pending', startedAt: null },
+  });
+  return res.count;
+}
+
+async function claimJob(tenantId: string | undefined, row: { id: string }): Promise<boolean> {
+  // Conditional claim: only wins if still pending (lost races skip).
+  const res = await prisma.queueJob.updateMany({
+    where: { id: row.id, status: 'pending' },
+    data: { status: 'processing', startedAt: new Date() },
+  });
+  return res.count === 1;
 }
 
 /**
- * Экспорт данных
+ * Process up to `limit` pending jobs. Safe to call concurrently —
+ * claims are conditional, losers skip.
  */
-export function exportData(data: ExportJobData): Job {
-  return queue.addJob('export', data, { priority: 'low', timeout: 120000 });
+export async function processQueueJobs(
+  options: { limit?: number; tenantId?: string; timeoutMs?: number } = {}
+): Promise<ProcessResult> {
+  const { limit = 10, tenantId, timeoutMs = 30000 } = options;
+  const result: ProcessResult = { processed: 0, succeeded: 0, failed: 0, errors: [] };
+
+  await resetStuckJobs(tenantId);
+
+  const now = new Date();
+  const candidates = await prisma.queueJob.findMany({
+    where: {
+      ...(tenantId ? { tenantId } : {}),
+      status: 'pending',
+      OR: [{ nextRetryAt: null }, { nextRetryAt: { lte: now } }],
+    },
+    orderBy: [{ createdAt: 'asc' }],
+    take: Math.max(limit * 2, limit),
+  });
+
+  // Priority first, FIFO within priority (same as old findNextJob).
+  candidates.sort(
+    (a, b) =>
+      (PRIORITY_ORDER[a.priority as JobPriority] ?? 1) - (PRIORITY_ORDER[b.priority as JobPriority] ?? 1)
+  );
+  const batch = candidates.slice(0, limit);
+
+  for (const row of batch) {
+    if (!(await claimJob(tenantId, row))) continue;
+    result.processed++;
+
+    const job = toJob(row);
+    const outcome = await runJob(job, timeoutMs);
+
+    if (outcome.ok) {
+      result.succeeded++;
+    } else {
+      result.failed++;
+      result.errors.push({ jobId: job.id, error: outcome.error });
+    }
+  }
+
+  return result;
+}
+
+async function runJob(job: Job, timeoutMs: number): Promise<{ ok: boolean; error: string }> {
+  const handler = handlers.get(job.type);
+  if (!handler) {
+    await prisma.queueJob.update({
+      where: { id: job.id },
+      data: { status: 'failed', lastError: `No handler for job type: ${job.type}`, completedAt: new Date() },
+    });
+    log.error({ jobId: job.id, type: job.type }, 'Немає обробника для типу задачі');
+    await notifyAdmins(job.tenantId, job, `No handler for job type: ${job.type}`);
+    return { ok: false, error: `No handler for job type: ${job.type}` };
+  }
+
+  const attempts = job.attempts + 1;
+  await prisma.queueJob.update({
+    where: { id: job.id },
+    data: { attempts },
+  });
+
+  log.info({ jobId: job.id, type: job.type, attempt: attempts }, 'Початок обробки задачі');
+
+  try {
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Job timeout')), timeoutMs);
+    });
+
+    const handlerResult = await Promise.race([handler(job), timeoutPromise]);
+
+    await prisma.queueJob.update({
+      where: { id: job.id },
+      data: {
+        status: 'completed',
+        result: JSON.stringify(handlerResult ?? { ok: true }).slice(0, 500_000),
+        completedAt: new Date(),
+        lastError: null,
+      },
+    });
+
+    log.info({ jobId: job.id, type: job.type }, 'Задачу виконано');
+    return { ok: true, error: '' };
+  } catch (err: any) {
+    const message = err?.message || String(err);
+
+    // Re-read maxAttempts (row may have changed) — use job's copy.
+    if (attempts < job.maxAttempts) {
+      // Retry с Exponential Backoff: 2^attempts * 1000мс
+      const delay = Math.pow(2, attempts) * 1000;
+      await prisma.queueJob.update({
+        where: { id: job.id },
+        data: {
+          status: 'pending',
+          lastError: message,
+          nextRetryAt: new Date(Date.now() + delay),
+        },
+      });
+      log.warn({ jobId: job.id, type: job.type, attempt: attempts, error: message }, 'Задачу буде повторено');
+      return { ok: false, error: message };
+    }
+
+    await prisma.queueJob.update({
+      where: { id: job.id },
+      data: { status: 'failed', lastError: message, completedAt: new Date() },
+    });
+    log.error({ jobId: job.id, type: job.type, attempts, error: message }, 'Задачу не вдалося виконати');
+    await notifyAdmins(job.tenantId, job, message);
+    return { ok: false, error: message };
+  }
 }
 
 /**
- * Отправить уведомление
+ * П6: уведомление админам тенанта о окончательно упавшей задаче.
  */
-export function sendNotification(data: NotificationJobData): Job {
-  return queue.addJob('notification', data, { priority: 'high' });
+async function notifyAdmins(tenantId: string, job: Job, error: string): Promise<void> {
+  try {
+    const admins = await prisma.tenantMember.findMany({
+      where: { tenantId, role: { in: ['owner', 'admin'] } },
+      select: { userId: true },
+    });
+    if (admins.length === 0) return;
+    await prisma.notification.createMany({
+      data: admins.map((a) => ({
+        tenantId,
+        userId: a.userId,
+        title: 'Інтеграція не працює',
+        message: `Задача "${job.type}" провалилась після ${job.maxAttempts} спроб. Помилка: ${error.slice(0, 300)}`,
+        type: 'error',
+        link: '/dashboard/queues',
+      })),
+    });
+  } catch (e) {
+    log.error({ tenantId, jobId: job.id }, 'Не вдалося створити сповіщення адміну');
+  }
+}
+
+// ============ Legacy-compatible singleton shape ============
+// (v1/queue/stats + dashboard use these; now tenant-aware via optional arg)
+
+export const queue = {
+  getStats: (tenantId?: string) => getQueueStats(tenantId),
+  cleanup: (tenantId?: string, maxAgeMs?: number) => cleanupQueue(tenantId, maxAgeMs),
+  registerHandler,
+};
+
+// ============ Convenience Functions (async — DB write) ============
+
+export async function sendEmail(data: EmailJobData & { tenantId: string }): Promise<Job> {
+  return enqueueJob(data.tenantId, 'email', data, { priority: 'normal' });
+}
+
+export async function processAI(data: AIJobData & { tenantId: string }): Promise<Job> {
+  return enqueueJob(data.tenantId, 'ai', data, { priority: 'high', timeout: 60000 });
+}
+
+export async function exportData(data: ExportJobData): Promise<Job> {
+  return enqueueJob(data.tenantId, 'export', data, { priority: 'low', timeout: 120000 });
+}
+
+export async function sendNotification(data: NotificationJobData & { tenantId: string }): Promise<Job> {
+  return enqueueJob(data.tenantId, 'notification', data, { priority: 'high' });
 }
