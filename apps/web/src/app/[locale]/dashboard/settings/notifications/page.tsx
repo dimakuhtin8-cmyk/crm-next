@@ -118,21 +118,9 @@ export default function NotificationsSettingsPage() {
             >
               Показати приклад
             </Button>
-            {showPreview && (
-              <div className="mt-3 rounded-xl border border-border bg-card p-3.5 shadow-xl max-w-[320px]">
-                <div className="flex items-start gap-2.5">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#111214]">
-                    <Bell className="h-4 w-4 text-[#FFC700]" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold">Автоматизація</p>
-                    <p className="text-xs text-foreground-muted mt-0.5">
-                      Так виглядатиме сповіщення ({toastPosition === 'bottom-left' ? 'зліва знизу' : toastPosition === 'bottom-right' ? 'справа знизу' : 'справа зверху'}). Натисни — відкриється пов'язана сторінка.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
+            <p className="mt-2 text-xs text-foreground-muted">
+              Приклад з'явиться там, де приходитимуть справжні сповіщення.
+            </p>
           </div>
           <p className="text-xs text-foreground-muted">
             Вимкнення прибирає спливаючі вікна, але лічильник на дзвонику та сторінка сповіщень працюють як раніше.
@@ -143,6 +131,39 @@ export default function NotificationsSettingsPage() {
       <Button onClick={handleSave} disabled={saving}>
         {saving ? 'Збереження...' : 'Зберегти'}
       </Button>
+
+      {showPreview && (
+        <div
+          className={cn(
+            'fixed z-[100] w-[320px] max-w-[calc(100vw-2rem)]',
+            toastPosition === 'bottom-left' && 'left-4 bottom-4',
+            toastPosition === 'bottom-right' && 'right-4 bottom-4',
+            toastPosition === 'top-right' && 'right-4 top-4'
+          )}
+          aria-live="polite"
+        >
+          <div className="rounded-xl border border-border bg-card p-3.5 shadow-xl">
+            <div className="flex items-start gap-2.5">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#111214]">
+                <Bell className="h-4 w-4 text-[#FFC700]" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold">Автоматизація</p>
+                <p className="text-xs text-foreground-muted mt-0.5">
+                  Так виглядатиме сповіщення. Натисни — відкриється пов'язана сторінка.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowPreview(false)}
+                className="shrink-0 rounded-md px-1.5 py-0.5 text-sm text-foreground-muted hover:text-foreground"
+                aria-label="Закрити"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
