@@ -116,6 +116,9 @@ export default function DealDetailPage() {
           <h1 className="text-2xl font-bold">{deal.title}</h1>
         </div>
         <div className="flex gap-2">
+          <Link href={`/dashboard/copilot?dealId=${dealId}`}>
+            <Button variant="outline">🤖 Запитати AI</Button>
+          </Link>
           <Link href={`/dashboard/deals/${dealId}/edit`}><Button variant="outline">Редагувати</Button></Link>
           {deal.status === 'open' && (
             <>

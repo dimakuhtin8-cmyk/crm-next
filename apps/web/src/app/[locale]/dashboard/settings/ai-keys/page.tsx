@@ -38,6 +38,8 @@ export default function AiKeysSettingsPage() {
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // Live model list for the selected provider (dynamic, server-cached).
+  const [dynamicModels, setDynamicModels] = useState<{ id: string; name: string }[] | null>(null);
 
   interface SavedKey {
     provider: string;
@@ -81,6 +83,18 @@ export default function AiKeysSettingsPage() {
       setSelectedModel(currentProvider.models[0]?.id || '');
     }
   }, [selectedProvider, currentProvider, selectedModel]);
+
+  useEffect(() => {
+    setDynamicModels(null);
+    fetch(`/api/ai/models?provider=${selectedProvider}`, { credentials: 'include' })
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d.models) && d.models.length > 0 && d.source !== 'static') {
+          setDynamicModels(d.models);
+        }
+      })
+      .catch(() => {});
+  }, [selectedProvider]);
 
   const handleTestKey = async (): Promise<TestResult | null> => {
     if (!apiKey.trim()) return null;
@@ -292,7 +306,7 @@ export default function AiKeysSettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Model selection */}
+          {/* Model selection (dynamic list when available, static fallback otherwise) */}
           {currentProvider && currentProvider.models.length > 0 && (
             <div>
               <label className="block text-xs font-medium text-foreground-muted mb-1.5">Модель</label>
@@ -301,8 +315,11 @@ export default function AiKeysSettingsPage() {
                 onChange={(e) => setSelectedModel(e.target.value)}
                 className="w-full p-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
               >
-                {currentProvider.models.map(m => (
-                  <option key={m.id} value={m.id}>{m.name} — {m.description}</option>
+                {(dynamicModels && dynamicModels.length > 0
+                  ? dynamicModels.map((m) => ({ id: m.id, name: m.name, description: '' }))
+                  : currentProvider.models
+                ).map(m => (
+                  <option key={m.id} value={m.id}>{m.name}{m.description ? ` — ${m.description}` : ''}</option>
                 ))}
               </select>
             </div>

@@ -51,6 +51,9 @@ async function POSTHandler(request: NextRequest) {
     }
 
     await setProviderKey(tq.tenantId, provider, apiKey.trim());
+    // Prefetch + cache the live model list right away (best-effort).
+    const { refreshProviderModels } = await import('@/lib/ai/models');
+    await refreshProviderModels(tq.tenantId, provider);
     const keys = await listProviderKeys(tq.tenantId);
     return NextResponse.json({ success: true, keys });
   } catch (error) {

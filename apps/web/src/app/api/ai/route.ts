@@ -7,10 +7,11 @@ import {
   scoreDeal, generateRecommendations, smartSearch, checkAi,
 } from '@/lib/ai/gemini';
 import { csrfProtection } from '@/lib/csrf';
+import { extractUserId } from '@/lib/auth-utils';
 import { getTenantQuery } from '@/lib/tenant-query';
 import { prisma } from '@crm-next/database';
 import { checkUsageLimit, logAiRequest, incrementUsage } from '@/lib/ai/usage';
-import { getProviderKey } from '@/lib/ai/keys';
+import { getProviderKeyRaw } from '@/lib/ai/keys';
 import { withAuth } from '@/lib/auth-guard';
 
 async function getTenantAiSettings(tenantId: string) {
@@ -19,8 +20,9 @@ async function getTenantAiSettings(tenantId: string) {
     select: { aiProvider: true, aiModel: true },
   });
   const provider = tenant?.aiProvider || 'gemini';
-  // Per-provider keys (AiProviderKey) first, legacy tenant fields as fallback.
-  const apiKey = await getProviderKey(tenantId, provider);
+  // RAW encrypted key — resolveConfig() decrypts it downstream.
+  // Per-provider store (AiProviderKey) first, legacy tenant fields as fallback.
+  const apiKey = await getProviderKeyRaw(tenantId, provider);
   return {
     apiKey,
     provider,
@@ -61,6 +63,7 @@ async function POSTHandler(request: NextRequest) {
     const body = await request.json();
     const { action, data } = body;
     let result: string | object;
+    let sources: Array<{ id: string; type: string; name: string }> = [];
     const startTime = Date.now();
 
     try {
@@ -225,9 +228,27 @@ async function POSTHandler(request: NextRequest) {
       case 'custom': {
         // Model picker in chat UI wins if provided; otherwise tenant default.
         const requestedModel = typeof data.model === 'string' && data.model ? data.model : undefined;
+        // Grounding: real CRM data into system prompt (levels 1-2), tenant-scoped.
+        const { buildChatContext } = await import('@/lib/ai/grounding');
+        const { getUserRole } = await import('@/lib/rbac');
+        const chatUserId = await extractUserId(request);
+        const chatRole = chatUserId ? await getUserRole(chatUserId, tq.tenantId) : null;
+        const grounding = await buildChatContext(tq, {
+          message: typeof data.prompt === 'string' ? data.prompt : '',
+          contactId: typeof data.contactId === 'string' ? data.contactId : null,
+          dealId: typeof data.dealId === 'string' ? data.dealId : null,
+          role: chatRole || 'member',
+          userId: chatUserId || '',
+        });
+        const groundedSystem = [
+          typeof data.system === 'string' && data.system ? data.system : null,
+          grounding.system,
+        ]
+          .filter(Boolean)
+          .join('\n\n');
         const genResult = await generate({
           prompt: data.prompt,
-          system: data.system,
+          system: groundedSystem,
           temperature: data.temperature,
           maxTokens: data.maxTokens,
           tenantApiKey: aiSettings.apiKey,
@@ -235,6 +256,7 @@ async function POSTHandler(request: NextRequest) {
           tenantAiModel: requestedModel || aiSettings.model,
         });
         result = genResult.response;
+        sources = grounding.sources;
         break;
       }
       default:
@@ -253,7 +275,7 @@ async function POSTHandler(request: NextRequest) {
       });
       await incrementUsage(tq.tenantId, aiSettings.provider);
 
-      return NextResponse.json({ result });
+      return NextResponse.json({ result, sources });
     } catch (aiError) {
       // Log failed AI request
       const durationMs = Date.now() - startTime;

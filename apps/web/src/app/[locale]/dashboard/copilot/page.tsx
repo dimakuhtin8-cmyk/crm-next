@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Bot, Save, ExternalLink, Search, Send, Paperclip, ChevronDown } from 'lucide-react';
 import { Button, Card, CardContent, Input } from '@/components/ui';
 import { AI_PROVIDERS, getProvider } from '@/lib/ai/providers';
@@ -10,6 +11,7 @@ interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  sources?: Array<{ id: string; type: string; name: string }>;
 }
 
 export default function CopilotPage() {
@@ -25,10 +27,28 @@ export default function CopilotPage() {
   const [chatLoading, setChatLoading] = useState(false);
   const [selectedChatModel, setSelectedChatModel] = useState('gemini-3-flash-preview');
   const [showModelPicker, setShowModelPicker] = useState(false);
+  // Live model lists per provider (dynamic, 24h cached server-side).
+  // Falls back to the static providers.ts list when unavailable.
+  const [dynamicModels, setDynamicModels] = useState<Record<string, { id: string; name: string }[]>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const searchParams = useSearchParams();
+  // Level-1 grounding: entity of the page the chat was opened from.
+  const contextContactId = searchParams.get('contactId');
+  const contextDealId = searchParams.get('dealId');
 
   const currentProvider = getProvider(selectedProvider);
+
+  useEffect(() => {
+    fetch(`/api/ai/models?provider=${selectedProvider}`, { credentials: 'include' })
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d.models) && d.models.length > 0 && d.source !== 'static') {
+          setDynamicModels((prev) => ({ ...prev, [selectedProvider]: d.models }));
+        }
+      })
+      .catch(() => {});
+  }, [selectedProvider]);
 
   useEffect(() => {
     fetch('/api/ai', { credentials: 'include' })
@@ -89,7 +109,12 @@ export default function CopilotPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'custom',
-          data: { prompt: text, model: selectedChatModel || undefined },
+          data: {
+            prompt: text,
+            model: selectedChatModel || undefined,
+            contactId: contextContactId || undefined,
+            dealId: contextDealId || undefined,
+          },
         }),
       });
       const json = await res.json();
@@ -98,6 +123,7 @@ export default function CopilotPage() {
         role: 'assistant',
         content: res.ok ? (json.result || json.response || 'Відповідь отримана') : (json.error || 'Помилка генерації'),
         timestamp: new Date(),
+        sources: Array.isArray(json.sources) ? json.sources : undefined,
       };
       setMessages(prev => [...prev, assistantMsg]);
     } catch {
@@ -122,7 +148,10 @@ export default function CopilotPage() {
   const getAllModels = () => {
     const all: { provider: string; providerName: string; modelId: string; name: string; description: string }[] = [];
     AI_PROVIDERS.forEach(p => {
-      p.models.forEach(m => {
+      const models = dynamicModels[p.id] && dynamicModels[p.id].length > 0
+        ? dynamicModels[p.id].map(m => ({ id: m.id, name: m.name, description: '' }))
+        : p.models;
+      models.forEach(m => {
         all.push({
           provider: p.id,
           providerName: p.name,
@@ -137,8 +166,9 @@ export default function CopilotPage() {
 
   const currentModelName = (() => {
     for (const p of AI_PROVIDERS) {
-      const m = p.models.find(m => m.id === selectedChatModel);
-      if (m) return m.name;
+      const dyn = (dynamicModels[p.id] && dynamicModels[p.id].length > 0 ? dynamicModels[p.id] : p.models)
+        .find(m => m.id === selectedChatModel);
+      if (dyn) return dyn.name;
     }
     return selectedChatModel;
   })();
@@ -304,6 +334,20 @@ export default function CopilotPage() {
                       : 'bg-accent/60 text-foreground rounded-bl-md'
                   }`}>
                     <div className="whitespace-pre-wrap">{msg.content}</div>
+                    {msg.role === 'assistant' && msg.sources && msg.sources.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5 border-t border-border/50 pt-2">
+                        <span className="text-[11px] text-foreground-muted">На основі:</span>
+                        {msg.sources.map((s) => (
+                          <span
+                            key={`${s.type}-${s.id}`}
+                            className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
+                            title={`${s.type === 'contact' ? 'Контакт' : 'Угода'}: ${s.name}`}
+                          >
+                            {s.type === 'contact' ? '👤' : '💼'} {s.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -383,27 +427,32 @@ export default function CopilotPage() {
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setShowModelPicker(false)} />
                       <div className="absolute bottom-full right-0 mb-2 w-80 max-h-[400px] overflow-y-auto bg-background border border-border rounded-xl shadow-xl z-50 p-2">
-                        {AI_PROVIDERS.filter(p => p.id !== 'custom').map(p => (
-                          <div key={p.id}>
-                            <div className="px-3 py-1.5 text-xs font-semibold text-foreground-muted uppercase tracking-wider">
-                              {p.name}
+                        {AI_PROVIDERS.filter(p => p.id !== 'custom').map(p => {
+                          const models = dynamicModels[p.id] && dynamicModels[p.id].length > 0
+                            ? dynamicModels[p.id].map(m => ({ id: m.id, name: m.name, description: '' }))
+                            : p.models;
+                          return (
+                            <div key={p.id}>
+                              <div className="px-3 py-1.5 text-xs font-semibold text-foreground-muted uppercase tracking-wider">
+                                {p.name}
+                              </div>
+                              {models.map(m => (
+                                <button
+                                  key={m.id}
+                                  onClick={() => { setSelectedChatModel(m.id); setShowModelPicker(false); }}
+                                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                                    selectedChatModel === m.id
+                                      ? 'bg-primary/10 text-primary'
+                                      : 'hover:bg-accent text-foreground'
+                                  }`}
+                                >
+                                  <div className="font-medium">{m.name}</div>
+                                  <div className="text-xs text-foreground-muted mt-0.5">{m.description}</div>
+                                </button>
+                              ))}
                             </div>
-                            {p.models.map(m => (
-                              <button
-                                key={m.id}
-                                onClick={() => { setSelectedChatModel(m.id); setShowModelPicker(false); }}
-                                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                                  selectedChatModel === m.id
-                                    ? 'bg-primary/10 text-primary'
-                                    : 'hover:bg-accent text-foreground'
-                                }`}
-                              >
-                                <div className="font-medium">{m.name}</div>
-                                <div className="text-xs text-foreground-muted mt-0.5">{m.description}</div>
-                              </button>
-                            ))}
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </>
                   )}

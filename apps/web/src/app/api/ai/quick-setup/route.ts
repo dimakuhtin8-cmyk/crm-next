@@ -55,6 +55,10 @@ async function POSTHandler(request: NextRequest) {
     // fields in sync for the active provider path.
     await setProviderKey(tq.tenantId, providerId, apiKey);
 
+    // Prefetch + cache the live model list right away (best-effort).
+    const { refreshProviderModels } = await import('@/lib/ai/models');
+    await refreshProviderModels(tq.tenantId, providerId);
+
     await prisma.tenant.update({
       where: { id: tq.tenantId },
       data: {

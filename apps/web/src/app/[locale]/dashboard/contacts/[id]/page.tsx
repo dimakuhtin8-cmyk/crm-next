@@ -201,6 +201,9 @@ export default function ContactDetailPage() {
           </div>
         </div>
         <div className="flex gap-2">
+          <Link href={`/dashboard/copilot?contactId=${contactId}`}>
+            <Button variant="outline">🤖 Запитати AI</Button>
+          </Link>
           <Link href={`/dashboard/contacts/${contactId}/edit`}>
             <Button variant="outline">Редагувати</Button>
           </Link>
