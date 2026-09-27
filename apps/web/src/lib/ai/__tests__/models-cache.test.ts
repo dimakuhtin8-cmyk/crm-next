@@ -3,11 +3,11 @@
  * Мокается ТОЛЬКО fetch (исходящий HTTP к провайдеру).
  */
 
-import { describe, it, expect, beforeAll, afterAll, vi, beforeEach } from 'vitest';
 import { prisma } from '@crm-next/database';
+import { describe, it, expect, beforeAll, afterAll, vi, beforeEach } from 'vitest';
 
-import { getProviderModels } from '@/lib/ai/models';
 import { setProviderKey } from '@/lib/ai/keys';
+import { getProviderModels } from '@/lib/ai/models';
 
 let fetchCalls = 0;
 
@@ -21,7 +21,7 @@ function mockModelsFetch() {
         ok: true,
         json: async () => ({ data: [{ id: 'gpt-mock-a' }, { id: 'gpt-mock-b' }] }),
       } as unknown as Response;
-    })
+    }),
   );
 }
 
@@ -44,7 +44,9 @@ beforeAll(async () => {
   await prisma.user.deleteMany();
   await prisma.tenant.deleteMany();
 
-  const t = await prisma.tenant.create({ data: { name: 'Models', slug: 'models-cache', plan: 'professional' } });
+  const t = await prisma.tenant.create({
+    data: { name: 'Models', slug: 'models-cache', plan: 'professional' },
+  });
   tenantId = t.id;
   // Уникальный провайдер на тест, чтобы не пересечься с кэшем других файлов.
   await setProviderKey(tenantId, 'openai', 'sk-test-cache-key');
@@ -82,11 +84,36 @@ describe('П4.4: кэш моделей', () => {
   it('упавший провайдер → static fallback, а не исключение', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => ({ ok: false, status: 500, text: async () => 'err' }) as unknown as Response)
+      vi.fn(
+        async () => ({ ok: false, status: 500, text: async () => 'err' }) as unknown as Response,
+      ),
     );
     const r = await getProviderModels(tenantId, 'groq', [{ id: 'static-x', name: 'Static X' }]);
     // groq без ключа: ключа нет → сразу static (fetch вообще не вызывается)
     expect(r.source).toBe('static');
     expect(r.models).toEqual([{ id: 'static-x', name: 'Static X' }]);
+  });
+
+  it('не-чат модели (tts/image/embed) вычищаются из динамического списка', async () => {
+    const { fetchProviderModels } = await import('@/lib/ai/models');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          ({
+            ok: true,
+            json: async () => ({
+              data: [
+                { id: 'gpt-chat' },
+                { id: 'whisper-1' },
+                { id: 'dall-e-3' },
+                { id: 'text-embedding-1' },
+              ],
+            }),
+          }) as unknown as Response,
+      ),
+    );
+    const models = await fetchProviderModels('openai', 'sk-test');
+    expect(models.map((m) => m.id)).toEqual(['gpt-chat']);
   });
 });

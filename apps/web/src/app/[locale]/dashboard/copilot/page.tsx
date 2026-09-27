@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { Bot, Save, ExternalLink, Send, Paperclip, ChevronDown } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
-import { Bot, Save, ExternalLink, Search, Send, Paperclip, ChevronDown } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+
 import { Button, Card, CardContent, Input } from '@/components/ui';
 import { AI_PROVIDERS, getProvider } from '@/lib/ai/providers';
 
@@ -27,9 +28,13 @@ export default function CopilotPage() {
   const [chatLoading, setChatLoading] = useState(false);
   const [selectedChatModel, setSelectedChatModel] = useState('gemini-3-flash-preview');
   const [showModelPicker, setShowModelPicker] = useState(false);
+  // Бейдж "підключено" — только один раз сразу после подключения, затем пропадает.
+  const [justConnected, setJustConnected] = useState(false);
   // Live model lists per provider (dynamic, 24h cached server-side).
   // Falls back to the static providers.ts list when unavailable.
-  const [dynamicModels, setDynamicModels] = useState<Record<string, { id: string; name: string }[]>>({});
+  const [dynamicModels, setDynamicModels] = useState<
+    Record<string, { id: string; name: string }[]>
+  >({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const searchParams = useSearchParams();
@@ -52,8 +57,8 @@ export default function CopilotPage() {
 
   useEffect(() => {
     fetch('/api/ai', { credentials: 'include' })
-      .then(r => r.json())
-      .then(d => setAiStatus(d.available ? 'ready' : 'no-key'))
+      .then((r) => r.json())
+      .then((d) => setAiStatus(d.available ? 'ready' : 'no-key'))
       .catch(() => setAiStatus('no-key'));
   }, []);
 
@@ -69,14 +74,22 @@ export default function CopilotPage() {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey: quickKey, provider: selectedProvider, model: quickModel || undefined }),
+        body: JSON.stringify({
+          apiKey: quickKey,
+          provider: selectedProvider,
+          model: quickModel || undefined,
+        }),
       });
       if (res.ok) {
         setAiStatus('ready');
         setQuickKey('');
         if (quickModel) setSelectedChatModel(quickModel);
+        setJustConnected(true);
+        setTimeout(() => setJustConnected(false), 10000);
       }
-    } catch {} finally {
+    } catch {
+      // ошибка сохранения ключа — сообщение уже показано выше
+    } finally {
       setSavingKey(false);
     }
   };
@@ -98,7 +111,7 @@ export default function CopilotPage() {
       content: text,
       timestamp: new Date(),
     };
-    setMessages(prev => [...prev, userMsg]);
+    setMessages((prev) => [...prev, userMsg]);
     setInputValue('');
     setChatLoading(true);
 
@@ -121,18 +134,23 @@ export default function CopilotPage() {
       const assistantMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: res.ok ? (json.result || json.response || 'Відповідь отримана') : (json.error || 'Помилка генерації'),
+        content: res.ok
+          ? json.result || json.response || 'Відповідь отримана'
+          : json.error || 'Помилка генерації',
         timestamp: new Date(),
         sources: Array.isArray(json.sources) ? json.sources : undefined,
       };
-      setMessages(prev => [...prev, assistantMsg]);
+      setMessages((prev) => [...prev, assistantMsg]);
     } catch {
-      setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: 'Помилка з\'єднання з AI. Перевірте підключення.',
-        timestamp: new Date(),
-      }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: "Помилка з'єднання з AI. Перевірте підключення.",
+          timestamp: new Date(),
+        },
+      ]);
     } finally {
       setChatLoading(false);
     }
@@ -145,29 +163,11 @@ export default function CopilotPage() {
     }
   };
 
-  const getAllModels = () => {
-    const all: { provider: string; providerName: string; modelId: string; name: string; description: string }[] = [];
-    AI_PROVIDERS.forEach(p => {
-      const models = dynamicModels[p.id] && dynamicModels[p.id].length > 0
-        ? dynamicModels[p.id].map(m => ({ id: m.id, name: m.name, description: '' }))
-        : p.models;
-      models.forEach(m => {
-        all.push({
-          provider: p.id,
-          providerName: p.name,
-          modelId: m.id,
-          name: m.name,
-          description: m.description,
-        });
-      });
-    });
-    return all;
-  };
-
   const currentModelName = (() => {
     for (const p of AI_PROVIDERS) {
-      const dyn = (dynamicModels[p.id] && dynamicModels[p.id].length > 0 ? dynamicModels[p.id] : p.models)
-        .find(m => m.id === selectedChatModel);
+      const dyn = (
+        dynamicModels[p.id] && dynamicModels[p.id].length > 0 ? dynamicModels[p.id] : p.models
+      ).find((m) => m.id === selectedChatModel);
       if (dyn) return dyn.name;
     }
     return selectedChatModel;
@@ -196,7 +196,7 @@ export default function CopilotPage() {
             </p>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-5">
-              {AI_PROVIDERS.filter(p => p.id !== 'custom').map((p) => (
+              {AI_PROVIDERS.filter((p) => p.id !== 'custom').map((p) => (
                 <button
                   key={p.id}
                   onClick={() => handleProviderSelect(p.id)}
@@ -208,7 +208,9 @@ export default function CopilotPage() {
                 >
                   <div className="flex items-center gap-2.5">
                     <img src={p.logo} alt={p.name} className="h-6 w-6 shrink-0 rounded" />
-                    <span className="text-xs font-semibold leading-tight text-foreground">{p.name}</span>
+                    <span className="text-xs font-semibold leading-tight text-foreground">
+                      {p.name}
+                    </span>
                   </div>
                   {selectedProvider === p.id && (
                     <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary animate-pulse" />
@@ -221,21 +223,26 @@ export default function CopilotPage() {
               <div className="p-4 rounded-xl bg-accent/50 border border-border/40 mb-5">
                 <p className="text-sm text-foreground-muted">{currentProvider.description}</p>
                 <p className="text-xs text-foreground-muted mt-1">
-                  <span className="font-medium">Безкоштовний тариф:</span> {currentProvider.freeQuota}
+                  <span className="font-medium">Безкоштовний тариф:</span>{' '}
+                  {currentProvider.freeQuota}
                 </p>
               </div>
             )}
 
             {currentProvider && currentProvider.models.length > 0 && (
               <div className="mb-4">
-                <label className="block text-xs font-medium text-foreground-muted mb-1.5">Модель</label>
+                <label className="block text-xs font-medium text-foreground-muted mb-1.5">
+                  Модель
+                </label>
                 <select
                   value={quickModel}
                   onChange={(e) => setQuickModel(e.target.value)}
                   className="w-full p-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                 >
-                  {currentProvider.models.map(m => (
-                    <option key={m.id} value={m.id}>{m.name} — {m.description}</option>
+                  {currentProvider.models.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name} — {m.description}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -283,7 +290,7 @@ export default function CopilotPage() {
         </Card>
       )}
 
-      {aiStatus === 'ready' && (
+      {aiStatus === 'ready' && justConnected && (
         <div className="flex items-center gap-2 px-1">
           <span className="text-sm text-green-600">✅ AI підключено</span>
         </div>
@@ -301,24 +308,33 @@ export default function CopilotPage() {
                 </div>
                 <h3 className="text-lg font-semibold mb-1">Як я можу допомогти?</h3>
                 <p className="text-sm text-foreground-muted max-w-sm">
-                  Задайте питання про ваші контакти, угоди або завдання. Я проаналізую дані та допоможу.
+                  Задайте питання про ваші контакти, угоди або завдання. Я проаналізую дані та
+                  допоможу.
                 </p>
                 <div className="flex flex-wrap gap-2 mt-4 justify-center">
-                  {['Покажи топ угод', 'Згенеруй КП', 'План на сьогодні', 'Аналіз контактів'].map(q => (
-                    <button
-                      key={q}
-                      onClick={() => { setInputValue(q); inputRef.current?.focus(); }}
-                      className="px-3 py-1.5 text-xs rounded-full border border-border hover:border-primary/50 hover:bg-primary/5 transition-all"
-                    >
-                      {q}
-                    </button>
-                  ))}
+                  {['Покажи топ угод', 'Згенеруй КП', 'План на сьогодні', 'Аналіз контактів'].map(
+                    (q) => (
+                      <button
+                        key={q}
+                        onClick={() => {
+                          setInputValue(q);
+                          inputRef.current?.focus();
+                        }}
+                        className="px-3 py-1.5 text-xs rounded-full border border-border hover:border-primary/50 hover:bg-primary/5 transition-all"
+                      >
+                        {q}
+                      </button>
+                    ),
+                  )}
                 </div>
               </div>
             )}
 
             {messages.map((msg) => (
-              <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div
+                key={msg.id}
+                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
                 <div className={`max-w-[80%] ${msg.role === 'user' ? 'order-1' : 'order-1'}`}>
                   {msg.role === 'assistant' && (
                     <div className="flex items-center gap-2 mb-1.5">
@@ -328,11 +344,13 @@ export default function CopilotPage() {
                       <span className="text-xs font-medium text-foreground-muted">AI Co-Pilot</span>
                     </div>
                   )}
-                  <div className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                    msg.role === 'user'
-                      ? 'bg-primary text-primary-foreground rounded-br-md'
-                      : 'bg-accent/60 text-foreground rounded-bl-md'
-                  }`}>
+                  <div
+                    className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                      msg.role === 'user'
+                        ? 'bg-primary text-primary-foreground rounded-br-md'
+                        : 'bg-accent/60 text-foreground rounded-bl-md'
+                    }`}
+                  >
                     <div className="whitespace-pre-wrap">{msg.content}</div>
                     {msg.role === 'assistant' && msg.sources && msg.sources.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-1.5 border-t border-border/50 pt-2">
@@ -364,9 +382,18 @@ export default function CopilotPage() {
                   </div>
                   <div className="bg-accent/60 rounded-2xl rounded-bl-md px-4 py-3">
                     <div className="flex items-center gap-1.5">
-                      <div className="w-2 h-2 bg-foreground-muted/40 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <div className="w-2 h-2 bg-foreground-muted/40 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <div className="w-2 h-2 bg-foreground-muted/40 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <div
+                        className="w-2 h-2 bg-foreground-muted/40 rounded-full animate-bounce"
+                        style={{ animationDelay: '0ms' }}
+                      />
+                      <div
+                        className="w-2 h-2 bg-foreground-muted/40 rounded-full animate-bounce"
+                        style={{ animationDelay: '150ms' }}
+                      />
+                      <div
+                        className="w-2 h-2 bg-foreground-muted/40 rounded-full animate-bounce"
+                        style={{ animationDelay: '300ms' }}
+                      />
                     </div>
                   </div>
                 </div>
@@ -425,21 +452,32 @@ export default function CopilotPage() {
 
                   {showModelPicker && (
                     <>
-                      <div className="fixed inset-0 z-40" onClick={() => setShowModelPicker(false)} />
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setShowModelPicker(false)}
+                      />
                       <div className="absolute bottom-full right-0 mb-2 w-80 max-h-[400px] overflow-y-auto bg-background border border-border rounded-xl shadow-xl z-50 p-2">
-                        {AI_PROVIDERS.filter(p => p.id !== 'custom').map(p => {
-                          const models = dynamicModels[p.id] && dynamicModels[p.id].length > 0
-                            ? dynamicModels[p.id].map(m => ({ id: m.id, name: m.name, description: '' }))
-                            : p.models;
+                        {AI_PROVIDERS.filter((p) => p.id !== 'custom').map((p) => {
+                          const models =
+                            dynamicModels[p.id] && dynamicModels[p.id].length > 0
+                              ? dynamicModels[p.id].map((m) => ({
+                                  id: m.id,
+                                  name: m.name,
+                                  description: '',
+                                }))
+                              : p.models;
                           return (
                             <div key={p.id}>
                               <div className="px-3 py-1.5 text-xs font-semibold text-foreground-muted uppercase tracking-wider">
                                 {p.name}
                               </div>
-                              {models.map(m => (
+                              {models.map((m) => (
                                 <button
                                   key={m.id}
-                                  onClick={() => { setSelectedChatModel(m.id); setShowModelPicker(false); }}
+                                  onClick={() => {
+                                    setSelectedChatModel(m.id);
+                                    setShowModelPicker(false);
+                                  }}
                                   className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                                     selectedChatModel === m.id
                                       ? 'bg-primary/10 text-primary'
@@ -447,7 +485,9 @@ export default function CopilotPage() {
                                   }`}
                                 >
                                   <div className="font-medium">{m.name}</div>
-                                  <div className="text-xs text-foreground-muted mt-0.5">{m.description}</div>
+                                  <div className="text-xs text-foreground-muted mt-0.5">
+                                    {m.description}
+                                  </div>
                                 </button>
                               ))}
                             </div>
@@ -462,7 +502,6 @@ export default function CopilotPage() {
           </div>
         </CardContent>
       </Card>
-
     </div>
   );
 }

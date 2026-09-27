@@ -11,8 +11,9 @@
  * documented endpoints, НЕ ПРОВЕРЕНО live (no keys available).
  */
 
-import { cache } from '@/lib/cache';
 import { getProviderKey } from './keys';
+
+import { cache } from '@/lib/cache';
 
 export interface DynamicModel {
   id: string;
@@ -41,41 +42,52 @@ function openAiStyleIds(data: any): string[] {
   return list.map((m: any) => m?.id).filter((id: unknown): id is string => typeof id === 'string');
 }
 
+// Non-chat models (TTS, image, embeddings...) pollute the chat picker.
+const NON_CHAT_PATTERN =
+  /tts|whisper|dall-e|embedding|image|audio|transcribe|realtime|vision|moderation/i;
+
+function toChatModels(ids: string[]): DynamicModel[] {
+  return ids
+    .filter((id) => !NON_CHAT_PATTERN.test(id))
+    .sort()
+    .slice(0, 50)
+    .map((id) => ({ id, name: id }));
+}
+
 /**
  * Fetch the live model list from the provider. Throws on any failure —
  * callers decide the fallback.
  */
-export async function fetchProviderModels(provider: string, apiKey: string): Promise<DynamicModel[]> {
+export async function fetchProviderModels(
+  provider: string,
+  apiKey: string,
+): Promise<DynamicModel[]> {
   switch (provider) {
     case 'gemini': {
       // VERIFIED live (models.list, Sep 2026).
       const data = await fetchJson(
         `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`,
-        {}
+        {},
       );
       const models = Array.isArray(data?.models) ? data.models : [];
       return models
-        .filter((m: any) =>
-          Array.isArray(m?.supportedGenerationMethods) &&
-          m.supportedGenerationMethods.includes('generateContent') &&
-          typeof m?.name === 'string'
+        .filter(
+          (m: any) =>
+            Array.isArray(m?.supportedGenerationMethods) &&
+            m.supportedGenerationMethods.includes('generateContent') &&
+            typeof m?.name === 'string',
         )
-        .map((m: any) => {
-          const id = String(m.name).replace(/^models\//, '');
-          return { id, name: id };
-        })
-        .slice(0, 50);
+        .map((m: any) => String(m.name).replace(/^models\//, ''))
+        .filter((id: string) => !NON_CHAT_PATTERN.test(id))
+        .slice(0, 50)
+        .map((id: string) => ({ id, name: id }));
     }
     case 'openai': {
       // Standard endpoint, НЕ ПРОВЕРЕНО live.
       const data = await fetchJson('https://api.openai.com/v1/models', {
         Authorization: `Bearer ${apiKey}`,
       });
-      return openAiStyleIds(data)
-        .filter((id) => id.startsWith('gpt-'))
-        .sort()
-        .slice(0, 50)
-        .map((id) => ({ id, name: id }));
+      return toChatModels(openAiStyleIds(data).filter((id) => id.startsWith('gpt-')));
     }
     case 'anthropic': {
       // Documented endpoint, НЕ ПРОВЕРЕНО live.
@@ -83,50 +95,35 @@ export async function fetchProviderModels(provider: string, apiKey: string): Pro
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
       });
-      return openAiStyleIds(data)
-        .sort()
-        .slice(0, 50)
-        .map((id) => ({ id, name: id }));
+      return toChatModels(openAiStyleIds(data));
     }
     case 'deepseek': {
       // Documented endpoint, НЕ ПРОВЕРЕНО live.
       const data = await fetchJson('https://api.deepseek.com/models', {
         Authorization: `Bearer ${apiKey}`,
       });
-      return openAiStyleIds(data)
-        .sort()
-        .slice(0, 50)
-        .map((id) => ({ id, name: id }));
+      return toChatModels(openAiStyleIds(data));
     }
     case 'groq': {
       // OpenAI-compatible endpoint, НЕ ПРОВЕРЕНО live.
       const data = await fetchJson('https://api.groq.com/openai/v1/models', {
         Authorization: `Bearer ${apiKey}`,
       });
-      return openAiStyleIds(data)
-        .sort()
-        .slice(0, 50)
-        .map((id) => ({ id, name: id }));
+      return toChatModels(openAiStyleIds(data));
     }
     case 'mistral': {
       // Documented endpoint, НЕ ПРОВЕРЕНО live.
       const data = await fetchJson('https://api.mistral.ai/v1/models', {
         Authorization: `Bearer ${apiKey}`,
       });
-      return openAiStyleIds(data)
-        .sort()
-        .slice(0, 50)
-        .map((id) => ({ id, name: id }));
+      return toChatModels(openAiStyleIds(data));
     }
     case 'together': {
       // Documented endpoint, НЕ ПРОВЕРЕНО live.
       const data = await fetchJson('https://api.together.xyz/v1/models', {
         Authorization: `Bearer ${apiKey}`,
       });
-      return openAiStyleIds(data)
-        .sort()
-        .slice(0, 50)
-        .map((id) => ({ id, name: id }));
+      return toChatModels(openAiStyleIds(data));
     }
     default:
       throw new Error(`Невідомий провайдер: ${provider}`);
@@ -145,7 +142,7 @@ export interface ModelListResult {
 export async function getProviderModels(
   tenantId: string,
   provider: string,
-  staticFallback: DynamicModel[] = []
+  staticFallback: DynamicModel[] = [],
 ): Promise<ModelListResult> {
   const key = cacheKey(tenantId, provider);
 

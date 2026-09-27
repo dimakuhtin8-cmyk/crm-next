@@ -9,9 +9,10 @@
  * prisma.contact/deal reads without tenantId anywhere in this file.
  */
 
-import { decrypt } from '@/lib/encryption';
 import type { TenantRole } from '@/lib/rbac';
 import type { createTenantQuery } from '@/lib/tenant-query';
+
+import { decrypt } from '@/lib/encryption';
 
 type TenantQuery = ReturnType<typeof createTenantQuery>;
 
@@ -34,6 +35,14 @@ const NO_DATA_INSTRUCTION = `Даних по цьому запиту в CRM не
 function ownerScope(role: TenantRole, userId: string): Record<string, unknown> {
   if (role === 'member') {
     return { OR: [{ ownerId: userId }, { ownerId: null }] };
+  }
+  return {};
+}
+
+/** Visibility scope for tasks (assigneeId field, same rule). */
+function taskScope(role: TenantRole, userId: string): Record<string, unknown> {
+  if (role === 'member') {
+    return { OR: [{ assigneeId: userId }, { assigneeId: null }] };
   }
   return {};
 }
@@ -62,19 +71,22 @@ function fmtDate(value: unknown): string {
 async function describeContact(
   tq: TenantQuery,
   contact: any,
-  sources: GroundSource[]
+  sources: GroundSource[],
 ): Promise<string> {
   sources.push({
     id: contact.id,
     type: 'contact',
-    name: `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.company || contact.id,
+    name:
+      `${contact.firstName || ''} ${contact.lastName || ''}`.trim() ||
+      contact.company ||
+      contact.id,
   });
 
   const lines: string[] = [];
   lines.push(
     `Контакт: ${contact.firstName || ''} ${contact.lastName || ''}`.trim() +
       (contact.company ? `, компанія "${contact.company}"` : '') +
-      (contact.email ? `, email: ${contact.email}` : '')
+      (contact.email ? `, email: ${contact.email}` : ''),
   );
 
   const notes = safeDecrypt(contact.notes);
@@ -88,7 +100,9 @@ async function describeContact(
   if (activities.length > 0) {
     lines.push(
       'Останні активності: ' +
-        activities.map((a: any) => `${a.type} ${fmtDate(a.date)} (${a.title || ''})`.trim()).join('; ')
+        activities
+          .map((a: any) => `${a.type} ${fmtDate(a.date)} (${a.title || ''})`.trim())
+          .join('; '),
     );
   }
 
@@ -104,9 +118,9 @@ async function describeContact(
           .map(
             (d: any) =>
               `"${d.title}" — етап "${d.stage?.name || '—'}"` +
-              (d.value ? `, сума ${d.value} ${d.currency || 'грн'}` : '')
+              (d.value ? `, сума ${d.value} ${d.currency || 'грн'}` : ''),
           )
-          .join('; ')
+          .join('; '),
     );
   }
 
@@ -122,18 +136,14 @@ async function describeContact(
   return lines.join('\n');
 }
 
-async function describeDeal(
-  tq: TenantQuery,
-  deal: any,
-  sources: GroundSource[]
-): Promise<string> {
+async function describeDeal(tq: TenantQuery, deal: any, sources: GroundSource[]): Promise<string> {
   sources.push({ id: deal.id, type: 'deal', name: deal.title || deal.id });
 
   const lines: string[] = [];
   lines.push(
     `Угода: "${deal.title}" — етап "${deal.stage?.name || '—'}"` +
       (deal.value ? `, сума ${deal.value} ${deal.currency || 'грн'}` : '') +
-      `, статус: ${deal.status || '—'}`
+      `, статус: ${deal.status || '—'}`,
   );
   if (deal.company) lines.push(`Компанія: ${deal.company}`);
   if (deal.contact) {
@@ -147,7 +157,9 @@ async function describeDeal(
       take: 5,
     });
     if (tasks.length > 0) {
-      lines.push('Задачі по угоді: ' + tasks.map((t: any) => `"${t.title}" [${t.status}]`).join('; '));
+      lines.push(
+        'Задачі по угоді: ' + tasks.map((t: any) => `"${t.title}" [${t.status}]`).join('; '),
+      );
     }
     const activities = await tq.activity.findMany({
       where: { contactId: deal.contactId },
@@ -157,7 +169,9 @@ async function describeDeal(
     if (activities.length > 0) {
       lines.push(
         'Останні активності: ' +
-          activities.map((a: any) => `${a.type} ${fmtDate(a.date)} (${a.title || ''})`.trim()).join('; ')
+          activities
+            .map((a: any) => `${a.type} ${fmtDate(a.date)} (${a.title || ''})`.trim())
+            .join('; '),
       );
     }
   }
@@ -171,6 +185,98 @@ function messageTokens(message: string): string[] {
   return [...new Set(words)].slice(0, 12);
 }
 
+interface AggregateIntent {
+  deals: boolean;
+  contacts: boolean;
+  tasks: boolean;
+  overview: boolean;
+}
+
+/** Aggregate/list intent: "скільки угод", "покажи контакти", "яка є інформація". */
+function detectAggregateIntent(message: string): AggregateIntent {
+  const m = message.toLowerCase();
+  const deals = /угод|сдел|deal|воронк|вируч|выруч|прогноз/.test(m);
+  const contacts = /контакт|клієнт|клиент|contact|client|база клієнтів|база клиентов/.test(m);
+  const tasks = /задач|задач|task|напомин|нагадуван|todo|доручен/.test(m);
+  const wantsNumbers =
+    /скільки|сколько|колько|кількість|количество|how many|count|статистик|підсумок|итог|всього|усього/.test(
+      m,
+    );
+  const wantsList =
+    /покажи|покажі|покажит|список|список|list|show|перечисл|перелік|які|какие|какие есть|які є/.test(
+      m,
+    );
+  const overview =
+    /яка.*інформац|какая.*информац|що.*(є|відомо)|что.*(есть|известно)|все (мои|мої)|всі мої|overview|что у меня|що в мене/.test(
+      m,
+    );
+  const anyEntity = deals || contacts || tasks;
+  return {
+    deals: deals && (wantsNumbers || wantsList || overview),
+    contacts: contacts && (wantsNumbers || wantsList || overview),
+    tasks: tasks && (wantsNumbers || wantsList || overview),
+    overview: overview && !anyEntity,
+  };
+}
+
+async function buildAggregateBlock(
+  tq: TenantQuery,
+  intent: AggregateIntent,
+  role: TenantRole,
+  userId: string,
+  sources: GroundSource[],
+): Promise<string | null> {
+  const scope = ownerScope(role, userId);
+  const tScope = taskScope(role, userId);
+  const lines: string[] = [];
+
+  if (intent.deals) {
+    const [openCount, wonCount, openDeals] = await Promise.all([
+      tq.deal.count({ where: { ...scope, status: 'open' } }),
+      tq.deal.count({ where: { ...scope, status: 'won' } }),
+      tq.deal.findMany({
+        where: { ...scope, status: 'open' },
+        include: { stage: { select: { name: true } } },
+        orderBy: { value: 'desc' },
+        take: 5,
+      }),
+    ]);
+    const openValue = openDeals.reduce((s: number, d: any) => s + (d.value || 0), 0);
+    lines.push(`Угоди: відкритих — ${openCount} на суму ${openValue} грн, виграних — ${wonCount}.`);
+    for (const d of openDeals.slice(0, 5) as any[]) {
+      sources.push({ id: d.id, type: 'deal', name: d.title });
+      lines.push(`- "${d.title}" — ${d.stage?.name || '—'}${d.value ? `, ${d.value} грн` : ''}`);
+    }
+  }
+
+  if (intent.contacts) {
+    const [total, recent] = await Promise.all([
+      tq.contact.count({ where: { ...scope } }),
+      tq.contact.findMany({ where: { ...scope }, orderBy: { createdAt: 'desc' }, take: 5 }),
+    ]);
+    lines.push(`Контакти: всього — ${total}.`);
+    for (const c of recent.slice(0, 5)) {
+      const nm = `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.company || c.id;
+      sources.push({ id: c.id, type: 'contact', name: nm });
+      lines.push(`- ${nm}${c.company ? ` (${c.company})` : ''}`);
+    }
+  }
+
+  if (intent.tasks) {
+    const [todoCount, upcoming] = await Promise.all([
+      tq.task.count({ where: { ...tScope, status: { in: ['todo', 'in_progress'] } } }),
+      tq.task.findMany({ where: { ...tScope }, orderBy: { dueDate: 'asc' }, take: 5 }),
+    ]);
+    lines.push(`Задачі: активних — ${todoCount}.`);
+    for (const t of upcoming.slice(0, 5)) {
+      lines.push(`- "${t.title}" [${t.status}]${t.dueDate ? `, до ${fmtDate(t.dueDate)}` : ''}`);
+    }
+  }
+
+  if (lines.length === 0) return null;
+  return `Зведені дані CRM:\n${lines.join('\n')}`;
+}
+
 export async function buildChatContext(
   tq: TenantQuery,
   opts: {
@@ -179,7 +285,7 @@ export async function buildChatContext(
     dealId?: string | null;
     role: TenantRole;
     userId: string;
-  }
+  },
 ): Promise<GroundingResult> {
   const sources: GroundSource[] = [];
   const blocks: string[] = [];
@@ -257,4 +363,35 @@ export async function buildChatContext(
     return { system: `${BASE_INSTRUCTION}\n\n${NO_DATA_INSTRUCTION}`, sources };
   }
   return { system: `${BASE_INSTRUCTION}\n\nДані CRM:\n${blocks.join('\n\n')}`, sources };
+}
+
+/** Entry: entity grounding (levels 1-2) + aggregate intents. */
+export async function buildChatContextWithAggregates(
+  tq: TenantQuery,
+  opts: {
+    message: string;
+    contactId?: string | null;
+    dealId?: string | null;
+    role: TenantRole;
+    userId: string;
+  },
+): Promise<GroundingResult> {
+  const base = await buildChatContext(tq, opts);
+  const intent = detectAggregateIntent(opts.message);
+  // Обзор без конкретной сущности = сводка по всем трём разделам.
+  if (intent.overview) {
+    intent.deals = true;
+    intent.contacts = true;
+    intent.tasks = true;
+  }
+  if (!intent.deals && !intent.contacts && !intent.tasks) {
+    return base;
+  }
+  const agg = await buildAggregateBlock(tq, intent, opts.role, opts.userId, base.sources);
+  if (!agg) return base;
+  if (base.sources.length === 0) {
+    // No entities found — aggregates replace the "no data" instruction.
+    return { system: `${BASE_INSTRUCTION}\n\nДані CRM:\n${agg}`, sources: base.sources };
+  }
+  return { system: `${base.system}\n\n${agg}`, sources: base.sources };
 }

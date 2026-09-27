@@ -4,18 +4,15 @@
  * проверяется, что в отправленный промпт реально попали данные CRM.
  */
 
-import { describe, it, expect, beforeAll, afterAll, vi, beforeEach } from 'vitest';
+import { prisma } from '@crm-next/database';
 import { SignJWT } from 'jose';
 import { NextRequest } from 'next/server';
-import { prisma } from '@crm-next/database';
+import { describe, it, expect, beforeAll, afterAll, vi, beforeEach } from 'vitest';
 
 const SECRET = new TextEncoder().encode('4p200FzdKSNdfxdHaoTOa9m6WoEzmwEbl0CqrcuPOgc=');
 
 async function createToken(payload: Record<string, unknown>): Promise<string> {
-  return new SignJWT(payload)
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .sign(SECRET);
+  return new SignJWT(payload).setProtectedHeader({ alg: 'HS256' }).setIssuedAt().sign(SECRET);
 }
 
 function authed(url: string, token: string, body: unknown): NextRequest {
@@ -27,7 +24,6 @@ function authed(url: string, token: string, body: unknown): NextRequest {
 }
 
 import { POST as aiPOST } from '@/app/api/ai/route';
-import { encrypt } from '@/lib/encryption';
 
 const BASE = 'http://localhost:3000';
 
@@ -46,12 +42,14 @@ function mockLLM() {
         const body = JSON.parse(String((init as any)?.body || '{}'));
         const parts = body?.contents?.[0]?.parts || [];
         capturedSystem = parts.map((p: any) => p?.text || '').join('\n');
-      } catch {}
+      } catch {
+        // парсинг тела запроса не критичен для теста
+      }
       return {
         ok: true,
         json: async () => ({ candidates: [{ content: { parts: [{ text: 'mocked-answer' }] } }] }),
       } as unknown as Response;
-    })
+    }),
   );
 }
 
@@ -63,7 +61,6 @@ let tenantA = '';
 let tenantB = '';
 let tokenOwnerA = '';
 let tokenMemberA = '';
-let memberBId = '';
 
 beforeAll(async () => {
   await prisma.aiProviderKey.deleteMany();
@@ -81,11 +78,23 @@ beforeAll(async () => {
   const { encrypt: enc } = await import('@/lib/encryption');
 
   const tA = await prisma.tenant.create({
-    data: { name: 'Ground A', slug: 'ground-a', plan: 'professional', aiProvider: 'gemini', aiApiKey: enc('test-key-a') },
+    data: {
+      name: 'Ground A',
+      slug: 'ground-a',
+      plan: 'professional',
+      aiProvider: 'gemini',
+      aiApiKey: enc('test-key-a'),
+    },
   });
   tenantA = tA.id;
   const tB = await prisma.tenant.create({
-    data: { name: 'Ground B', slug: 'ground-b', plan: 'professional', aiProvider: 'gemini', aiApiKey: enc('test-key-b') },
+    data: {
+      name: 'Ground B',
+      slug: 'ground-b',
+      plan: 'professional',
+      aiProvider: 'gemini',
+      aiApiKey: enc('test-key-b'),
+    },
   });
   tenantB = tB.id;
 
@@ -115,21 +124,59 @@ beforeAll(async () => {
     },
   });
   const pipe = await prisma.pipeline.create({ data: { tenantId: tenantA, name: 'P' } });
-  const stage = await prisma.pipelineStage.create({ data: { pipelineId: pipe.id, name: 'S', order: 0 } });
-  const d = await prisma.deal.create({
-    data: { tenantId: tenantA, pipelineId: pipe.id, stageId: stage.id, title: 'Угода Zzztest', value: 45000, ownerId: memberA.id, contactId: c.id },
+  const stage = await prisma.pipelineStage.create({
+    data: { pipelineId: pipe.id, name: 'S', order: 0 },
   });
-  await prisma.task.create({ data: { tenantId: tenantA, title: 'Зателефонувати', status: 'todo', contactId: c.id, dealId: d.id } });
-  await prisma.activity.create({ data: { tenantId: tenantA, contactId: c.id, type: 'call', title: 'Дзвінок 12.09', body: 'обговорили КП' } });
+  const d = await prisma.deal.create({
+    data: {
+      tenantId: tenantA,
+      pipelineId: pipe.id,
+      stageId: stage.id,
+      title: 'Угода Zzztest',
+      value: 45000,
+      ownerId: memberA.id,
+      contactId: c.id,
+    },
+  });
+  await prisma.task.create({
+    data: {
+      tenantId: tenantA,
+      title: 'Зателефонувати',
+      status: 'todo',
+      contactId: c.id,
+      dealId: d.id,
+    },
+  });
+  await prisma.activity.create({
+    data: {
+      tenantId: tenantA,
+      contactId: c.id,
+      type: 'call',
+      title: 'Дзвінок 12.09',
+      body: 'обговорили КП',
+    },
+  });
 
   // Контакт memberB того же тенанта (memberA его видеть НЕ должен)
   await prisma.contact.create({
-    data: { tenantId: tenantA, firstName: 'Чужий', lastName: 'Контакт', email: 'чужой@example.com', ownerId: memberB.id },
+    data: {
+      tenantId: tenantA,
+      firstName: 'Чужий',
+      lastName: 'Контакт',
+      email: 'чужой@example.com',
+      ownerId: memberB.id,
+    },
   });
 
   // Одноимённый контакт в тенанте B (другой email — маркер утечки)
   await prisma.contact.create({
-    data: { tenantId: tenantB, firstName: 'Zzztestperson', lastName: 'Двійник', email: 'dviynyk-b@example.com', ownerId: ownerB.id },
+    data: {
+      tenantId: tenantB,
+      firstName: 'Zzztestperson',
+      lastName: 'Двійник',
+      email: 'dviynyk-b@example.com',
+      ownerId: ownerB.id,
+    },
   });
 });
 
@@ -155,7 +202,7 @@ describe('П4.1: grounding подмешивает данные контакта 
       authed(`${BASE}/api/ai?tenantId=${tenantA}`, tokenOwnerA, {
         action: 'custom',
         data: { prompt: 'розкажи про Zzztestperson' },
-      })
+      }),
     );
     expect(r.status).toBe(200);
     expect(fetchCalls).toBe(1);
@@ -176,7 +223,7 @@ describe('П4.2: IDOR — чужой тенант и чужой владелец
       authed(`${BASE}/api/ai?tenantId=${tenantA}`, tokenOwnerA, {
         action: 'custom',
         data: { prompt: 'розкажи про Zzztestperson' },
-      })
+      }),
     );
     expect(r.status).toBe(200);
     expect(capturedSystem).not.toContain('dviynyk-b@example.com');
@@ -189,7 +236,7 @@ describe('П4.2: IDOR — чужой тенант и чужой владелец
       authed(`${BASE}/api/ai?tenantId=${tenantA}`, tokenMemberA, {
         action: 'custom',
         data: { prompt: 'розкажи про Чужий' },
-      })
+      }),
     );
     expect(r.status).toBe(200);
     expect(capturedSystem).not.toContain('чужой@example.com');
@@ -205,11 +252,42 @@ describe('П4.3: пустой контекст — явная инструкци
       authed(`${BASE}/api/ai?tenantId=${tenantA}`, tokenOwnerA, {
         action: 'custom',
         data: { prompt: 'бла бла несуществующее абракадабра' },
-      })
+      }),
     );
     expect(r.status).toBe(200);
     expect(capturedSystem).toContain('Даних по цьому запиту в CRM немає');
     const body = await r.json();
     expect(body.sources).toEqual([]);
+  });
+});
+
+describe('Агрегаты: счётчики и обзоры', () => {
+  it('"Сколько у меня сейчас угод?" → system со счётом и списком', async () => {
+    mockLLM();
+    const r = await aiPOST(
+      authed(`${BASE}/api/ai?tenantId=${tenantA}`, tokenOwnerA, {
+        action: 'custom',
+        data: { prompt: 'Сколько у меня сейчас угод?' },
+      }),
+    );
+    expect(r.status).toBe(200);
+    expect(capturedSystem).toContain('Угоди: відкритих — 1');
+    expect(capturedSystem).toContain('Угода Zzztest');
+    const body = await r.json();
+    expect(body.sources.length).toBeGreaterThan(0);
+  });
+
+  it('"А какая есть информация?" → обзор по всем сущностям', async () => {
+    mockLLM();
+    const r = await aiPOST(
+      authed(`${BASE}/api/ai?tenantId=${tenantA}`, tokenOwnerA, {
+        action: 'custom',
+        data: { prompt: 'А какая есть информация?' },
+      }),
+    );
+    expect(r.status).toBe(200);
+    expect(capturedSystem).toContain('Угоди:');
+    expect(capturedSystem).toContain('Контакти:');
+    expect(capturedSystem).toContain('Задачі:');
   });
 });

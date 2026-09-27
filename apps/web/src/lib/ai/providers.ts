@@ -30,11 +30,21 @@ export const AI_PROVIDERS: AiProvider[] = [
     keyPrefixes: ['AIza', 'AQ.'],
     freeQuota: '15 запитів/хв, 1500/день',
     models: [
-      { id: 'gemini-3-flash-preview', name: 'Gemini 3 Flash', description: 'Актуальна, перевірено живим запитом' },
-      { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash-Lite', description: 'Найшвидші відповіді, перевірено живим запитом' },
-      { id: 'gemini-3.1-pro-preview', name: 'Gemini 3.1 Pro (preview)', description: 'Флагман; може вимагати білінг' },
-      { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash (legacy)', description: 'Лише для старих ключів; новим недоступна' },
-      { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro (legacy)', description: 'Лише для старих ключів; новим недоступна' },
+      {
+        id: 'gemini-3-flash-preview',
+        name: 'Gemini 3 Flash',
+        description: 'Актуальна, перевірено живим запитом',
+      },
+      {
+        id: 'gemini-3.5-flash-lite',
+        name: 'Gemini 3.5 Flash-Lite',
+        description: 'Найшвидші відповіді, перевірено живим запитом',
+      },
+      {
+        id: 'gemini-3.1-pro-preview',
+        name: 'Gemini 3.1 Pro',
+        description: 'Флагман; може вимагати білінг',
+      },
     ],
   },
   {
@@ -47,10 +57,26 @@ export const AI_PROVIDERS: AiProvider[] = [
     keyPrefix: 'sk-',
     freeQuota: 'Безкоштовний кредит $5 при реєстрації',
     models: [
-      { id: 'gpt-5.6-sol', name: 'GPT-5.6 Sol', description: 'Флагман для складних задач розмірковування та коду' },
-      { id: 'gpt-5.6-terra', name: 'GPT-5.6 Terra', description: 'Збалансований варіант (інтелект + помірна вартість)' },
-      { id: 'gpt-5.6-luna', name: 'GPT-5.6 Luna', description: 'Економічна модель для великих обсягів запитів' },
-      { id: 'gpt-5.3-codex', name: 'GPT-5.3-Codex', description: 'Спеціалізована для агентного програмування' },
+      {
+        id: 'gpt-5.6-sol',
+        name: 'GPT-5.6 Sol',
+        description: 'Флагман для складних задач розмірковування та коду',
+      },
+      {
+        id: 'gpt-5.6-terra',
+        name: 'GPT-5.6 Terra',
+        description: 'Збалансований варіант (інтелект + помірна вартість)',
+      },
+      {
+        id: 'gpt-5.6-luna',
+        name: 'GPT-5.6 Luna',
+        description: 'Економічна модель для великих обсягів запитів',
+      },
+      {
+        id: 'gpt-5.3-codex',
+        name: 'GPT-5.3-Codex',
+        description: 'Спеціалізована для агентного програмування',
+      },
     ],
   },
   {
@@ -66,7 +92,11 @@ export const AI_PROVIDERS: AiProvider[] = [
       { id: 'claude-opus-5', name: 'Fable 5 (Pro)', description: 'Для найскладніших завдань' },
       { id: 'claude-opus-4', name: 'Opus 5 (Pro)', description: 'Для складних задач' },
       { id: 'claude-sonnet-4', name: 'Sonnet 5', description: 'Найефективніша для щоденних задач' },
-      { id: 'claude-haiku-4-5', name: 'Haiku 4.5', description: 'Найшвидша для швидких відповідей' },
+      {
+        id: 'claude-haiku-4-5',
+        name: 'Haiku 4.5',
+        description: 'Найшвидша для швидких відповідей',
+      },
     ],
   },
   {
@@ -79,8 +109,16 @@ export const AI_PROVIDERS: AiProvider[] = [
     keyPrefix: 'sk-',
     freeQuota: '~10M токенів безкоштовно при реєстрації',
     models: [
-      { id: 'deepseek-chat', name: 'DeepSeek Chat (V3)', description: 'Універсальна модель загального призначення' },
-      { id: 'deepseek-reasoner', name: 'DeepSeek Reasoner (R1)', description: 'Модель розмірковування (chain-of-thought)' },
+      {
+        id: 'deepseek-chat',
+        name: 'DeepSeek Chat (V3)',
+        description: 'Універсальна модель загального призначення',
+      },
+      {
+        id: 'deepseek-reasoner',
+        name: 'DeepSeek Reasoner (R1)',
+        description: 'Модель розмірковування (chain-of-thought)',
+      },
     ],
   },
   {
@@ -93,9 +131,21 @@ export const AI_PROVIDERS: AiProvider[] = [
     keyPrefix: 'gsk_',
     freeQuota: 'Щедрий безкоштовний тариф',
     models: [
-      { id: 'openai/gpt-oss-120b', name: 'GPT-OSS 120B', description: 'Флагманська з розмірковуванням та інструментами' },
-      { id: 'openai/gpt-oss-20b', name: 'GPT-OSS 20B', description: 'Легка версія для логічних задач' },
-      { id: 'qwen/qwen3.6-27b', name: 'Qwen 3.6 27B', description: 'Високошвидкісна модель розмірковування' },
+      {
+        id: 'openai/gpt-oss-120b',
+        name: 'GPT-OSS 120B',
+        description: 'Флагманська з розмірковуванням та інструментами',
+      },
+      {
+        id: 'openai/gpt-oss-20b',
+        name: 'GPT-OSS 20B',
+        description: 'Легка версія для логічних задач',
+      },
+      {
+        id: 'qwen/qwen3.6-27b',
+        name: 'Qwen 3.6 27B',
+        description: 'Високошвидкісна модель розмірковування',
+      },
     ],
   },
   {
@@ -108,11 +158,31 @@ export const AI_PROVIDERS: AiProvider[] = [
     keyPrefix: 'mist-',
     freeQuota: 'Безкоштовний тариф з обмеженнями',
     models: [
-      { id: 'mistral-large-latest', name: 'Mistral Large 3', description: 'Флагманська мультимодальна модель (MoE)' },
-      { id: 'mistral-small-latest', name: 'Mistral Small 4', description: 'Ефективна (інструкції, логіка, код)' },
-      { id: 'ministral-8b-latest', name: 'Ministral 3', description: 'Серія компактних моделей (3B, 8B, 14B)' },
-      { id: 'codestral-latest', name: 'Codestral', description: 'Низьколатентна для генерації та відладки коду' },
-      { id: 'open-mistral-nemo', name: 'Mistral NeMo', description: 'Компактна універсальна модель' },
+      {
+        id: 'mistral-large-latest',
+        name: 'Mistral Large 3',
+        description: 'Флагманська мультимодальна модель (MoE)',
+      },
+      {
+        id: 'mistral-small-latest',
+        name: 'Mistral Small 4',
+        description: 'Ефективна (інструкції, логіка, код)',
+      },
+      {
+        id: 'ministral-8b-latest',
+        name: 'Ministral 3',
+        description: 'Серія компактних моделей (3B, 8B, 14B)',
+      },
+      {
+        id: 'codestral-latest',
+        name: 'Codestral',
+        description: 'Низьколатентна для генерації та відладки коду',
+      },
+      {
+        id: 'open-mistral-nemo',
+        name: 'Mistral NeMo',
+        description: 'Компактна універсальна модель',
+      },
     ],
   },
   {
@@ -125,16 +195,32 @@ export const AI_PROVIDERS: AiProvider[] = [
     keyPrefix: '',
     freeQuota: '$1 безкоштовного кредиту',
     models: [
-      { id: 'meta-llama/Llama-3.3-70B-Instruct-Turbo', name: 'Llama 3.3', description: 'Висока якість аналізу тексту та перекладу' },
-      { id: 'deepseek-ai/DeepSeek-V3-0324', name: 'DeepSeek', description: 'Відкрита LLM для логіки та генерації' },
-      { id: 'Qwen/Qwen3-235B-A22B', name: 'Qwen-Coder', description: 'Для написання, відладки та пошуку помилок у коді' },
-      { id: 'stabilityai/stable-diffusion-xl', name: 'Stable Diffusion (SDXL)', description: 'Генерація деталізованої графіки' },
+      {
+        id: 'meta-llama/Llama-3.3-70B-Instruct-Turbo',
+        name: 'Llama 3.3',
+        description: 'Висока якість аналізу тексту та перекладу',
+      },
+      {
+        id: 'deepseek-ai/DeepSeek-V3-0324',
+        name: 'DeepSeek',
+        description: 'Відкрита LLM для логіки та генерації',
+      },
+      {
+        id: 'Qwen/Qwen3-235B-A22B',
+        name: 'Qwen-Coder',
+        description: 'Для написання, відладки та пошуку помилок у коді',
+      },
+      {
+        id: 'stabilityai/stable-diffusion-xl',
+        name: 'Stable Diffusion (SDXL)',
+        description: 'Генерація деталізованої графіки',
+      },
     ],
   },
 ];
 
 export function getProvider(id: string): AiProvider | undefined {
-  return AI_PROVIDERS.find(p => p.id === id);
+  return AI_PROVIDERS.find((p) => p.id === id);
 }
 
 export function getDefaultProvider(): AiProvider {
