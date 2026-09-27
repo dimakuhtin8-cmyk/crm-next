@@ -32,6 +32,7 @@ model User {
   ownedDeals    Deal[]
   notifications Notification[]
   taskComments  TaskComment[]
+  aiChatSessions AiChatSession[]
 }
 
 model Account {
@@ -139,6 +140,7 @@ model Tenant {
   queueJobs       QueueJob[]
   notifications   Notification[]
   documentTemplates DocumentTemplate[]
+  aiChatSessions AiChatSession[]
   payments         Payment[]
   auditLogs        AuditLog[]
 }
@@ -531,6 +533,34 @@ model Notification {
 
   @@index([tenantId, userId, read])
   @@index([userId, read])
+}
+
+model AiChatSession {
+  id        String   @id @default(cuid())
+  tenantId  String
+  userId    String
+  title     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant   Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages AiChatMessage[]
+
+  @@index([tenantId, userId])
+}
+
+model AiChatMessage {
+  id         String   @id @default(cuid())
+  sessionId  String
+  role       String // 'user' | 'assistant'
+  content    String
+  groundedOn String? // JSON: serialized grounding `sources`
+  createdAt  DateTime @default(now())
+
+  session AiChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
 }
 
 model DocumentTemplate {

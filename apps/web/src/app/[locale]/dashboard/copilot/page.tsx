@@ -1,6 +1,16 @@
 'use client';
 
-import { Bot, Save, ExternalLink, Send, Paperclip, ChevronDown } from 'lucide-react';
+import {
+  Bot,
+  Save,
+  ExternalLink,
+  Send,
+  Paperclip,
+  ChevronDown,
+  Plus,
+  Trash2,
+  MessageSquare,
+} from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 
@@ -79,6 +89,11 @@ export default function CopilotPage() {
   const [dynamicModels, setDynamicModels] = useState<
     Record<string, { id: string; name: string }[]>
   >({});
+  // Chat sessions (persistent history in DB).
+  const [sessions, setSessions] = useState<
+    { id: string; title: string | null; createdAt: string; updatedAt: string }[]
+  >([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const searchParams = useSearchParams();
@@ -109,6 +124,101 @@ export default function CopilotPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, chatLoading]);
+
+  const loadSessions = async () => {
+    try {
+      const r = await fetch('/api/ai/sessions', { credentials: 'include' });
+      if (!r.ok) return;
+      const d = await r.json();
+      const list = Array.isArray(d.sessions) ? d.sessions : [];
+      setSessions(list);
+      return list;
+    } catch {
+      // список сессий не критичен для чата
+    }
+    return [];
+  };
+
+  useEffect(() => {
+    if (aiStatus !== 'ready') return;
+    loadSessions().then((list) => {
+      if (list && list.length > 0 && !activeSessionId) {
+        openSession(list[0].id);
+      }
+    });
+  }, [aiStatus]);
+
+  const openSession = async (id: string) => {
+    setActiveSessionId(id);
+    try {
+      const r = await fetch(`/api/ai/sessions/${id}`, { credentials: 'include' });
+      if (!r.ok) return;
+      const d = await r.json();
+      const msgs: ChatMessage[] = (Array.isArray(d.messages) ? d.messages : []).map(
+        (m: {
+          id: string;
+          role: string;
+          content: string;
+          groundedOn?: string | null;
+          createdAt: string;
+        }) => {
+          let sources: ChatMessage['sources'];
+          if (m.groundedOn) {
+            try {
+              const parsed = JSON.parse(m.groundedOn);
+              if (Array.isArray(parsed)) sources = parsed;
+            } catch {
+              // битый groundedOn — чипы просто не покажем
+            }
+          }
+          return {
+            id: m.id,
+            role: m.role === 'assistant' ? 'assistant' : 'user',
+            content: m.content,
+            timestamp: new Date(m.createdAt),
+            sources,
+          };
+        },
+      );
+      setMessages(msgs);
+    } catch {
+      // открытие сессии не критично
+    }
+  };
+
+  const newSession = async () => {
+    try {
+      const r = await fetch('/api/ai/sessions', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!r.ok) return;
+      const d = await r.json();
+      setMessages([]);
+      setActiveSessionId(d.session.id);
+      loadSessions();
+    } catch {
+      // создание сессии не критично
+    }
+  };
+
+  const deleteSession = async (id: string) => {
+    if (!window.confirm('Видалити цю розмову?')) return;
+    try {
+      const r = await fetch(`/api/ai/sessions/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!r.ok) return;
+      setSessions((prev) => prev.filter((s) => s.id !== id));
+      if (activeSessionId === id) {
+        setActiveSessionId(null);
+        setMessages([]);
+      }
+    } catch {
+      // удаление не критично
+    }
+  };
 
   const handleQuickSetup = async () => {
     if (!quickKey.trim()) return;
@@ -149,6 +259,21 @@ export default function CopilotPage() {
     const text = inputValue.trim();
     if (!text || chatLoading) return;
 
+    // Session first: history lives in DB, frontend never sends it.
+    let sid = activeSessionId;
+    if (!sid) {
+      try {
+        const r = await fetch('/api/ai/sessions', { method: 'POST', credentials: 'include' });
+        if (r.ok) {
+          const d = await r.json();
+          sid = d.session.id;
+          setActiveSessionId(sid);
+        }
+      } catch {
+        // без сессии — одноразовый запрос без истории
+      }
+    }
+
     const userMsg: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
@@ -169,6 +294,7 @@ export default function CopilotPage() {
           data: {
             prompt: text,
             model: selectedChatModel || undefined,
+            sessionId: sid || undefined,
             contactId: contextContactId || undefined,
             dealId: contextDealId || undefined,
           },
@@ -185,6 +311,10 @@ export default function CopilotPage() {
         sources: Array.isArray(json.sources) ? json.sources : undefined,
       };
       setMessages((prev) => [...prev, assistantMsg]);
+      if (res.ok && json.sessionId) {
+        setActiveSessionId(json.sessionId);
+        loadSessions();
+      }
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -334,220 +464,274 @@ export default function CopilotPage() {
         </div>
       )}
 
-      {/* === CHAT PANEL (Claude-style, full-page) === */}
-      <Card className="flex-1 min-h-0 flex flex-col overflow-hidden">
-        <CardContent className="flex-1 min-h-0 flex flex-col p-0">
-          {/* Chat messages area */}
-          <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-6">
-            {messages.length === 0 && (
-              <div className="flex flex-col items-center justify-center h-full text-center">
-                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                  <Bot className="w-8 h-8 text-primary" />
-                </div>
-                <h3 className="text-lg font-semibold mb-1">Як я можу допомогти?</h3>
-                <p className="text-sm text-foreground-muted max-w-sm">
-                  Задайте питання про ваші контакти, угоди або завдання. Я проаналізую дані та
-                  допоможу.
+      {/* === CONTENT ROW: sessions + chat === */}
+      <div className="flex-1 min-h-0 flex gap-4">
+        {/* Sessions aside */}
+        {aiStatus === 'ready' && (
+          <aside className="hidden md:flex w-72 shrink-0 flex-col rounded-2xl border border-border bg-card overflow-hidden">
+            <div className="shrink-0 p-3 border-b border-border">
+              <Button onClick={newSession} className="w-full" variant="outline">
+                <Plus className="w-4 h-4 mr-2" />
+                Нова розмова
+              </Button>
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1">
+              {sessions.length === 0 && (
+                <p className="px-3 py-6 text-center text-xs text-foreground-muted">
+                  Поки що немає розмов
                 </p>
-                <div className="flex flex-wrap gap-2 mt-4 justify-center">
-                  {['Покажи топ угод', 'Згенеруй КП', 'План на сьогодні', 'Аналіз контактів'].map(
-                    (q) => (
-                      <button
-                        key={q}
-                        onClick={() => {
-                          setInputValue(q);
-                          inputRef.current?.focus();
-                        }}
-                        className="px-3 py-1.5 text-xs rounded-full border border-border hover:border-primary/50 hover:bg-primary/5 transition-all"
-                      >
-                        {q}
-                      </button>
-                    ),
-                  )}
+              )}
+              {sessions.map((s) => (
+                <div
+                  key={s.id}
+                  className={`group flex items-center gap-1 rounded-xl px-2 py-2 cursor-pointer transition-colors ${
+                    activeSessionId === s.id ? 'bg-primary/10' : 'hover:bg-accent'
+                  }`}
+                  onClick={() => openSession(s.id)}
+                >
+                  <MessageSquare className="w-4 h-4 shrink-0 text-foreground-muted" />
+                  <div className="flex-1 min-w-0">
+                    <p className="truncate text-sm font-medium">{s.title || 'Нова розмова'}</p>
+                    <p className="text-[11px] text-foreground-muted">
+                      {new Date(s.updatedAt).toLocaleDateString('uk-UA', {
+                        day: 'numeric',
+                        month: 'short',
+                      })}
+                    </p>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteSession(s.id);
+                    }}
+                    title="Видалити"
+                    className="shrink-0 p-1.5 rounded-lg text-foreground-muted opacity-0 group-hover:opacity-100 hover:text-danger hover:bg-danger/10 transition-all"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
-              </div>
-            )}
+              ))}
+            </div>
+          </aside>
+        )}
 
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div className={`max-w-[80%] ${msg.role === 'user' ? 'order-1' : 'order-1'}`}>
-                  {msg.role === 'assistant' && (
+        {/* === CHAT PANEL (Claude-style, full-page) === */}
+        <Card className="flex-1 min-h-0 flex flex-col overflow-hidden">
+          <CardContent className="flex-1 min-h-0 flex flex-col p-0">
+            {/* Chat messages area */}
+            <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-6">
+              {messages.length === 0 && (
+                <div className="flex flex-col items-center justify-center h-full text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                    <Bot className="w-8 h-8 text-primary" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-1">Як я можу допомогти?</h3>
+                  <p className="text-sm text-foreground-muted max-w-sm">
+                    Задайте питання про ваші контакти, угоди або завдання. Я проаналізую дані та
+                    допоможу.
+                  </p>
+                  <div className="flex flex-wrap gap-2 mt-4 justify-center">
+                    {['Покажи топ угод', 'Згенеруй КП', 'План на сьогодні', 'Аналіз контактів'].map(
+                      (q) => (
+                        <button
+                          key={q}
+                          onClick={() => {
+                            setInputValue(q);
+                            inputRef.current?.focus();
+                          }}
+                          className="px-3 py-1.5 text-xs rounded-full border border-border hover:border-primary/50 hover:bg-primary/5 transition-all"
+                        >
+                          {q}
+                        </button>
+                      ),
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div className={`max-w-[80%] ${msg.role === 'user' ? 'order-1' : 'order-1'}`}>
+                    {msg.role === 'assistant' && (
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <Bot className="w-3.5 h-3.5 text-primary" />
+                        </div>
+                        <span className="text-xs font-medium text-foreground-muted">
+                          AI Co-Pilot
+                        </span>
+                      </div>
+                    )}
+                    <div
+                      className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                        msg.role === 'user'
+                          ? 'bg-primary text-primary-foreground rounded-br-md'
+                          : 'bg-accent/60 text-foreground rounded-bl-md'
+                      }`}
+                    >
+                      <div className="whitespace-pre-wrap">
+                        {msg.role === 'assistant' ? renderRichText(msg.content) : msg.content}
+                      </div>
+                      {msg.role === 'assistant' && msg.sources && msg.sources.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1.5 border-t border-border/50 pt-2">
+                          <span className="text-[11px] text-foreground-muted">На основі:</span>
+                          {msg.sources.map((s) => (
+                            <span
+                              key={`${s.type}-${s.id}`}
+                              className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
+                              title={`${s.type === 'contact' ? 'Контакт' : 'Угода'}: ${s.name}`}
+                            >
+                              {s.type === 'contact' ? '👤' : '💼'} {s.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {chatLoading && (
+                <div className="flex justify-start">
+                  <div className="max-w-[80%]">
                     <div className="flex items-center gap-2 mb-1.5">
                       <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center">
                         <Bot className="w-3.5 h-3.5 text-primary" />
                       </div>
                       <span className="text-xs font-medium text-foreground-muted">AI Co-Pilot</span>
                     </div>
-                  )}
-                  <div
-                    className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                      msg.role === 'user'
-                        ? 'bg-primary text-primary-foreground rounded-br-md'
-                        : 'bg-accent/60 text-foreground rounded-bl-md'
-                    }`}
-                  >
-                    <div className="whitespace-pre-wrap">
-                      {msg.role === 'assistant' ? renderRichText(msg.content) : msg.content}
-                    </div>
-                    {msg.role === 'assistant' && msg.sources && msg.sources.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1.5 border-t border-border/50 pt-2">
-                        <span className="text-[11px] text-foreground-muted">На основі:</span>
-                        {msg.sources.map((s) => (
-                          <span
-                            key={`${s.type}-${s.id}`}
-                            className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
-                            title={`${s.type === 'contact' ? 'Контакт' : 'Угода'}: ${s.name}`}
-                          >
-                            {s.type === 'contact' ? '👤' : '💼'} {s.name}
-                          </span>
-                        ))}
+                    <div className="bg-accent/60 rounded-2xl rounded-bl-md px-4 py-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex items-center gap-1.5">
+                          <div
+                            className="w-2 h-2 bg-primary/70 rounded-full animate-bounce"
+                            style={{ animationDelay: '0ms' }}
+                          />
+                          <div
+                            className="w-2 h-2 bg-primary/70 rounded-full animate-bounce"
+                            style={{ animationDelay: '150ms' }}
+                          />
+                          <div
+                            className="w-2 h-2 bg-primary/70 rounded-full animate-bounce"
+                            style={{ animationDelay: '300ms' }}
+                          />
+                        </div>
+                        <ThinkingStatus />
                       </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input area */}
+            <div className="shrink-0 border-t border-border p-4">
+              <div className="relative">
+                <div className="flex items-end gap-2 bg-accent/40 rounded-2xl border border-border focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/20 transition-all px-4 py-3">
+                  <button className="shrink-0 p-1 rounded-lg hover:bg-accent transition-colors text-foreground-muted hover:text-foreground">
+                    <Paperclip className="w-5 h-5" />
+                  </button>
+                  <textarea
+                    ref={inputRef}
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    disabled={chatLoading}
+                    placeholder={
+                      chatLoading ? 'AI відповідає — зачекайте…' : 'Напишіть повідомлення...'
+                    }
+                    rows={1}
+                    className="flex-1 bg-transparent border-0 outline-none resize-none text-sm text-foreground placeholder:text-foreground-muted/60 min-h-[24px] max-h-[120px] leading-relaxed"
+                    style={{ height: 'auto' }}
+                    onInput={(e) => {
+                      const target = e.target as HTMLTextAreaElement;
+                      target.style.height = 'auto';
+                      target.style.height = Math.min(target.scrollHeight, 120) + 'px';
+                    }}
+                  />
+                  <button
+                    onClick={sendMessage}
+                    disabled={!inputValue.trim() || chatLoading}
+                    className="shrink-0 p-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary-hover disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Bottom bar: model picker + disclaimer */}
+                <div className="flex items-center justify-between mt-2 px-1">
+                  <p className="text-[11px] text-foreground-muted/60">
+                    AI може помилятися. Перевіряйте важливу інформацію.
+                  </p>
+
+                  {/* Model picker */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowModelPicker(!showModelPicker)}
+                      className="flex items-center gap-1.5 text-xs text-foreground-muted hover:text-foreground transition-colors px-2 py-1 rounded-lg hover:bg-accent"
+                    >
+                      <span className="font-medium">{currentModelName}</span>
+                      <ChevronDown className="w-3 h-3" />
+                    </button>
+
+                    {showModelPicker && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setShowModelPicker(false)}
+                        />
+                        <div className="absolute bottom-full right-0 mb-2 w-80 max-h-[400px] overflow-y-auto bg-background border border-border rounded-xl shadow-xl z-50 p-2">
+                          {AI_PROVIDERS.filter((p) => p.id !== 'custom').map((p) => {
+                            const models =
+                              dynamicModels[p.id] && dynamicModels[p.id].length > 0
+                                ? dynamicModels[p.id].map((m) => ({
+                                    id: m.id,
+                                    name: m.name,
+                                    description: '',
+                                  }))
+                                : p.models;
+                            return (
+                              <div key={p.id}>
+                                <div className="px-3 py-1.5 text-xs font-semibold text-foreground-muted uppercase tracking-wider">
+                                  {p.name}
+                                </div>
+                                {models.map((m) => (
+                                  <button
+                                    key={m.id}
+                                    onClick={() => {
+                                      setSelectedChatModel(m.id);
+                                      setShowModelPicker(false);
+                                    }}
+                                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                                      selectedChatModel === m.id
+                                        ? 'bg-primary/10 text-primary'
+                                        : 'hover:bg-accent text-foreground'
+                                    }`}
+                                  >
+                                    <div className="font-medium">{m.name}</div>
+                                    <div className="text-xs text-foreground-muted mt-0.5">
+                                      {m.description}
+                                    </div>
+                                  </button>
+                                ))}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </>
                     )}
                   </div>
                 </div>
               </div>
-            ))}
-
-            {chatLoading && (
-              <div className="flex justify-start">
-                <div className="max-w-[80%]">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Bot className="w-3.5 h-3.5 text-primary" />
-                    </div>
-                    <span className="text-xs font-medium text-foreground-muted">AI Co-Pilot</span>
-                  </div>
-                  <div className="bg-accent/60 rounded-2xl rounded-bl-md px-4 py-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex items-center gap-1.5">
-                        <div
-                          className="w-2 h-2 bg-primary/70 rounded-full animate-bounce"
-                          style={{ animationDelay: '0ms' }}
-                        />
-                        <div
-                          className="w-2 h-2 bg-primary/70 rounded-full animate-bounce"
-                          style={{ animationDelay: '150ms' }}
-                        />
-                        <div
-                          className="w-2 h-2 bg-primary/70 rounded-full animate-bounce"
-                          style={{ animationDelay: '300ms' }}
-                        />
-                      </div>
-                      <ThinkingStatus />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Input area */}
-          <div className="shrink-0 border-t border-border p-4">
-            <div className="relative">
-              <div className="flex items-end gap-2 bg-accent/40 rounded-2xl border border-border focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/20 transition-all px-4 py-3">
-                <button className="shrink-0 p-1 rounded-lg hover:bg-accent transition-colors text-foreground-muted hover:text-foreground">
-                  <Paperclip className="w-5 h-5" />
-                </button>
-                <textarea
-                  ref={inputRef}
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  disabled={chatLoading}
-                  placeholder={
-                    chatLoading ? 'AI відповідає — зачекайте…' : 'Напишіть повідомлення...'
-                  }
-                  rows={1}
-                  className="flex-1 bg-transparent border-0 outline-none resize-none text-sm text-foreground placeholder:text-foreground-muted/60 min-h-[24px] max-h-[120px] leading-relaxed"
-                  style={{ height: 'auto' }}
-                  onInput={(e) => {
-                    const target = e.target as HTMLTextAreaElement;
-                    target.style.height = 'auto';
-                    target.style.height = Math.min(target.scrollHeight, 120) + 'px';
-                  }}
-                />
-                <button
-                  onClick={sendMessage}
-                  disabled={!inputValue.trim() || chatLoading}
-                  className="shrink-0 p-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary-hover disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Bottom bar: model picker + disclaimer */}
-              <div className="flex items-center justify-between mt-2 px-1">
-                <p className="text-[11px] text-foreground-muted/60">
-                  AI може помилятися. Перевіряйте важливу інформацію.
-                </p>
-
-                {/* Model picker */}
-                <div className="relative">
-                  <button
-                    onClick={() => setShowModelPicker(!showModelPicker)}
-                    className="flex items-center gap-1.5 text-xs text-foreground-muted hover:text-foreground transition-colors px-2 py-1 rounded-lg hover:bg-accent"
-                  >
-                    <span className="font-medium">{currentModelName}</span>
-                    <ChevronDown className="w-3 h-3" />
-                  </button>
-
-                  {showModelPicker && (
-                    <>
-                      <div
-                        className="fixed inset-0 z-40"
-                        onClick={() => setShowModelPicker(false)}
-                      />
-                      <div className="absolute bottom-full right-0 mb-2 w-80 max-h-[400px] overflow-y-auto bg-background border border-border rounded-xl shadow-xl z-50 p-2">
-                        {AI_PROVIDERS.filter((p) => p.id !== 'custom').map((p) => {
-                          const models =
-                            dynamicModels[p.id] && dynamicModels[p.id].length > 0
-                              ? dynamicModels[p.id].map((m) => ({
-                                  id: m.id,
-                                  name: m.name,
-                                  description: '',
-                                }))
-                              : p.models;
-                          return (
-                            <div key={p.id}>
-                              <div className="px-3 py-1.5 text-xs font-semibold text-foreground-muted uppercase tracking-wider">
-                                {p.name}
-                              </div>
-                              {models.map((m) => (
-                                <button
-                                  key={m.id}
-                                  onClick={() => {
-                                    setSelectedChatModel(m.id);
-                                    setShowModelPicker(false);
-                                  }}
-                                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                                    selectedChatModel === m.id
-                                      ? 'bg-primary/10 text-primary'
-                                      : 'hover:bg-accent text-foreground'
-                                  }`}
-                                >
-                                  <div className="font-medium">{m.name}</div>
-                                  <div className="text-xs text-foreground-muted mt-0.5">
-                                    {m.description}
-                                  </div>
-                                </button>
-                              ))}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

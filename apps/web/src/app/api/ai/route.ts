@@ -73,6 +73,7 @@ async function POSTHandler(request: NextRequest) {
     const { action, data } = body;
     let result: string | object;
     let sources: Array<{ id: string; type: string; name: string }> = [];
+    let activeSessionId: string | undefined;
     const startTime = Date.now();
 
     try {
@@ -281,6 +282,37 @@ async function POSTHandler(request: NextRequest) {
           const { getUserRole } = await import('@/lib/rbac');
           const chatUserId = await extractUserId(request);
           const chatRole = chatUserId ? await getUserRole(chatUserId, tq.tenantId) : null;
+
+          // Sessions (П3): history from DB, never trust the frontend to send it.
+          const sessionId =
+            typeof data.sessionId === 'string' && data.sessionId ? data.sessionId : undefined;
+          let session: { id: string; title: string | null } | null = null;
+          let history: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+          if (sessionId) {
+            if (!chatUserId) {
+              return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
+            }
+            session = await prisma.aiChatSession.findFirst({
+              where: { id: sessionId, tenantId: tq.tenantId, userId: chatUserId },
+              select: { id: true, title: true },
+            });
+            if (!session) {
+              return NextResponse.json({ error: 'Сесію не знайдено' }, { status: 404 });
+            }
+            const prior = await prisma.aiChatMessage.findMany({
+              where: { sessionId },
+              orderBy: { createdAt: 'asc' },
+              take: 20,
+              select: { role: true, content: true },
+            });
+            history = prior
+              .filter((m) => m.role === 'user' || m.role === 'assistant')
+              .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
+            await prisma.aiChatMessage.create({
+              data: { sessionId, role: 'user', content: data.prompt },
+            });
+          }
+
           const grounding = await buildChatContextWithAggregates(tq, {
             message: typeof data.prompt === 'string' ? data.prompt : '',
             contactId: typeof data.contactId === 'string' ? data.contactId : null,
@@ -299,12 +331,33 @@ async function POSTHandler(request: NextRequest) {
             system: groundedSystem,
             temperature: data.temperature,
             maxTokens: data.maxTokens,
+            history,
             tenantApiKey: aiSettings.apiKey,
             tenantAiProvider: aiSettings.provider,
             tenantAiModel: requestedModel || aiSettings.model,
           });
           result = genResult.response;
           sources = grounding.sources;
+          activeSessionId = session?.id;
+          if (session) {
+            await prisma.aiChatMessage.create({
+              data: {
+                sessionId: session.id,
+                role: 'assistant',
+                content: genResult.response,
+                groundedOn: JSON.stringify(sources),
+              },
+            });
+            await prisma.aiChatSession.update({
+              where: { id: session.id },
+              data: {
+                updatedAt: new Date(),
+                ...(session.title
+                  ? {}
+                  : { title: String(data.prompt || '').slice(0, 50) || 'Нова розмова' }),
+              },
+            });
+          }
           break;
         }
         default:
@@ -323,7 +376,7 @@ async function POSTHandler(request: NextRequest) {
       });
       await incrementUsage(tq.tenantId, aiSettings.provider);
 
-      return NextResponse.json({ result, sources });
+      return NextResponse.json({ result, sources, sessionId: activeSessionId });
     } catch (aiError) {
       // Log failed AI request
       const durationMs = Date.now() - startTime;

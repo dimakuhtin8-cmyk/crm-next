@@ -1,9 +1,15 @@
 import { getProvider, type AiProvider } from './providers';
+
 import { decrypt } from '@/lib/encryption';
 
 export interface GenerateResult {
   response: string;
   model: string;
+}
+
+export interface ChatHistoryItem {
+  role: 'user' | 'assistant';
+  content: string;
 }
 
 export interface GenerateOptions {
@@ -14,6 +20,16 @@ export interface GenerateOptions {
   tenantApiKey?: string | null;
   tenantAiProvider?: string | null;
   tenantAiModel?: string | null;
+  /** Multi-turn dialogue before the current prompt. Single-turn callers omit it. */
+  history?: ChatHistoryItem[];
+}
+
+/** Bound context size: last 20 turns max. */
+const MAX_HISTORY = 20;
+
+function tailHistory(history?: ChatHistoryItem[]): ChatHistoryItem[] {
+  if (!history || history.length === 0) return [];
+  return history.slice(-MAX_HISTORY);
 }
 
 interface AiConfig {
@@ -41,7 +57,7 @@ function resolveConfig(
     } catch {
       throw new Error(
         'Ваш API-ключ повреждён или сохранён в устаревшем формате — ' +
-        'пересохраните его в настройках (Настройки → AI-провайдери)'
+          'пересохраните его в настройках (Настройки → AI-провайдери)',
       );
     }
   } else if (process.env.GEMINI_API_KEY) {
@@ -54,17 +70,28 @@ function resolveConfig(
   return { provider, apiKey, model };
 }
 
-async function callAi(prompt: string, system?: string, config?: AiConfig | null): Promise<string> {
+async function callAi(
+  prompt: string,
+  system?: string,
+  config?: AiConfig | null,
+  history?: ChatHistoryItem[],
+): Promise<string> {
   if (!config) throw new Error('AI не налаштовано. Оберіть провайдера та додайте API-ключ.');
 
   if (config.provider.id === 'gemini') {
-    return callGemini(prompt, system, config.apiKey, config.model);
+    return callGemini(prompt, system, config.apiKey, config.model, history);
   }
 
-  return callOpenAiCompatible(prompt, system, config);
+  return callOpenAiCompatible(prompt, system, config, history);
 }
 
-async function callGemini(prompt: string, system: string | undefined, apiKey: string, model: string): Promise<string> {
+async function callGemini(
+  prompt: string,
+  system: string | undefined,
+  apiKey: string,
+  model: string,
+  history?: ChatHistoryItem[],
+): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
   const contents: Array<{ role: string; parts: Array<{ text: string }> }> = [];
 
@@ -72,12 +99,21 @@ async function callGemini(prompt: string, system: string | undefined, apiKey: st
     contents.push({ role: 'user', parts: [{ text: system }] });
     contents.push({ role: 'model', parts: [{ text: 'Зрозуміло.' }] });
   }
+  for (const h of tailHistory(history)) {
+    contents.push({
+      role: h.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: h.content }],
+    });
+  }
   contents.push({ role: 'user', parts: [{ text: prompt }] });
 
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents, generationConfig: { temperature: 0.7, maxOutputTokens: 4096 } }),
+    body: JSON.stringify({
+      contents,
+      generationConfig: { temperature: 0.7, maxOutputTokens: 4096 },
+    }),
   });
 
   if (!res.ok) {
@@ -103,22 +139,30 @@ const PROVIDER_ENDPOINTS: Record<string, string> = {
   custom: 'https://api.openai.com/v1/chat/completions',
 };
 
-async function callOpenAiCompatible(prompt: string, system: string | undefined, config: AiConfig): Promise<string> {
+async function callOpenAiCompatible(
+  prompt: string,
+  system: string | undefined,
+  config: AiConfig,
+  history?: ChatHistoryItem[],
+): Promise<string> {
   if (config.provider.id === 'anthropic') {
-    return callAnthropic(prompt, system, config);
+    return callAnthropic(prompt, system, config, history);
   }
 
   const endpoint = PROVIDER_ENDPOINTS[config.provider.id] || PROVIDER_ENDPOINTS.custom;
 
   const messages: Array<{ role: string; content: string }> = [];
   if (system) messages.push({ role: 'system', content: system });
+  for (const h of tailHistory(history)) {
+    messages.push({ role: h.role, content: h.content });
+  }
   messages.push({ role: 'user', content: prompt });
 
   const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${config.apiKey}`,
+      Authorization: `Bearer ${config.apiKey}`,
     },
     body: JSON.stringify({
       model: config.model,
@@ -140,7 +184,17 @@ async function callOpenAiCompatible(prompt: string, system: string | undefined, 
   return text;
 }
 
-async function callAnthropic(prompt: string, system: string | undefined, config: AiConfig): Promise<string> {
+async function callAnthropic(
+  prompt: string,
+  system: string | undefined,
+  config: AiConfig,
+  history?: ChatHistoryItem[],
+): Promise<string> {
+  const messages: Array<{ role: string; content: string }> = [];
+  for (const h of tailHistory(history)) {
+    messages.push({ role: h.role, content: h.content });
+  }
+  messages.push({ role: 'user', content: prompt });
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -152,7 +206,7 @@ async function callAnthropic(prompt: string, system: string | undefined, config:
       model: config.model,
       max_tokens: 4096,
       system: system || 'You are a helpful assistant.',
-      messages: [{ role: 'user', content: prompt }],
+      messages,
     }),
   });
 
@@ -169,19 +223,28 @@ async function callAnthropic(prompt: string, system: string | undefined, config:
 }
 
 export async function generate(options: GenerateOptions): Promise<GenerateResult> {
-  const config = resolveConfig(options.tenantApiKey, options.tenantAiProvider, options.tenantAiModel);
-  const response = await callAi(options.prompt, options.system, config);
+  const config = resolveConfig(
+    options.tenantApiKey,
+    options.tenantAiProvider,
+    options.tenantAiModel,
+  );
+  const response = await callAi(options.prompt, options.system, config, options.history);
   return { response, model: config?.model || 'unknown' };
 }
 
-export async function generateKP(deal: {
-  title: string;
-  value: number | null;
-  currency: string;
-  company?: string | null;
-  notes?: string | null;
-  stage?: string | null;
-}, tenantApiKey?: string | null, tenantAiProvider?: string | null, tenantAiModel?: string | null): Promise<string> {
+export async function generateKP(
+  deal: {
+    title: string;
+    value: number | null;
+    currency: string;
+    company?: string | null;
+    notes?: string | null;
+    stage?: string | null;
+  },
+  tenantApiKey?: string | null,
+  tenantAiProvider?: string | null,
+  tenantAiModel?: string | null,
+): Promise<string> {
   const config = resolveConfig(tenantApiKey, tenantAiProvider, tenantAiModel);
   const system = `Ти — досвідчений менеджер з продажів. Створи професійний комерційний пропозицію (КП) українською мовою.
 Формат: 1.Заголовок 2.Опис проблеми 3.Рішення 4.Переваги 5.Ціна 6.Терміни 7.Контакти. Професійний тон.`;
@@ -196,12 +259,17 @@ export async function generateKP(deal: {
   return callAi(prompt, system, config);
 }
 
-export async function generateFollowUp(deal: {
-  title: string;
-  company?: string | null;
-  stage?: string | null;
-  daysSinceLastActivity?: number;
-}, tenantApiKey?: string | null, tenantAiProvider?: string | null, tenantAiModel?: string | null): Promise<string> {
+export async function generateFollowUp(
+  deal: {
+    title: string;
+    company?: string | null;
+    stage?: string | null;
+    daysSinceLastActivity?: number;
+  },
+  tenantApiKey?: string | null,
+  tenantAiProvider?: string | null,
+  tenantAiModel?: string | null,
+): Promise<string> {
   const config = resolveConfig(tenantApiKey, tenantAiProvider, tenantAiModel);
   const system = `Ти — менеджер з продажів. Напиши коротке ввічливе повідомлення (3-5 речень) українською з call-to-action.`;
 
@@ -214,14 +282,19 @@ export async function generateFollowUp(deal: {
   return callAi(prompt, system, config);
 }
 
-export async function analyzeContact(contact: {
-  firstName: string;
-  lastName?: string | null;
-  company?: string | null;
-  email?: string | null;
-  activities: Array<{ type: string; title: string; date: string }>;
-  deals?: Array<{ title: string; stage: string; value: number | null }>;
-}, tenantApiKey?: string | null, tenantAiProvider?: string | null, tenantAiModel?: string | null): Promise<string> {
+export async function analyzeContact(
+  contact: {
+    firstName: string;
+    lastName?: string | null;
+    company?: string | null;
+    email?: string | null;
+    activities: Array<{ type: string; title: string; date: string }>;
+    deals?: Array<{ title: string; stage: string; value: number | null }>;
+  },
+  tenantApiKey?: string | null,
+  tenantAiProvider?: string | null,
+  tenantAiModel?: string | null,
+): Promise<string> {
   const config = resolveConfig(tenantApiKey, tenantAiProvider, tenantAiModel);
   const system = `Ти — CRM аналітик. Проаналізуй контакт українською.
 Відповідь у форматі:
@@ -234,8 +307,13 @@ export async function analyzeContact(contact: {
 ## Ризики
 - Що може піти не так`;
 
-  const activitiesList = contact.activities.map((a) => `- ${a.type}: ${a.title} (${a.date})`).join('\n');
-  const dealsList = contact.deals?.map((d) => `- ${d.title} [${d.stage}] ${d.value ? d.value + '₴' : ''}`).join('\n') || 'Немає';
+  const activitiesList = contact.activities
+    .map((a) => `- ${a.type}: ${a.title} (${a.date})`)
+    .join('\n');
+  const dealsList =
+    contact.deals
+      ?.map((d) => `- ${d.title} [${d.stage}] ${d.value ? d.value + '₴' : ''}`)
+      .join('\n') || 'Немає';
 
   const prompt = `Проаналізуй контакт:
 Ім'я: ${contact.firstName} ${contact.lastName || ''}
@@ -249,15 +327,20 @@ ${dealsList}`;
   return callAi(prompt, system, config);
 }
 
-export async function scoreDeal(deal: {
-  title: string;
-  value: number | null;
-  stage: string;
-  daysInStage: number;
-  totalActivities: number;
-  daysSinceLastActivity: number;
-  hasContact: boolean;
-}, tenantApiKey?: string | null, tenantAiProvider?: string | null, tenantAiModel?: string | null): Promise<number> {
+export async function scoreDeal(
+  deal: {
+    title: string;
+    value: number | null;
+    stage: string;
+    daysInStage: number;
+    totalActivities: number;
+    daysSinceLastActivity: number;
+    hasContact: boolean;
+  },
+  tenantApiKey?: string | null,
+  tenantAiProvider?: string | null,
+  tenantAiModel?: string | null,
+): Promise<number> {
   const config = resolveConfig(tenantApiKey, tenantAiProvider, tenantAiModel);
   const system = `Ти — CRM аналітик. Оцінім ймовірність закриття угоди від 0 до 100.
 Поверни ТІЛЬКИ число (ціле), без тексту.
@@ -283,19 +366,32 @@ export async function scoreDeal(deal: {
   return Math.min(100, Math.max(0, isNaN(num) ? 50 : num));
 }
 
-export async function generateRecommendations(data: {
-  overdueTasks: Array<{ title: string; dueDate: string; contact?: string }>;
-  staleDeals: Array<{ title: string; daysSince: number; stage: string }>;
-  expiringContracts: Array<{ company: string; expiresAt: string }>;
-}, tenantApiKey?: string | null, tenantAiProvider?: string | null, tenantAiModel?: string | null): Promise<string> {
+export async function generateRecommendations(
+  data: {
+    overdueTasks: Array<{ title: string; dueDate: string; contact?: string }>;
+    staleDeals: Array<{ title: string; daysSince: number; stage: string }>;
+    expiringContracts: Array<{ company: string; expiresAt: string }>;
+  },
+  tenantApiKey?: string | null,
+  tenantAiProvider?: string | null,
+  tenantAiModel?: string | null,
+): Promise<string> {
   const config = resolveConfig(tenantApiKey, tenantAiProvider, tenantAiModel);
   const system = `Ти — CRM асистент. Створи план роботи на сьогодні українською.
 Формат: короткий, структурований список пріоритетних дій.
 Максимум 7 пунктів. Почни з найважливішого.`;
 
-  const tasksList = data.overdueTasks.map((t) => `- "${t.title}" (дедлайн: ${t.dueDate}${t.contact ? `, клієнт: ${t.contact}` : ''})`).join('\n');
-  const dealsList = data.staleDeals.map((d) => `- "${d.title}" [${d.stage}] — ${d.daysSince} днів без активності`).join('\n');
-  const contractsList = data.expiringContracts.map((c) => `- ${c.company} — ${c.expiresAt}`).join('\n');
+  const tasksList = data.overdueTasks
+    .map(
+      (t) => `- "${t.title}" (дедлайн: ${t.dueDate}${t.contact ? `, клієнт: ${t.contact}` : ''})`,
+    )
+    .join('\n');
+  const dealsList = data.staleDeals
+    .map((d) => `- "${d.title}" [${d.stage}] — ${d.daysSince} днів без активності`)
+    .join('\n');
+  const contractsList = data.expiringContracts
+    .map((c) => `- ${c.company} — ${c.expiresAt}`)
+    .join('\n');
 
   const prompt = `Створи план на сьогодні:
 
@@ -311,7 +407,12 @@ ${contractsList || 'Немає'}`;
   return callAi(prompt, system, config);
 }
 
-export async function smartSearch(query: string, tenantApiKey?: string | null, tenantAiProvider?: string | null, tenantAiModel?: string | null): Promise<{
+export async function smartSearch(
+  query: string,
+  tenantApiKey?: string | null,
+  tenantAiProvider?: string | null,
+  tenantAiModel?: string | null,
+): Promise<{
   intent: string;
   filters: Record<string, string>;
   suggestion: string;
@@ -338,7 +439,9 @@ export async function smartSearch(query: string, tenantApiKey?: string | null, t
   try {
     const jsonMatch = result.match(/\{[\s\S]*\}/);
     if (jsonMatch) return JSON.parse(jsonMatch[0]);
-  } catch {}
+  } catch {
+    // не JSON — вернём fallback ниже
+  }
   return { intent: 'contacts', filters: {}, suggestion: result.slice(0, 200) };
 }
 
@@ -352,7 +455,10 @@ export async function checkAi(
 
   try {
     if (config.provider.id === 'gemini') {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${config.apiKey}`, { signal: AbortSignal.timeout(5000) });
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models?key=${config.apiKey}`,
+        { signal: AbortSignal.timeout(5000) },
+      );
       return res.ok;
     }
 
@@ -363,8 +469,16 @@ export async function checkAi(
     if (config.provider.id === 'anthropic') {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': config.apiKey, 'anthropic-version': '2023-06-01' },
-        body: JSON.stringify({ model: config.model, max_tokens: 1, messages: [{ role: 'user', content: 'hi' }] }),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': config.apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: config.model,
+          max_tokens: 1,
+          messages: [{ role: 'user', content: 'hi' }],
+        }),
         signal: AbortSignal.timeout(10000),
       });
       return res.ok || res.status === 400; // 400 = key works but bad request
@@ -372,8 +486,12 @@ export async function checkAi(
 
     const res = await fetch(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${config.apiKey}` },
-      body: JSON.stringify({ model: config.model, messages: [{ role: 'user', content: 'hi' }], max_tokens: 1 }),
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.apiKey}` },
+      body: JSON.stringify({
+        model: config.model,
+        messages: [{ role: 'user', content: 'hi' }],
+        max_tokens: 1,
+      }),
       signal: AbortSignal.timeout(10000),
     });
     return res.ok || res.status === 400;
