@@ -10,16 +10,20 @@ import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
 import { prisma } from '@crm-next/database';
 import { checkUsageLimit, logAiRequest, incrementUsage } from '@/lib/ai/usage';
+import { getProviderKey } from '@/lib/ai/keys';
 import { withAuth } from '@/lib/auth-guard';
 
 async function getTenantAiSettings(tenantId: string) {
   const tenant = await prisma.tenant.findUnique({
     where: { id: tenantId },
-    select: { geminiApiKey: true, aiApiKey: true, aiProvider: true, aiModel: true },
+    select: { aiProvider: true, aiModel: true },
   });
+  const provider = tenant?.aiProvider || 'gemini';
+  // Per-provider keys (AiProviderKey) first, legacy tenant fields as fallback.
+  const apiKey = await getProviderKey(tenantId, provider);
   return {
-    apiKey: tenant?.aiApiKey || tenant?.geminiApiKey || null,
-    provider: tenant?.aiProvider || 'gemini',
+    apiKey,
+    provider,
     model: tenant?.aiModel || null,
   };
 }

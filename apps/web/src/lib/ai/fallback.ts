@@ -9,6 +9,7 @@
 
 import { prisma } from '@crm-next/database';
 import { decrypt } from '@/lib/encryption';
+import { getProviderKeyRaw } from './keys';
 import { getProvider } from './providers';
 import { logAiRequest, incrementUsage } from './usage';
 
@@ -57,16 +58,23 @@ export async function loadFallbackConfig(tenantId: string): Promise<FallbackConf
 
   if (!tenant) return null;
 
-  const primaryKey = tenant.aiApiKey || tenant.geminiApiKey || '';
+  const primaryKey = await getProviderKeyRaw(tenantId, tenant.aiProvider || 'gemini')
+    || tenant.aiApiKey || tenant.geminiApiKey || '';
   if (!primaryKey) return null;
+
+  const fallbackProvider = tenant.aiFallbackProvider || undefined;
+  // REAL per-provider fallback key (not the primary key reused).
+  const fallbackKey = fallbackProvider
+    ? await getProviderKeyRaw(tenantId, fallbackProvider)
+    : null;
 
   return {
     tenantId,
     primaryProvider: tenant.aiProvider || 'gemini',
     primaryApiKey: primaryKey,
     primaryModel: tenant.aiModel || getProvider(tenant.aiProvider || 'gemini')?.models[0]?.id || 'gemini-3-flash-preview',
-    fallbackProvider: tenant.aiFallbackProvider || undefined,
-    fallbackApiKey: primaryKey, // Same key, different provider
+    fallbackProvider,
+    fallbackApiKey: fallbackKey || undefined,
     fallbackModel: undefined,
   };
 }

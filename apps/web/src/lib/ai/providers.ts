@@ -79,10 +79,8 @@ export const AI_PROVIDERS: AiProvider[] = [
     keyPrefix: 'sk-',
     freeQuota: '~10M токенів безкоштовно при реєстрації',
     models: [
-      { id: 'deepseek-v4-pro', name: 'DeepSeek V4 Pro', description: 'Флагман з просунутими агентськими можливостями' },
-      { id: 'deepseek-r1', name: 'DeepSeek-R1 / R1-0528', description: 'Моделі розмірковування (reasoning, chain-of-thought)' },
-      { id: 'deepseek-v3', name: 'DeepSeek-V3 / V3.2', description: 'Моделі загального призначення (MoE 671B)' },
-      { id: 'deepseek-vl2', name: 'DeepSeek-VL2', description: 'Мультимодальна (текст, візуалізація, таблиці)' },
+      { id: 'deepseek-chat', name: 'DeepSeek Chat (V3)', description: 'Універсальна модель загального призначення' },
+      { id: 'deepseek-reasoner', name: 'DeepSeek Reasoner (R1)', description: 'Модель розмірковування (chain-of-thought)' },
     ],
   },
   {

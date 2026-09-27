@@ -199,14 +199,13 @@ export async function getAllProviderStatuses(
   tenantId: string
 ): Promise<TestResult[]> {
   const { prisma } = await import('@crm-next/database');
+  const { listProviderKeys, getProviderKeyRaw } = await import('./keys');
 
   const tenant = await prisma.tenant.findUnique({
     where: { id: tenantId },
     select: {
       aiProvider: true,
-      aiApiKey: true,
       aiModel: true,
-      geminiApiKey: true,
       aiFallbackProvider: true,
     },
   });
@@ -216,24 +215,25 @@ export async function getAllProviderStatuses(
   const results: TestResult[] = [];
   const tested = new Set<string>();
 
-  // Test primary provider
   const primaryProvider = tenant.aiProvider || 'gemini';
-  const primaryKey = tenant.aiApiKey || tenant.geminiApiKey;
 
-  if (primaryKey && !tested.has(primaryProvider)) {
-    const result = await testStoredProviderConnection(primaryProvider, primaryKey, tenant.aiModel || undefined);
+  // Test the active provider first (if it has any key).
+  const primaryRaw = await getProviderKeyRaw(tenantId, primaryProvider);
+  if (primaryRaw && !tested.has(primaryProvider)) {
+    const result = await testStoredProviderConnection(primaryProvider, primaryRaw, tenant.aiModel || undefined);
     results.push(result);
     tested.add(primaryProvider);
   }
 
-  // Test fallback provider if configured
-  if (tenant.aiFallbackProvider && !tested.has(tenant.aiFallbackProvider)) {
-    const fallbackKey = tenant.aiApiKey; // Same key field used for both
-    if (fallbackKey) {
-      const result = await testStoredProviderConnection(tenant.aiFallbackProvider, fallbackKey);
-      results.push(result);
-      tested.add(tenant.aiFallbackProvider);
-    }
+  // Then every other provider with a saved key (multi-key tenants).
+  const saved = await listProviderKeys(tenantId);
+  for (const info of saved) {
+    if (tested.has(info.provider)) continue;
+    const raw = await getProviderKeyRaw(tenantId, info.provider);
+    if (!raw) continue;
+    const result = await testStoredProviderConnection(info.provider, raw);
+    results.push(result);
+    tested.add(info.provider);
   }
 
   // If no providers configured, add a "not configured" entry

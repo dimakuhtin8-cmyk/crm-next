@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 import { prisma } from '@crm-next/database';
 import { getTenantQuery } from '@/lib/tenant-query';
 import { getProvider } from '@/lib/ai/providers';
-import { encrypt } from '@/lib/encryption';
+import { setProviderKey, getProviderKeyRaw } from '@/lib/ai/keys';
 import { withAuth } from '@/lib/auth-guard';
 
 async function POSTHandler(request: NextRequest) {
@@ -14,14 +14,30 @@ async function POSTHandler(request: NextRequest) {
     const body = await request.json();
     const { apiKey, provider, model } = body;
 
-    if (!apiKey || typeof apiKey !== 'string') {
-      return NextResponse.json({ error: 'API-ключ обов\'язковий' }, { status: 400 });
-    }
-
     const providerId = provider || 'gemini';
     const providerConfig = getProvider(providerId);
     if (!providerConfig) {
       return NextResponse.json({ error: 'Невідомий провайдер' }, { status: 400 });
+    }
+
+    // Activate an already-saved key without re-entering it.
+    if (!apiKey) {
+      const existing = await getProviderKeyRaw(tq.tenantId, providerId);
+      if (!existing) {
+        return NextResponse.json({ error: 'Для цього провайдера немає збереженого ключа' }, { status: 400 });
+      }
+      await prisma.tenant.update({
+        where: { id: tq.tenantId },
+        data: {
+          aiProvider: providerId,
+          aiModel: model || providerConfig.models[0]?.id || null,
+        },
+      });
+      return NextResponse.json({ success: true, provider: providerId, activated: true });
+    }
+
+    if (typeof apiKey !== 'string') {
+      return NextResponse.json({ error: 'API-ключ обов\'язковий' }, { status: 400 });
     }
 
     // Validate key prefix if provider has one (supports multiple, e.g. AIza + AQ. for Gemini)
@@ -35,17 +51,15 @@ async function POSTHandler(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Always encrypt the API key before saving
-    const encryptedKey = encrypt(apiKey);
+    // Save to per-provider store (AiProviderKey) + keep legacy tenant
+    // fields in sync for the active provider path.
+    await setProviderKey(tq.tenantId, providerId, apiKey);
 
     await prisma.tenant.update({
       where: { id: tq.tenantId },
       data: {
         aiProvider: providerId,
         aiModel: model || providerConfig.models[0]?.id || null,
-        aiApiKey: encryptedKey,
-        // Also set geminiApiKey for backward compatibility
-        ...(providerId === 'gemini' ? { geminiApiKey: encryptedKey } : {}),
       },
     });
 

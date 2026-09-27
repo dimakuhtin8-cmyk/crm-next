@@ -134,6 +134,7 @@ model Tenant {
   automationLogs  AutomationLog[]
   aiUsageLogs     AiUsageLog[]
   aiUsageCounters AiUsageCounter[]
+  aiProviderKeys  AiProviderKey[]
   payments         Payment[]
   auditLogs        AuditLog[]
 }
@@ -482,6 +483,20 @@ model AiUsageCounter {
   @@unique([tenantId, provider, date])
   @@index([tenantId])
   @@index([tenantId, date])
+}
+
+model AiProviderKey {
+  id         String   @id @default(cuid())
+  tenantId   String
+  provider   String   // gemini | openai | anthropic | deepseek | groq | mistral | together
+  apiKey     String   // AES-256-GCM, формат iv:tag:ciphertext
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, provider])
+  @@index([tenantId])
 }
 
 model Payment {

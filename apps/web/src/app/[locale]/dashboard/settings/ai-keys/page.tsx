@@ -39,6 +39,22 @@ export default function AiKeysSettingsPage() {
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  interface SavedKey {
+    provider: string;
+    hasKey: boolean;
+    maskedKey: string;
+    updatedAt: string | null;
+  }
+  const [savedKeys, setSavedKeys] = useState<SavedKey[]>([]);
+
+  const refreshSavedKeys = async () => {
+    try {
+      const res = await fetch('/api/ai/keys', { credentials: 'include' });
+      const data = await res.json();
+      setSavedKeys(data.keys || []);
+    } catch {}
+  };
+
   const currentProvider = getProvider(selectedProvider);
 
   useEffect(() => {
@@ -56,6 +72,8 @@ export default function AiKeysSettingsPage() {
         // Usage endpoint doesn't return settings, but we can infer from AI status
       })
       .catch(() => {});
+
+    refreshSavedKeys();
   }, []);
 
   useEffect(() => {
@@ -135,6 +153,7 @@ export default function AiKeysSettingsPage() {
         setApiKey('');
         setShowKey(false);
         setTestResult(null);
+        refreshSavedKeys();
         setTimeout(() => setSaved(false), 3000);
       } else {
         const data = await res.json().catch(() => null);
@@ -145,6 +164,36 @@ export default function AiKeysSettingsPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleDeleteKey = async (provider: string) => {
+    if (!window.confirm(`Видалити ключ ${getProvider(provider)?.name || provider}?`)) return;
+    try {
+      const res = await fetch('/api/ai/keys', {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider }),
+      });
+      if (res.ok) refreshSavedKeys();
+    } catch {}
+  };
+
+  const handleActivateKey = async (provider: string) => {
+    try {
+      const res = await fetch('/api/ai/quick-setup', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider }),
+      });
+      if (res.ok) {
+        setSelectedProvider(provider);
+        setSaved(true);
+        refreshSavedKeys();
+        setTimeout(() => setSaved(false), 3000);
+      }
+    } catch {}
   };
 
   const maskKey = (key: string): string => {
@@ -358,6 +407,50 @@ export default function AiKeysSettingsPage() {
                   <p className="text-xs text-foreground-muted mt-0.5">{testResult.message}</p>
                 </div>
               </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Saved keys per provider */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Збережені ключі</CardTitle>
+          <CardDescription>
+            По одному ключу на провайдера — перемикайтесь без повторного вводу
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {savedKeys.length === 0 ? (
+            <p className="text-sm text-foreground-muted">Поки що немає збережених ключів.</p>
+          ) : (
+            <div className="space-y-2">
+              {savedKeys.map((k) => (
+                <div
+                  key={k.provider}
+                  className="flex items-center gap-3 rounded-xl border border-border/60 px-3 py-2.5"
+                >
+                  <span className="text-sm font-semibold flex-1">
+                    {getProvider(k.provider)?.name || k.provider}
+                  </span>
+                  <code className="text-xs font-mono text-foreground-muted">{k.maskedKey}</code>
+                  {selectedProvider === k.provider ? (
+                    <Badge>Активний</Badge>
+                  ) : (
+                    <Button variant="outline" size="sm" onClick={() => handleActivateKey(k.provider)}>
+                      Активувати
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDeleteKey(k.provider)}
+                    className="text-danger hover:text-danger"
+                  >
+                    Видалити
+                  </Button>
+                </div>
+              ))}
             </div>
           )}
         </CardContent>
