@@ -23,7 +23,7 @@ export default function CopilotPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
-  const [selectedChatModel, setSelectedChatModel] = useState('gemini-2.5-flash');
+  const [selectedChatModel, setSelectedChatModel] = useState('gemini-3-flash-preview');
   const [showModelPicker, setShowModelPicker] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -89,7 +89,7 @@ export default function CopilotPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'custom',
-          data: { prompt: text },
+          data: { prompt: text, model: selectedChatModel || undefined },
         }),
       });
       const json = await res.json();

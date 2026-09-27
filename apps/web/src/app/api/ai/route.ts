@@ -219,6 +219,8 @@ async function POSTHandler(request: NextRequest) {
         break;
       }
       case 'custom': {
+        // Model picker in chat UI wins if provided; otherwise tenant default.
+        const requestedModel = typeof data.model === 'string' && data.model ? data.model : undefined;
         const genResult = await generate({
           prompt: data.prompt,
           system: data.system,
@@ -226,7 +228,7 @@ async function POSTHandler(request: NextRequest) {
           maxTokens: data.maxTokens,
           tenantApiKey: aiSettings.apiKey,
           tenantAiProvider: aiSettings.provider,
-          tenantAiModel: aiSettings.model,
+          tenantAiModel: requestedModel || aiSettings.model,
         });
         result = genResult.response;
         break;
