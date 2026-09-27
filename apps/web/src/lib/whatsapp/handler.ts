@@ -23,7 +23,13 @@ export async function handleWhatsAppWebhook(body: WhatsAppWebhookBody) {
       // Handle incoming messages
       if (messages) {
         for (const msg of messages) {
-          await handleIncomingMessage(tenant.id, tenant.whatsappApiKey || '', phoneNumberId, msg, contacts);
+          await handleIncomingMessage(
+            tenant.id,
+            tenant.whatsappApiKey || '',
+            phoneNumberId,
+            msg,
+            contacts,
+          );
         }
       }
 
@@ -59,13 +65,16 @@ async function handleIncomingMessage(
     update: {
       name: contactName || undefined,
       lastMessageAt: new Date(),
+      unread: true,
     },
   });
 
   // Mark as read
   try {
     await markAsRead(phoneNumberId, accessToken, msg.id);
-  } catch {}
+  } catch {
+    // best-effort: непрочитанное у провайдера не блокирует обработку
+  }
 
   // Handle text messages
   if (msg.type === 'text' && msg.text?.body) {
@@ -90,7 +99,10 @@ async function handleIncomingMessage(
     }
 
     // Reply
-    await sendTextMessage(phoneNumberId, accessToken, phoneNumber,
+    await sendTextMessage(
+      phoneNumberId,
+      accessToken,
+      phoneNumber,
       `✅ Повідомлення отримано${chat.contactId ? '' : '\n\nНадішліть /start для підключення'}`,
     );
   }
@@ -122,7 +134,10 @@ async function handleCommand(
     case '/tasks':
       return handleTasksCommand(tenantId, accessToken, phoneNumberId, chat);
     default:
-      await sendTextMessage(phoneNumberId, accessToken, chat.phoneNumber,
+      await sendTextMessage(
+        phoneNumberId,
+        accessToken,
+        chat.phoneNumber,
         '❓ Невідома команда. Надішліть /help для списку.',
       );
   }
@@ -143,7 +158,7 @@ async function sendStartMenu(
 /tasks — мої задачі
 /help — допомога
 
-${chat.contactId ? '✅ Ваш акаунт прив\'язано' : '💡 Щоб прив\'язати, надішліть свій email'}`;
+${chat.contactId ? "✅ Ваш акаунт прив'язано" : "💡 Щоб прив'язати, надішліть свій email"}`;
 
   await sendTextMessage(phoneNumberId, accessToken, chat.phoneNumber, text);
 }
@@ -167,9 +182,19 @@ async function handleDealsCommand(
   }
 
   let text = `💼 *Активні угоди (${deals.length})*\n\n`;
-  deals.forEach((deal: { title: string; value: number | null; currency: string; stage?: { name: string } | null }, i: number) => {
-    text += `${i + 1}. *${deal.title}*\n   Сума: ${(deal.value || 0).toLocaleString('uk')} ${deal.currency}\n   Етап: ${deal.stage?.name || '—'}\n\n`;
-  });
+  deals.forEach(
+    (
+      deal: {
+        title: string;
+        value: number | null;
+        currency: string;
+        stage?: { name: string } | null;
+      },
+      i: number,
+    ) => {
+      text += `${i + 1}. *${deal.title}*\n   Сума: ${(deal.value || 0).toLocaleString('uk')} ${deal.currency}\n   Етап: ${deal.stage?.name || '—'}\n\n`;
+    },
+  );
 
   await sendTextMessage(phoneNumberId, accessToken, chat.phoneNumber, text);
 }
@@ -191,18 +216,31 @@ async function handleTasksCommand(
     return;
   }
 
-  const typeIcons: Record<string, string> = { task: '📋', call: '📞', email: '✉️', meeting: '🤝', follow_up: '🔄' };
-  const priorityEmoji: Record<string, string> = { urgent: '🔴', high: '🟠', medium: '🟡', low: '🟢' };
+  const typeIcons: Record<string, string> = {
+    task: '📋',
+    call: '📞',
+    email: '✉️',
+    meeting: '🤝',
+    follow_up: '🔄',
+  };
+  const priorityEmoji: Record<string, string> = {
+    urgent: '🔴',
+    high: '🟠',
+    medium: '🟡',
+    low: '🟢',
+  };
 
   let text = `📋 *Мої задачі (${tasks.length})*\n\n`;
-  tasks.forEach((task: { title: string; type: string; priority: string; dueDate: Date | null }, i: number) => {
-    const icon = typeIcons[task.type] || '📋';
-    const p = priorityEmoji[task.priority] || '🟡';
-    const due = task.dueDate ? new Date(task.dueDate).toLocaleDateString('uk') : '';
-    text += `${i + 1}. ${icon} ${p} *${task.title}*`;
-    if (due) text += ` (${due})`;
-    text += '\n';
-  });
+  tasks.forEach(
+    (task: { title: string; type: string; priority: string; dueDate: Date | null }, i: number) => {
+      const icon = typeIcons[task.type] || '📋';
+      const p = priorityEmoji[task.priority] || '🟡';
+      const due = task.dueDate ? new Date(task.dueDate).toLocaleDateString('uk') : '';
+      text += `${i + 1}. ${icon} ${p} *${task.title}*`;
+      if (due) text += ` (${due})`;
+      text += '\n';
+    },
+  );
 
   await sendTextMessage(phoneNumberId, accessToken, chat.phoneNumber, text);
 }
@@ -217,11 +255,17 @@ async function handleCallbackData(
   if (data.startsWith('task_done:')) {
     const taskId = data.replace('task_done:', '');
     // Tenant-scoped: a foreign taskId must not be completable via bot callback
-    const ownedTask = await prisma.task.findFirst({ where: { id: taskId, tenantId }, select: { id: true } });
+    const ownedTask = await prisma.task.findFirst({
+      where: { id: taskId, tenantId },
+      select: { id: true },
+    });
     if (!ownedTask) return;
     await prisma.task.update({ where: { id: taskId }, data: { status: 'done' } });
     const task = await prisma.task.findFirst({ where: { id: taskId, tenantId } });
-    await sendTextMessage(phoneNumberId, accessToken, chat.phoneNumber,
+    await sendTextMessage(
+      phoneNumberId,
+      accessToken,
+      chat.phoneNumber,
       `✅ *${task?.title || 'Задачу'}* позначено як виконану!`,
     );
     return;
@@ -230,7 +274,10 @@ async function handleCallbackData(
   await sendTextMessage(phoneNumberId, accessToken, chat.phoneNumber, '❓ Невідома дія.');
 }
 
-async function handleStatusUpdate(tenantId: string, status: { id: string; status: string; recipient_id: string }) {
+async function handleStatusUpdate(
+  tenantId: string,
+  status: { id: string; status: string; recipient_id: string },
+) {
   // Log delivery status for debugging
   console.log(`WhatsApp message ${status.id}: ${status.status} to ${status.recipient_id}`);
 }

@@ -1,9 +1,5 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import Link from 'next/link';
-import { useSession, signOut } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 import {
   Search,
   Plus,
@@ -23,10 +19,15 @@ import {
   Calendar,
   Repeat,
 } from 'lucide-react';
-import { Avatar } from '@/components/ui';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useSession, signOut } from 'next-auth/react';
+import { useState, useRef, useEffect } from 'react';
+
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { useNotifications } from '@/components/notifications-provider';
 import { useTheme } from '@/components/theme-provider';
-import { LanguageSwitcher } from '@/components/language-switcher';
+import { Avatar } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
 interface HeaderProps {
@@ -70,6 +71,12 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
   const [overdueReminders, setOverdueReminders] = useState<ReminderTask[]>([]);
   const [upcomingReminders, setUpcomingReminders] = useState<ReminderTask[]>([]);
   const [search, setSearch] = useState('');
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchResults, setSearchResults] = useState<{
+    contacts: { id: string; name: string; subtitle: string }[];
+    deals: { id: string; name: string; subtitle: string }[];
+    tasks: { id: string; name: string; subtitle: string }[];
+  } | null>(null);
 
   const profileRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
@@ -103,8 +110,35 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
   useEffect(() => {
     if (isSearchOpen) {
       searchInputRef.current?.focus();
+    } else {
+      setSearch('');
+      setSearchResults(null);
     }
   }, [isSearchOpen]);
+
+  // Debounced global search (250ms) — real /api/search, tenant-scoped.
+  useEffect(() => {
+    const q = search.trim();
+    if (!isSearchOpen || q.length < 2) {
+      setSearchResults(null);
+      setSearchLoading(false);
+      return;
+    }
+    setSearchLoading(true);
+    const t = setTimeout(() => {
+      fetch(`/api/search?q=${encodeURIComponent(q)}`, { credentials: 'include' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => setSearchResults(d))
+        .catch(() => setSearchResults(null))
+        .finally(() => setSearchLoading(false));
+    }, 250);
+    return () => clearTimeout(t);
+  }, [search, isSearchOpen]);
+
+  const goSearchResult = (href: string) => {
+    setIsSearchOpen(false);
+    router.push(href);
+  };
 
   // Fetch reminders
   useEffect(() => {
@@ -132,10 +166,30 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
   const user = session?.user;
 
   const quickActions = [
-    { label: 'Новий контакт', href: '/dashboard/contacts/new', icon: Users, color: 'text-[#111214]' },
-    { label: 'Нова угода', href: '/dashboard/deals/new', icon: TrendingUp, color: 'text-[#111214]' },
-    { label: 'Нова задача', href: '/dashboard/tasks/new', icon: CheckSquare, color: 'text-[#111214]' },
-    { label: 'Повідомлення', href: '/dashboard/messages', icon: MessageSquare, color: 'text-[#111214]' },
+    {
+      label: 'Новий контакт',
+      href: '/dashboard/contacts/new',
+      icon: Users,
+      color: 'text-[#111214]',
+    },
+    {
+      label: 'Нова угода',
+      href: '/dashboard/deals/new',
+      icon: TrendingUp,
+      color: 'text-[#111214]',
+    },
+    {
+      label: 'Нова задача',
+      href: '/dashboard/tasks/new',
+      icon: CheckSquare,
+      color: 'text-[#111214]',
+    },
+    {
+      label: 'Повідомлення',
+      href: '/dashboard/messages',
+      icon: MessageSquare,
+      color: 'text-[#111214]',
+    },
   ];
 
   return (
@@ -149,7 +203,13 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
             onClick={onMobileMenuToggle}
             aria-label="Відкрити меню"
           >
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              className="h-5 w-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <line x1="3" y1="12" x2="21" y2="12" />
               <line x1="3" y1="6" x2="21" y2="6" />
               <line x1="3" y1="18" x2="21" y2="18" />
@@ -264,7 +324,9 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
                         <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-success-light mb-3">
                           <CheckSquare className="h-6 w-6 text-success" />
                         </div>
-                        <p className="text-sm font-medium text-foreground-muted">Немає нагадувань</p>
+                        <p className="text-sm font-medium text-foreground-muted">
+                          Немає нагадувань
+                        </p>
                         <p className="text-xs text-foreground-muted/70 mt-1">Все під контролем!</p>
                       </div>
                     ) : (
@@ -298,7 +360,12 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
                                       })}
                                   </p>
                                 </div>
-                                <span className={cn('text-xs font-medium', priorityConfig[task.priority]?.color)}>
+                                <span
+                                  className={cn(
+                                    'text-xs font-medium',
+                                    priorityConfig[task.priority]?.color,
+                                  )}
+                                >
                                   {priorityConfig[task.priority]?.label}
                                 </span>
                               </Link>
@@ -334,7 +401,12 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
                                       })}
                                   </p>
                                 </div>
-                                <span className={cn('text-xs font-medium', priorityConfig[task.priority]?.color)}>
+                                <span
+                                  className={cn(
+                                    'text-xs font-medium',
+                                    priorityConfig[task.priority]?.color,
+                                  )}
+                                >
                                   {priorityConfig[task.priority]?.label}
                                 </span>
                               </Link>
@@ -426,7 +498,10 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
       {/* Full-screen search modal (Cmd+K) */}
       {isSearchOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]">
-          <div className="fixed inset-0 bg-foreground-inverse/50 backdrop-blur-sm" onClick={() => setIsSearchOpen(false)} />
+          <div
+            className="fixed inset-0 bg-foreground-inverse/50 backdrop-blur-sm"
+            onClick={() => setIsSearchOpen(false)}
+          />
           <div className="relative w-full max-w-2xl mx-4 bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-fade-in-scale">
             <div className="flex items-center gap-3 border-b border-border px-5 py-4">
               <Search className="h-5 w-5 text-foreground-muted" />
@@ -443,18 +518,89 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
               </kbd>
             </div>
             <div className="max-h-96 overflow-y-auto p-2">
-              {!search ? (
+              {search.trim().length < 2 ? (
                 <div className="px-4 py-8 text-center">
                   <p className="text-sm text-foreground-muted">Почніть вводити для пошуку...</p>
                 </div>
-              ) : (
+              ) : searchLoading && !searchResults ? (
+                <div className="px-4 py-8 text-center">
+                  <p className="text-sm text-foreground-muted animate-pulse">Шукаю...</p>
+                </div>
+              ) : searchResults &&
+                (searchResults.contacts.length > 0 ||
+                  searchResults.deals.length > 0 ||
+                  searchResults.tasks.length > 0) ? (
                 <div className="space-y-1">
-                  <p className="px-3 py-1.5 text-xs font-semibold text-foreground-muted uppercase tracking-wider">
-                    Результати
-                  </p>
-                  <div className="px-3 py-6 text-center">
-                    <p className="text-sm text-foreground-muted">Нічого не знайдено</p>
-                  </div>
+                  {searchResults.contacts.length > 0 && (
+                    <>
+                      <p className="px-3 py-1.5 text-xs font-semibold text-foreground-muted uppercase tracking-wider">
+                        Контакти
+                      </p>
+                      {searchResults.contacts.map((c) => (
+                        <button
+                          key={c.id}
+                          onClick={() => goSearchResult(`/dashboard/contacts/${c.id}`)}
+                          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm hover:bg-secondary transition-colors"
+                        >
+                          <Users className="h-4 w-4 shrink-0 text-foreground-muted" />
+                          <span className="flex-1 truncate font-medium">{c.name}</span>
+                          {c.subtitle && (
+                            <span className="truncate text-xs text-foreground-muted">
+                              {c.subtitle}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </>
+                  )}
+                  {searchResults.deals.length > 0 && (
+                    <>
+                      <p className="px-3 py-1.5 text-xs font-semibold text-foreground-muted uppercase tracking-wider">
+                        Угоди
+                      </p>
+                      {searchResults.deals.map((d) => (
+                        <button
+                          key={d.id}
+                          onClick={() => goSearchResult(`/dashboard/deals/${d.id}`)}
+                          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm hover:bg-secondary transition-colors"
+                        >
+                          <TrendingUp className="h-4 w-4 shrink-0 text-foreground-muted" />
+                          <span className="flex-1 truncate font-medium">{d.name}</span>
+                          {d.subtitle && (
+                            <span className="truncate text-xs text-foreground-muted">
+                              {d.subtitle}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </>
+                  )}
+                  {searchResults.tasks.length > 0 && (
+                    <>
+                      <p className="px-3 py-1.5 text-xs font-semibold text-foreground-muted uppercase tracking-wider">
+                        Задачі
+                      </p>
+                      {searchResults.tasks.map((t) => (
+                        <button
+                          key={t.id}
+                          onClick={() => goSearchResult(`/dashboard/tasks/${t.id}`)}
+                          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm hover:bg-secondary transition-colors"
+                        >
+                          <CheckSquare className="h-4 w-4 shrink-0 text-foreground-muted" />
+                          <span className="flex-1 truncate font-medium">{t.name}</span>
+                          {t.subtitle && (
+                            <span className="truncate text-xs text-foreground-muted">
+                              {t.subtitle}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div className="px-3 py-6 text-center">
+                  <p className="text-sm text-foreground-muted">Нічого не знайдено</p>
                 </div>
               )}
             </div>

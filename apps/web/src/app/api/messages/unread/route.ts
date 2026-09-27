@@ -1,6 +1,7 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import { extractUserId } from '@/lib/auth-utils';
 import { prisma } from '@crm-next/database';
+import { NextResponse, type NextRequest } from 'next/server';
+
+import { extractUserId } from '@/lib/auth-utils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,23 +20,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ count: 0 });
     }
 
-    // Count unread chats (Telegram + WhatsApp)
-    // For now, count chats where lastMessageAt is recent (last 24h) as "unread"
-    // In the future, this should use a proper unread flag
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-
+    // Count unread chats (Telegram + WhatsApp) by the dedicated flag.
+    // lastMessageAt means "client wrote last" and must NOT drive this counter.
     const [telegramCount, whatsappCount] = await Promise.all([
       prisma.telegramChat.count({
         where: {
           tenantId: member.tenantId,
-          lastMessageAt: { gte: yesterday },
+          unread: true,
         },
       }),
       prisma.whatsAppChat.count({
         where: {
           tenantId: member.tenantId,
-          lastMessageAt: { gte: yesterday },
+          unread: true,
         },
       }),
     ]);

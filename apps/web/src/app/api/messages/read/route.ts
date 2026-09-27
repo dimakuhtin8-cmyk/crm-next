@@ -1,7 +1,8 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import { extractUserId } from '@/lib/auth-utils';
 import { prisma } from '@crm-next/database';
+import { NextResponse, type NextRequest } from 'next/server';
+
 import { withAuth } from '@/lib/auth-guard';
+import { extractUserId } from '@/lib/auth-utils';
 
 async function POSTHandler(request: NextRequest) {
   try {
@@ -20,18 +21,17 @@ async function POSTHandler(request: NextRequest) {
       return NextResponse.json({ success: false });
     }
 
-    // Mark all chats as read by updating lastMessageAt to now
-    // In the future, this should use a proper readAt field
-    const now = new Date();
-    
+    // Mark all chats as read via the dedicated flag.
+    // lastMessageAt is intentionally untouched: it means "client wrote last",
+    // not "manager has read it".
     await Promise.all([
       prisma.telegramChat.updateMany({
         where: { tenantId: member.tenantId },
-        data: { lastMessageAt: now },
+        data: { unread: false },
       }),
       prisma.whatsAppChat.updateMany({
         where: { tenantId: member.tenantId },
-        data: { lastMessageAt: now },
+        data: { unread: false },
       }),
     ]);
 

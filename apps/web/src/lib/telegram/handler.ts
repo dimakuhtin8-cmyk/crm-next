@@ -2,9 +2,10 @@ import { sendMessage, answerCallbackQuery, editMessageText } from './bot';
 
 import type { TelegramMessage, TelegramCallbackQuery } from './bot';
 
-import { getTenantQuery } from '@/lib/tenant-query';
-
-export async function handleTelegramUpdate(tenantId: string, update: { message?: TelegramMessage; callback_query?: TelegramCallbackQuery }) {
+export async function handleTelegramUpdate(
+  tenantId: string,
+  update: { message?: TelegramMessage; callback_query?: TelegramCallbackQuery },
+) {
   if (update.callback_query) {
     return handleCallbackQuery(tenantId, update.callback_query);
   }
@@ -39,6 +40,7 @@ async function handleMessage(tenantId: string, msg: TelegramMessage) {
       lastName: tgUser.last_name,
       username: tgUser.username,
       lastMessageAt: new Date(),
+      unread: true,
     },
   });
 
@@ -60,8 +62,10 @@ async function handleMessage(tenantId: string, msg: TelegramMessage) {
     });
   }
 
-  await sendMessage(tenant.telegramBotToken, chatId,
-    `✅ Повідомлення отримано${chat.contactId ? '' : '\n\nЩоб прив\'язати контакт, надішліть /start'}`,
+  await sendMessage(
+    tenant.telegramBotToken,
+    chatId,
+    `✅ Повідомлення отримано${chat.contactId ? '' : "\n\nЩоб прив'язати контакт, надішліть /start"}`,
   );
 }
 
@@ -102,13 +106,16 @@ async function handleStart(token: string, chatId: number, chat: { contactId: str
 /status — статус бота
 /help — допомога
 
-${chat.contactId ? '✅ Ваш акаунт прив\'язано до контакті' : '💡 Щоб прив\'язати акаунт, надішліть свій email або телефон'}`;
+${chat.contactId ? "✅ Ваш акаунт прив'язано до контакті" : "💡 Щоб прив'язати акаунт, надішліть свій email або телефон"}`;
 
   await sendMessage(token, chatId, text, {
     parse_mode: 'HTML',
     reply_markup: {
       inline_keyboard: [
-        [{ text: '💼 Мої угоди', callback_data: 'deals' }, { text: '📋 Мої задачі', callback_data: 'tasks' }],
+        [
+          { text: '💼 Мої угоди', callback_data: 'deals' },
+          { text: '📋 Мої задачі', callback_data: 'tasks' },
+        ],
         [{ text: '❓ Допомога', callback_data: 'help' }],
       ],
     },
@@ -116,7 +123,9 @@ ${chat.contactId ? '✅ Ваш акаунт прив\'язано до конта
 }
 
 async function handleHelp(token: string, chatId: number) {
-  await sendMessage(token, chatId,
+  await sendMessage(
+    token,
+    chatId,
     `📖 <b>Довідка</b>
 
 <b>Команди:</b>
@@ -130,7 +139,7 @@ async function handleHelp(token: string, chatId: number) {
 Використовуйте кнопки під повідомленнями для швидких дій.
 
 <b>Повідомлення:</b>
-Надішліть текстове повідомлення, і воно збереться як активність прив\'язаного контакту.`,
+Надішліть текстове повідомлення, і воно збереться як активність прив'язаного контакту.`,
     { parse_mode: 'HTML' },
   );
 }
@@ -155,10 +164,21 @@ async function handleDeals(token: string, chatId: number, tenantId: string, pris
   let text = `💼 <b>Активні угоди (${deals.length})</b>\n\n`;
   const keyboard: Array<Array<{ text: string; callback_data: string }>> = [];
 
-  deals.slice(0, 5).forEach((deal: { id: string; title: string; value: number | null; currency: string; stage?: { name: string } | null }, i: number) => {
-    text += `${i + 1}. <b>${deal.title}</b>\n   Сума: ${(deal.value || 0).toLocaleString('uk')} ${deal.currency}\n   Етап: ${deal.stage?.name || '—'}\n\n`;
-    keyboard.push([{ text: `${deal.title}`, callback_data: `deal:${deal.id}` }]);
-  });
+  deals.slice(0, 5).forEach(
+    (
+      deal: {
+        id: string;
+        title: string;
+        value: number | null;
+        currency: string;
+        stage?: { name: string } | null;
+      },
+      i: number,
+    ) => {
+      text += `${i + 1}. <b>${deal.title}</b>\n   Сума: ${(deal.value || 0).toLocaleString('uk')} ${deal.currency}\n   Етап: ${deal.stage?.name || '—'}\n\n`;
+      keyboard.push([{ text: `${deal.title}`, callback_data: `deal:${deal.id}` }]);
+    },
+  );
 
   keyboard.push([{ text: '🔄 Оновити', callback_data: 'deals' }]);
 
@@ -184,21 +204,39 @@ async function handleTasks(token: string, chatId: number, tenantId: string, pris
     return;
   }
 
-  const typeIcons: Record<string, string> = { task: '📋', call: '📞', email: '✉️', meeting: '🤝', follow_up: '🔄' };
-  const priorityEmoji: Record<string, string> = { urgent: '🔴', high: '🟠', medium: '🟡', low: '🟢' };
+  const typeIcons: Record<string, string> = {
+    task: '📋',
+    call: '📞',
+    email: '✉️',
+    meeting: '🤝',
+    follow_up: '🔄',
+  };
+  const priorityEmoji: Record<string, string> = {
+    urgent: '🔴',
+    high: '🟠',
+    medium: '🟡',
+    low: '🟢',
+  };
 
   let text = `📋 <b>Мої задачі (${tasks.length})</b>\n\n`;
   const keyboard: Array<Array<{ text: string; callback_data: string }>> = [];
 
-  tasks.slice(0, 5).forEach((task: { id: string; title: string; type: string; priority: string; dueDate: Date | null }, i: number) => {
-    const icon = typeIcons[task.type] || '📋';
-    const p = priorityEmoji[task.priority] || '🟡';
-    const due = task.dueDate ? new Date(task.dueDate).toLocaleDateString('uk') : '';
-    text += `${i + 1}. ${icon} ${p} <b>${task.title}</b>`;
-    if (due) text += ` (${due})`;
-    text += '\n';
-    keyboard.push([{ text: `✅ ${task.title}`, callback_data: `task_done:${task.id}` }]);
-  });
+  tasks
+    .slice(0, 5)
+    .forEach(
+      (
+        task: { id: string; title: string; type: string; priority: string; dueDate: Date | null },
+        i: number,
+      ) => {
+        const icon = typeIcons[task.type] || '📋';
+        const p = priorityEmoji[task.priority] || '🟡';
+        const due = task.dueDate ? new Date(task.dueDate).toLocaleDateString('uk') : '';
+        text += `${i + 1}. ${icon} ${p} <b>${task.title}</b>`;
+        if (due) text += ` (${due})`;
+        text += '\n';
+        keyboard.push([{ text: `✅ ${task.title}`, callback_data: `task_done:${task.id}` }]);
+      },
+    );
 
   keyboard.push([{ text: '🔄 Оновити', callback_data: 'tasks' }]);
 
@@ -221,7 +259,9 @@ async function handleStatus(token: string, chatId: number, tenantId: string, pri
     prisma.contact.count({ where: { tenantId } }),
   ]);
 
-  await sendMessage(token, chatId,
+  await sendMessage(
+    token,
+    chatId,
     `📊 <b>Статус CRM-бота</b>
 
 Бот: @${tenant?.telegramBotUsername || 'невідомо'}
@@ -235,7 +275,6 @@ async function handleStatus(token: string, chatId: number, tenantId: string, pri
   );
 }
 
- 
 async function handleCallbackQuery(tenantId: string, query: TelegramCallbackQuery) {
   const { prisma } = await import('@crm-next/database');
   const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
@@ -257,14 +296,20 @@ async function handleCallbackQuery(tenantId: string, query: TelegramCallbackQuer
     return handleHelp(tenant.telegramBotToken, chatId);
   }
   if (data === 'new_deal') {
-    await editMessageText(tenant.telegramBotToken, chatId, query.message!.message_id,
+    await editMessageText(
+      tenant.telegramBotToken,
+      chatId,
+      query.message!.message_id,
       '💡 Створення угоди доступне в веб-додатку:\nhttps://crm-next.example.com/dashboard/deals/new',
       { reply_markup: { inline_keyboard: [[{ text: '◀️ Назад', callback_data: 'deals' }]] } },
     );
     return;
   }
   if (data === 'new_task') {
-    await editMessageText(tenant.telegramBotToken, chatId, query.message!.message_id,
+    await editMessageText(
+      tenant.telegramBotToken,
+      chatId,
+      query.message!.message_id,
       '💡 Створення задачі доступне в веб-додатку:\nhttps://crm-next.example.com/dashboard/tasks/new',
       { reply_markup: { inline_keyboard: [[{ text: '◀️ Назад', callback_data: 'tasks' }]] } },
     );
@@ -274,11 +319,17 @@ async function handleCallbackQuery(tenantId: string, query: TelegramCallbackQuer
   if (data.startsWith('task_done:')) {
     const taskId = data.replace('task_done:', '');
     // Tenant-scoped: a foreign taskId must not be completable via bot callback
-    const ownedTask = await prisma.task.findFirst({ where: { id: taskId, tenantId }, select: { id: true } });
+    const ownedTask = await prisma.task.findFirst({
+      where: { id: taskId, tenantId },
+      select: { id: true },
+    });
     if (!ownedTask) return;
     await prisma.task.update({ where: { id: taskId }, data: { status: 'done' } });
     const task = await prisma.task.findFirst({ where: { id: taskId, tenantId } });
-    await editMessageText(tenant.telegramBotToken, chatId, query.message!.message_id,
+    await editMessageText(
+      tenant.telegramBotToken,
+      chatId,
+      query.message!.message_id,
       `✅ <b>${task?.title || 'Задачу'}</b> позначено як виконану!`,
       { parse_mode: 'HTML' },
     );
@@ -294,7 +345,13 @@ async function handleCallbackQuery(tenantId: string, query: TelegramCallbackQuer
 
     if (!deal) return;
 
-    const typedDeal = deal as { title: string; value: number | null; currency: string; status: string; stage?: { name: string } | null };
+    const typedDeal = deal as {
+      title: string;
+      value: number | null;
+      currency: string;
+      status: string;
+      stage?: { name: string } | null;
+    };
     let text = `💼 <b>${typedDeal.title}</b>\n\n`;
     text += `Сума: ${(typedDeal.value || 0).toLocaleString('uk')} ${typedDeal.currency}\n`;
     text += `Етап: ${typedDeal.stage?.name || '—'}\n`;

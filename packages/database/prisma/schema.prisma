@@ -138,6 +138,7 @@ model Tenant {
   aiProviderKeys  AiProviderKey[]
   queueJobs       QueueJob[]
   notifications   Notification[]
+  documentTemplates DocumentTemplate[]
   payments         Payment[]
   auditLogs        AuditLog[]
 }
@@ -152,6 +153,7 @@ model TelegramChat {
   contactId    String?  // Linked CRM contact
   firstSeenAt  DateTime @default(now())
   lastMessageAt DateTime @default(now())
+  unread        Boolean  @default(true)
 
   tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   contact Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
@@ -169,6 +171,7 @@ model WhatsAppChat {
   contactId    String?  // Linked CRM contact
   firstSeenAt  DateTime @default(now())
   lastMessageAt DateTime @default(now())
+  unread        Boolean  @default(true)
 
   tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   contact Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
@@ -528,6 +531,20 @@ model Notification {
 
   @@index([tenantId, userId, read])
   @@index([userId, read])
+}
+
+model DocumentTemplate {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  type      String   // kp | contract | invoice
+  content   Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
 }
 
 model AiProviderKey {

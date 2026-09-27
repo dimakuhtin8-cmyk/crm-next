@@ -1,24 +1,20 @@
 /**
- * Document Templates API — управление шаблонами документов
- * 
+ * Document Templates API — шаблоны документов в Postgres (per-tenant).
+ *
  * GET /api/documents/templates — список шаблонов
  * POST /api/documents/templates — создать шаблон
+ * DELETE /api/documents/templates?id= — удалить шаблон
  */
 
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
 import { prisma } from '@crm-next/database';
-import { getTenantQuery } from '@/lib/tenant-query';
-import { withAuth } from '@/lib/auth-guard';
+import { NextResponse } from 'next/server';
 
-// In-memory store for templates (can be moved to DB later)
-const templatesByTenant = new Map<string, Array<{
-  id: string;
-  name: string;
-  type: 'kp' | 'contract' | 'invoice';
-  content: Record<string, unknown>;
-  createdAt: string;
-}>>();
+import type { NextRequest } from 'next/server';
+
+import { withAuth } from '@/lib/auth-guard';
+import { getTenantQuery } from '@/lib/tenant-query';
+
+const TEMPLATE_TYPES = ['kp', 'contract', 'invoice'] as const;
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,7 +22,10 @@ export async function GET(request: NextRequest) {
     if (!tq) return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
 
     const tenantId = (tq as unknown as { tenantId: string }).tenantId;
-    const templates = templatesByTenant.get(tenantId) || [];
+    const templates = await prisma.documentTemplate.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: 'desc' },
+    });
 
     return NextResponse.json({ templates });
   } catch (error) {
@@ -47,18 +46,21 @@ async function POSTHandler(request: NextRequest) {
     if (!name || !type) {
       return NextResponse.json({ error: 'Вкажіть назву та тип' }, { status: 400 });
     }
+    if (!TEMPLATE_TYPES.includes(type)) {
+      return NextResponse.json(
+        { error: `Невідомий тип шаблону. Дозволено: ${TEMPLATE_TYPES.join(', ')}` },
+        { status: 400 },
+      );
+    }
 
-    const template = {
-      id: `tpl_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      name,
-      type: type as 'kp' | 'contract' | 'invoice',
-      content: content || {},
-      createdAt: new Date().toISOString(),
-    };
-
-    const templates = templatesByTenant.get(tenantId) || [];
-    templates.push(template);
-    templatesByTenant.set(tenantId, templates);
+    const template = await prisma.documentTemplate.create({
+      data: {
+        tenantId,
+        name,
+        type,
+        content: content && typeof content === 'object' ? content : {},
+      },
+    });
 
     return NextResponse.json({ template }, { status: 201 });
   } catch (error) {
@@ -82,13 +84,17 @@ async function DELETEHandler(request: NextRequest) {
       return NextResponse.json({ error: 'Вкажіть id шаблону' }, { status: 400 });
     }
 
-    const templates = templatesByTenant.get(tenantId) || [];
-    const filtered = templates.filter(t => t.id !== id);
-    templatesByTenant.set(tenantId, filtered);
+    // Tenant-scoped delete: чужой шаблон удалить нельзя (deleteMany вернёт 0).
+    const res = await prisma.documentTemplate.deleteMany({
+      where: { id, tenantId },
+    });
+    if (res.count === 0) {
+      return NextResponse.json({ error: 'Шаблон не знайдено' }, { status: 404 });
+    }
 
     return NextResponse.json({ deleted: true });
   } catch (error) {
-    console.error('Delete template error:', error);
+    console.error('Delete templates error:', error);
     return NextResponse.json({ error: 'Помилка видалення шаблону' }, { status: 500 });
   }
 }
