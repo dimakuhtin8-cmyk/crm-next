@@ -380,10 +380,12 @@ export default function DealsPage() {
               <Settings className="h-4 w-4" />
             </Button>
           </Link>
-          <Button size="sm">
-            <Plus className="h-4 w-4 mr-1.5" />
-            Нова угода
-          </Button>
+          <Link href="/dashboard/deals/new">
+            <Button size="sm">
+              <Plus className="h-4 w-4 mr-1.5" />
+              Нова угода
+            </Button>
+          </Link>
         </div>
       </div>
 
