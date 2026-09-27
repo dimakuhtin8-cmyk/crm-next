@@ -72,6 +72,7 @@ export default function NotificationsPage() {
   const [overdue, setOverdue] = useState<ReminderTask[]>([]);
   const [upcoming, setUpcoming] = useState<ReminderTask[]>([]);
   const [appNotifs, setAppNotifs] = useState<AppNotification[]>([]);
+  const [sysOpen, setSysOpen] = useState(true);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>('all');
 
@@ -92,6 +93,18 @@ export default function NotificationsPage() {
       .catch(() => {});
   }, []);
 
+  const markOneRead = async (id: string) => {
+    try {
+      await fetch('/api/notifications', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: [id] }),
+      });
+      setAppNotifs((prev) => prev.filter((n) => n.id !== id));
+      window.dispatchEvent(new Event('notif-read'));
+    } catch {}
+  };
+
   const markAllRead = async () => {
     try {
       await fetch('/api/notifications', {
@@ -100,6 +113,7 @@ export default function NotificationsPage() {
         body: JSON.stringify({}),
       });
       setAppNotifs([]);
+      window.dispatchEvent(new Event('notif-read'));
     } catch {}
   };
 
@@ -163,7 +177,15 @@ export default function NotificationsPage() {
       {appNotifs.length > 0 && (
         <Card className="overflow-hidden">
           <div className="flex items-center justify-between border-b border-border px-4 py-3 sm:px-5">
-            <h3 className="text-sm font-bold">Системні сповіщення</h3>
+            <button
+              onClick={() => setSysOpen(!sysOpen)}
+              className="flex items-center gap-2 text-sm font-bold hover:text-foreground-muted transition-colors"
+              aria-expanded={sysOpen}
+            >
+              <span className={cn('transition-transform', !sysOpen && '-rotate-90')}>▾</span>
+              Системні сповіщення
+              <Badge variant="secondary">{appNotifs.length}</Badge>
+            </button>
             <button
               onClick={markAllRead}
               className="text-xs font-semibold text-foreground-muted underline-offset-4 hover:text-[#111214] hover:underline"
@@ -171,9 +193,15 @@ export default function NotificationsPage() {
               Прочитати всі
             </button>
           </div>
+          {sysOpen && (
           <div className="divide-y divide-border">
             {appNotifs.map((n) => (
-              <div key={n.id} className="flex items-start gap-3 px-4 py-3.5 sm:px-5">
+              <div
+                key={n.id}
+                onClick={() => markOneRead(n.id)}
+                className="flex items-start gap-3 px-4 py-3.5 sm:px-5 cursor-pointer hover:bg-secondary/50 transition-colors"
+                title="Позначити прочитаним"
+              >
                 <span className={cn('mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg', appTypeConfig[n.type] || appTypeConfig.info)}>
                   <Bell className="h-4 w-4" />
                 </span>
@@ -192,6 +220,7 @@ export default function NotificationsPage() {
               </div>
             ))}
           </div>
+          )}
         </Card>
       )}
 
@@ -201,7 +230,7 @@ export default function NotificationsPage() {
             <Skeleton key={i} className="h-20" />
           ))}
         </div>
-      ) : visible.length === 0 ? (
+      ) : visible.length === 0 && appNotifs.length === 0 ? (
         <Card className="p-10 text-center">
           <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#FFC700]/20">
             <CheckSquare className="h-6 w-6 text-[#111214]" />

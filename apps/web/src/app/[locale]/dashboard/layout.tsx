@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 
 import { Header } from './header';
 import { Sidebar } from './sidebar';
+import { NotificationsProvider } from '@/components/notifications-provider';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -24,6 +25,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, []);
 
   return (
+    <NotificationsProvider>
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Mobile backdrop */}
       {mobileMenuOpen && (
@@ -63,5 +65,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </main>
       </div>
     </div>
+    </NotificationsProvider>
   );
 }

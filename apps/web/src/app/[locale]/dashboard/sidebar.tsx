@@ -35,6 +35,7 @@ import {
   Bell,
 } from 'lucide-react';
 import { Avatar } from '@/components/ui';
+import { useNotifications } from '@/components/notifications-provider';
 import { cn } from '@/lib/utils';
 
 interface Tenant {
@@ -59,6 +60,8 @@ export function Sidebar({ collapsed = false, onToggle, onMobileClose }: SidebarP
   const [tenantOpen, setTenantOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [unreadMessages, setUnreadMessages] = useState(0);
+  // In-app системні сповіщення (автоматизації, інтеграції) — окремий лічильник.
+  const { unreadCount: unreadApp } = useNotifications();
   const tenantRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -133,7 +136,7 @@ export function Sidebar({ collapsed = false, onToggle, onMobileClose }: SidebarP
       items: [
         { name: 'Таймлайн', href: '/dashboard/timeline', icon: Clock },
         { name: 'Повідомлення', href: '/dashboard/messages', icon: MessageSquare, badge: unreadMessages },
-        { name: 'Сповіщення', href: '/dashboard/notifications', icon: Bell, badge: unreadMessages },
+        { name: 'Сповіщення', href: '/dashboard/notifications', icon: Bell, badge: unreadApp },
         { name: 'Документи', href: '/dashboard/documents', icon: FileText },
       ],
     },

@@ -24,6 +24,7 @@ import {
   Repeat,
 } from 'lucide-react';
 import { Avatar } from '@/components/ui';
+import { useNotifications } from '@/components/notifications-provider';
 import { useTheme } from '@/components/theme-provider';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { cn } from '@/lib/utils';
@@ -76,6 +77,9 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const unreadCount = overdueReminders.length + upcomingReminders.length;
+  // + in-app системні сповіщення (автоматизації, інтеграції)
+  const { unreadCount: appUnread } = useNotifications();
+  const totalUnread = unreadCount + appUnread;
 
   // Keyboard shortcut for search (Ctrl+K / Cmd+K)
   useEffect(() => {
@@ -233,9 +237,9 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
               title="Сповіщення"
             >
               <Bell className="h-5 w-5" />
-              {unreadCount > 0 && (
+              {totalUnread > 0 && (
                 <span className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white animate-pulse-subtle">
-                  {unreadCount}
+                  {totalUnread > 99 ? '99+' : totalUnread}
                 </span>
               )}
             </button>
