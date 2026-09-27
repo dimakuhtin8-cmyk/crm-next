@@ -116,4 +116,46 @@ describe('П4.4: кэш моделей', () => {
     const models = await fetchProviderModels('openai', 'sk-test');
     expect(models.map((m) => m.id)).toEqual(['gpt-chat']);
   });
+
+  it('allowlist: живой список пересекается со статичным — мусор не попадает в пикер', async () => {
+    const { setProviderKey } = await import('@/lib/ai/keys');
+    await setProviderKey(tenantId, 'gemini', 'AI-test-allowlist-key');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          ({
+            ok: true,
+            json: async () => ({
+              models: [
+                {
+                  name: 'models/gemini-3-flash-preview',
+                  supportedGenerationMethods: ['generateContent'],
+                },
+                {
+                  name: 'models/gemini-2.5-flash',
+                  supportedGenerationMethods: ['generateContent'],
+                },
+                { name: 'models/gemma-4-31b-it', supportedGenerationMethods: ['generateContent'] },
+                {
+                  name: 'models/gemini-flash-latest',
+                  supportedGenerationMethods: ['generateContent'],
+                },
+              ],
+            }),
+          }) as unknown as Response,
+      ),
+    );
+    const staticList = [
+      { id: 'gemini-3-flash-preview', name: 'Gemini 3 Flash' },
+      { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash-Lite' },
+    ];
+    const r = await getProviderModels(tenantId, 'gemini', staticList);
+    expect(r.source).toBe('live');
+    // gemini-2.5-flash, gemma, *-latest вычищены; отсутствующая в live 3.5-flash-lite добрана из static
+    expect(r.models.map((m) => m.id).sort()).toEqual([
+      'gemini-3-flash-preview',
+      'gemini-3.5-flash-lite',
+    ]);
+  });
 });

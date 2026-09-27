@@ -106,7 +106,6 @@ beforeAll(async () => {
   const ownerA = await mk('ground-owner-a@test.com', tenantA, 'owner');
   const memberA = await mk('ground-member-a@test.com', tenantA, 'member');
   const memberB = await mk('ground-member-b@test.com', tenantA, 'member');
-  memberBId = memberB.id;
   const ownerB = await mk('ground-owner-b@test.com', tenantB, 'owner');
 
   tokenOwnerA = await createToken({ id: ownerA.id, tenantId: tenantA });

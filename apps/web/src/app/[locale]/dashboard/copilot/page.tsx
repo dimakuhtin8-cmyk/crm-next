@@ -15,6 +15,50 @@ interface ChatMessage {
   sources?: Array<{ id: string; type: string; name: string }>;
 }
 
+const THINKING_STEPS = ['Шукаю дані в CRM…', 'Аналізую…', 'Формулюю відповідь…'];
+
+/** Живой статус "думаю": ротация этапов + пульсация, чтобы не выглядело зависшим. */
+function ThinkingStatus() {
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setStep((s) => (s + 1) % THINKING_STEPS.length), 3500);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <span className="text-xs text-foreground-muted animate-pulse">{THINKING_STEPS[step]}</span>
+  );
+}
+
+/** Мини-рендер markdown ответов AI: **жирный** + *-списки (без внешних зависимостей). */
+function renderRichText(text: string) {
+  return text.split('\n').map((line, i) => {
+    const bullet = line.match(/^\s*[*-]\s+(.*)$/);
+    const body = bullet ? bullet[1] : line;
+    const parts = body.split(/(\*\*[^*]+\*\*)/g).map((p, j) =>
+      p.startsWith('**') && p.endsWith('**') && p.length > 4 ? (
+        <strong key={j} className="font-semibold">
+          {p.slice(2, -2)}
+        </strong>
+      ) : (
+        <span key={j}>{p}</span>
+      ),
+    );
+    if (bullet) {
+      return (
+        <div key={i} className="flex gap-2">
+          <span className="shrink-0">•</span>
+          <span>{parts}</span>
+        </div>
+      );
+    }
+    return (
+      <div key={i} className="min-h-[1.25em]">
+        {parts}
+      </div>
+    );
+  });
+}
+
 export default function CopilotPage() {
   const [aiStatus, setAiStatus] = useState<'checking' | 'ready' | 'no-key'>('checking');
   const [selectedProvider, setSelectedProvider] = useState('gemini');
@@ -64,7 +108,7 @@ export default function CopilotPage() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, chatLoading]);
 
   const handleQuickSetup = async () => {
     if (!quickKey.trim()) return;
@@ -174,16 +218,16 @@ export default function CopilotPage() {
   })();
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="w-full h-[calc(100dvh-130px)] min-h-[520px] flex flex-col gap-4">
       {/* Header */}
-      <div>
+      <div className="shrink-0">
         <h1 className="text-2xl font-bold">AI Co-Pilot</h1>
         <p className="text-foreground-muted">Штучний інтелект для генерації, аналізу та пошуку</p>
       </div>
 
       {/* Quick Setup Panel */}
       {aiStatus === 'no-key' && (
-        <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-background overflow-hidden">
+        <Card className="shrink-0 border-primary/30 bg-gradient-to-br from-primary/5 to-background overflow-hidden">
           <CardContent className="p-6">
             <div className="flex items-center gap-3 mb-2">
               <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10">
@@ -296,11 +340,11 @@ export default function CopilotPage() {
         </div>
       )}
 
-      {/* === CHAT PANEL (Claude-style) === */}
-      <Card className="overflow-hidden">
-        <CardContent className="p-0">
+      {/* === CHAT PANEL (Claude-style, full-page) === */}
+      <Card className="flex-1 min-h-0 flex flex-col overflow-hidden">
+        <CardContent className="flex-1 min-h-0 flex flex-col p-0">
           {/* Chat messages area */}
-          <div className="h-[500px] overflow-y-auto p-6 space-y-6">
+          <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-6">
             {messages.length === 0 && (
               <div className="flex flex-col items-center justify-center h-full text-center">
                 <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
@@ -351,7 +395,9 @@ export default function CopilotPage() {
                         : 'bg-accent/60 text-foreground rounded-bl-md'
                     }`}
                   >
-                    <div className="whitespace-pre-wrap">{msg.content}</div>
+                    <div className="whitespace-pre-wrap">
+                      {msg.role === 'assistant' ? renderRichText(msg.content) : msg.content}
+                    </div>
                     {msg.role === 'assistant' && msg.sources && msg.sources.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-1.5 border-t border-border/50 pt-2">
                         <span className="text-[11px] text-foreground-muted">На основі:</span>
@@ -381,19 +427,22 @@ export default function CopilotPage() {
                     <span className="text-xs font-medium text-foreground-muted">AI Co-Pilot</span>
                   </div>
                   <div className="bg-accent/60 rounded-2xl rounded-bl-md px-4 py-3">
-                    <div className="flex items-center gap-1.5">
-                      <div
-                        className="w-2 h-2 bg-foreground-muted/40 rounded-full animate-bounce"
-                        style={{ animationDelay: '0ms' }}
-                      />
-                      <div
-                        className="w-2 h-2 bg-foreground-muted/40 rounded-full animate-bounce"
-                        style={{ animationDelay: '150ms' }}
-                      />
-                      <div
-                        className="w-2 h-2 bg-foreground-muted/40 rounded-full animate-bounce"
-                        style={{ animationDelay: '300ms' }}
-                      />
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex items-center gap-1.5">
+                        <div
+                          className="w-2 h-2 bg-primary/70 rounded-full animate-bounce"
+                          style={{ animationDelay: '0ms' }}
+                        />
+                        <div
+                          className="w-2 h-2 bg-primary/70 rounded-full animate-bounce"
+                          style={{ animationDelay: '150ms' }}
+                        />
+                        <div
+                          className="w-2 h-2 bg-primary/70 rounded-full animate-bounce"
+                          style={{ animationDelay: '300ms' }}
+                        />
+                      </div>
+                      <ThinkingStatus />
                     </div>
                   </div>
                 </div>
@@ -404,7 +453,7 @@ export default function CopilotPage() {
           </div>
 
           {/* Input area */}
-          <div className="border-t border-border p-4">
+          <div className="shrink-0 border-t border-border p-4">
             <div className="relative">
               <div className="flex items-end gap-2 bg-accent/40 rounded-2xl border border-border focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/20 transition-all px-4 py-3">
                 <button className="shrink-0 p-1 rounded-lg hover:bg-accent transition-colors text-foreground-muted hover:text-foreground">
@@ -415,7 +464,10 @@ export default function CopilotPage() {
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Напишіть повідомлення..."
+                  disabled={chatLoading}
+                  placeholder={
+                    chatLoading ? 'AI відповідає — зачекайте…' : 'Напишіть повідомлення...'
+                  }
                   rows={1}
                   className="flex-1 bg-transparent border-0 outline-none resize-none text-sm text-foreground placeholder:text-foreground-muted/60 min-h-[24px] max-h-[120px] leading-relaxed"
                   style={{ height: 'auto' }}

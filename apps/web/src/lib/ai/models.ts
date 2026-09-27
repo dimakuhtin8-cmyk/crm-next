@@ -136,8 +136,35 @@ export interface ModelListResult {
 }
 
 /**
+ * Allowlist: picker shows ONLY curated static models (providers.ts).
+ * Live list may contain dozens of aliases/gemma/tts variants users never pick,
+ * so we intersect live ∩ static. Static entries missing from live (renames lag)
+ * are backfilled from the static list — picker always equals the curated set.
+ */
+function applyAllowlist(
+  live: DynamicModel[],
+  staticFallback: DynamicModel[],
+): { models: DynamicModel[]; ok: boolean } {
+  if (live.length === 0) {
+    return { models: staticFallback, ok: false };
+  }
+  // Пустой static = allowlist не задан → живой список как есть (старое поведение).
+  if (staticFallback.length === 0) {
+    return { models: live, ok: true };
+  }
+  const allowed = new Set(staticFallback.map((m) => m.id));
+  const liveIds = new Set(live.map((m) => m.id));
+  const filtered = live.filter((m) => allowed.has(m.id));
+  const missing = staticFallback.filter((m) => !liveIds.has(m.id));
+  const picked = [...filtered, ...missing];
+  if (picked.length === 0) return { models: staticFallback, ok: false };
+  return { models: picked, ok: true };
+}
+
+/**
  * Get models for a tenant+provider: live fetch → 24h cache → static fallback.
  * `staticFallback` is the hardcoded providers.ts list (last resort, never throws).
+ * Returned list is always allowlist-filtered (see applyAllowlist).
  */
 export async function getProviderModels(
   tenantId: string,
@@ -148,22 +175,32 @@ export async function getProviderModels(
 
   // Fresh cache first — no network inside TTL.
   const fresh = cache.get<DynamicModel[]>(key);
-  if (fresh) return { models: fresh, source: 'cache' };
+  if (fresh) {
+    const picked = applyAllowlist(fresh, staticFallback);
+    return { models: picked.models, source: picked.ok ? 'cache' : 'static' };
+  }
 
   try {
     const apiKey = await getProviderKey(tenantId, provider);
     if (!apiKey) {
       const cached = cache.get<DynamicModel[]>(key);
-      if (cached) return { models: cached, source: 'cache' };
+      if (cached) {
+        const picked = applyAllowlist(cached, staticFallback);
+        return { models: picked.models, source: picked.ok ? 'cache' : 'static' };
+      }
       return { models: staticFallback, source: 'static' };
     }
     const models = await fetchProviderModels(provider, apiKey);
-    if (models.length === 0) throw new Error('empty list');
-    cache.set(key, models, MODELS_TTL_MS);
-    return { models, source: 'live' };
+    const picked = applyAllowlist(models, staticFallback);
+    if (!picked.ok) return { models: staticFallback, source: 'static' };
+    cache.set(key, picked.models, MODELS_TTL_MS);
+    return { models: picked.models, source: 'live' };
   } catch {
     const cached = cache.get<DynamicModel[]>(key);
-    if (cached) return { models: cached, source: 'cache' };
+    if (cached) {
+      const picked = applyAllowlist(cached, staticFallback);
+      return { models: picked.models, source: picked.ok ? 'cache' : 'static' };
+    }
     return { models: staticFallback, source: 'static' };
   }
 }
