@@ -24,7 +24,6 @@ import { useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { useState, useRef, useEffect } from 'react';
 
-import { LanguageSwitcher } from '@/components/language-switcher';
 import { useNotifications } from '@/components/notifications-provider';
 import {
   QuickCreatePopover,
@@ -326,8 +325,10 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
             {resolvedTheme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </button>
 
-          {/* Language Switcher */}
-          <LanguageSwitcher />
+          {/* Language Switcher — П7: скрыт, пока нет реальных переводов
+              (интерфейс захардкожен на украинском, переключатель без результата
+              вводить в заблуждение). Словари en/ru.json не удалены. */}
+          {/* <LanguageSwitcher /> */}
 
           {/* Notifications */}
           <div className="relative" ref={notifRef}>
