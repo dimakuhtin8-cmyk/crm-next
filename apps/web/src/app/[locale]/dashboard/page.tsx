@@ -1,10 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-
-import { Card, Badge, Skeleton } from '@/components/ui';
-import { BarChartWidget, PieChartWidget, LineChartWidget } from '@/components/analytics/charts';
 import {
   CheckSquare,
   Clock,
@@ -21,6 +16,11 @@ import {
   StickyNote,
   MessageSquare,
 } from 'lucide-react';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+
+import { BarChartWidget, PieChartWidget, LineChartWidget } from '@/components/analytics/charts';
+import { Card, Badge, Skeleton } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
 interface DashboardData {
@@ -144,15 +144,18 @@ export default function DashboardPage() {
   const [upcomingTasks, setUpcomingTasks] = useState<UpcomingTask[]>([]);
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [customizing, setCustomizing] = useState(false);
-  const [widgetOrder, setWidgetOrder] = useState<WidgetId[]>(() => DEFAULT_WIDGETS.map((w) => w.id));
+  const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null);
+  const [widgetOrder, setWidgetOrder] = useState<WidgetId[]>(() =>
+    DEFAULT_WIDGETS.map((w) => w.id),
+  );
   const [hiddenWidgets, setHiddenWidgets] = useState<WidgetId[]>([]);
   const [prefsLoaded, setPrefsLoaded] = useState(false);
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/analytics?period=30').then(r => r.json()),
-      fetch('/api/tasks/upcoming?limit=5&hours=48').then(r => r.json()),
-      fetch('/api/activity/recent?limit=5').then(r => r.json()),
+      fetch('/api/analytics?period=30').then((r) => r.json()),
+      fetch('/api/tasks/upcoming?limit=5&hours=48').then((r) => r.json()),
+      fetch('/api/activity/recent?limit=5').then((r) => r.json()),
     ])
       .then(([analytics, tasks, activities]) => {
         setData(analytics);
@@ -161,6 +164,17 @@ export default function DashboardPage() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+    // Пробный период — ненавязчивый баннер, тихий сбой допустим.
+    fetch('/api/billing/subscription', { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.subscription?.isTrial && (d.subscription.trialDaysLeft || 0) > 0) {
+          setTrialDaysLeft(d.subscription.trialDaysLeft);
+        }
+      })
+      .catch(() => {
+        // фоновая проверка триала: баннера просто не будет
+      });
   }, []);
 
   useEffect(() => {
@@ -173,8 +187,13 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!prefsLoaded) return;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ order: widgetOrder, hidden: hiddenWidgets }));
-    } catch {}
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ order: widgetOrder, hidden: hiddenWidgets }),
+      );
+    } catch {
+      // localStorage недоступен — настройки виджетов не сохранятся
+    }
   }, [widgetOrder, hiddenWidgets, prefsLoaded]);
 
   const moveWidget = (id: WidgetId, dir: -1 | 1) => {
@@ -189,9 +208,7 @@ export default function DashboardPage() {
   };
 
   const toggleWidget = (id: WidgetId) => {
-    setHiddenWidgets((prev) =>
-      prev.includes(id) ? prev.filter((w) => w !== id) : [...prev, id]
-    );
+    setHiddenWidgets((prev) => (prev.includes(id) ? prev.filter((w) => w !== id) : [...prev, id]));
   };
 
   const resetWidgets = () => {
@@ -207,7 +224,9 @@ export default function DashboardPage() {
           <Skeleton className="h-4 w-64" />
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-28" />)}
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-28" />
+          ))}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Skeleton className="h-80" />
@@ -219,10 +238,30 @@ export default function DashboardPage() {
 
   const stats = data?.stats;
   const statCards = [
-    { name: 'Контакти', value: stats?.totalContacts || 0, sub: `+${stats?.newContacts || 0} за місяць`, accent: false },
-    { name: 'Активні угоди', value: stats?.activeDeals || 0, sub: `${stats?.conversionRate || 0}% конверсія`, accent: false },
-    { name: 'Завершені угоди', value: stats?.wonDeals || 0, sub: `${stats?.lostDeals || 0} втрачено`, accent: false },
-    { name: 'Прогноз виручки', value: `₴${(stats?.forecast || 0).toLocaleString('uk')}`, sub: `₴${(stats?.totalRevenue || 0).toLocaleString('uk')} отримано`, accent: true },
+    {
+      name: 'Контакти',
+      value: stats?.totalContacts || 0,
+      sub: `+${stats?.newContacts || 0} за місяць`,
+      accent: false,
+    },
+    {
+      name: 'Активні угоди',
+      value: stats?.activeDeals || 0,
+      sub: `${stats?.conversionRate || 0}% конверсія`,
+      accent: false,
+    },
+    {
+      name: 'Завершені угоди',
+      value: stats?.wonDeals || 0,
+      sub: `${stats?.lostDeals || 0} втрачено`,
+      accent: false,
+    },
+    {
+      name: 'Прогноз виручки',
+      value: `₴${(stats?.forecast || 0).toLocaleString('uk')}`,
+      sub: `₴${(stats?.totalRevenue || 0).toLocaleString('uk')} отримано`,
+      accent: true,
+    },
   ];
 
   const formatDate = (dateStr: string) => {
@@ -241,19 +280,27 @@ export default function DashboardPage() {
         {statCards.map((stat) => (
           <Card
             key={stat.name}
-            className={cn(
-              'p-5',
-              stat.accent && 'border-black bg-[#111214] text-white'
-            )}
+            className={cn('p-5', stat.accent && 'border-black bg-[#111214] text-white')}
           >
-            <p className={cn('text-sm', stat.accent ? 'text-white/60' : 'text-foreground-muted')}>{stat.name}</p>
-            <p className={cn(
-              'mt-2 text-3xl font-bold tabular-nums tracking-tight',
-              stat.accent ? 'text-[#FFC700]' : 'text-[#111214]'
-            )}>
+            <p className={cn('text-sm', stat.accent ? 'text-white/60' : 'text-foreground-muted')}>
+              {stat.name}
+            </p>
+            <p
+              className={cn(
+                'mt-2 text-3xl font-bold tabular-nums tracking-tight',
+                stat.accent ? 'text-[#FFC700]' : 'text-[#111214]',
+              )}
+            >
               {stat.value}
             </p>
-            <p className={cn('mt-1 text-sm', stat.accent ? 'text-white/60' : 'text-foreground-muted')}>{stat.sub}</p>
+            <p
+              className={cn(
+                'mt-1 text-sm',
+                stat.accent ? 'text-white/60' : 'text-foreground-muted',
+              )}
+            >
+              {stat.sub}
+            </p>
           </Card>
         ))}
       </div>
@@ -326,7 +373,10 @@ export default function DashboardPage() {
               <Clock className="h-5 w-5 text-[#111214]" />
               <h2 className="text-lg font-semibold">Ближчі задачі</h2>
             </div>
-            <Link href="/dashboard/tasks" className="text-sm font-semibold text-[#111214] underline-offset-4 hover:underline">
+            <Link
+              href="/dashboard/tasks"
+              className="text-sm font-semibold text-[#111214] underline-offset-4 hover:underline"
+            >
               Всі →
             </Link>
           </div>
@@ -346,18 +396,22 @@ export default function DashboardPage() {
                   href={`/dashboard/tasks/${task.id}`}
                   className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/50 transition-colors"
                 >
-                  <div className={cn(
-                    'p-2 rounded-lg',
-                    task.isOverdue ? 'bg-danger/10 text-danger' : 'bg-[#111214] text-[#FFC700]'
-                  )}>
+                  <div
+                    className={cn(
+                      'p-2 rounded-lg',
+                      task.isOverdue ? 'bg-danger/10 text-danger' : 'bg-[#111214] text-[#FFC700]',
+                    )}
+                  >
                     {activityIcons[task.type] || <CheckSquare className="h-4 w-4" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{task.title}</p>
-                    <p className={cn(
-                      'text-xs',
-                      task.isOverdue ? 'text-danger' : 'text-foreground-muted'
-                    )}>
+                    <p
+                      className={cn(
+                        'text-xs',
+                        task.isOverdue ? 'text-danger' : 'text-foreground-muted',
+                      )}
+                    >
                       {task.dueDate && formatDate(task.dueDate)}
                     </p>
                   </div>
@@ -379,7 +433,10 @@ export default function DashboardPage() {
               <Activity className="h-5 w-5 text-[#111214]" />
               <h2 className="text-lg font-semibold">Останні активності</h2>
             </div>
-            <Link href="/dashboard/timeline" className="text-sm font-semibold text-[#111214] underline-offset-4 hover:underline">
+            <Link
+              href="/dashboard/timeline"
+              className="text-sm font-semibold text-[#111214] underline-offset-4 hover:underline"
+            >
               Таймлайн →
             </Link>
           </div>
@@ -404,9 +461,7 @@ export default function DashboardPage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm truncate">{activity.description}</p>
                     {activity.contactName && (
-                      <p className="text-xs text-foreground-muted">
-                        {activity.contactName}
-                      </p>
+                      <p className="text-xs text-foreground-muted">{activity.contactName}</p>
                     )}
                   </div>
                   <span className="text-xs text-foreground-muted whitespace-nowrap">
@@ -425,13 +480,22 @@ export default function DashboardPage() {
           <Card className="p-5 hover:shadow-md transition-shadow cursor-pointer hover:border-[#111214]">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-[#111214] flex items-center justify-center">
-                <svg className="h-5 w-5 text-[#FFC700]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
+                <svg
+                  className="h-5 w-5 text-[#FFC700]"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
                 </svg>
               </div>
               <div>
                 <p className="font-medium">Контакти</p>
-                <p className="text-sm text-foreground-muted">{stats?.totalContacts || 0} контактів</p>
+                <p className="text-sm text-foreground-muted">
+                  {stats?.totalContacts || 0} контактів
+                </p>
               </div>
             </div>
           </Card>
@@ -440,8 +504,16 @@ export default function DashboardPage() {
           <Card className="p-5 hover:shadow-md transition-shadow cursor-pointer hover:border-[#111214]">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-[#111214] flex items-center justify-center">
-                <svg className="h-5 w-5 text-[#FFC700]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
+                <svg
+                  className="h-5 w-5 text-[#FFC700]"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <line x1="18" y1="20" x2="18" y2="10" />
+                  <line x1="12" y1="20" x2="12" y2="4" />
+                  <line x1="6" y1="20" x2="6" y2="14" />
                 </svg>
               </div>
               <div>
@@ -455,13 +527,24 @@ export default function DashboardPage() {
           <Card className="p-5 hover:shadow-md transition-shadow cursor-pointer hover:border-[#111214]">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-[#111214] flex items-center justify-center">
-                <svg className="h-5 w-5 text-[#FFC700]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                <svg
+                  className="h-5 w-5 text-[#FFC700]"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M9 11l3 3L22 4" />
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
                 </svg>
               </div>
               <div>
                 <p className="font-medium">Задачі</p>
-                <p className="text-sm text-foreground-muted">{data?.tasksByStatus?.find((t) => t.name !== 'done' && t.name !== 'cancelled')?.count || 0} активних</p>
+                <p className="text-sm text-foreground-muted">
+                  {data?.tasksByStatus?.find((t) => t.name !== 'done' && t.name !== 'cancelled')
+                    ?.count || 0}{' '}
+                  активних
+                </p>
               </div>
             </div>
           </Card>
@@ -470,11 +553,26 @@ export default function DashboardPage() {
     ),
   };
 
-  const spanFor = (id: WidgetId) => DEFAULT_WIDGETS.find((w) => w.id === id)?.span || 'md:col-span-6';
+  const spanFor = (id: WidgetId) =>
+    DEFAULT_WIDGETS.find((w) => w.id === id)?.span || 'md:col-span-6';
   const titleFor = (id: WidgetId) => DEFAULT_WIDGETS.find((w) => w.id === id)?.title || id;
 
   return (
     <div className="space-y-6">
+      {/* Trial banner */}
+      {trialDaysLeft !== null && (
+        <div className="flex items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
+          <span className="text-lg">🎁</span>
+          <p>
+            <span className="font-semibold">Пробний період: залишилось {trialDaysLeft} дн.</span>{' '}
+            <span className="text-foreground-muted">
+              Насолоджуйтесь повними можливостями — після закінчення діятимуть ліміти безкоштовного
+              плану, дані збережуться.
+            </span>
+          </p>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -487,7 +585,7 @@ export default function DashboardPage() {
             'inline-flex min-h-10 items-center gap-2 rounded-xl border px-4 text-sm font-semibold transition-colors',
             customizing
               ? 'border-[#111214] bg-[#111214] text-[#FFC700]'
-              : 'border-border bg-card text-[#111214] hover:border-[#111214]'
+              : 'border-border bg-card text-[#111214] hover:border-[#111214]',
           )}
           aria-expanded={customizing}
         >
@@ -541,7 +639,7 @@ export default function DashboardPage() {
                       'rounded-lg p-2 transition-colors',
                       hidden
                         ? 'bg-[#FFC700]/20 text-[#111214] hover:bg-[#FFC700]/30'
-                        : 'text-foreground-muted hover:bg-secondary hover:text-foreground'
+                        : 'text-foreground-muted hover:bg-secondary hover:text-foreground',
                     )}
                     title={hidden ? 'Показати' : 'Приховати'}
                     aria-label={`${hidden ? 'Показати' : 'Приховати'} ${titleFor(id)}`}
@@ -571,7 +669,9 @@ export default function DashboardPage() {
         <Card className="p-10 text-center">
           <AlertTriangle className="mx-auto mb-3 h-10 w-10 text-foreground-muted" />
           <p className="font-semibold">Усі віджети приховано</p>
-          <p className="mt-1 text-sm text-foreground-muted">Увімкніть хоча б один віджет у налаштуваннях вище.</p>
+          <p className="mt-1 text-sm text-foreground-muted">
+            Увімкніть хоча б один віджет у налаштуваннях вище.
+          </p>
         </Card>
       )}
     </div>

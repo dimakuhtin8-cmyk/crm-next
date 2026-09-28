@@ -2,6 +2,7 @@ import { prisma } from '@crm-next/database';
 import { NextResponse } from 'next/server';
 
 import { auth } from '@/auth/config';
+import { getTrialEndsAt } from '@/lib/billing/plans';
 
 /**
  * POST /api/onboarding — Complete onboarding
@@ -12,7 +13,7 @@ export async function POST(request: Request) {
     const userId = (session?.user as { id?: string })?.id;
     if (!userId) return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
 
-    const { companyName, industry, pipelineStages } = await request.json();
+    const { companyName, pipelineStages } = await request.json();
 
     const dbUser = await prisma.user.findUnique({ where: { id: userId } });
     if (!dbUser) return NextResponse.json({ error: 'Користувача не знайдено' }, { status: 404 });
@@ -28,6 +29,8 @@ export async function POST(request: Request) {
           data: {
             name: companyName || `${dbUser.name || dbUser.email || 'CRM'}`,
             slug: `tenant-${dbUser.id.slice(0, 8)}`,
+            subscriptionStatus: 'trialing',
+            trialEndsAt: getTrialEndsAt(),
           },
         });
         await prisma.tenantMember.create({
@@ -52,7 +55,12 @@ export async function POST(request: Request) {
         const colors = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
         for (let i = 0; i < pipelineStages.length; i++) {
           await prisma.pipelineStage.create({
-            data: { pipelineId: pipeline.id, name: pipelineStages[i], order: i, color: colors[i % 5] },
+            data: {
+              pipelineId: pipeline.id,
+              name: pipelineStages[i],
+              order: i,
+              color: colors[i % 5],
+            },
           });
         }
       }

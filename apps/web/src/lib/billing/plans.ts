@@ -7,6 +7,14 @@
 
 export type PlanId = 'free' | 'starter' | 'professional' | 'enterprise';
 
+/** Дней пробного периода для нового тенанта (обещание на экране регистрации). */
+export const TRIAL_DAYS = 14;
+
+/** trialEndsAt для нового тенанта: сейчас + TRIAL_DAYS. */
+export function getTrialEndsAt(from: Date = new Date()): Date {
+  return new Date(from.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
+}
+
 export interface PlanLimits {
   maxUsers: number;
   maxContacts: number;
@@ -47,12 +55,7 @@ export const PLANS: Record<PlanId, Plan> = {
       maxAiRequestsPerDay: 50,
       maxPipelines: 1,
       maxStorageGB: 1,
-      features: [
-        'contacts',
-        'deals',
-        'tasks',
-        'basic_ai',
-      ],
+      features: ['contacts', 'deals', 'tasks', 'basic_ai'],
     },
   },
   starter: {
@@ -72,15 +75,7 @@ export const PLANS: Record<PlanId, Plan> = {
       maxAiRequestsPerDay: 500,
       maxPipelines: 3,
       maxStorageGB: 5,
-      features: [
-        'contacts',
-        'deals',
-        'tasks',
-        'ai_full',
-        'pipelines',
-        'tags',
-        'activity_log',
-      ],
+      features: ['contacts', 'deals', 'tasks', 'ai_full', 'pipelines', 'tags', 'activity_log'],
     },
   },
   professional: {
@@ -192,7 +187,7 @@ export function parsePlanLimits(limitsJson: string | null): PlanLimits {
  */
 export function checkLimit(
   current: number,
-  limit: number
+  limit: number,
 ): { allowed: boolean; percentage: number; remaining: number } {
   if (limit === -1) {
     return { allowed: true, percentage: 0, remaining: -1 }; // unlimited
@@ -210,7 +205,7 @@ export function checkLimit(
  */
 export function getUpgradeRecommendation(
   currentPlan: PlanId,
-  usage: { users: number; contacts: number; deals: number; aiRequests: number }
+  usage: { users: number; contacts: number; deals: number; aiRequests: number },
 ): PlanId | null {
   const current = PLANS[currentPlan];
   if (!current) return null;

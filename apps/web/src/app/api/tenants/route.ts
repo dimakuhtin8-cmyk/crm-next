@@ -2,10 +2,11 @@ import { prisma } from '@crm-next/database';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 
-import { csrfProtection } from '@/lib/csrf';
 import { extractUserId } from '@/lib/auth-utils';
+import { getTrialEndsAt } from '@/lib/billing/plans';
+import { csrfProtection } from '@/lib/csrf';
 import { checkRateLimit, getRateLimitHeaders, RATE_LIMITS } from '@/lib/rate-limit';
 
 /**
@@ -47,10 +48,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ tenants });
   } catch (error) {
     console.error('List tenants error:', error);
-    return NextResponse.json(
-      { error: 'Помилка отримання списку компаній' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Помилка отримання списку компаній' }, { status: 500 });
   }
 }
 
@@ -72,12 +70,13 @@ export async function POST(request: NextRequest) {
   if (csrfError) return csrfError;
 
   // Rate limiting
-  const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+  const ip =
+    request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
   const rateLimitResult = checkRateLimit(`tenant:create:${ip}`, RATE_LIMITS.register);
   if (!rateLimitResult.allowed) {
     return NextResponse.json(
       { error: 'Забагато запитів. Спробуйте пізніше.' },
-      { status: 429, headers: getRateLimitHeaders(rateLimitResult) }
+      { status: 429, headers: getRateLimitHeaders(rateLimitResult) },
     );
   }
 
@@ -88,7 +87,7 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Невірні дані', details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -103,29 +102,26 @@ export async function POST(request: NextRequest) {
     // Check slug uniqueness
     const existingSlug = await prisma.tenant.findUnique({ where: { slug } });
     if (existingSlug) {
-      return NextResponse.json(
-        { error: 'Цей slug вже зайнятий' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Цей slug вже зайнятий' }, { status: 400 });
     }
 
     // Check domain uniqueness
     if (domain) {
       const existingDomain = await prisma.tenant.findUnique({ where: { domain } });
       if (existingDomain) {
-        return NextResponse.json(
-          { error: 'Цей домен вже зайнятий' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'Цей домен вже зайнятий' }, { status: 400 });
       }
     }
 
-    // Create tenant with owner membership
+    // Create tenant with owner membership + 14-day trial
+    // (обещание «14 днів безкоштовно» на экране регистрации).
     const tenant = await prisma.tenant.create({
       data: {
         name,
         slug,
         domain: domain || null,
+        subscriptionStatus: 'trialing',
+        trialEndsAt: getTrialEndsAt(),
         members: {
           create: {
             userId,
@@ -143,9 +139,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ tenant }, { status: 201 });
   } catch (error) {
     console.error('Create tenant error:', error);
-    return NextResponse.json(
-      { error: 'Помилка створення компанії' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Помилка створення компанії' }, { status: 500 });
   }
 }
