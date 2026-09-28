@@ -248,6 +248,14 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
               <span>K</span>
             </div>
           </button>
+          {/* Mobile search icon (same modal) */}
+          <button
+            onClick={() => setIsSearchOpen(true)}
+            aria-label="Пошук"
+            className="sm:hidden rounded-xl p-2.5 text-foreground-muted hover:bg-secondary hover:text-foreground transition-all duration-200"
+          >
+            <Search className="h-5 w-5" />
+          </button>
         </div>
 
         {/* Right side */}

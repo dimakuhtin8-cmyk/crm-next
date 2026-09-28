@@ -2,13 +2,13 @@
  * GET /api/queue/jobs/[id]/download — скачать файл export-задачи.
  */
 
+import { prisma } from '@crm-next/database';
 import { NextResponse } from 'next/server';
 
 import type { NextRequest } from 'next/server';
 
-import { getTenantQuery } from '@/lib/tenant-query';
-import { prisma } from '@crm-next/database';
 import { withAuth } from '@/lib/auth-guard';
+import { getTenantQuery } from '@/lib/tenant-query';
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -55,4 +55,4 @@ async function GETHandler(request: NextRequest, { params }: Params) {
   }
 }
 
-export const GET = withAuth()(GETHandler);
+export const GET = withAuth({ minRole: 'admin' })(GETHandler);

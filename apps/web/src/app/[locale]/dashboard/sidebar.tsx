@@ -30,6 +30,7 @@ import { signOut, useSession } from 'next-auth/react';
 import { useState, useEffect, useRef } from 'react';
 
 import { useNotifications } from '@/components/notifications-provider';
+import { useTeam } from '@/components/owner-picker';
 import { Avatar } from '@/components/ui';
 import { currentLocaleFromPath } from '@/lib/use-locale-path';
 import { cn } from '@/lib/utils';
@@ -112,6 +113,7 @@ export function Sidebar({ collapsed = false, onToggle, onMobileClose }: SidebarP
 
   const navigationGroups: Array<{
     label: string;
+    adminOnly?: boolean;
     items: Array<{
       name: string;
       href: string;
@@ -152,7 +154,8 @@ export function Sidebar({ collapsed = false, onToggle, onMobileClose }: SidebarP
       ],
     },
     {
-      label: 'Система',
+      label: 'Для адміністратора',
+      adminOnly: true,
       items: [
         { name: 'Моніторинг кешу', href: '/dashboard/cache', icon: Database },
         { name: 'Черги задач', href: '/dashboard/queues', icon: ListOrdered },
@@ -163,7 +166,14 @@ export function Sidebar({ collapsed = false, onToggle, onMobileClose }: SidebarP
     },
   ];
 
+  // Роль из уже загруженного контекста команды (без новых запросов).
+  // Пока роль неизвестна — админ-раздел скрыт (safe default).
+  const { currentRole } = useTeam();
+  const isAdmin = currentRole === 'owner' || currentRole === 'admin';
+  const [adminOpen, setAdminOpen] = useState(false);
+
   const filteredGroups = navigationGroups
+    .filter((group) => !group.adminOnly || isAdmin)
     .map((group) => ({
       ...group,
       items: group.items.filter(
@@ -287,57 +297,73 @@ export function Sidebar({ collapsed = false, onToggle, onMobileClose }: SidebarP
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
         {filteredGroups.map((group) => (
           <div key={group.label}>
-            {!collapsed && (
-              <h3 className="px-3 mb-2 text-xs font-semibold text-white/40 uppercase tracking-wider">
-                {group.label}
-              </h3>
-            )}
-            <div className="space-y-0.5">
-              {group.items.map((item) => {
-                const isActive =
-                  item.href === '/dashboard'
-                    ? pathname === '/dashboard'
-                    : pathname.startsWith(item.href);
+            {!collapsed &&
+              (group.adminOnly ? (
+                <button
+                  onClick={() => setAdminOpen(!adminOpen)}
+                  aria-expanded={adminOpen}
+                  className="mb-2 flex w-full items-center justify-between px-3 text-xs font-semibold text-white/40 uppercase tracking-wider hover:text-white/70 transition-colors"
+                >
+                  <span>{group.label}</span>
+                  <ChevronDown
+                    className={cn('h-3.5 w-3.5 transition-transform', !adminOpen && '-rotate-90')}
+                  />
+                </button>
+              ) : (
+                <h3 className="px-3 mb-2 text-xs font-semibold text-white/40 uppercase tracking-wider">
+                  {group.label}
+                </h3>
+              ))}
+            {(!group.adminOnly || adminOpen || collapsed) && (
+              <div className="space-y-0.5">
+                {group.items.map((item) => {
+                  const isActive =
+                    item.href === '/dashboard'
+                      ? pathname === '/dashboard'
+                      : pathname.startsWith(item.href);
 
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={onMobileClose}
-                    className={cn(
-                      'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
-                      isActive
-                        ? 'bg-[#FFC700] font-semibold text-[#111214] shadow-[0_8px_20px_-10px_rgba(255,199,0,0.8)]'
-                        : 'text-white/65 hover:bg-white/10 hover:text-white',
-                      item.accent && !isActive && 'text-[#FFC700]/80 hover:text-[#FFC700]',
-                      collapsed && 'justify-center px-2',
-                    )}
-                    title={collapsed ? item.name : undefined}
-                  >
-                    <item.icon
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={onMobileClose}
                       className={cn(
-                        'h-5 w-5 flex-shrink-0 transition-colors duration-200',
-                        isActive ? 'text-[#111214]' : 'text-white/50 group-hover:text-white',
-                        item.accent && !isActive && 'text-[#FFC700]/70 group-hover:text-[#FFC700]',
+                        'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                        isActive
+                          ? 'bg-[#FFC700] font-semibold text-[#111214] shadow-[0_8px_20px_-10px_rgba(255,199,0,0.8)]'
+                          : 'text-white/65 hover:bg-white/10 hover:text-white',
+                        item.accent && !isActive && 'text-[#FFC700]/80 hover:text-[#FFC700]',
+                        collapsed && 'justify-center px-2',
                       )}
-                    />
-                    {!collapsed && (
-                      <>
-                        <span className="flex-1">{item.name}</span>
-                        {'badge' in item && item.badge && (
-                          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-danger px-1.5 text-[10px] font-bold text-white">
-                            {item.badge}
-                          </span>
+                      title={collapsed ? item.name : undefined}
+                    >
+                      <item.icon
+                        className={cn(
+                          'h-5 w-5 flex-shrink-0 transition-colors duration-200',
+                          isActive ? 'text-[#111214]' : 'text-white/50 group-hover:text-white',
+                          item.accent &&
+                            !isActive &&
+                            'text-[#FFC700]/70 group-hover:text-[#FFC700]',
                         )}
-                      </>
-                    )}
-                    {isActive && !collapsed && (
-                      <div className="h-1.5 w-1.5 rounded-full bg-[#111214]" />
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
+                      />
+                      {!collapsed && (
+                        <>
+                          <span className="flex-1">{item.name}</span>
+                          {'badge' in item && item.badge && (
+                            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-danger px-1.5 text-[10px] font-bold text-white">
+                              {item.badge}
+                            </span>
+                          )}
+                        </>
+                      )}
+                      {isActive && !collapsed && (
+                        <div className="h-1.5 w-1.5 rounded-full bg-[#111214]" />
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
           </div>
         ))}
       </nav>

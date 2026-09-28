@@ -1,16 +1,20 @@
 /**
  * Webhooks API — управление вебхуками
- * 
+ *
  * GET /api/v1/webhooks — список вебхуков
  * POST /api/v1/webhooks — создать вебхук
  */
 
-import { NextResponse } from 'next/server';
-import { withErrorHandling, apiSuccess, ValidationError } from '@/lib/errors';
-import { addVersionHeaders } from '@/lib/api-versioning';
-import { registerWebhook, getWebhooks, WEBHOOK_EVENTS } from '@/lib/webhooks';
-import { extractUserId } from '@/lib/auth-utils';
+import { randomBytes } from 'crypto';
+
 import { prisma } from '@crm-next/database';
+import { NextResponse } from 'next/server';
+
+import { addVersionHeaders } from '@/lib/api-versioning';
+import { extractUserId } from '@/lib/auth-utils';
+import { withErrorHandling, apiSuccess, ValidationError } from '@/lib/errors';
+import { getUserRole } from '@/lib/rbac';
+import { registerWebhook, getWebhooks, WEBHOOK_EVENTS } from '@/lib/webhooks';
 
 export const GET = withErrorHandling(async (request: Request) => {
   const userId = await extractUserId(request as any);
@@ -27,10 +31,16 @@ export const GET = withErrorHandling(async (request: Request) => {
     return NextResponse.json({ error: 'Тенант не знайдено' }, { status: 404 });
   }
 
+  // Вебхуки — раздел «Для адміністратора»: только owner/admin.
+  const role = await getUserRole(userId, member.tenantId);
+  if (role !== 'owner' && role !== 'admin') {
+    return NextResponse.json({ error: 'Недостатньо прав' }, { status: 403 });
+  }
+
   const webhooks = getWebhooks(member.tenantId);
-  
+
   const response = apiSuccess({
-    webhooks: webhooks.map(w => ({
+    webhooks: webhooks.map((w) => ({
       id: w.id,
       url: w.url,
       events: w.events,
@@ -43,7 +53,7 @@ export const GET = withErrorHandling(async (request: Request) => {
       description,
     })),
   });
-  
+
   return addVersionHeaders(response, 'v1');
 });
 
@@ -62,14 +72,20 @@ export const POST = withErrorHandling(async (request: Request) => {
     return NextResponse.json({ error: 'Тенант не знайдено' }, { status: 404 });
   }
 
+  // Вебхуки — раздел «Для адміністратора»: только owner/admin.
+  const role = await getUserRole(userId, member.tenantId);
+  if (role !== 'owner' && role !== 'admin') {
+    return NextResponse.json({ error: 'Недостатньо прав' }, { status: 403 });
+  }
+
   const body = await request.json();
-  
+
   if (!body.url || !body.events?.length) {
     throw new ValidationError('Необхідно вказати url та events');
   }
 
   // Генерируем секрет для подписи
-  const secret = `whsec_${require('crypto').randomBytes(32).toString('hex')}`;
+  const secret = `whsec_${randomBytes(32).toString('hex')}`;
 
   const webhook = registerWebhook({
     tenantId: member.tenantId,
@@ -79,14 +95,17 @@ export const POST = withErrorHandling(async (request: Request) => {
     active: body.active !== false,
   });
 
-  const response = apiSuccess({
-    id: webhook.id,
-    url: webhook.url,
-    events: webhook.events,
-    secret, // Показываем только при создании!
-    active: webhook.active,
-    createdAt: webhook.createdAt,
-  }, 201);
-  
+  const response = apiSuccess(
+    {
+      id: webhook.id,
+      url: webhook.url,
+      events: webhook.events,
+      secret, // Показываем только при создании!
+      active: webhook.active,
+      createdAt: webhook.createdAt,
+    },
+    201,
+  );
+
   return addVersionHeaders(response, 'v1');
 });

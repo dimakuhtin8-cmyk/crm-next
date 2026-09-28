@@ -1,16 +1,18 @@
 /**
  * Automation Logs API — история выполнения автоматизаций
- * 
+ *
  * GET /api/automation/logs — список логов с фильтрацией
  * DELETE /api/automation/logs — очистка старых логов
  */
 
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-import { getTenantQuery } from '@/lib/tenant-query';
-import { withAuth } from '@/lib/auth-guard';
 
-export async function GET(request: NextRequest) {
+import type { NextRequest } from 'next/server';
+
+import { withAuth } from '@/lib/auth-guard';
+import { getTenantQuery } from '@/lib/tenant-query';
+
+export async function GETHandler(request: NextRequest) {
   try {
     const tq = await getTenantQuery(request);
     if (!tq) return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
@@ -36,17 +38,18 @@ export async function GET(request: NextRequest) {
     ]);
 
     // Enrich with rule names
-    const ruleIds = [...new Set(logs.map(l => l.ruleId).filter(Boolean))] as string[];
-    const rules = ruleIds.length > 0
-      ? await prisma.automationRule.findMany({
-          where: { id: { in: ruleIds } },
-          select: { id: true, name: true },
-        })
-      : [];
+    const ruleIds = [...new Set(logs.map((l) => l.ruleId).filter(Boolean))] as string[];
+    const rules =
+      ruleIds.length > 0
+        ? await prisma.automationRule.findMany({
+            where: { id: { in: ruleIds } },
+            select: { id: true, name: true },
+          })
+        : [];
 
-    const ruleMap = new Map(rules.map(r => [r.id, r.name]));
+    const ruleMap = new Map(rules.map((r) => [r.id, r.name]));
 
-    const enrichedLogs = logs.map(log => ({
+    const enrichedLogs = logs.map((log) => ({
       ...log,
       ruleName: log.ruleId ? ruleMap.get(log.ruleId) || 'Unknown Rule' : 'System',
     }));
@@ -62,6 +65,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Помилка отримання логів' }, { status: 500 });
   }
 }
+
+export const GET = withAuth({ minRole: 'admin' })(GETHandler);
 
 async function DELETEHandler(request: NextRequest) {
   try {

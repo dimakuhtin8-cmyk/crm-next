@@ -6,11 +6,13 @@
  */
 
 import { NextResponse } from 'next/server';
+
 import type { NextRequest } from 'next/server';
+
+import { getAiLogs } from '@/lib/ai/usage';
+import { withAuth } from '@/lib/auth-guard';
 import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
-import { withAuth } from '@/lib/auth-guard';
-import { getAiLogs } from '@/lib/ai/usage';
 
 async function GETHandler(request: NextRequest) {
   const csrfError = csrfProtection(request);
@@ -42,11 +44,8 @@ async function GETHandler(request: NextRequest) {
     return NextResponse.json(result);
   } catch (error) {
     console.error('AI logs error:', error);
-    return NextResponse.json(
-      { error: 'Помилка отримання логів' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Помилка отримання логів' }, { status: 500 });
   }
 }
 
-export const GET = withAuth()(GETHandler);
+export const GET = withAuth({ minRole: 'admin' })(GETHandler);

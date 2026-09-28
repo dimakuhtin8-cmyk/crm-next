@@ -4,19 +4,17 @@
  * Это интеграционный тест (реальный route handler + реальная БД + JWT).
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createHmac } from 'crypto';
+
+import { prisma } from '@crm-next/database';
 import { SignJWT } from 'jose';
 import { NextRequest } from 'next/server';
-import { prisma } from '@crm-next/database';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
 const SECRET = new TextEncoder().encode('4p200FzdKSNdfxdHaoTOa9m6WoEzmwEbl0CqrcuPOgc=');
 
 async function createToken(payload: Record<string, unknown>): Promise<string> {
-  return new SignJWT(payload)
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .sign(SECRET);
+  return new SignJWT(payload).setProtectedHeader({ alg: 'HS256' }).setIssuedAt().sign(SECRET);
 }
 
 function makeRequest(url: string, token: string | null, init?: RequestInit): NextRequest {
@@ -30,17 +28,24 @@ function makeRequest(url: string, token: string | null, init?: RequestInit): Nex
   });
 }
 
-import { GET as metricsGET } from '@/app/api/v1/metrics/route';
-import { GET as cacheStatsGET } from '@/app/api/v1/cache/stats/route';
+import { GET as aiLogsGET } from '@/app/api/ai/logs/route';
+import { POST as twoFaPOST } from '@/app/api/auth/2fa/route';
+import { GET as automationLogsGET } from '@/app/api/automation/logs/route';
+import { GET as queueJobsGET } from '@/app/api/queue/jobs/route';
+import { PUT as dbPUT, POST as dbPOST } from '@/app/api/tenant/database/route';
+import {
+  PUT as membersPUT,
+  DELETE as membersDELETE,
+} from '@/app/api/tenants/[id]/members/[memberId]/route';
 import { POST as cacheInvalidatePOST } from '@/app/api/v1/cache/invalidate/route';
+import { GET as cacheStatsGET } from '@/app/api/v1/cache/stats/route';
+import { GET as metricsGET } from '@/app/api/v1/metrics/route';
 import { GET as queueStatsGET, DELETE as queueStatsDELETE } from '@/app/api/v1/queue/stats/route';
 import { GET as sloGET } from '@/app/api/v1/slo/route';
-import { GET as dbGET, PUT as dbPUT, POST as dbPOST } from '@/app/api/tenant/database/route';
-import { PUT as membersPUT, DELETE as membersDELETE } from '@/app/api/tenants/[id]/members/[memberId]/route';
+import { GET as webhooksGET } from '@/app/api/v1/webhooks/route';
 import { POST as waWebhookPOST } from '@/app/api/whatsapp/webhook/route';
-import { POST as twoFaPOST } from '@/app/api/auth/2fa/route';
-import { generateTOTP } from '@/lib/totp';
 import { decrypt, isEncrypted } from '@/lib/encryption';
+import { generateTOTP } from '@/lib/totp';
 
 const BASE = 'http://localhost:3000';
 const mctx = (id: string, memberId: string) => ({ params: Promise.resolve({ id, memberId }) });
@@ -48,16 +53,13 @@ const mctx = (id: string, memberId: string) => ({ params: Promise.resolve({ id, 
 let tenant2 = '';
 let tenant3 = '';
 let tokenOwner = '';
-let tokenOwner2 = '';
 let tokenAdmin = '';
 let tokenMember = '';
 let tokenViewer = '';
 let tokenOwner3 = '';
 let tokenAdmin3 = '';
 let memberMemberId = '';
-let viewerMemberId = '';
 let owner3MemberId = '';
-let admin3MemberId = '';
 let owner3bMemberId = '';
 
 const WA_SECRET = 'whsec-phase2-test-789';
@@ -75,7 +77,12 @@ beforeAll(async () => {
   await prisma.tenant.deleteMany();
 
   const t2 = await prisma.tenant.create({
-    data: { name: 'Phase2 Tenant', slug: 'phase2-tenant', plan: 'professional', whatsappWebhookSecret: WA_SECRET },
+    data: {
+      name: 'Phase2 Tenant',
+      slug: 'phase2-tenant',
+      plan: 'professional',
+      whatsappWebhookSecret: WA_SECRET,
+    },
   });
   tenant2 = t2.id;
 
@@ -86,28 +93,29 @@ beforeAll(async () => {
   };
 
   const o = await mk('p2-owner@test.com', 'owner');
-  const o2 = await mk('p2-owner2@test.com', 'owner');
+  await mk('p2-owner2@test.com', 'owner');
   const a = await mk('p2-admin@test.com', 'admin');
   const mb = await mk('p2-member@test.com', 'member');
   const v = await mk('p2-viewer@test.com', 'viewer');
   memberMemberId = mb.m.id;
-  viewerMemberId = v.m.id;
 
   tokenOwner = await createToken({ id: o.u.id, tenantId: tenant2 });
-  tokenOwner2 = await createToken({ id: o2.u.id, tenantId: tenant2 });
   tokenAdmin = await createToken({ id: a.u.id, tenantId: tenant2 });
   tokenMember = await createToken({ id: mb.u.id, tenantId: tenant2 });
   tokenViewer = await createToken({ id: v.u.id, tenantId: tenant2 });
 
   // Tenant 3: exactly one owner + one admin (last-owner scenarios)
-  const t3 = await prisma.tenant.create({ data: { name: 'Phase2 Solo', slug: 'phase2-solo', plan: 'professional' } });
+  const t3 = await prisma.tenant.create({
+    data: { name: 'Phase2 Solo', slug: 'phase2-solo', plan: 'professional' },
+  });
   tenant3 = t3.id;
   const o3 = await prisma.user.create({ data: { email: 'p2-o3@test.com', name: 'O3' } });
-  const o3m = await prisma.tenantMember.create({ data: { userId: o3.id, tenantId: tenant3, role: 'owner' } });
+  const o3m = await prisma.tenantMember.create({
+    data: { userId: o3.id, tenantId: tenant3, role: 'owner' },
+  });
   const a3 = await prisma.user.create({ data: { email: 'p2-a3@test.com', name: 'A3' } });
-  const a3m = await prisma.tenantMember.create({ data: { userId: a3.id, tenantId: tenant3, role: 'admin' } });
+  await prisma.tenantMember.create({ data: { userId: a3.id, tenantId: tenant3, role: 'admin' } });
   owner3MemberId = o3m.id;
-  admin3MemberId = a3m.id;
   tokenOwner3 = await createToken({ id: o3.id, tenantId: tenant3 });
   tokenAdmin3 = await createToken({ id: a3.id, tenantId: tenant3 });
 });
@@ -136,28 +144,58 @@ describe('ФАЗА 2.1: v1-API требует авторизацию', () => {
 
   it('анонимный POST cache/invalidate и DELETE queue/stats → 401', async () => {
     const r1 = await cacheInvalidatePOST(
-      makeRequest(`${BASE}/api/v1/cache/invalidate`, null, { method: 'POST', body: JSON.stringify({ key: 'x' }) })
+      makeRequest(`${BASE}/api/v1/cache/invalidate`, null, {
+        method: 'POST',
+        body: JSON.stringify({ key: 'x' }),
+      }),
     );
     expect(r1.status).toBe(401);
-    const r2 = await queueStatsDELETE(makeRequest(`${BASE}/api/v1/queue/stats`, null, { method: 'DELETE' }));
+    const r2 = await queueStatsDELETE(
+      makeRequest(`${BASE}/api/v1/queue/stats`, null, { method: 'DELETE' }),
+    );
     expect(r2.status).toBe(401);
   });
 
   it('member POST cache/invalidate → 403, admin → 200', async () => {
     const asMember = await cacheInvalidatePOST(
-      makeRequest(`${BASE}/api/v1/cache/invalidate`, tokenMember, { method: 'POST', body: JSON.stringify({ key: 'x' }) })
+      makeRequest(`${BASE}/api/v1/cache/invalidate`, tokenMember, {
+        method: 'POST',
+        body: JSON.stringify({ key: 'x' }),
+      }),
     );
     expect(asMember.status).toBe(403);
 
     const asAdmin = await cacheInvalidatePOST(
-      makeRequest(`${BASE}/api/v1/cache/invalidate`, tokenAdmin, { method: 'POST', body: JSON.stringify({ key: 'x' }) })
+      makeRequest(`${BASE}/api/v1/cache/invalidate`, tokenAdmin, {
+        method: 'POST',
+        body: JSON.stringify({ key: 'x' }),
+      }),
     );
     expect(asAdmin.status).toBe(200);
   });
 
-  it('авторизованный GET metrics → 200', async () => {
-    const r = await metricsGET(makeRequest(`${BASE}/api/v1/metrics`, tokenViewer));
-    expect(r.status).toBe(200);
+  it('авторизованный GET metrics → 200 только для admin+ (viewer → 403)', async () => {
+    const asViewer = await metricsGET(makeRequest(`${BASE}/api/v1/metrics`, tokenViewer));
+    expect(asViewer.status).toBe(403);
+    const asAdmin = await metricsGET(makeRequest(`${BASE}/api/v1/metrics`, tokenAdmin));
+    expect(asAdmin.status).toBe(200);
+  });
+
+  it('П4.1: member GET admin-раздела → 403 (cache/queue/jobs/logs)', async () => {
+    const urls: Array<[string, (r: NextRequest) => Promise<Response>]> = [
+      [`${BASE}/api/v1/cache/stats`, cacheStatsGET],
+      [`${BASE}/api/v1/queue/stats`, queueStatsGET],
+      [`${BASE}/api/queue/jobs`, queueJobsGET],
+      [`${BASE}/api/automation/logs`, automationLogsGET],
+      [`${BASE}/api/ai/logs`, aiLogsGET],
+      [`${BASE}/api/v1/webhooks`, webhooksGET],
+    ];
+    for (const [url, handler] of urls) {
+      const asMember = await handler(makeRequest(url, tokenMember));
+      expect(asMember.status).toBe(403);
+      const asAdmin = await handler(makeRequest(url, tokenAdmin));
+      expect(asAdmin.status).not.toBe(403);
+    }
   });
 });
 
@@ -165,8 +203,12 @@ describe('ФАЗА 2.2: tenant/database — роль, шифрование, SSRF
   it('анонимный PUT → 401, viewer/member PUT → 403', async () => {
     const body = { method: 'PUT', body: JSON.stringify({ databaseType: 'shared' }) } as RequestInit;
     expect((await dbPUT(makeRequest(`${BASE}/api/tenant/database`, null, body))).status).toBe(401);
-    expect((await dbPUT(makeRequest(`${BASE}/api/tenant/database`, tokenViewer, body))).status).toBe(403);
-    expect((await dbPUT(makeRequest(`${BASE}/api/tenant/database`, tokenMember, body))).status).toBe(403);
+    expect(
+      (await dbPUT(makeRequest(`${BASE}/api/tenant/database`, tokenViewer, body))).status,
+    ).toBe(403);
+    expect(
+      (await dbPUT(makeRequest(`${BASE}/api/tenant/database`, tokenMember, body))).status,
+    ).toBe(403);
   });
 
   it('admin PUT shared → 200', async () => {
@@ -174,7 +216,7 @@ describe('ФАЗА 2.2: tenant/database — роль, шифрование, SSRF
       makeRequest(`${BASE}/api/tenant/database`, tokenAdmin, {
         method: 'PUT',
         body: JSON.stringify({ databaseType: 'shared' }),
-      })
+      }),
     );
     expect(r.status).toBe(200);
   });
@@ -184,12 +226,15 @@ describe('ФАЗА 2.2: tenant/database — роль, шифрование, SSRF
       makeRequest(`${BASE}/api/tenant/database`, tokenAdmin, {
         method: 'POST',
         body: JSON.stringify({ databaseUrl: 'file:///etc/passwd', databaseType: 'postgresql' }),
-      })
+      }),
     );
     expect(evil.status).toBe(400);
 
     const empty = await dbPOST(
-      makeRequest(`${BASE}/api/tenant/database`, tokenAdmin, { method: 'POST', body: JSON.stringify({}) })
+      makeRequest(`${BASE}/api/tenant/database`, tokenAdmin, {
+        method: 'POST',
+        body: JSON.stringify({}),
+      }),
     );
     expect(empty.status).toBe(400);
   });
@@ -200,11 +245,14 @@ describe('ФАЗА 2.2: tenant/database — роль, шифрование, SSRF
       makeRequest(`${BASE}/api/tenant/database`, tokenAdmin, {
         method: 'PUT',
         body: JSON.stringify({ databaseUrl: url, databaseType: 'postgresql' }),
-      })
+      }),
     );
     expect(r.status).toBe(200);
 
-    const stored = await prisma.tenant.findUnique({ where: { id: tenant2 }, select: { databaseUrl: true } });
+    const stored = await prisma.tenant.findUnique({
+      where: { id: tenant2 },
+      select: { databaseUrl: true },
+    });
     expect(stored?.databaseUrl).not.toBe(url);
     expect(isEncrypted(stored?.databaseUrl || '')).toBe(true);
     expect(decrypt(stored?.databaseUrl || '')).toBe(url);
@@ -214,7 +262,7 @@ describe('ФАЗА 2.2: tenant/database — роль, шифрование, SSRF
       makeRequest(`${BASE}/api/tenant/database`, tokenAdmin, {
         method: 'PUT',
         body: JSON.stringify({ databaseType: 'shared', databaseUrl: null }),
-      })
+      }),
     );
   });
 });
@@ -226,7 +274,7 @@ describe('ФАЗА 2.3: members — нет эскалации, последни�
         method: 'PUT',
         body: JSON.stringify({ role: 'admin' }),
       }),
-      mctx(tenant2, memberMemberId)
+      mctx(tenant2, memberMemberId),
     );
     expect(r.status).toBe(403);
     const after = await prisma.tenantMember.findUnique({ where: { id: memberMemberId } });
@@ -239,7 +287,7 @@ describe('ФАЗА 2.3: members — нет эскалации, последни�
         method: 'PUT',
         body: JSON.stringify({ role: 'admin' }),
       }),
-      mctx(tenant2, memberMemberId)
+      mctx(tenant2, memberMemberId),
     );
     expect(r.status).toBe(200);
     const after = await prisma.tenantMember.findUnique({ where: { id: memberMemberId } });
@@ -248,8 +296,10 @@ describe('ФАЗА 2.3: members — нет эскалации, последни�
 
   it('admin удаляет единственного owner → запрещено', async () => {
     const r = await membersDELETE(
-      makeRequest(`${BASE}/api/tenants/${tenant3}/members/${owner3MemberId}`, tokenAdmin3, { method: 'DELETE' }),
-      mctx(tenant3, owner3MemberId)
+      makeRequest(`${BASE}/api/tenants/${tenant3}/members/${owner3MemberId}`, tokenAdmin3, {
+        method: 'DELETE',
+      }),
+      mctx(tenant3, owner3MemberId),
     );
     expect([400, 403]).toContain(r.status);
     const after = await prisma.tenantMember.findUnique({ where: { id: owner3MemberId } });
@@ -259,7 +309,9 @@ describe('ФАЗА 2.3: members — нет эскалации, последни�
   it('понизить последнего owner → 400 (сначала второй owner — можно)', async () => {
     // добавляем второго owner в tenant3
     const o3b = await prisma.user.create({ data: { email: 'p2-o3b@test.com', name: 'O3b' } });
-    const o3bm = await prisma.tenantMember.create({ data: { userId: o3b.id, tenantId: tenant3, role: 'owner' } });
+    const o3bm = await prisma.tenantMember.create({
+      data: { userId: o3b.id, tenantId: tenant3, role: 'owner' },
+    });
     owner3bMemberId = o3bm.id;
 
     // owner понижает второго owner → 200 (остаётся один)
@@ -268,7 +320,7 @@ describe('ФАЗА 2.3: members — нет эскалации, последни�
         method: 'PUT',
         body: JSON.stringify({ role: 'member' }),
       }),
-      mctx(tenant3, owner3bMemberId)
+      mctx(tenant3, owner3bMemberId),
     );
     expect(demote.status).toBe(200);
 
@@ -278,7 +330,7 @@ describe('ФАЗА 2.3: members — нет эскалации, последни�
         method: 'PUT',
         body: JSON.stringify({ role: 'member' }),
       }),
-      mctx(tenant3, owner3MemberId)
+      mctx(tenant3, owner3MemberId),
     );
     expect(last.status).toBe(400);
     const after = await prisma.tenantMember.findUnique({ where: { id: owner3MemberId } });
@@ -291,7 +343,7 @@ describe('ФАЗА 2.4: WhatsApp webhook — подпись обязательн
 
   it('без подписи → 403, с неверной подписью → 403', async () => {
     const noSig = await waWebhookPOST(
-      makeRequest(`${BASE}/api/whatsapp/webhook`, null, { method: 'POST', body: waBody })
+      makeRequest(`${BASE}/api/whatsapp/webhook`, null, { method: 'POST', body: waBody }),
     );
     expect(noSig.status).toBe(403);
 
@@ -318,7 +370,11 @@ describe('ФАЗА 2.4: WhatsApp webhook — подпись обязательн
 describe('ФАЗА 2.5: 2FA — setup/confirm/disable через БД', () => {
   const twoFa = (action: string, token: string | null, body?: unknown) =>
     twoFaPOST(
-      makeRequest(`${BASE}/api/auth/2fa?action=${action}`, token, body ? { method: 'POST', body: JSON.stringify(body) } : { method: 'POST', body: '{}' })
+      makeRequest(
+        `${BASE}/api/auth/2fa?action=${action}`,
+        token,
+        body ? { method: 'POST', body: JSON.stringify(body) } : { method: 'POST', body: '{}' },
+      ),
     );
 
   it('setup возвращает base32-секрет и otpauthUrl, БЕЗ рабочего кода; status=false', async () => {
@@ -370,7 +426,10 @@ describe('ФАЗА 2.5: 2FA — setup/confirm/disable через БД', () => {
     expect(off.status).toBe(200);
     expect((await (await twoFa('status', tokenViewer)).json()).enabled).toBe(false);
 
-    const user = await prisma.user.findUnique({ where: { email: 'p2-viewer@test.com' }, select: { twoFactorSecret: true } });
+    const user = await prisma.user.findUnique({
+      where: { email: 'p2-viewer@test.com' },
+      select: { twoFactorSecret: true },
+    });
     expect(user?.twoFactorSecret).toBeNull();
   });
 });

@@ -3,13 +3,13 @@
  * GET /api/queue/jobs/[id]/download — скачать результат export-задачи.
  */
 
+import { prisma } from '@crm-next/database';
 import { NextResponse } from 'next/server';
 
 import type { NextRequest } from 'next/server';
 
-import { getTenantQuery } from '@/lib/tenant-query';
-import { prisma } from '@crm-next/database';
 import { withAuth } from '@/lib/auth-guard';
+import { getTenantQuery } from '@/lib/tenant-query';
 
 async function GETHandler(request: NextRequest) {
   try {
@@ -26,9 +26,17 @@ async function GETHandler(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
       take: limit,
       select: {
-        id: true, type: true, status: true, priority: true,
-        attempts: true, maxAttempts: true, lastError: true,
-        createdAt: true, startedAt: true, completedAt: true, nextRetryAt: true,
+        id: true,
+        type: true,
+        status: true,
+        priority: true,
+        attempts: true,
+        maxAttempts: true,
+        lastError: true,
+        createdAt: true,
+        startedAt: true,
+        completedAt: true,
+        nextRetryAt: true,
       },
     });
 
@@ -39,4 +47,4 @@ async function GETHandler(request: NextRequest) {
   }
 }
 
-export const GET = withAuth()(GETHandler);
+export const GET = withAuth({ minRole: 'admin' })(GETHandler);
