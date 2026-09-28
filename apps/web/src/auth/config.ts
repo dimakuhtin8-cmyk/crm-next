@@ -36,8 +36,9 @@ const config: NextAuthConfig = {
         password: { label: 'Пароль', type: 'password' },
       },
       authorize: async (credentials) => {
+        // Вход: только форма. Старые 6-символьные пароли блокировать нельзя.
         const parsed = z
-          .object({ email: z.string().email(), password: z.string().min(6) })
+          .object({ email: z.string().email(), password: z.string().min(1) })
           .safeParse(credentials);
 
         if (!parsed.success) return null;
@@ -50,7 +51,12 @@ const config: NextAuthConfig = {
         const valid = await compare(password, user.password);
         if (!valid) return null;
 
-        return { id: user.id, email: user.email ?? '', name: user.name ?? null, image: user.image ?? null };
+        return {
+          id: user.id,
+          email: user.email ?? '',
+          name: user.name ?? null,
+          image: user.image ?? null,
+        };
       },
     }),
   ],
@@ -76,7 +82,10 @@ const config: NextAuthConfig = {
             });
 
             // Auto-create tenant for new user
-            const slug = user.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+            const slug = user.email
+              .split('@')[0]
+              .toLowerCase()
+              .replace(/[^a-z0-9]/g, '');
             const tenant = await prisma.tenant.create({
               data: {
                 name: user.name || user.email.split('@')[0],
@@ -143,7 +152,11 @@ const _nextAuth = NextAuth(config);
 
 export const { handlers, auth, signOut } = _nextAuth;
 
-export async function signIn(provider: string, options?: Record<string, unknown>, redirectTo?: string) {
+export async function signIn(
+  provider: string,
+  options?: Record<string, unknown>,
+  redirectTo?: string,
+) {
   return _nextAuth.signIn(provider as never, options as never, redirectTo);
 }
 
@@ -160,9 +173,9 @@ export async function sendMagicLink(email: string, locale = 'uk') {
   });
 
   const link = `${process.env.NEXT_PUBLIC_APP_URL}/${locale}/auth/verify?token=${token}&email=${encodeURIComponent(email)}`;
-  
+
   console.log(`[Magic Link] Email: ${email}\nLink: ${link}\nExpires: ${expires}`);
-  
+
   return { success: true as const, link };
 }
 
@@ -178,7 +191,7 @@ export async function verifyMagicLink(token: string, email: string) {
   await prisma.verificationToken.delete({ where: { token } });
 
   let user = await prisma.user.findUnique({ where: { email } });
-  
+
   if (!user) {
     user = await prisma.user.create({
       data: { email, emailVerified: new Date() },
@@ -210,8 +223,9 @@ export async function handleTelegramCallback(data: Record<string, string>) {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   if (!botToken) throw new Error('TELEGRAM_BOT_TOKEN not set');
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { hash: _, ...userData } = data;
-  
+
   const telegramId = userData.id;
   const email = userData.email;
   const firstName = userData.first_name;

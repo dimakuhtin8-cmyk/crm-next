@@ -5,11 +5,14 @@
  */
 
 import { NextResponse } from 'next/server';
+
 import type { NextRequest } from 'next/server';
-import { csrfProtection } from '@/lib/csrf';
-import { getTenantQuery } from '@/lib/tenant-query';
+
 import { withAuth } from '@/lib/auth-guard';
 import { createPortalSession } from '@/lib/billing/stripe';
+import { csrfProtection } from '@/lib/csrf';
+import { localeUrl } from '@/lib/locale-path';
+import { getTenantQuery } from '@/lib/tenant-query';
 
 async function POSTHandler(request: NextRequest) {
   const csrfError = csrfProtection(request);
@@ -21,18 +24,16 @@ async function POSTHandler(request: NextRequest) {
       return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const returnUrl = `${appUrl}/uk/dashboard/settings/billing`;
+    const body = await request.json().catch(() => ({}));
+    const locale = typeof body?.locale === 'string' ? body.locale : undefined;
+    const returnUrl = localeUrl('/dashboard/settings/billing', locale);
 
     const session = await createPortalSession(tq.tenantId, returnUrl);
 
     return NextResponse.json({ url: session.url });
   } catch (error) {
     console.error('Portal error:', error);
-    return NextResponse.json(
-      { error: 'Помилка відкриття порталу оплати' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Помилка відкриття порталу оплати' }, { status: 500 });
   }
 }
 

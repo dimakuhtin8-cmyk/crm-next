@@ -6,9 +6,11 @@ import { useState } from 'react';
 
 import { useAuth } from '@/components/auth/auth-provider';
 import { TelegramLoginButton } from '@/components/auth/telegram-login-button';
+import { useLocalePath } from '@/lib/use-locale-path';
 
 export default function LoginPage() {
   const router = useRouter();
+  const lp = useLocalePath();
   const { login, loginGoogle, error, clearError, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -145,7 +147,7 @@ export default function LoginPage() {
 
         <p className="text-center text-sm text-muted-foreground">
           Ще немає акаунту?{' '}
-          <Link href="/uk/auth/register" className="text-indigo-500 hover:text-indigo-400">
+          <Link href={lp('/auth/register')} className="text-indigo-500 hover:text-indigo-400">
             Зареєструватися
           </Link>
         </p>

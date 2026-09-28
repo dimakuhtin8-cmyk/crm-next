@@ -1,12 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Check, ArrowRight, Loader2, ExternalLink, Users, Contact, Briefcase } from 'lucide-react';
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
+
 import {
-  CreditCard, Check, ArrowRight, Loader2, Clock, AlertTriangle,
-  ExternalLink, Zap, Users, Contact, Briefcase, HardDrive,
-} from 'lucide-react';
-import { Button, Card, CardContent, CardHeader, CardTitle, CardDescription, Badge } from '@/components/ui';
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  Badge,
+} from '@/components/ui';
+import { useLocale } from '@/lib/use-locale-path';
 
 interface PlanInfo {
   id: string;
@@ -95,7 +102,15 @@ const ALL_PLANS: PlanCard[] = [
     maxContacts: 10000,
     maxDeals: 2000,
     isPopular: true,
-    features: ['10 користувачів', '10,000 контактів', '2,000 угод', '1,500 AI-запитів/день', '10 воронок', 'Автоматизації', 'Звіти'],
+    features: [
+      '10 користувачів',
+      '10,000 контактів',
+      '2,000 угод',
+      '1,500 AI-запитів/день',
+      '10 воронок',
+      'Автоматизації',
+      'Звіти',
+    ],
   },
   {
     id: 'enterprise',
@@ -106,11 +121,20 @@ const ALL_PLANS: PlanCard[] = [
     maxUsers: -1,
     maxContacts: -1,
     maxDeals: -1,
-    features: ['Необмежено користувачів', 'Необмежено контактів', 'Необмежено угод', '5,000 AI-запитів/день', 'Необмежено воронок', 'API доступ', 'Пріоритетна підтримка'],
+    features: [
+      'Необмежено користувачів',
+      'Необмежено контактів',
+      'Необмежено угод',
+      '5,000 AI-запитів/день',
+      'Необмежено воронок',
+      'API доступ',
+      'Пріоритетна підтримка',
+    ],
   },
 ];
 
 export default function BillingPage() {
+  const locale = useLocale();
   const [data, setData] = useState<SubscriptionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
@@ -127,7 +151,7 @@ export default function BillingPage() {
     }
 
     fetch('/api/billing/subscription', { credentials: 'include' })
-      .then(r => r.json())
+      .then((r) => r.json())
       .then(setData)
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -140,13 +164,15 @@ export default function BillingPage() {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planId, period }),
+        body: JSON.stringify({ planId, period, locale }),
       });
       const json = await res.json();
       if (json.url) {
         window.location.href = json.url;
       }
-    } catch {} finally {
+    } catch {
+      // остаёмся на странице биллинга
+    } finally {
       setCheckoutLoading(null);
     }
   };
@@ -156,12 +182,16 @@ export default function BillingPage() {
       const res = await fetch('/api/billing/portal', {
         method: 'POST',
         credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ locale }),
       });
       const json = await res.json();
       if (json.url) {
         window.location.href = json.url;
       }
-    } catch {}
+    } catch {
+      // остаёмся на странице биллинга
+    }
   };
 
   const formatPrice = (cents: number): string => {
@@ -176,11 +206,17 @@ export default function BillingPage() {
   const statusBadge = (status: string) => {
     switch (status) {
       case 'active':
-        return <Badge className="bg-green-500/10 text-green-700 dark:text-green-300">Активна</Badge>;
+        return (
+          <Badge className="bg-green-500/10 text-green-700 dark:text-green-300">Активна</Badge>
+        );
       case 'trialing':
-        return <Badge className="bg-blue-500/10 text-blue-700 dark:text-blue-300">Пробний період</Badge>;
+        return (
+          <Badge className="bg-blue-500/10 text-blue-700 dark:text-blue-300">Пробний період</Badge>
+        );
       case 'past_due':
-        return <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-300">Прострочена</Badge>;
+        return (
+          <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-300">Прострочена</Badge>
+        );
       case 'canceled':
         return <Badge className="bg-red-500/10 text-red-700 dark:text-red-300">Скасована</Badge>;
       default:
@@ -192,7 +228,9 @@ export default function BillingPage() {
     return (
       <div className="max-w-5xl mx-auto space-y-6">
         <div className="flex items-center gap-3">
-          <Link href="/dashboard/settings" className="text-muted-foreground hover:text-foreground">← Назад</Link>
+          <Link href="/dashboard/settings" className="text-muted-foreground hover:text-foreground">
+            ← Назад
+          </Link>
           <h1 className="text-2xl font-bold">Підписка та оплата</h1>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -207,7 +245,9 @@ export default function BillingPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/dashboard/settings" className="text-muted-foreground hover:text-foreground">← Назад</Link>
+        <Link href="/dashboard/settings" className="text-muted-foreground hover:text-foreground">
+          ← Назад
+        </Link>
         <h1 className="text-2xl font-bold">Підписка та оплата</h1>
       </div>
 
@@ -257,7 +297,10 @@ export default function BillingPage() {
                   <Users className="w-3 h-3" /> Користувачі
                 </div>
                 <p className="text-lg font-semibold">
-                  {data.usage.users} <span className="text-sm text-foreground-muted">/ {formatLimit(data.limits.maxUsers)}</span>
+                  {data.usage.users}{' '}
+                  <span className="text-sm text-foreground-muted">
+                    / {formatLimit(data.limits.maxUsers)}
+                  </span>
                 </p>
               </div>
               <div>
@@ -265,7 +308,10 @@ export default function BillingPage() {
                   <Contact className="w-3 h-3" /> Контакти
                 </div>
                 <p className="text-lg font-semibold">
-                  {data.usage.contacts} <span className="text-sm text-foreground-muted">/ {formatLimit(data.limits.maxContacts)}</span>
+                  {data.usage.contacts}{' '}
+                  <span className="text-sm text-foreground-muted">
+                    / {formatLimit(data.limits.maxContacts)}
+                  </span>
                 </p>
               </div>
               <div>
@@ -273,7 +319,10 @@ export default function BillingPage() {
                   <Briefcase className="w-3 h-3" /> Угоди
                 </div>
                 <p className="text-lg font-semibold">
-                  {data.usage.deals} <span className="text-sm text-foreground-muted">/ {formatLimit(data.limits.maxDeals)}</span>
+                  {data.usage.deals}{' '}
+                  <span className="text-sm text-foreground-muted">
+                    / {formatLimit(data.limits.maxDeals)}
+                  </span>
                 </p>
               </div>
             </div>
@@ -324,11 +373,6 @@ export default function BillingPage() {
         {ALL_PLANS.map((plan) => {
           const isCurrent = data?.plan.id === plan.id;
           const displayPrice = period === 'yearly' ? plan.yearlyPrice : plan.price;
-          const priceLabel = plan.price === 0
-            ? 'Безкоштовно'
-            : period === 'yearly'
-              ? `$${plan.yearlyPrice}/рік`
-              : `$${plan.price}/міс`;
 
           return (
             <Card

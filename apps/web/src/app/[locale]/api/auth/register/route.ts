@@ -1,7 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@crm-next/database';
 import { hash } from 'bcryptjs';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
+
+import type { NextRequest } from 'next/server';
+
+import { passwordSchema } from '@/lib/validation/password';
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,15 +15,12 @@ export async function POST(request: NextRequest) {
       .object({
         name: z.string().min(1).max(100).optional(),
         email: z.string().email(),
-        password: z.string().min(6),
+        password: passwordSchema,
       })
       .safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Неверные данные' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Невірні дані' }, { status: 400 });
     }
 
     const { name, email, password } = parsed.data;
@@ -27,10 +28,7 @@ export async function POST(request: NextRequest) {
     // Проверяем, существует ли пользователь
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
-      return NextResponse.json(
-        { error: 'Цей email вже зареєстрований' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Цей email вже зареєстрований' }, { status: 400 });
     }
 
     // Хэшируем пароль
@@ -52,9 +50,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Register error:', error);
-    return NextResponse.json(
-      { error: 'Помилка реєстрації' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Помилка реєстрації' }, { status: 500 });
   }
 }

@@ -5,19 +5,23 @@
  * Returns: { url: string } — redirect URL for Stripe checkout
  */
 
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-import { z } from 'zod';
-import { csrfProtection } from '@/lib/csrf';
-import { getTenantQuery } from '@/lib/tenant-query';
-import { withAuth } from '@/lib/auth-guard';
 import { prisma } from '@crm-next/database';
-import { getPlan, type PlanId } from '@/lib/billing/plans';
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
+
+import type { NextRequest } from 'next/server';
+
+import { withAuth } from '@/lib/auth-guard';
+import { getPlan } from '@/lib/billing/plans';
 import { createCheckoutSession } from '@/lib/billing/stripe';
+import { csrfProtection } from '@/lib/csrf';
+import { localeUrl } from '@/lib/locale-path';
+import { getTenantQuery } from '@/lib/tenant-query';
 
 const checkoutSchema = z.object({
   planId: z.enum(['starter', 'professional', 'enterprise']),
   period: z.enum(['monthly', 'yearly']).default('monthly'),
+  locale: z.string().optional(),
 });
 
 async function POSTHandler(request: NextRequest) {
@@ -35,11 +39,12 @@ async function POSTHandler(request: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Невірні дані', details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const { planId, period } = parsed.data;
+    const locale = parsed.data.locale;
     const plan = getPlan(planId);
 
     if (!plan) {
@@ -59,23 +64,24 @@ async function POSTHandler(request: NextRequest) {
     // Get user email from JWT
     const userPayload = (tq as Record<string, unknown>).userId;
     const user = userPayload
-      ? await prisma.user.findUnique({ where: { id: userPayload as string }, select: { email: true } })
+      ? await prisma.user.findUnique({
+          where: { id: userPayload as string },
+          select: { email: true },
+        })
       : null;
 
-    const priceId = period === 'yearly'
-      ? plan.stripeYearlyPriceId || plan.stripePriceId
-      : plan.stripePriceId;
+    const priceId =
+      period === 'yearly' ? plan.stripeYearlyPriceId || plan.stripePriceId : plan.stripePriceId;
 
     if (!priceId) {
       return NextResponse.json(
         { error: 'Оплата не налаштована. Зверніться до адміністратора.' },
-        { status: 503 }
+        { status: 503 },
       );
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const successUrl = `${appUrl}/uk/dashboard/settings/billing?success=true`;
-    const cancelUrl = `${appUrl}/uk/dashboard/settings/billing?canceled=true`;
+    const successUrl = localeUrl('/dashboard/settings/billing?success=true', locale);
+    const cancelUrl = localeUrl('/dashboard/settings/billing?canceled=true', locale);
 
     const session = await createCheckoutSession({
       tenantId: tq.tenantId,
@@ -91,10 +97,7 @@ async function POSTHandler(request: NextRequest) {
     return NextResponse.json({ url: session.url });
   } catch (error) {
     console.error('Checkout error:', error);
-    return NextResponse.json(
-      { error: 'Помилка створення сесії оплати' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Помилка створення сесії оплати' }, { status: 500 });
   }
 }
 

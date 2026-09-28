@@ -3,6 +3,8 @@
 import { useSession, signIn as nextAuthSignIn, signOut as nextAuthSignOut } from 'next-auth/react';
 import { createContext, useContext, useState, type ReactNode } from 'react';
 
+import { currentLocaleFromPath } from '@/lib/use-locale-path';
+
 interface User {
   id: string;
   email: string;
@@ -92,7 +94,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     setError(null);
-    await nextAuthSignOut({ callbackUrl: '/uk/auth/login' });
+    // После выхода остаёмся в текущей локали.
+    await nextAuthSignOut({ callbackUrl: `/${currentLocaleFromPath()}/auth/login` });
   };
 
   const clearError = () => setError(null);

@@ -5,6 +5,8 @@
  * чтобы локальная разработка не падала.
  */
 
+import { localeUrl } from './locale-path';
+
 interface SendParams {
   to: string | string[];
   subject: string;
@@ -48,8 +50,12 @@ async function sendViaResend(params: SendParams): Promise<{ id?: string }> {
   return { id: body.id };
 }
 
-export async function sendPasswordResetEmail(email: string, token: string): Promise<void> {
-  const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/uk/auth/reset-password?token=${token}`;
+export async function sendPasswordResetEmail(
+  email: string,
+  token: string,
+  locale?: string,
+): Promise<void> {
+  const resetUrl = localeUrl(`/auth/reset-password?token=${token}`, locale);
   await sendViaResend({
     to: email,
     subject: 'Скидання пароля',
@@ -57,8 +63,12 @@ export async function sendPasswordResetEmail(email: string, token: string): Prom
   });
 }
 
-export async function sendMagicLinkEmail(email: string, token: string): Promise<void> {
-  const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/uk/auth/verify?token=${token}`;
+export async function sendMagicLinkEmail(
+  email: string,
+  token: string,
+  locale?: string,
+): Promise<void> {
+  const verifyUrl = localeUrl(`/auth/verify?token=${token}`, locale);
   await sendViaResend({
     to: email,
     subject: 'Вхід в CRM',
@@ -66,8 +76,13 @@ export async function sendMagicLinkEmail(email: string, token: string): Promise<
   });
 }
 
-export async function sendInviteEmail(email: string, inviteToken: string, tenantName: string): Promise<void> {
-  const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/uk/invites/${inviteToken}`;
+export async function sendInviteEmail(
+  email: string,
+  inviteToken: string,
+  tenantName: string,
+  locale?: string,
+): Promise<void> {
+  const inviteUrl = localeUrl(`/invites/${inviteToken}`, locale);
   await sendViaResend({
     to: email,
     subject: `Запрошення в ${tenantName}`,

@@ -4,12 +4,16 @@
 
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { Card, CardContent, Button, Input, Label } from '@/components/ui';
 import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
+import Link from 'next/link';
+import { useState } from 'react';
+
+import { Card, CardContent, Button, Input, Label } from '@/components/ui';
+import { useLocale, useLocalePath } from '@/lib/use-locale-path';
 
 export default function ForgotPasswordPage() {
+  const locale = useLocale();
+  const lp = useLocalePath();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -24,7 +28,7 @@ export default function ForgotPasswordPage() {
       const res = await fetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, locale }),
       });
 
       const data = await res.json();
@@ -58,7 +62,7 @@ export default function ForgotPasswordPage() {
             <p className="text-sm text-foreground-muted mb-6">
               Якщо листа немає, перевірте папку "Спам"
             </p>
-            <Link href="/auth/login">
+            <Link href={lp('/auth/login')}>
               <Button variant="outline" className="w-full">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Повернутися до входу
@@ -83,9 +87,7 @@ export default function ForgotPasswordPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="p-3 rounded-lg bg-danger/10 text-danger text-sm">
-                {error}
-              </div>
+              <div className="p-3 rounded-lg bg-danger/10 text-danger text-sm">{error}</div>
             )}
 
             <div className="space-y-2">
@@ -110,7 +112,10 @@ export default function ForgotPasswordPage() {
           </form>
 
           <div className="mt-6 text-center">
-            <Link href="/auth/login" className="text-sm text-foreground-muted hover:text-foreground">
+            <Link
+              href={lp('/auth/login')}
+              className="text-sm text-foreground-muted hover:text-foreground"
+            >
               <ArrowLeft className="h-4 w-4 inline mr-1" />
               Повернутися до входу
             </Link>

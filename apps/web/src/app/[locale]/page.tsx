@@ -24,13 +24,23 @@ const segments = [
 
 function Icon({ d }: { d: string }) {
   return (
-    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      className="h-5 w-5"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d={d} />
     </svg>
   );
 }
 
-export default function HomePage() {
+export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
   return (
     <main className="min-h-screen bg-white text-[#111214] antialiased">
       <style>{`
@@ -49,7 +59,11 @@ export default function HomePage() {
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-[#E5E7EB] bg-white/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-          <Link href="/uk" className="flex items-center gap-2" aria-label="CRM-Next — на головну">
+          <Link
+            href={`/${locale}`}
+            className="flex items-center gap-2"
+            aria-label="CRM-Next — на головну"
+          >
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#111214]">
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="#FFC700" aria-hidden="true">
                 <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
@@ -58,20 +72,36 @@ export default function HomePage() {
             <span className="text-base font-bold tracking-tight">CRM-Next</span>
           </Link>
 
-          <nav className="hidden items-center gap-6 text-sm font-medium text-[#4B5563] md:flex" aria-label="Розділи">
-            <Link className="transition-colors hover:text-[#111214]" href="#mozlyvosti">Можливості</Link>
-            <Link className="transition-colors hover:text-[#111214]" href="#kanaly">Канали</Link>
-            <Link className="transition-colors hover:text-[#111214]" href="#avtomatyzatsiya">Автоматизація</Link>
-            <Link className="transition-colors hover:text-[#111214]" href="#analityka">Аналітика</Link>
-            <Link className="transition-colors hover:text-[#111214]" href="#faq">FAQ</Link>
+          <nav
+            className="hidden items-center gap-6 text-sm font-medium text-[#4B5563] md:flex"
+            aria-label="Розділи"
+          >
+            <Link className="transition-colors hover:text-[#111214]" href="#mozlyvosti">
+              Можливості
+            </Link>
+            <Link className="transition-colors hover:text-[#111214]" href="#kanaly">
+              Канали
+            </Link>
+            <Link className="transition-colors hover:text-[#111214]" href="#avtomatyzatsiya">
+              Автоматизація
+            </Link>
+            <Link className="transition-colors hover:text-[#111214]" href="#analityka">
+              Аналітика
+            </Link>
+            <Link className="transition-colors hover:text-[#111214]" href="#faq">
+              FAQ
+            </Link>
           </nav>
 
           <div className="hidden items-center gap-3 md:flex">
-            <Link href="/uk/auth/login" className="text-sm font-semibold text-[#111214] underline-offset-4 hover:underline">
+            <Link
+              href={`/${locale}/auth/login`}
+              className="text-sm font-semibold text-[#111214] underline-offset-4 hover:underline"
+            >
               Увійти
             </Link>
             <Link
-              href="/uk/auth/register"
+              href={`/${locale}/auth/register`}
               className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[#FFC700] px-5 text-sm font-bold text-[#111214] shadow-[0_10px_24px_-12px_rgba(0,0,0,0.45)] transition-colors hover:bg-[#EAB308]"
             >
               Спробувати безкоштовно
@@ -89,10 +119,14 @@ export default function HomePage() {
                 ['#avtomatyzatsiya', 'Автоматизація'],
                 ['#analityka', 'Аналітика'],
                 ['#faq', 'FAQ'],
-                ['/uk/auth/login', 'Увійти'],
-                ['/uk/auth/register', 'Спробувати безкоштовно'],
+                [`/${locale}/auth/login`, 'Увійти'],
+                [`/${locale}/auth/register`, 'Спробувати безкоштовно'],
               ].map(([href, label]) => (
-                <Link key={href + label} href={href} className="block rounded-lg px-3 py-2.5 text-sm font-medium text-[#111214] hover:bg-[#F5F6F7]">
+                <Link
+                  key={href + label}
+                  href={href}
+                  className="block rounded-lg px-3 py-2.5 text-sm font-medium text-[#111214] hover:bg-[#F5F6F7]"
+                >
                   {label}
                 </Link>
               ))}
@@ -109,14 +143,17 @@ export default function HomePage() {
               <Icon d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
             </span>
             <div>
-              <h2 className="text-lg font-bold tracking-tight">AI Co-Pilot замість ручного пошуку</h2>
+              <h2 className="text-lg font-bold tracking-tight">
+                AI Co-Pilot замість ручного пошуку
+              </h2>
               <p className="mt-1 max-w-[68ch] text-sm leading-6 text-[#4B5563]">
-                Запитайте про угоду, клієнта або наступну дію — CRM-Next підкаже рішення на основі ваших даних.
+                Запитайте про угоду, клієнта або наступну дію — CRM-Next підкаже рішення на основі
+                ваших даних.
               </p>
             </div>
           </div>
           <Link
-            href="/uk/auth/register"
+            href={`/${locale}/auth/register`}
             className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg bg-[#111214] px-5 text-sm font-bold text-white transition-colors hover:bg-black"
           >
             Дивитися демо
@@ -132,17 +169,18 @@ export default function HomePage() {
               CRM-система для всієї команди
             </h1>
             <p className="mt-5 max-w-[62ch] text-base leading-7 text-[#4B5563] sm:text-lg sm:leading-8">
-              База клієнтів, воронка продажу, автоматизація, завдання й аналітика — в одному вікні. Інтерфейс українською.
+              База клієнтів, воронка продажу, автоматизація, завдання й аналітика — в одному вікні.
+              Інтерфейс українською.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                href="/uk/auth/register"
+                href={`/${locale}/auth/register`}
                 className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#FFC700] px-7 text-sm font-bold text-[#111214] shadow-[0_18px_36px_-18px_rgba(0,0,0,0.5)] transition-colors hover:bg-[#EAB308]"
               >
                 Спробувати безкоштовно
               </Link>
               <Link
-                href="/uk/auth/login"
+                href={`/${locale}/auth/login`}
                 className="inline-flex min-h-12 items-center justify-center rounded-xl border border-[#111214] bg-white px-7 text-sm font-bold text-[#111214] transition-colors hover:bg-[#F5F6F7]"
               >
                 Хочу демо
@@ -156,7 +194,9 @@ export default function HomePage() {
           <div className="landing-rise rounded-2xl border border-[#E5E7EB] bg-white p-5 shadow-[0_28px_56px_-28px_rgba(0,0,0,0.35)] sm:p-6">
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm font-bold">Воронка продажу</p>
-              <p className="rounded-full bg-[#F5F6F7] px-3 py-1 text-xs font-semibold text-[#4B5563]">Сьогодні</p>
+              <p className="rounded-full bg-[#F5F6F7] px-3 py-1 text-xs font-semibold text-[#4B5563]">
+                Сьогодні
+              </p>
             </div>
             <ul className="mt-5 space-y-4">
               {stages.map((stage) => (
@@ -168,7 +208,10 @@ export default function HomePage() {
                     </span>
                   </div>
                   <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-[#F0F1F3]">
-                    <div className={`h-full rounded-full ${stage.bar}`} style={{ width: stage.width }} />
+                    <div
+                      className={`h-full rounded-full ${stage.bar}`}
+                      style={{ width: stage.width }}
+                    />
                   </div>
                 </li>
               ))}
@@ -196,7 +239,11 @@ export default function HomePage() {
                 ['#avtomatyzatsiya', 'Автоматизація'],
                 ['#analityka', 'Аналітика і доступ'],
               ].map(([href, label]) => (
-                <Link key={href} href={href} className="block rounded-lg px-3 py-2.5 hover:bg-[#F5F6F7]">
+                <Link
+                  key={href}
+                  href={href}
+                  className="block rounded-lg px-3 py-2.5 hover:bg-[#F5F6F7]"
+                >
                   {label}
                 </Link>
               ))}
@@ -205,12 +252,19 @@ export default function HomePage() {
 
           <div className="space-y-12">
             <div id="baza">
-              <h3 className="text-xl font-bold tracking-tight">База клієнтів і воронка без втрат</h3>
+              <h3 className="text-xl font-bold tracking-tight">
+                База клієнтів і воронка без втрат
+              </h3>
               <p className="mt-3 max-w-[68ch] text-sm leading-7 text-[#4B5563] sm:text-base">
-                Кожен контакт має картку з історією, завданнями й документами. Угоди рухаються етапами, прострочене підсвічується.
+                Кожен контакт має картку з історією, завданнями й документами. Угоди рухаються
+                етапами, прострочене підсвічується.
               </p>
               <ul className="mt-5 divide-y divide-[#E5E7EB] rounded-2xl border border-[#E5E7EB]">
-                {['Імпорт бази та дедублікація контактів', 'Картка клієнта: комунікація, файли, завдання', 'Канбан воронки з drag-and-drop'].map((item) => (
+                {[
+                  'Імпорт бази та дедублікація контактів',
+                  'Картка клієнта: комунікація, файли, завдання',
+                  'Канбан воронки з drag-and-drop',
+                ].map((item) => (
                   <li key={item} className="flex items-start gap-3 px-4 py-3.5 text-sm font-medium">
                     <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#FFC700] text-[#111214]">
                       <Icon d="M5 12l5 5 9-11" />
@@ -242,8 +296,12 @@ export default function HomePage() {
                 Правила самі розподіляють лідів, створюють завдання й рухають угоди.
               </p>
               <div className="mt-5 rounded-2xl bg-[#111214] p-5 text-sm leading-7 text-white">
-                <p className="font-mono text-[13px] text-[#FFC700]">Якщо угода 3 дні без активності</p>
-                <p className="mt-2 font-mono text-[13px] text-white/90">→ створити завдання менеджеру</p>
+                <p className="font-mono text-[13px] text-[#FFC700]">
+                  Якщо угода 3 дні без активності
+                </p>
+                <p className="mt-2 font-mono text-[13px] text-white/90">
+                  → створити завдання менеджеру
+                </p>
                 <p className="font-mono text-[13px] text-white/90">→ нагадати керівнику</p>
                 <p className="font-mono text-[13px] text-white/90">→ підсвітити угоду у воронці</p>
               </div>
@@ -252,7 +310,8 @@ export default function HomePage() {
             <div id="analityka">
               <h3 className="text-xl font-bold tracking-tight">Аналітика й контроль доступу</h3>
               <p className="mt-3 max-w-[68ch] text-sm leading-7 text-[#4B5563] sm:text-base">
-                Видно джерела лідів, завантаженість команди й вузькі місця воронки. Доступ — за ролями.
+                Видно джерела лідів, завантаженість команди й вузькі місця воронки. Доступ — за
+                ролями.
               </p>
               <div className="mt-5 grid gap-4 sm:grid-cols-3">
                 {[
@@ -274,12 +333,19 @@ export default function HomePage() {
       {/* Segments */}
       <section id="dlya-kogo" className="border-b border-[#E5E7EB] bg-[#F5F6F7]">
         <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:py-20">
-          <h2 className="max-w-[22ch] text-2xl font-bold tracking-tight sm:text-3xl">Для яких команд підходить CRM-Next</h2>
+          <h2 className="max-w-[22ch] text-2xl font-bold tracking-tight sm:text-3xl">
+            Для яких команд підходить CRM-Next
+          </h2>
           <div className="mt-8 divide-y divide-[#E5E7EB] rounded-2xl border border-[#E5E7EB] bg-white">
             {segments.map((segment) => (
-              <div key={segment.name} className="grid gap-1 px-5 py-5 sm:grid-cols-[240px_1fr] sm:items-baseline sm:gap-6">
+              <div
+                key={segment.name}
+                className="grid gap-1 px-5 py-5 sm:grid-cols-[240px_1fr] sm:items-baseline sm:gap-6"
+              >
                 <p className="text-base font-bold">{segment.name}</p>
-                <p className="text-sm leading-6 text-[#4B5563] sm:text-base sm:leading-7">{segment.text}</p>
+                <p className="text-sm leading-6 text-[#4B5563] sm:text-base sm:leading-7">
+                  {segment.text}
+                </p>
               </div>
             ))}
           </div>
@@ -290,12 +356,15 @@ export default function HomePage() {
       <section id="bezpeka" className="border-b border-[#E5E7EB]">
         <div className="mx-auto grid max-w-6xl gap-8 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:py-20">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Безпека і порядок у даних</h2>
+            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+              Безпека і порядок у даних
+            </h2>
             <p className="mt-4 max-w-[64ch] text-sm leading-7 text-[#4B5563] sm:text-base">
-              Ролі owner, admin, member і viewer розділяють доступ. Чутливі поля шифруються, дії користувачів фіксуються в аудиті.
+              Ролі owner, admin, member і viewer розділяють доступ. Чутливі поля шифруються, дії
+              користувачів фіксуються в аудиті.
             </p>
             <Link
-              href="/uk/auth/register"
+              href={`/${locale}/auth/register`}
               className="mt-7 inline-flex min-h-12 items-center justify-center rounded-xl bg-[#111214] px-7 text-sm font-bold text-white transition-colors hover:bg-black"
             >
               Спробувати безкоштовно
@@ -308,7 +377,10 @@ export default function HomePage() {
               'API-ключі зберігаються у зашифрованому вигляді',
               'Зміни й входи видно в журналі аудиту',
             ].map((item) => (
-              <li key={item} className="flex items-start gap-3 rounded-xl border border-[#E5E7EB] bg-white px-4 py-3.5">
+              <li
+                key={item}
+                className="flex items-start gap-3 rounded-xl border border-[#E5E7EB] bg-white px-4 py-3.5"
+              >
                 <span className="mt-0.5 text-[#111214]">
                   <Icon d="M12 3l7 3v5c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6l7-3z" />
                 </span>
@@ -342,11 +414,19 @@ export default function HomePage() {
                 a: 'Доступ за ролями, шифрування чутливих полів і журнал аудиту для важливих дій.',
               },
             ].map((item) => (
-              <details key={item.q} className="group rounded-2xl border border-[#E5E7EB] bg-white px-5 py-4">
+              <details
+                key={item.q}
+                className="group rounded-2xl border border-[#E5E7EB] bg-white px-5 py-4"
+              >
                 <summary className="cursor-pointer list-none text-base font-bold [&::-webkit-details-marker]:hidden">
                   <span className="flex items-center justify-between gap-4">
                     {item.q}
-                    <span className="text-xl leading-none transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+                    <span
+                      className="text-xl leading-none transition-transform group-open:rotate-45"
+                      aria-hidden="true"
+                    >
+                      +
+                    </span>
                   </span>
                 </summary>
                 <p className="mt-3 max-w-[68ch] text-sm leading-7 text-[#4B5563]">{item.a}</p>
@@ -368,13 +448,13 @@ export default function HomePage() {
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <Link
-                href="/uk/auth/register"
+                href={`/${locale}/auth/register`}
                 className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#FFC700] px-7 text-sm font-bold text-[#111214] transition-colors hover:bg-[#EAB308]"
               >
                 Спробувати безкоштовно
               </Link>
               <Link
-                href="/uk/auth/login"
+                href={`/${locale}/auth/login`}
                 className="inline-flex min-h-12 items-center justify-center rounded-xl border border-white/30 px-7 text-sm font-bold text-white transition-colors hover:bg-white/10"
               >
                 Увійти

@@ -3,11 +3,12 @@ import { hash } from 'bcryptjs';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 
 import { csrfProtection } from '@/lib/csrf';
 import { checkRateLimit, getRateLimitHeaders, RATE_LIMITS } from '@/lib/rate-limit';
 import { sanitizeName, sanitizeEmail } from '@/lib/sanitize';
+import { passwordSchema } from '@/lib/validation/password';
 
 export async function POST(request: NextRequest) {
   // CSRF protection
@@ -15,12 +16,13 @@ export async function POST(request: NextRequest) {
   if (csrfError) return csrfError;
 
   // Rate limiting (per IP)
-  const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+  const ip =
+    request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
   const rateLimitResult = checkRateLimit(`register:${ip}`, RATE_LIMITS.register);
   if (!rateLimitResult.allowed) {
     return NextResponse.json(
       { error: 'Забагато запитів. Спробуйте пізніше.' },
-      { status: 429, headers: getRateLimitHeaders(rateLimitResult) }
+      { status: 429, headers: getRateLimitHeaders(rateLimitResult) },
     );
   }
 
@@ -31,15 +33,12 @@ export async function POST(request: NextRequest) {
       .object({
         name: z.string().min(1).max(100).optional(),
         email: z.string().email(),
-        password: z.string().min(6),
+        password: passwordSchema,
       })
       .safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Неверные данные' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Невірні дані' }, { status: 400 });
     }
 
     const { name, email, password } = parsed.data;
@@ -51,17 +50,17 @@ export async function POST(request: NextRequest) {
     // Проверяем, существует ли пользователь
     const existing = await prisma.user.findUnique({ where: { email: sanitizedEmail } });
     if (existing) {
-      return NextResponse.json(
-        { error: 'Цей email вже зареєстрований' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Цей email вже зареєстрований' }, { status: 400 });
     }
 
     // Хэшируем пароль
     const passwordHash = await hash(password, 12);
 
     // Создаем пользователя + тенант автоматически
-    const slug = sanitizedEmail.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+    const slug = sanitizedEmail
+      .split('@')[0]
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '');
     const user = await prisma.user.create({
       data: {
         name: sanitizedName,
@@ -93,13 +92,10 @@ export async function POST(request: NextRequest) {
         success: true,
         user: { id: user.id, email: user.email, name: user.name },
       },
-      { headers: getRateLimitHeaders(rateLimitResult) }
+      { headers: getRateLimitHeaders(rateLimitResult) },
     );
   } catch (error) {
     console.error('Register error:', error);
-    return NextResponse.json(
-      { error: 'Помилка реєстрації' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Помилка реєстрації' }, { status: 500 });
   }
 }

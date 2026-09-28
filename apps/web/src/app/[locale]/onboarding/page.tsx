@@ -1,19 +1,25 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { Button, Card, CardContent } from '@/components/ui';
+import { currentLocaleFromPath } from '@/lib/use-locale-path';
 
 const INDUSTRIES = [
-  'IT та технології', 'Маркетинг', 'Консалтинг', 'Нерухомість',
-  'Фінанси', 'Охорона здоров\'я', 'Освіта', 'Виробництво',
-  'Роздрібна торгівля', 'Транспорт', 'Інше',
+  'IT та технології',
+  'Маркетинг',
+  'Консалтинг',
+  'Нерухомість',
+  'Фінанси',
+  "Охорона здоров'я",
+  'Освіта',
+  'Виробництво',
+  'Роздрібна торгівля',
+  'Транспорт',
+  'Інше',
 ];
 
-const DEFAULT_STAGES = [
-  'Лід', 'Кваліфікація', 'Пропозиція', 'Переговори', 'Завершено',
-];
+const DEFAULT_STAGES = ['Лід', 'Кваліфікація', 'Пропозиція', 'Переговори', 'Завершено'];
 
 const BENEFITS = [
   'Автоматичне розподілення задач по етапах воронки',
@@ -23,7 +29,6 @@ const BENEFITS = [
 ];
 
 export default function OnboardingPage() {
-  const router = useRouter();
   const [step, setStep] = useState(0);
   const [companyName, setCompanyName] = useState('');
   const [industry, setIndustry] = useState('');
@@ -42,14 +47,14 @@ export default function OnboardingPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        window.location.href = '/dashboard';
+        window.location.href = `/${currentLocaleFromPath()}/dashboard`;
       } else {
         console.error('Onboarding error:', data);
         alert(data.error || 'Помилка збереження. Спробуйте ще раз.');
       }
     } catch (err) {
       console.error('Network error:', err);
-      alert('Помилка з\'єднання. Перевірте чи ви увійшли в систему.');
+      alert("Помилка з'єднання. Перевірте чи ви увійшли в систему.");
     } finally {
       setLoading(false);
     }
@@ -71,7 +76,9 @@ export default function OnboardingPage() {
           <div className="flex items-center gap-2 mb-8">
             {[0, 1, 2].map((i) => (
               <div key={i} className="flex-1 h-1.5 rounded-full bg-secondary transition-colors">
-                <div className={`h-full rounded-full transition-all ${i <= step ? 'bg-primary w-full' : 'w-0'}`} />
+                <div
+                  className={`h-full rounded-full transition-all ${i <= step ? 'bg-primary w-full' : 'w-0'}`}
+                />
               </div>
             ))}
           </div>
@@ -117,7 +124,11 @@ export default function OnboardingPage() {
                         Ви зможете налаштувати це пізніше в Налаштуваннях
                       </p>
                       <div className="flex gap-3">
-                        <Button onClick={() => setShowSkipConfirm(false)} variant="outline" className="flex-1">
+                        <Button
+                          onClick={() => setShowSkipConfirm(false)}
+                          variant="outline"
+                          className="flex-1"
+                        >
                           Все ж таки налаштувати
                         </Button>
                         <Button onClick={handleSubmit} variant="ghost" className="flex-1">
@@ -164,8 +175,12 @@ export default function OnboardingPage() {
                 </div>
               </div>
               <div className="flex gap-3 pt-4">
-                <Button onClick={() => setStep(0)} variant="outline" className="flex-1">Назад</Button>
-                <Button onClick={() => setStep(2)} className="flex-1">Далі</Button>
+                <Button onClick={() => setStep(0)} variant="outline" className="flex-1">
+                  Назад
+                </Button>
+                <Button onClick={() => setStep(2)} className="flex-1">
+                  Далі
+                </Button>
               </div>
             </div>
           )}
@@ -174,7 +189,9 @@ export default function OnboardingPage() {
           {step === 2 && (
             <div className="space-y-4">
               <h2 className="text-xl font-bold">Воронка продажів</h2>
-              <p className="text-foreground-muted text-sm">Налаштуйте етапи вашої воронки. Пізніше зможете змінити.</p>
+              <p className="text-foreground-muted text-sm">
+                Налаштуйте етапи вашої воронки. Пізніше зможете змінити.
+              </p>
               <div className="space-y-2">
                 {stages.map((stage, i) => (
                   <div key={i} className="flex gap-2 items-center">
@@ -188,16 +205,26 @@ export default function OnboardingPage() {
                       className="flex-1 h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                     />
                     {stages.length > 2 && (
-                      <button onClick={() => removeStage(i)} className="text-foreground-muted hover:text-danger transition-colors">✕</button>
+                      <button
+                        onClick={() => removeStage(i)}
+                        className="text-foreground-muted hover:text-danger transition-colors"
+                      >
+                        ✕
+                      </button>
                     )}
                   </div>
                 ))}
               </div>
-              <button onClick={addStage} className="text-sm text-primary hover:text-primary-hover transition-colors">
+              <button
+                onClick={addStage}
+                className="text-sm text-primary hover:text-primary-hover transition-colors"
+              >
                 + Додати етап
               </button>
               <div className="flex gap-3 pt-4">
-                <Button onClick={() => setStep(1)} variant="outline" className="flex-1">Назад</Button>
+                <Button onClick={() => setStep(1)} variant="outline" className="flex-1">
+                  Назад
+                </Button>
                 <Button onClick={handleSubmit} className="flex-1" disabled={loading}>
                   {loading ? 'Збереження...' : 'Завершити'}
                 </Button>

@@ -4,14 +4,18 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Lock, ArrowLeft, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+
 import { Card, CardContent, Button, Input, Label } from '@/components/ui';
-import { Lock, ArrowLeft, CheckCircle, Eye, EyeOff } from 'lucide-react';
+import { useLocalePath } from '@/lib/use-locale-path';
+import { MIN_PASSWORD_LENGTH, PASSWORD_HINT } from '@/lib/validation/password';
 
 export default function ResetPasswordPage() {
   const searchParams = useSearchParams();
+  const lp = useLocalePath();
   const token = searchParams.get('token');
 
   const [password, setPassword] = useState('');
@@ -30,7 +34,7 @@ export default function ResetPasswordPage() {
             <p className="text-foreground-muted mb-6">
               Токен не знайдено. Запросіть нове посилання для скидання пароля.
             </p>
-            <Link href="/auth/forgot-password">
+            <Link href={lp('/auth/forgot-password')}>
               <Button className="w-full">Запросити нове посилання</Button>
             </Link>
           </CardContent>
@@ -50,8 +54,8 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    if (password.length < 8) {
-      setError('Пароль має бути не менше 8 символів');
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      setError(`Пароль має бути не менше ${MIN_PASSWORD_LENGTH} символів`);
       setLoading(false);
       return;
     }
@@ -88,13 +92,9 @@ export default function ResetPasswordPage() {
               </div>
             </div>
             <h1 className="text-2xl font-bold mb-2">Пароль змінено!</h1>
-            <p className="text-foreground-muted mb-6">
-              Тепер увійдіть з новим паролем
-            </p>
-            <Link href="/auth/login">
-              <Button className="w-full">
-                Увійти
-              </Button>
+            <p className="text-foreground-muted mb-6">Тепер увійдіть з новим паролем</p>
+            <Link href={lp('/auth/login')}>
+              <Button className="w-full">Увійти</Button>
             </Link>
           </CardContent>
         </Card>
@@ -108,16 +108,12 @@ export default function ResetPasswordPage() {
         <CardContent className="p-8">
           <div className="text-center mb-6">
             <h1 className="text-2xl font-bold">Новий пароль</h1>
-            <p className="text-foreground-muted mt-2">
-              Введіть новий пароль для вашого акаунту
-            </p>
+            <p className="text-foreground-muted mt-2">Введіть новий пароль для вашого акаунту</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="p-3 rounded-lg bg-danger/10 text-danger text-sm">
-                {error}
-              </div>
+              <div className="p-3 rounded-lg bg-danger/10 text-danger text-sm">{error}</div>
             )}
 
             <div className="space-y-2">
@@ -127,7 +123,7 @@ export default function ResetPasswordPage() {
                 <Input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Мінімум 8 символів"
+                  placeholder={PASSWORD_HINT}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="pl-10 pr-10"
@@ -167,7 +163,10 @@ export default function ResetPasswordPage() {
           </form>
 
           <div className="mt-6 text-center">
-            <Link href="/auth/login" className="text-sm text-foreground-muted hover:text-foreground">
+            <Link
+              href="/auth/login"
+              className="text-sm text-foreground-muted hover:text-foreground"
+            >
               <ArrowLeft className="h-4 w-4 inline mr-1" />
               Повернутися до входу
             </Link>

@@ -34,6 +34,7 @@ import {
 } from '@/components/quick-create';
 import { useTheme } from '@/components/theme-provider';
 import { Avatar } from '@/components/ui';
+import { currentLocaleFromPath } from '@/lib/use-locale-path';
 import { cn } from '@/lib/utils';
 
 interface HeaderProps {
@@ -512,7 +513,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
                     <button
                       onClick={() => {
                         setIsProfileOpen(false);
-                        signOut({ callbackUrl: '/uk/auth/login' });
+                        signOut({ callbackUrl: `/${currentLocaleFromPath()}/auth/login` });
                       }}
                       className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-danger hover:bg-danger-light transition-all duration-150"
                     >

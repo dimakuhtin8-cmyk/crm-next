@@ -1,14 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui';
+import { useLocale } from '@/lib/use-locale-path';
 
 export default function VerifyPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const locale = useLocale();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [error, setError] = useState<string | null>(null);
 
@@ -18,13 +20,13 @@ export default function VerifyPage() {
 
     if (!token || !email) {
       setStatus('error');
-      setError('Неверная ссылка авторизации');
+      setError('Невірне посилання авторизації');
       return;
     }
 
     const verify = async () => {
       try {
-        const res = await fetch(`/${searchParams.get('locale') || 'uk'}/api/auth/verify`, {
+        const res = await fetch(`/${searchParams.get('locale') || locale}/api/auth/verify`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token, email }),
@@ -37,11 +39,11 @@ export default function VerifyPage() {
           setTimeout(() => router.push('/dashboard'), 1500);
         } else {
           setStatus('error');
-          setError(data.error || 'Ошибка авторизации');
+          setError(data.error || 'Помилка авторизації');
         }
       } catch {
         setStatus('error');
-        setError('Ошибка соединения');
+        setError("Помилка з'єднання");
       }
     };
 
@@ -53,10 +55,8 @@ export default function VerifyPage() {
       <div className="flex min-h-screen flex-col items-center justify-center p-4">
         <div className="max-w-md text-center">
           <div className="animate-pulse text-4xl mb-4">✉️</div>
-          <h1 className="text-2xl font-bold">Проверяем ссылку...</h1>
-          <p className="mt-2 text-foreground-secondary">
-            Перенаправляем вас в CRM-Next
-          </p>
+          <h1 className="text-2xl font-bold">Перевіряємо посилання...</h1>
+          <p className="mt-2 text-foreground-secondary">Перенаправляємо вас у CRM-Next</p>
         </div>
       </div>
     );
@@ -67,10 +67,8 @@ export default function VerifyPage() {
       <div className="flex min-h-screen flex-col items-center justify-center p-4">
         <div className="max-w-md text-center">
           <div className="text-4xl mb-4">✅</div>
-          <h1 className="text-2xl font-bold">Вы авторизованы!</h1>
-          <p className="mt-2 text-foreground-secondary">
-            Перенаправление в дашборд...
-          </p>
+          <h1 className="text-2xl font-bold">Ви авторизовані!</h1>
+          <p className="mt-2 text-foreground-secondary">Перенаправлення на дашборд...</p>
         </div>
       </div>
     );
@@ -80,14 +78,14 @@ export default function VerifyPage() {
     <div className="flex min-h-screen flex-col items-center justify-center p-4">
       <div className="max-w-md text-center">
         <div className="text-4xl mb-4">❌</div>
-        <h1 className="text-2xl font-bold">Ошибка авторизации</h1>
+        <h1 className="text-2xl font-bold">Помилка авторизації</h1>
         <p className="mt-2 text-foreground-secondary">{error}</p>
         <div className="mt-6 flex gap-4 justify-center">
           <Button variant="outline" asChild>
-            <Link href="/uk/auth/login">Войти паролем</Link>
+            <Link href={`/${locale}/auth/login`}>Увійти паролем</Link>
           </Button>
           <Button asChild>
-            <Link href="/uk/auth/login">Запросить новую ссылку</Link>
+            <Link href={`/${locale}/auth/login`}>Запросити нове посилання</Link>
           </Button>
         </div>
       </div>
