@@ -4,6 +4,7 @@ import { Check, ArrowRight, Loader2, ExternalLink, Users, Contact, Briefcase } f
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
+import { DataError } from '@/components/data-error';
 import {
   Button,
   Card,
@@ -140,6 +141,22 @@ export default function BillingPage() {
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [period, setPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const [message, setMessage] = useState('');
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const loadSubscription = () => {
+    setLoadError(null);
+    setLoading(true);
+    fetch('/api/billing/subscription', { credentials: 'include' })
+      .then((r) => {
+        if (!r.ok) throw new Error(`Помилка ${r.status}`);
+        return r.json();
+      })
+      .then(setData)
+      .catch((err: unknown) => {
+        setLoadError(err instanceof Error ? err.message : 'Помилка завантаження підписки');
+      })
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => {
     // Check for success/canceled params
@@ -149,12 +166,7 @@ export default function BillingPage() {
     } else if (params.get('canceled') === 'true') {
       setMessage('Оплату скасовано.');
     }
-
-    fetch('/api/billing/subscription', { credentials: 'include' })
-      .then((r) => r.json())
-      .then(setData)
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    loadSubscription();
   }, []);
 
   const handleUpgrade = async (planId: string) => {
@@ -250,6 +262,8 @@ export default function BillingPage() {
         </Link>
         <h1 className="text-2xl font-bold">Підписка та оплата</h1>
       </div>
+
+      {loadError && !data && <DataError message={loadError} onRetry={loadSubscription} />}
 
       {message && (
         <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20 text-sm text-green-700 dark:text-green-300">

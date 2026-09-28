@@ -1,13 +1,22 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Key, Eye, EyeOff, Check, X, Loader2, ExternalLink, Shield, Zap } from 'lucide-react';
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
+
+import { DataError } from '@/components/data-error';
 import {
-  Key, Eye, EyeOff, Check, X, Loader2, ExternalLink,
-  Shield, AlertTriangle, ChevronDown, Zap,
-} from 'lucide-react';
-import { Button, Card, CardContent, CardHeader, CardTitle, CardDescription, Input, Badge } from '@/components/ui';
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  Input,
+  Badge,
+} from '@/components/ui';
 import { AI_PROVIDERS, getProvider } from '@/lib/ai/providers';
+import { ApiError, apiGet } from '@/lib/client-api';
 
 interface TestResult {
   status: 'connected' | 'error' | 'not_configured';
@@ -18,16 +27,7 @@ interface TestResult {
   latencyMs: number;
 }
 
-interface TenantSettings {
-  provider: string;
-  model: string;
-  hasKey: boolean;
-  maskedKey: string;
-  fallbackProvider: string;
-}
-
 export default function AiKeysSettingsPage() {
-  const [settings, setSettings] = useState<TenantSettings | null>(null);
   const [selectedProvider, setSelectedProvider] = useState('gemini');
   const [selectedModel, setSelectedModel] = useState('');
   const [apiKey, setApiKey] = useState('');
@@ -48,32 +48,45 @@ export default function AiKeysSettingsPage() {
     updatedAt: string | null;
   }
   const [savedKeys, setSavedKeys] = useState<SavedKey[]>([]);
+  const [keysError, setKeysError] = useState<string | null>(null);
+  const [keysLoading, setKeysLoading] = useState(true);
 
   const refreshSavedKeys = async () => {
+    setKeysError(null);
     try {
-      const res = await fetch('/api/ai/keys', { credentials: 'include' });
-      const data = await res.json();
+      const data = await apiGet<{ keys?: SavedKey[] }>('/api/ai/keys');
       setSavedKeys(data.keys || []);
-    } catch {}
+    } catch (err) {
+      setSavedKeys([]);
+      setKeysError(err instanceof ApiError ? err.message : 'Помилка завантаження ключів');
+    } finally {
+      setKeysLoading(false);
+    }
   };
 
   const currentProvider = getProvider(selectedProvider);
 
   useEffect(() => {
     fetch('/api/ai', { credentials: 'include' })
-      .then(r => r.json())
-      .then(d => {
+      .then((r) => r.json())
+      .then((d) => {
         if (d.provider) setSelectedProvider(d.provider);
       })
-      .catch(() => {});
+      .catch(() => {
+        // фонове визначення провайдера: мовчазно, дефолт gemini
+        console.warn('[ai-keys] provider detect failed, using default');
+      });
 
     // Load current settings
     fetch('/api/ai/usage', { credentials: 'include' })
-      .then(r => r.json())
-      .then(d => {
+      .then((r) => r.json())
+      .then(() => {
         // Usage endpoint doesn't return settings, but we can infer from AI status
       })
-      .catch(() => {});
+      .catch(() => {
+        // фонова статистика: не блокує сторінку
+        console.warn('[ai-keys] usage stats failed');
+      });
 
     refreshSavedKeys();
   }, []);
@@ -93,7 +106,10 @@ export default function AiKeysSettingsPage() {
           setDynamicModels(d.models);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        // фоновий список моделей: мовчазно, fallback — статичний список
+        console.warn('[ai-keys] dynamic models failed, using static list');
+      });
   }, [selectedProvider]);
 
   const handleTestKey = async (): Promise<TestResult | null> => {
@@ -118,7 +134,7 @@ export default function AiKeysSettingsPage() {
     } catch {
       const fallback: TestResult = {
         status: 'error',
-        message: 'Помилка з\'єднання з сервером',
+        message: "Помилка з'єднання з сервером",
         provider: selectedProvider,
         model: selectedModel || 'unknown',
         lastChecked: new Date(),
@@ -174,7 +190,7 @@ export default function AiKeysSettingsPage() {
         setSaveError(data?.error || `Не вдалося зберегти (статус ${res.status})`);
       }
     } catch {
-      setSaveError('Помилка з\'єднання з сервером');
+      setSaveError("Помилка з'єднання з сервером");
     } finally {
       setSaving(false);
     }
@@ -190,7 +206,10 @@ export default function AiKeysSettingsPage() {
         body: JSON.stringify({ provider }),
       });
       if (res.ok) refreshSavedKeys();
-    } catch {}
+      else setSaveError('Не вдалося видалити ключ');
+    } catch {
+      setSaveError("Помилка з'єднання з сервером");
+    }
   };
 
   const handleActivateKey = async (provider: string) => {
@@ -206,13 +225,12 @@ export default function AiKeysSettingsPage() {
         setSaved(true);
         refreshSavedKeys();
         setTimeout(() => setSaved(false), 3000);
+      } else {
+        setSaveError('Не вдалося активувати ключ');
       }
-    } catch {}
-  };
-
-  const maskKey = (key: string): string => {
-    if (!key || key.length < 8) return '••••••••';
-    return key.slice(0, 4) + '••••••••' + key.slice(-4);
+    } catch {
+      setSaveError("Помилка з'єднання з сервером");
+    }
   };
 
   return (
@@ -234,8 +252,8 @@ export default function AiKeysSettingsPage() {
                 Безпечне зберігання
               </p>
               <p className="text-xs text-green-700 dark:text-green-300 mt-1">
-                API-ключі шифруються AES-256-GCM перед збереженням у базі даних.
-                Ми ніколи не повертаємо розшифрований ключ з сервера.
+                API-ключі шифруються AES-256-GCM перед збереженням у базі даних. Ми ніколи не
+                повертаємо розшифрований ключ з сервера.
               </p>
             </div>
           </div>
@@ -250,7 +268,7 @@ export default function AiKeysSettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-            {AI_PROVIDERS.filter(p => p.id !== 'custom').map((p) => (
+            {AI_PROVIDERS.filter((p) => p.id !== 'custom').map((p) => (
               <button
                 key={p.id}
                 onClick={() => {
@@ -267,7 +285,9 @@ export default function AiKeysSettingsPage() {
               >
                 <div className="flex items-center gap-2.5">
                   <img src={p.logo} alt={p.name} className="h-6 w-6 shrink-0 rounded" />
-                  <span className="text-xs font-semibold leading-tight text-foreground">{p.name}</span>
+                  <span className="text-xs font-semibold leading-tight text-foreground">
+                    {p.name}
+                  </span>
                 </div>
                 {selectedProvider === p.id && (
                   <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary animate-pulse" />
@@ -309,7 +329,9 @@ export default function AiKeysSettingsPage() {
           {/* Model selection (dynamic list when available, static fallback otherwise) */}
           {currentProvider && currentProvider.models.length > 0 && (
             <div>
-              <label className="block text-xs font-medium text-foreground-muted mb-1.5">Модель</label>
+              <label className="block text-xs font-medium text-foreground-muted mb-1.5">
+                Модель
+              </label>
               <select
                 value={selectedModel}
                 onChange={(e) => setSelectedModel(e.target.value)}
@@ -318,8 +340,11 @@ export default function AiKeysSettingsPage() {
                 {(dynamicModels && dynamicModels.length > 0
                   ? dynamicModels.map((m) => ({ id: m.id, name: m.name, description: '' }))
                   : currentProvider.models
-                ).map(m => (
-                  <option key={m.id} value={m.id}>{m.name}{m.description ? ` — ${m.description}` : ''}</option>
+                ).map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                    {m.description ? ` — ${m.description}` : ''}
+                  </option>
                 ))}
               </select>
             </div>
@@ -336,7 +361,10 @@ export default function AiKeysSettingsPage() {
                   type={showKey ? 'text' : 'password'}
                   placeholder={currentProvider?.keyPlaceholder || 'Введіть API-ключ'}
                   value={apiKey}
-                  onChange={(e) => { setApiKey(e.target.value); setTestResult(null); }}
+                  onChange={(e) => {
+                    setApiKey(e.target.value);
+                    setTestResult(null);
+                  }}
                   className="font-mono text-sm pr-10"
                 />
                 <button
@@ -404,11 +432,13 @@ export default function AiKeysSettingsPage() {
 
           {/* Test Result */}
           {testResult && (
-            <div className={`p-3 rounded-xl border ${
-              testResult.status === 'connected'
-                ? 'border-green-500/30 bg-green-500/5'
-                : 'border-red-500/30 bg-red-500/5'
-            }`}>
+            <div
+              className={`p-3 rounded-xl border ${
+                testResult.status === 'connected'
+                  ? 'border-green-500/30 bg-green-500/5'
+                  : 'border-red-500/30 bg-red-500/5'
+              }`}
+            >
               <div className="flex items-start gap-2.5">
                 {testResult.status === 'connected' ? (
                   <Check className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
@@ -416,9 +446,13 @@ export default function AiKeysSettingsPage() {
                   <X className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />
                 )}
                 <div>
-                  <p className={`text-sm font-medium ${
-                    testResult.status === 'connected' ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'
-                  }`}>
+                  <p
+                    className={`text-sm font-medium ${
+                      testResult.status === 'connected'
+                        ? 'text-green-800 dark:text-green-200'
+                        : 'text-red-800 dark:text-red-200'
+                    }`}
+                  >
                     {testResult.status === 'connected' ? 'Підключено' : 'Помилка'}
                   </p>
                   <p className="text-xs text-foreground-muted mt-0.5">{testResult.message}</p>
@@ -438,7 +472,11 @@ export default function AiKeysSettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {savedKeys.length === 0 ? (
+          {keysError ? (
+            <DataError message={keysError} onRetry={refreshSavedKeys} />
+          ) : keysLoading ? (
+            <p className="text-sm text-foreground-muted animate-pulse">Завантаження...</p>
+          ) : savedKeys.length === 0 ? (
             <p className="text-sm text-foreground-muted">Поки що немає збережених ключів.</p>
           ) : (
             <div className="space-y-2">
@@ -454,7 +492,11 @@ export default function AiKeysSettingsPage() {
                   {selectedProvider === k.provider ? (
                     <Badge>Активний</Badge>
                   ) : (
-                    <Button variant="outline" size="sm" onClick={() => handleActivateKey(k.provider)}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleActivateKey(k.provider)}
+                    >
                       Активувати
                     </Button>
                   )}
@@ -488,8 +530,10 @@ export default function AiKeysSettingsPage() {
             className="w-full p-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
           >
             <option value="">Не налаштовано</option>
-            {AI_PROVIDERS.filter(p => p.id !== selectedProvider && p.id !== 'custom').map(p => (
-              <option key={p.id} value={p.id}>{p.name}</option>
+            {AI_PROVIDERS.filter((p) => p.id !== selectedProvider && p.id !== 'custom').map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
             ))}
           </select>
         </CardContent>

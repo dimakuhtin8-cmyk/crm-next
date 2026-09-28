@@ -1,13 +1,14 @@
 /**
  * InlineEdit — компонент для редактирования данных прямо на странице
- * 
+ *
  * Клик по полю → input → Enter/Blur → сохранение
  */
 
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
 import { Pencil, Check, X, Loader2 } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+
 import { cn } from '@/lib/utils';
 
 interface InlineEditProps {
@@ -45,16 +46,22 @@ export function InlineEdit({
     }
   }, [isEditing]);
 
+  const [saveError, setSaveError] = useState(false);
+
   const handleSave = async () => {
     if (editValue === String(value || '')) {
       setIsEditing(false);
       return;
     }
     setSaving(true);
+    setSaveError(false);
     try {
       await onSave(editValue);
       setIsEditing(false);
-    } catch {} finally {
+    } catch {
+      // inline-редагування: лишаємось в режимі правок + червона підказка
+      setSaveError(true);
+    } finally {
       setSaving(false);
     }
   };
@@ -115,6 +122,9 @@ export function InlineEdit({
             <X className="h-4 w-4" />
           </button>
         </div>
+        {saveError && (
+          <p className="mt-1 text-xs text-destructive">Не вдалося зберегти. Спробуйте ще раз.</p>
+        )}
       </div>
     );
   }

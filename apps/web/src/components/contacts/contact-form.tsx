@@ -47,6 +47,7 @@ export function ContactForm({ contactId, initialData }: ContactFormProps) {
     },
   );
   const [tags, setTags] = useState<Tag[]>([]);
+  const [tagsError, setTagsError] = useState(false);
   const [newTagName, setNewTagName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,9 +59,13 @@ export function ContactForm({ contactId, initialData }: ContactFormProps) {
   const fetchTags = async () => {
     try {
       const res = await fetch('/api/tags');
+      if (!res.ok) throw new Error(`Помилка ${res.status}`);
       const data = await res.json();
       setTags(data.tags || []);
-    } catch {}
+    } catch {
+      // теги — необов'язкове доповнення форми, працює і без них
+      setTagsError(true);
+    }
   };
 
   const handleCreateTag = async () => {
@@ -71,13 +76,16 @@ export function ContactForm({ contactId, initialData }: ContactFormProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newTagName.trim() }),
       });
+      if (!res.ok) throw new Error(`Помилка ${res.status}`);
       const data = await res.json();
-      if (res.ok && data.tag) {
+      if (data.tag) {
         setTags([...tags, data.tag]);
         setForm({ ...form, tagIds: [...form.tagIds, data.tag.id] });
         setNewTagName('');
       }
-    } catch {}
+    } catch {
+      setTagsError(true);
+    }
   };
 
   const toggleTag = (tagId: string) => {
@@ -124,7 +132,9 @@ export function ContactForm({ contactId, initialData }: ContactFormProps) {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="p-3 bg-destructive/10 text-destructive rounded-lg text-sm">{error}</div>
+              <div className="p-3 bg-destructive/10 text-destructive rounded-lg text-sm">
+                {error}
+              </div>
             )}
 
             <div className="grid grid-cols-2 gap-4">
@@ -214,6 +224,11 @@ export function ContactForm({ contactId, initialData }: ContactFormProps) {
             {/* Tags */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Теги</label>
+              {tagsError && (
+                <p className="text-xs text-destructive">
+                  Не вдалося завантажити теги — контакт можна зберегти без них
+                </p>
+              )}
               <div className="flex gap-2 flex-wrap">
                 {tags.map((tag) => (
                   <button

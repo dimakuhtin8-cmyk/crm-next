@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
-import { Button, Input, Badge, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
+import { DataError } from '@/components/data-error';
 import { InlineEdit } from '@/components/inline-edit';
 import { OwnerPicker, useTeam } from '@/components/owner-picker';
-import { cn } from '@/lib/utils';
+import { Button, Input, Badge, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 
 interface Owner {
   id: string;
@@ -43,13 +43,6 @@ interface Activity {
   createdAt: string;
 }
 
-const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'success' }> = {
-  active: { label: 'Активний', variant: 'success' },
-  inactive: { label: 'Неактивний', variant: 'secondary' },
-  lead: { label: 'Лід', variant: 'default' },
-  client: { label: 'Клієнт', variant: 'outline' },
-};
-
 const activityIcons: Record<string, string> = {
   call: '📞',
   email: '✉️',
@@ -67,6 +60,8 @@ export default function ContactDetailPage() {
   const [contact, setContact] = useState<Contact | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [showActivityForm, setShowActivityForm] = useState(false);
   const [activityForm, setActivityForm] = useState({ type: 'note', title: '', body: '' });
   const [activityLoading, setActivityLoading] = useState(false);
@@ -80,18 +75,24 @@ export default function ContactDetailPage() {
   }, [contactId]);
 
   const fetchData = async () => {
+    setLoadError(null);
+    setLoading(true);
     try {
       const [contactRes, activitiesRes] = await Promise.all([
         fetch(`/api/contacts/${contactId}`),
         fetch(`/api/contacts/${contactId}/activities`),
       ]);
+      if (!contactRes.ok) throw new Error(`Контакт: помилка ${contactRes.status}`);
+      if (!activitiesRes.ok) throw new Error(`Активності: помилка ${activitiesRes.status}`);
 
       const contactData = await contactRes.json();
       const activitiesData = await activitiesRes.json();
 
       setContact(contactData.contact);
       setActivities(activitiesData.activities || []);
-    } catch {
+    } catch (err) {
+      setContact(null);
+      setLoadError(err instanceof Error ? err.message : 'Помилка завантаження');
     } finally {
       setLoading(false);
     }
@@ -100,18 +101,21 @@ export default function ContactDetailPage() {
   const handleAddActivity = async (e: React.FormEvent) => {
     e.preventDefault();
     setActivityLoading(true);
+    setFormError(null);
 
     try {
-      await fetch(`/api/contacts/${contactId}/activities`, {
+      const res = await fetch(`/api/contacts/${contactId}/activities`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(activityForm),
       });
+      if (!res.ok) throw new Error(`Помилка ${res.status}`);
 
       setActivityForm({ type: 'note', title: '', body: '' });
       setShowActivityForm(false);
       fetchData();
     } catch {
+      setFormError('Не вдалося додати активність. Спробуйте ще раз.');
     } finally {
       setActivityLoading(false);
     }
@@ -120,9 +124,12 @@ export default function ContactDetailPage() {
   const handleDelete = async () => {
     if (!confirm('Видалити цей контакт?')) return;
     try {
-      await fetch(`/api/contacts/${contactId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/contacts/${contactId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(`Помилка ${res.status}`);
       router.push('/dashboard/contacts');
-    } catch {}
+    } catch {
+      setFormError('Не вдалося видалити контакт. Спробуйте ще раз.');
+    }
   };
 
   const handleInlineSave = async (field: string, value: string) => {
@@ -132,7 +139,7 @@ export default function ContactDetailPage() {
       body: JSON.stringify({ [field]: value || null }),
     });
     if (res.ok) {
-      setContact(prev => prev ? { ...prev, [field]: value || null } : prev);
+      setContact((prev) => (prev ? { ...prev, [field]: value || null } : prev));
     }
   };
 
@@ -156,7 +163,10 @@ export default function ContactDetailPage() {
       });
       const json = await res.json();
       if (res.ok) setAiAnalysis(json.result);
-    } catch {} finally {
+      else setFormError(json.error || 'AI-аналіз не вдався');
+    } catch {
+      setFormError('AI-аналіз не вдався. Спробуйте ще раз.');
+    } finally {
       setAiLoading(false);
     }
   };
@@ -175,10 +185,16 @@ export default function ContactDetailPage() {
   if (!contact) {
     return (
       <div className="max-w-4xl mx-auto text-center py-12">
-        <h2 className="text-xl font-bold mb-2">Контакт не знайдено</h2>
-        <Link href="/dashboard/contacts">
-          <Button>Повернутися до списку</Button>
-        </Link>
+        {loadError ? (
+          <DataError message={loadError} onRetry={fetchData} />
+        ) : (
+          <>
+            <h2 className="text-xl font-bold mb-2">Контакт не знайдено</h2>
+            <Link href="/dashboard/contacts">
+              <Button>Повернутися до списку</Button>
+            </Link>
+          </>
+        )}
       </div>
     );
   }
@@ -196,7 +212,9 @@ export default function ContactDetailPage() {
           <div>
             <h1 className="text-2xl font-bold">{fullName}</h1>
             {contact.position && contact.company && (
-              <p className="text-foreground-muted">{contact.position} · {contact.company}</p>
+              <p className="text-foreground-muted">
+                {contact.position} · {contact.company}
+              </p>
             )}
           </div>
         </div>
@@ -207,7 +225,9 @@ export default function ContactDetailPage() {
           <Link href={`/dashboard/contacts/${contactId}/edit`}>
             <Button variant="outline">Редагувати</Button>
           </Link>
-          <Button variant="outline" onClick={() => router.back()}>Назад</Button>
+          <Button variant="outline" onClick={() => router.back()}>
+            Назад
+          </Button>
         </div>
       </div>
 
@@ -313,7 +333,11 @@ export default function ContactDetailPage() {
                     <Badge
                       key={ct.tag.id}
                       variant="outline"
-                      style={ct.tag.color ? { borderColor: ct.tag.color, color: ct.tag.color } : undefined}
+                      style={
+                        ct.tag.color
+                          ? { borderColor: ct.tag.color, color: ct.tag.color }
+                          : undefined
+                      }
                     >
                       {ct.tag.name}
                     </Badge>
@@ -355,8 +379,16 @@ export default function ContactDetailPage() {
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
+              {formError && (
+                <div className="p-2.5 bg-destructive/10 text-destructive rounded-lg text-sm">
+                  {formError}
+                </div>
+              )}
               {showActivityForm && (
-                <form onSubmit={handleAddActivity} className="space-y-3 p-3 bg-secondary/50 rounded-lg">
+                <form
+                  onSubmit={handleAddActivity}
+                  className="space-y-3 p-3 bg-secondary/50 rounded-lg"
+                >
                   <select
                     value={activityForm.type}
                     onChange={(e) => setActivityForm({ ...activityForm, type: e.target.value })}
@@ -393,11 +425,15 @@ export default function ContactDetailPage() {
                 <div className="space-y-3">
                   {activities.map((activity) => (
                     <div key={activity.id} className="flex gap-3 p-3 bg-secondary/30 rounded-lg">
-                      <div className="text-lg flex-shrink-0">{activityIcons[activity.type] || '📌'}</div>
+                      <div className="text-lg flex-shrink-0">
+                        {activityIcons[activity.type] || '📌'}
+                      </div>
                       <div className="min-w-0">
                         <p className="text-sm font-medium">{activity.title}</p>
                         {activity.body && (
-                          <p className="text-xs text-foreground-muted mt-1 line-clamp-2">{activity.body}</p>
+                          <p className="text-xs text-foreground-muted mt-1 line-clamp-2">
+                            {activity.body}
+                          </p>
                         )}
                         <p className="text-xs text-foreground-muted mt-1">
                           {new Date(activity.date).toLocaleDateString('uk', {

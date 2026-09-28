@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 import { ContactForm } from '@/components/contacts/contact-form';
+import { DataError } from '@/components/data-error';
 import { Button } from '@/components/ui';
 
 interface ContactData {
@@ -24,10 +25,16 @@ export default function EditContactPage() {
   const contactId = params.id as string;
   const [data, setData] = useState<ContactData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadContact = () => {
+    setLoadError(null);
+    setLoading(true);
     fetch(`/api/contacts/${contactId}`)
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`Помилка ${res.status}`);
+        return res.json();
+      })
       .then((d) => {
         const c = d.contact;
         setData({
@@ -43,8 +50,15 @@ export default function EditContactPage() {
           tagIds: c.tags?.map((t: { tag: { id: string } }) => t.tag.id) || [],
         });
       })
-      .catch(() => {})
+      .catch((err: unknown) => {
+        setData(null);
+        setLoadError(err instanceof Error ? err.message : 'Помилка завантаження');
+      })
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadContact();
   }, [contactId]);
 
   if (loading) {
@@ -61,8 +75,14 @@ export default function EditContactPage() {
   if (!data) {
     return (
       <div className="max-w-2xl mx-auto text-center py-12">
-        <p className="text-foreground-muted mb-4">Контакт не знайдено</p>
-        <Button onClick={() => window.history.back()}>Назад</Button>
+        {loadError ? (
+          <DataError message={loadError} onRetry={loadContact} />
+        ) : (
+          <>
+            <p className="text-foreground-muted mb-4">Контакт не знайдено</p>
+            <Button onClick={() => window.history.back()}>Назад</Button>
+          </>
+        )}
       </div>
     );
   }

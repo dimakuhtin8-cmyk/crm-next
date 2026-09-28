@@ -1,9 +1,10 @@
 'use client';
 
+import { Phone, Mail, Users, CheckSquare, StickyNote, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Phone, Mail, Users, CheckSquare, StickyNote, MessageSquare } from 'lucide-react';
 
+import { DataError } from '@/components/data-error';
 import { Button, Card, CardContent, Badge } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
@@ -17,39 +18,75 @@ interface Activity {
 }
 
 const typeConfig: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
-  call: { icon: <Phone className="w-4 h-4" />, color: 'bg-info/10 text-info border-info/20', label: 'Дзвінок' },
-  email: { icon: <Mail className="w-4 h-4" />, color: 'bg-primary/10 text-primary border-primary/20', label: 'Лист' },
-  meeting: { icon: <Users className="w-4 h-4" />, color: 'bg-warning/10 text-warning border-warning/20', label: 'Зустріч' },
-  task: { icon: <CheckSquare className="w-4 h-4" />, color: 'bg-secondary text-foreground-muted border-border', label: 'Задача' },
-  note: { icon: <StickyNote className="w-4 h-4" />, color: 'bg-success/10 text-success border-success/20', label: 'Нотатка' },
-  sms: { icon: <MessageSquare className="w-4 h-4" />, color: 'bg-danger/10 text-danger border-danger/20', label: 'SMS' },
+  call: {
+    icon: <Phone className="w-4 h-4" />,
+    color: 'bg-info/10 text-info border-info/20',
+    label: 'Дзвінок',
+  },
+  email: {
+    icon: <Mail className="w-4 h-4" />,
+    color: 'bg-primary/10 text-primary border-primary/20',
+    label: 'Лист',
+  },
+  meeting: {
+    icon: <Users className="w-4 h-4" />,
+    color: 'bg-warning/10 text-warning border-warning/20',
+    label: 'Зустріч',
+  },
+  task: {
+    icon: <CheckSquare className="w-4 h-4" />,
+    color: 'bg-secondary text-foreground-muted border-border',
+    label: 'Задача',
+  },
+  note: {
+    icon: <StickyNote className="w-4 h-4" />,
+    color: 'bg-success/10 text-success border-success/20',
+    label: 'Нотатка',
+  },
+  sms: {
+    icon: <MessageSquare className="w-4 h-4" />,
+    color: 'bg-danger/10 text-danger border-danger/20',
+    label: 'SMS',
+  },
 };
 
 export default function TimelinePage() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [filterType, setFilterType] = useState('');
   const [page, setPage] = useState(1);
 
-  useEffect(() => { fetchActivities(); }, [page, filterType]);
+  useEffect(() => {
+    fetchActivities();
+  }, [page, filterType]);
 
   const fetchActivities = async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const params = new URLSearchParams({ page: String(page), limit: '50' });
       if (filterType) params.set('type', filterType);
       const res = await fetch(`/api/activity?${params}`);
+      if (!res.ok) throw new Error(`Помилка ${res.status}`);
       const data = await res.json();
       setActivities(data.activities || []);
       setTotal(data.total || 0);
-    } catch {} finally { setLoading(false); }
+    } catch (err) {
+      setActivities([]);
+      setLoadError(err instanceof Error ? err.message : 'Помилка завантаження');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Group by date
   const grouped = activities.reduce<Record<string, Activity[]>>((acc, a) => {
     const date = new Date(a.date).toLocaleDateString('uk', {
-      day: 'numeric', month: 'long', year: 'numeric',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
       weekday: 'long',
     });
     if (!acc[date]) acc[date] = [];
@@ -68,7 +105,10 @@ export default function TimelinePage() {
         <div className="flex gap-2">
           <select
             value={filterType}
-            onChange={(e) => { setFilterType(e.target.value); setPage(1); }}
+            onChange={(e) => {
+              setFilterType(e.target.value);
+              setPage(1);
+            }}
             className="h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="">Всі типи</option>
@@ -85,7 +125,6 @@ export default function TimelinePage() {
       {/* Stats */}
       <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
         {Object.entries(typeConfig).map(([key, cfg]) => {
-          const count = activities.filter((a) => a.type === key).length;
           return (
             <button
               key={key}
@@ -111,10 +150,18 @@ export default function TimelinePage() {
             <div key={i} className="h-20 bg-muted rounded-lg animate-pulse" />
           ))}
         </div>
+      ) : loadError ? (
+        <DataError message={loadError} onRetry={fetchActivities} />
       ) : Object.keys(grouped).length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
-            <svg className="h-12 w-12 mx-auto text-foreground-muted mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <svg
+              className="h-12 w-12 mx-auto text-foreground-muted mb-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
               <circle cx="12" cy="12" r="10" />
               <polyline points="12 6 12 12 16 14" />
             </svg>
@@ -128,21 +175,25 @@ export default function TimelinePage() {
               {/* Date header */}
               <div className="flex items-center gap-3 mb-4">
                 <div className="h-px flex-1 bg-border" />
-                <h2 className="text-sm font-semibold text-foreground-muted whitespace-nowrap">{date}</h2>
+                <h2 className="text-sm font-semibold text-foreground-muted whitespace-nowrap">
+                  {date}
+                </h2>
                 <div className="h-px flex-1 bg-border" />
               </div>
 
               {/* Activities */}
               <div className="relative ml-4 pl-6 border-l-2 border-border space-y-4">
-                {items.map((activity, idx) => {
+                {items.map((activity) => {
                   const cfg = typeConfig[activity.type] || typeConfig.task;
                   return (
                     <div key={activity.id} className="relative">
                       {/* Dot */}
-                      <div className={cn(
-                        'absolute -left-[31px] top-3 h-4 w-4 rounded-full border-2 bg-background flex items-center justify-center text-[10px]',
-                        cfg.color,
-                      )}>
+                      <div
+                        className={cn(
+                          'absolute -left-[31px] top-3 h-4 w-4 rounded-full border-2 bg-background flex items-center justify-center text-[10px]',
+                          cfg.color,
+                        )}
+                      >
                         {cfg.icon}
                       </div>
 
@@ -152,7 +203,9 @@ export default function TimelinePage() {
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-sm">{activity.title}</p>
                             {activity.body && (
-                              <p className="text-sm text-foreground-muted mt-1 line-clamp-3">{activity.body}</p>
+                              <p className="text-sm text-foreground-muted mt-1 line-clamp-3">
+                                {activity.body}
+                              </p>
                             )}
                           </div>
                           <Badge variant="outline" className="text-xs ml-3 flex-shrink-0">
@@ -188,13 +241,23 @@ export default function TimelinePage() {
       {/* Pagination */}
       {total > 50 && (
         <div className="flex items-center justify-center gap-2 pt-4">
-          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => setPage(page - 1)}
+          >
             Назад
           </Button>
           <span className="text-sm text-foreground-muted">
             Сторінка {page} з {Math.ceil(total / 50)}
           </span>
-          <Button variant="outline" size="sm" disabled={page >= Math.ceil(total / 50)} onClick={() => setPage(page + 1)}>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= Math.ceil(total / 50)}
+            onClick={() => setPage(page + 1)}
+          >
             Далі
           </Button>
         </div>

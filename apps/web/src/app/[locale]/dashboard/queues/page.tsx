@@ -1,6 +1,6 @@
 /**
  * Queues Monitor — визуальная панель мониторинга очередей
- * 
+ *
  * Показывает:
  * - Статус задач (pending, processing, completed, failed)
  * - Количество по типам
@@ -10,13 +10,11 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, Button, Badge } from '@/components/ui';
-import { 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
-  Loader, 
+import {
+  Clock,
+  CheckCircle,
+  XCircle,
+  Loader,
   Trash2,
   RefreshCw,
   Mail,
@@ -24,7 +22,10 @@ import {
   Download,
   Bell,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useState, useEffect } from 'react';
+
+import { DataError } from '@/components/data-error';
+import { Card, CardContent, Button, Badge } from '@/components/ui';
 
 interface QueueStats {
   pending: number;
@@ -36,13 +37,23 @@ interface QueueStats {
 
 export default function QueuesPage() {
   const [stats, setStats] = useState<QueueStats | null>(null);
-  const [jobs, setJobs] = useState<Array<{
-    id: string; type: string; status: string; priority: string;
-    attempts: number; maxAttempts: number; lastError: string | null;
-    createdAt: string; startedAt: string | null; completedAt: string | null;
-  }>>([]);
+  const [jobs, setJobs] = useState<
+    Array<{
+      id: string;
+      type: string;
+      status: string;
+      priority: string;
+      attempts: number;
+      maxAttempts: number;
+      lastError: string | null;
+      createdAt: string;
+      startedAt: string | null;
+      completedAt: string | null;
+    }>
+  >([]);
   const [loading, setLoading] = useState(true);
   const [clearing, setClearing] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAll();
@@ -51,27 +62,43 @@ export default function QueuesPage() {
   }, []);
 
   const fetchAll = async () => {
-    await Promise.all([fetchStats(), fetchJobs()]);
+    const [okStats, okJobs] = await Promise.all([fetchStats(), fetchJobs()]);
+    if (!okStats || !okJobs) {
+      // тик опроса молча (warn внутри), но первая загрузка — с ошибкой на экран
+      setLoadError((prev) => prev ?? 'Не вдалося завантажити черги');
+    } else {
+      setLoadError(null);
+    }
   };
 
-  const fetchJobs = async () => {
+  const fetchJobs = async (): Promise<boolean> => {
     try {
       const res = await fetch('/api/queue/jobs?limit=20');
       if (res.ok) {
         const data = await res.json();
         setJobs(data.jobs || []);
+        return true;
       }
-    } catch {}
+      return false;
+    } catch {
+      console.warn('[queues] jobs fetch failed');
+      return false;
+    }
   };
 
-  const fetchStats = async () => {
+  const fetchStats = async (): Promise<boolean> => {
     try {
       const res = await fetch('/api/v1/queue/stats');
       if (res.ok) {
         const data = await res.json();
         setStats(data.data);
+        return true;
       }
-    } catch {} finally {
+      return false;
+    } catch {
+      console.warn('[queues] stats fetch failed');
+      return false;
+    } finally {
       setLoading(false);
     }
   };
@@ -79,9 +106,12 @@ export default function QueuesPage() {
   const handleCleanup = async () => {
     setClearing(true);
     try {
-      await fetch('/api/v1/queue/stats', { method: 'DELETE' });
+      const res = await fetch('/api/v1/queue/stats', { method: 'DELETE' });
+      if (!res.ok) throw new Error(`Помилка ${res.status}`);
       await fetchStats();
-    } catch {} finally {
+    } catch {
+      console.warn('[queues] cleanup failed');
+    } finally {
       setClearing(false);
     }
   };
@@ -119,6 +149,8 @@ export default function QueuesPage() {
           </Button>
         </div>
       </div>
+
+      {loadError && <DataError message={loadError} onRetry={fetchAll} />}
 
       {stats && (
         <>
@@ -223,17 +255,27 @@ export default function QueuesPage() {
             <CardContent className="p-4">
               <h3 className="font-semibold mb-4">Останні задачі</h3>
               {jobs.length === 0 ? (
-                <p className="text-sm text-foreground-muted">Задач поки немає. Вони з'являться при спрацюванні автоматизацій.</p>
+                <p className="text-sm text-foreground-muted">
+                  Задач поки немає. Вони з'являться при спрацюванні автоматизацій.
+                </p>
               ) : (
                 <div className="space-y-2">
                   {jobs.map((job) => (
-                    <div key={job.id} className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50 text-sm">
-                      <Badge variant={
-                        job.status === 'completed' ? 'success'
-                        : job.status === 'failed' ? 'danger'
-                        : job.status === 'processing' ? 'info'
-                        : 'secondary'
-                      }>
+                    <div
+                      key={job.id}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50 text-sm"
+                    >
+                      <Badge
+                        variant={
+                          job.status === 'completed'
+                            ? 'success'
+                            : job.status === 'failed'
+                              ? 'danger'
+                              : job.status === 'processing'
+                                ? 'info'
+                                : 'secondary'
+                        }
+                      >
                         {job.status}
                       </Badge>
                       <span className="font-medium">{job.type}</span>
@@ -247,7 +289,12 @@ export default function QueuesPage() {
                       )}
                       <span className="ml-auto flex items-center gap-2">
                         <span className="text-foreground-muted text-xs">
-                          {new Date(job.createdAt).toLocaleString('uk', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                          {new Date(job.createdAt).toLocaleString('uk', {
+                            day: '2-digit',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
                         </span>
                         {job.type === 'export' && job.status === 'completed' && (
                           <a

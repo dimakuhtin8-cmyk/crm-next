@@ -1,55 +1,83 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Shield, Check, X, Users, Crown, Eye } from 'lucide-react';
 import Link from 'next/link';
-import {
-  Shield, Check, X, Users, Crown, Eye, UserPlus, Loader2,
-} from 'lucide-react';
-import { Button, Card, CardContent, CardHeader, CardTitle, CardDescription, Badge } from '@/components/ui';
+import { useState } from 'react';
+
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui';
 import { ROLE_HIERARCHY, PERMISSION_CATEGORIES, type TenantRole } from '@/lib/rbac';
 
-interface Member {
-  id: string;
-  userId: string;
-  role: string;
-  createdAt: string;
-  user: { id: string; name: string | null; email: string | null; image: string | null };
-}
-
-const ROLE_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode; description: string }> = {
-  owner: { label: 'Власник', color: 'bg-purple-500/10 text-purple-700 dark:text-purple-300', icon: <Crown className="w-4 h-4" />, description: 'Повний доступ до всього' },
-  admin: { label: 'Адміністратор', color: 'bg-blue-500/10 text-blue-700 dark:text-blue-300', icon: <Shield className="w-4 h-4" />, description: 'Керування учасниками та налаштуваннями' },
-  member: { label: 'Менеджер', color: 'bg-green-500/10 text-green-700 dark:text-green-300', icon: <Users className="w-4 h-4" />, description: 'Створення та редагування власних даних' },
-  viewer: { label: 'Глядач', color: 'bg-gray-500/10 text-gray-600 dark:text-gray-400', icon: <Eye className="w-4 h-4" />, description: 'Тільки перегляд даних' },
+const ROLE_CONFIG: Record<
+  string,
+  { label: string; color: string; icon: React.ReactNode; description: string }
+> = {
+  owner: {
+    label: 'Власник',
+    color: 'bg-purple-500/10 text-purple-700 dark:text-purple-300',
+    icon: <Crown className="w-4 h-4" />,
+    description: 'Повний доступ до всього',
+  },
+  admin: {
+    label: 'Адміністратор',
+    color: 'bg-blue-500/10 text-blue-700 dark:text-blue-300',
+    icon: <Shield className="w-4 h-4" />,
+    description: 'Керування учасниками та налаштуваннями',
+  },
+  member: {
+    label: 'Менеджер',
+    color: 'bg-green-500/10 text-green-700 dark:text-green-300',
+    icon: <Users className="w-4 h-4" />,
+    description: 'Створення та редагування власних даних',
+  },
+  viewer: {
+    label: 'Глядач',
+    color: 'bg-gray-500/10 text-gray-600 dark:text-gray-400',
+    icon: <Eye className="w-4 h-4" />,
+    description: 'Тільки перегляд даних',
+  },
 };
 
 export default function RolesSettingsPage() {
-  const [members, setMembers] = useState<Member[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [currentUserRole, setCurrentUserRole] = useState<string>('member');
   const [selectedRole, setSelectedRole] = useState<string>('member');
 
-  useEffect(() => {
-    // Load current user's role from tenant members
-    fetch('/api/ai/usage', { credentials: 'include' })
-      .then(() => {})
-      .catch(() => {});
-
-    // For now, show role info statically
-    setLoading(false);
-  }, []);
-
   const rolePermissions: Record<string, string[]> = {
-    owner: PERMISSION_CATEGORIES.flatMap(c => c.permissions),
-    admin: PERMISSION_CATEGORIES.filter(c => !['Аудит'].includes(c.name)).flatMap(c => c.permissions),
-    member: ['contact:create', 'contact:read', 'contact:update', 'deal:create', 'deal:read', 'deal:update', 'task:create', 'task:read', 'task:update', 'activity:create', 'activity:read', 'pipeline:read', 'analytics:read', 'settings:read'],
-    viewer: ['contact:read', 'deal:read', 'task:read', 'activity:read', 'pipeline:read', 'analytics:read', 'settings:read'],
+    owner: PERMISSION_CATEGORIES.flatMap((c) => c.permissions),
+    admin: PERMISSION_CATEGORIES.filter((c) => !['Аудит'].includes(c.name)).flatMap(
+      (c) => c.permissions,
+    ),
+    member: [
+      'contact:create',
+      'contact:read',
+      'contact:update',
+      'deal:create',
+      'deal:read',
+      'deal:update',
+      'task:create',
+      'task:read',
+      'task:update',
+      'activity:create',
+      'activity:read',
+      'pipeline:read',
+      'analytics:read',
+      'settings:read',
+    ],
+    viewer: [
+      'contact:read',
+      'deal:read',
+      'task:read',
+      'activity:read',
+      'pipeline:read',
+      'analytics:read',
+      'settings:read',
+    ],
   };
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/dashboard/settings" className="text-muted-foreground hover:text-foreground">← Назад</Link>
+        <Link href="/dashboard/settings" className="text-muted-foreground hover:text-foreground">
+          ← Назад
+        </Link>
         <h1 className="text-2xl font-bold">Ролі та права доступу</h1>
       </div>
 
@@ -64,7 +92,9 @@ export default function RolesSettingsPage() {
             onClick={() => setSelectedRole(key)}
           >
             <CardContent className="p-4 text-center">
-              <div className={`inline-flex items-center justify-center w-10 h-10 rounded-xl mb-2 ${config.color}`}>
+              <div
+                className={`inline-flex items-center justify-center w-10 h-10 rounded-xl mb-2 ${config.color}`}
+              >
                 {config.icon}
               </div>
               <h3 className="font-semibold text-sm">{config.label}</h3>
@@ -91,7 +121,9 @@ export default function RolesSettingsPage() {
               const categoryPerms = rolePermissions[selectedRole] || [];
               return (
                 <div key={category.name}>
-                  <h4 className="text-sm font-medium text-foreground-muted mb-2">{category.name}</h4>
+                  <h4 className="text-sm font-medium text-foreground-muted mb-2">
+                    {category.name}
+                  </h4>
                   <div className="flex flex-wrap gap-2">
                     {category.permissions.map((perm) => {
                       const hasPerm = categoryPerms.includes(perm);
@@ -127,8 +159,8 @@ export default function RolesSettingsPage() {
                 Кастомні ролі
               </p>
               <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                Наразі підтримуються 4 стандартні ролі. Кастомні ролі з гнучкою матрицею прав
-                будуть доступні у наступних оновленнях.
+                Наразі підтримуються 4 стандартні ролі. Кастомні ролі з гнучкою матрицею прав будуть
+                доступні у наступних оновленнях.
               </p>
             </div>
           </div>

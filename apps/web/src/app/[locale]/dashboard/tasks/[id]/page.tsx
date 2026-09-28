@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import { DataError } from '@/components/data-error';
 import { Button, Input, Badge, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
@@ -33,14 +34,20 @@ interface Comment {
   createdAt: string;
 }
 
-const priorityConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'success' }> = {
+const priorityConfig: Record<
+  string,
+  { label: string; variant: 'default' | 'secondary' | 'outline' | 'success' }
+> = {
   urgent: { label: 'Терміново', variant: 'default' },
   high: { label: 'Високий', variant: 'default' },
   medium: { label: 'Середній', variant: 'secondary' },
   low: { label: 'Низький', variant: 'outline' },
 };
 
-const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'success' }> = {
+const statusConfig: Record<
+  string,
+  { label: string; variant: 'default' | 'secondary' | 'outline' | 'success' }
+> = {
   todo: { label: 'До виконання', variant: 'secondary' },
   in_progress: { label: 'В роботі', variant: 'default' },
   done: { label: 'Готово', variant: 'success' },
@@ -48,7 +55,11 @@ const statusConfig: Record<string, { label: string; variant: 'default' | 'second
 };
 
 const typeIcons: Record<string, string> = {
-  task: '📋', call: '📞', email: '✉️', meeting: '🤝', follow_up: '🔄',
+  task: '📋',
+  call: '📞',
+  email: '✉️',
+  meeting: '🤝',
+  follow_up: '🔄',
 };
 
 export default function TaskDetailPage() {
@@ -57,22 +68,33 @@ export default function TaskDetailPage() {
   const taskId = params.id as string;
   const [task, setTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [comment, setComment] = useState('');
   const [commentLoading, setCommentLoading] = useState(false);
 
-  useEffect(() => { fetchTask(); }, [taskId]);
+  useEffect(() => {
+    fetchTask();
+  }, [taskId]);
 
   const fetchTask = async () => {
+    setLoadError(null);
     try {
       const res = await fetch(`/api/tasks/${taskId}`);
+      if (!res.ok) throw new Error(`Помилка ${res.status}`);
       const data = await res.json();
       setTask(data.task);
-    } catch {} finally { setLoading(false); }
+    } catch (err) {
+      setTask(null);
+      setLoadError(err instanceof Error ? err.message : 'Помилка завантаження');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleStatusChange = async (status: string) => {
     await fetch(`/api/tasks/${taskId}`, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status }),
     });
     fetchTask();
@@ -83,25 +105,56 @@ export default function TaskDetailPage() {
     if (!comment.trim()) return;
     setCommentLoading(true);
     try {
-      await fetch(`/api/tasks/${taskId}/comments`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+      const res = await fetch(`/api/tasks/${taskId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ body: comment }),
       });
+      if (!res.ok) throw new Error(`Помилка ${res.status}`);
       setComment('');
       fetchTask();
-    } catch {} finally { setCommentLoading(false); }
+    } catch {
+      // коментар не збережено — текст лишається в полі, повтор по Enter
+      console.warn('[task] add-comment failed');
+    } finally {
+      setCommentLoading(false);
+    }
   };
 
   const handleDelete = async () => {
     if (!confirm('Видалити задачу?')) return;
-    await fetch(`/api/tasks/${taskId}`, { method: 'DELETE' });
-    router.push('/dashboard/tasks');
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(`Помилка ${res.status}`);
+      router.push('/dashboard/tasks');
+    } catch {
+      alert('Не вдалося видалити задачу. Спробуйте ще раз.');
+    }
   };
 
-  if (loading) return <div className="max-w-4xl mx-auto"><div className="h-8 bg-muted rounded w-1/3 animate-pulse" /></div>;
-  if (!task) return <div className="max-w-4xl mx-auto text-center py-12"><p>Задачу не знайдено</p></div>;
+  if (loading)
+    return (
+      <div className="max-w-4xl mx-auto">
+        <div className="h-8 bg-muted rounded w-1/3 animate-pulse" />
+      </div>
+    );
+  if (!task) {
+    return (
+      <div className="max-w-4xl mx-auto text-center py-12">
+        {loadError ? (
+          <DataError message={loadError} onRetry={fetchTask} />
+        ) : (
+          <p>Задачу не знайдено</p>
+        )}
+      </div>
+    );
+  }
 
-  const isOverdue = task.dueDate && task.status !== 'done' && task.status !== 'cancelled' && new Date(task.dueDate) < new Date();
+  const isOverdue =
+    task.dueDate &&
+    task.status !== 'done' &&
+    task.status !== 'cancelled' &&
+    new Date(task.dueDate) < new Date();
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -111,15 +164,23 @@ export default function TaskDetailPage() {
           <div>
             <h1 className="text-2xl font-bold">{task.title}</h1>
             <div className="flex items-center gap-2 mt-1">
-              <Badge variant={priorityConfig[task.priority]?.variant}>{priorityConfig[task.priority]?.label}</Badge>
-              <Badge variant={statusConfig[task.status]?.variant}>{statusConfig[task.status]?.label}</Badge>
+              <Badge variant={priorityConfig[task.priority]?.variant}>
+                {priorityConfig[task.priority]?.label}
+              </Badge>
+              <Badge variant={statusConfig[task.status]?.variant}>
+                {statusConfig[task.status]?.label}
+              </Badge>
               {task.isRecurring && <Badge variant="outline">🔄 Повторювана</Badge>}
             </div>
           </div>
         </div>
         <div className="flex gap-2">
-          <Link href={`/dashboard/tasks/${taskId}/edit`}><Button variant="outline">Редагувати</Button></Link>
-          <Button variant="outline" onClick={() => router.back()}>Назад</Button>
+          <Link href={`/dashboard/tasks/${taskId}/edit`}>
+            <Button variant="outline">Редагувати</Button>
+          </Link>
+          <Button variant="outline" onClick={() => router.back()}>
+            Назад
+          </Button>
         </div>
       </div>
 
@@ -127,26 +188,60 @@ export default function TaskDetailPage() {
         <div className="lg:col-span-2 space-y-6">
           {/* Details */}
           <Card>
-            <CardHeader><CardTitle>Деталі</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>Деталі</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-4">
               {task.description && (
-                <div><p className="text-sm text-foreground-muted mb-1">Опис</p><p className="text-sm whitespace-pre-wrap">{task.description}</p></div>
+                <div>
+                  <p className="text-sm text-foreground-muted mb-1">Опис</p>
+                  <p className="text-sm whitespace-pre-wrap">{task.description}</p>
+                </div>
               )}
               <div className="grid grid-cols-2 gap-4">
-                <div><p className="text-sm text-foreground-muted">Тип</p><p className="font-medium">{task.type}</p></div>
-                <div><p className="text-sm text-foreground-muted">Дедлайн</p><p className={cn('font-medium', isOverdue && 'text-danger')}>{task.dueDate ? new Date(task.dueDate).toLocaleDateString('uk', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'}</p></div>
-                <div><p className="text-sm text-foreground-muted">Нагадування</p><p className="font-medium">{task.reminderAt ? new Date(task.reminderAt).toLocaleString('uk') : '—'}</p></div>
-                <div><p className="text-sm text-foreground-muted">Створено</p><p className="font-medium">{new Date(task.createdAt).toLocaleDateString('uk')}</p></div>
+                <div>
+                  <p className="text-sm text-foreground-muted">Тип</p>
+                  <p className="font-medium">{task.type}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-foreground-muted">Дедлайн</p>
+                  <p className={cn('font-medium', isOverdue && 'text-danger')}>
+                    {task.dueDate
+                      ? new Date(task.dueDate).toLocaleDateString('uk', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
+                        })
+                      : '—'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-foreground-muted">Нагадування</p>
+                  <p className="font-medium">
+                    {task.reminderAt ? new Date(task.reminderAt).toLocaleString('uk') : '—'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-foreground-muted">Створено</p>
+                  <p className="font-medium">{new Date(task.createdAt).toLocaleDateString('uk')}</p>
+                </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Comments */}
           <Card>
-            <CardHeader><CardTitle>Коментарі ({task.comments.length})</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>Коментарі ({task.comments.length})</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-4">
               <form onSubmit={handleAddComment} className="flex gap-2">
-                <Input placeholder="Додати коментар..." value={comment} onChange={(e) => setComment(e.target.value)} className="flex-1" />
+                <Input
+                  placeholder="Додати коментар..."
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  className="flex-1"
+                />
                 <Button type="submit" disabled={commentLoading || !comment.trim()}>
                   {commentLoading ? '...' : 'Додати'}
                 </Button>
@@ -159,7 +254,12 @@ export default function TaskDetailPage() {
                     <div key={c.id} className="p-3 bg-secondary/30 rounded-lg">
                       <p className="text-sm whitespace-pre-wrap">{c.body}</p>
                       <p className="text-xs text-foreground-muted mt-2">
-                        {new Date(c.createdAt).toLocaleDateString('uk', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        {new Date(c.createdAt).toLocaleDateString('uk', {
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
                       </p>
                     </div>
                   ))}
@@ -176,8 +276,19 @@ export default function TaskDetailPage() {
               <p className="text-sm font-medium text-foreground-muted">Змінити статус</p>
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(statusConfig).map(([key, cfg]) => (
-                  <Button key={key} variant={task.status === key ? (cfg.variant === 'success' ? 'outline' : cfg.variant) : 'outline'} size="sm"
-                    onClick={() => handleStatusChange(key)} disabled={task.status === key}>
+                  <Button
+                    key={key}
+                    variant={
+                      task.status === key
+                        ? cfg.variant === 'success'
+                          ? 'outline'
+                          : cfg.variant
+                        : 'outline'
+                    }
+                    size="sm"
+                    onClick={() => handleStatusChange(key)}
+                    disabled={task.status === key}
+                  >
                     {cfg.label}
                   </Button>
                 ))}
@@ -186,7 +297,9 @@ export default function TaskDetailPage() {
           </Card>
           <Card className="border-destructive/50">
             <CardContent className="pt-6">
-              <Button variant="destructive" className="w-full" onClick={handleDelete}>Видалити задачу</Button>
+              <Button variant="destructive" className="w-full" onClick={handleDelete}>
+                Видалити задачу
+              </Button>
             </CardContent>
           </Card>
         </div>

@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { Bell } from 'lucide-react';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
@@ -18,6 +19,7 @@ export default function NotificationsSettingsPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState('');
+  const [saveError, setSaveError] = useState('');
 
   useEffect(() => {
     fetch('/api/notifications/preferences', { credentials: 'include' })
@@ -26,32 +28,51 @@ export default function NotificationsSettingsPage() {
         if (typeof d?.toast?.enabled === 'boolean') setToastEnabled(d.toast.enabled);
         if (typeof d?.toast?.position === 'string') setToastPosition(d.toast.position);
       })
-      .catch(() => {});
+      .catch(() => {
+        // преференсы тостов: мовчазно, дефолты уже стоят
+        console.warn('[settings/notifications] prefs load failed');
+      });
   }, []);
 
   const handleSave = async () => {
     setSaving(true);
+    setSaveError('');
     try {
-      await fetch('/api/user/notifications', {
+      const resUser = await fetch('/api/user/notifications', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emailNotifications, telegramNotifications, taskReminders, dealUpdates }),
+        body: JSON.stringify({
+          emailNotifications,
+          telegramNotifications,
+          taskReminders,
+          dealUpdates,
+        }),
       });
+      if (!resUser.ok) throw new Error(`Помилка ${resUser.status}`);
       const res = await fetch('/api/notifications/preferences', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabled: toastEnabled, position: toastPosition }),
       });
-      if (!res.ok) throw new Error('toast prefs failed');
+      if (!res.ok) throw new Error(`Помилка ${res.status}`);
       window.dispatchEvent(new Event('notif-prefs-changed'));
       setSuccess('Налаштування збережено');
     } catch {
       setSuccess('');
+      setSaveError('Не вдалося зберегти налаштування. Спробуйте ще раз.');
     }
     setSaving(false);
   };
 
-  const Toggle = ({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) => (
+  const Toggle = ({
+    checked,
+    onChange,
+    label,
+  }: {
+    checked: boolean;
+    onChange: (v: boolean) => void;
+    label: string;
+  }) => (
     <label className="flex items-center justify-between py-3">
       <span className="text-sm">{label}</span>
       <button
@@ -59,7 +80,9 @@ export default function NotificationsSettingsPage() {
         onClick={() => onChange(!checked)}
         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${checked ? 'bg-primary' : 'bg-muted'}`}
       >
-        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${checked ? 'translate-x-6' : 'translate-x-1'}`} />
+        <span
+          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${checked ? 'translate-x-6' : 'translate-x-1'}`}
+        />
       </button>
     </label>
   );
@@ -67,20 +90,39 @@ export default function NotificationsSettingsPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/dashboard/settings" className="text-muted-foreground hover:text-foreground">← Назад</Link>
+        <Link href="/dashboard/settings" className="text-muted-foreground hover:text-foreground">
+          ← Назад
+        </Link>
         <h1 className="text-2xl font-bold">Сповіщення</h1>
       </div>
 
-      {success && <div className="p-3 bg-green-500/10 text-green-600 rounded-lg text-sm">{success}</div>}
+      {success && (
+        <div className="p-3 bg-green-500/10 text-green-600 rounded-lg text-sm">{success}</div>
+      )}
+      {saveError && (
+        <div className="p-3 bg-destructive/10 text-destructive rounded-lg text-sm">{saveError}</div>
+      )}
 
       <Card>
         <CardHeader>
           <CardTitle>Канали сповіщень</CardTitle>
         </CardHeader>
         <CardContent className="divide-y">
-          <Toggle checked={emailNotifications} onChange={setEmailNotifications} label="Email-сповіщення" />
-          <Toggle checked={telegramNotifications} onChange={setTelegramNotifications} label="Telegram-сповіщення" />
-          <Toggle checked={taskReminders} onChange={setTaskReminders} label="Нагадування про завдання" />
+          <Toggle
+            checked={emailNotifications}
+            onChange={setEmailNotifications}
+            label="Email-сповіщення"
+          />
+          <Toggle
+            checked={telegramNotifications}
+            onChange={setTelegramNotifications}
+            label="Telegram-сповіщення"
+          />
+          <Toggle
+            checked={taskReminders}
+            onChange={setTaskReminders}
+            label="Нагадування про завдання"
+          />
           <Toggle checked={dealUpdates} onChange={setDealUpdates} label="Оновлення угод" />
         </CardContent>
       </Card>
@@ -123,7 +165,8 @@ export default function NotificationsSettingsPage() {
             </p>
           </div>
           <p className="text-xs text-foreground-muted">
-            Вимкнення прибирає спливаючі вікна, але лічильник на дзвонику та сторінка сповіщень працюють як раніше.
+            Вимкнення прибирає спливаючі вікна, але лічильник на дзвонику та сторінка сповіщень
+            працюють як раніше.
           </p>
         </CardContent>
       </Card>
@@ -138,7 +181,7 @@ export default function NotificationsSettingsPage() {
             'fixed z-[100] w-[320px] max-w-[calc(100vw-2rem)]',
             toastPosition === 'bottom-left' && 'left-4 bottom-4',
             toastPosition === 'bottom-right' && 'right-4 bottom-4',
-            toastPosition === 'top-right' && 'right-4 top-4'
+            toastPosition === 'top-right' && 'right-4 top-4',
           )}
           aria-live="polite"
         >

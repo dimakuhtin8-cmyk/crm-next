@@ -111,7 +111,10 @@ export default function CopilotPage() {
           setDynamicModels((prev) => ({ ...prev, [selectedProvider]: d.models }));
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        // фоновий список моделей: мовчазно, fallback — статичний список
+        console.warn('[copilot] dynamic models failed');
+      });
   }, [selectedProvider]);
 
   useEffect(() => {

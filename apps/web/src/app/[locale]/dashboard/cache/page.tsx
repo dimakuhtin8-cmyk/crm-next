@@ -1,6 +1,6 @@
 /**
  * Cache Monitor — визуальная панель мониторинга кэша
- * 
+ *
  * Показывает:
  * - Hit/Miss rate
  * - Размер кэша
@@ -10,17 +10,19 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, Button, Badge } from '@/components/ui';
-import { 
-  Database, 
-  Trash2, 
-  RefreshCw, 
-  TrendingUp, 
+import {
+  Database,
+  Trash2,
+  RefreshCw,
+  TrendingUp,
   TrendingDown,
   BarChart3,
   Clock,
 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+
+import { DataError } from '@/components/data-error';
+import { Card, CardContent, Button, Badge } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
 interface CacheStats {
@@ -36,6 +38,7 @@ export default function CacheMonitorPage() {
   const [stats, setStats] = useState<CacheStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [clearing, setClearing] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchStats();
@@ -47,11 +50,14 @@ export default function CacheMonitorPage() {
   const fetchStats = async () => {
     try {
       const res = await fetch('/api/v1/cache/stats');
-      if (res.ok) {
-        const data = await res.json();
-        setStats(data.data);
-      }
-    } catch {} finally {
+      if (!res.ok) throw new Error(`Помилка ${res.status}`);
+      const data = await res.json();
+      setStats(data.data);
+      setLoadError(null);
+    } catch (err) {
+      console.warn('[cache] stats fetch failed');
+      setLoadError((prev) => prev ?? (err instanceof Error ? err.message : 'Помилка завантаження'));
+    } finally {
       setLoading(false);
     }
   };
@@ -59,13 +65,16 @@ export default function CacheMonitorPage() {
   const handleClear = async () => {
     setClearing(true);
     try {
-      await fetch('/api/v1/cache/invalidate', {
+      const res = await fetch('/api/v1/cache/invalidate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tag: 'all' }),
       });
+      if (!res.ok) throw new Error(`Помилка ${res.status}`);
       await fetchStats();
-    } catch {} finally {
+    } catch {
+      console.warn('[cache] invalidate failed');
+    } finally {
       setClearing(false);
     }
   };
@@ -93,24 +102,18 @@ export default function CacheMonitorPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={fetchStats}
-            disabled={loading}
-          >
+          <Button variant="outline" onClick={fetchStats} disabled={loading}>
             <RefreshCw className={cn('h-4 w-4 mr-2', loading && 'animate-spin')} />
             Оновити
           </Button>
-          <Button
-            variant="outline"
-            onClick={handleClear}
-            disabled={clearing}
-          >
+          <Button variant="outline" onClick={handleClear} disabled={clearing}>
             <Trash2 className="h-4 w-4 mr-2" />
             Очистити кеш
           </Button>
         </div>
       </div>
+
+      {loadError && <DataError message={loadError} onRetry={fetchStats} />}
 
       {stats && (
         <>
@@ -166,7 +169,9 @@ export default function CacheMonitorPage() {
                   </div>
                   <div>
                     <p className="text-xs text-foreground-muted">Set/Remove</p>
-                    <p className="text-2xl font-bold">{stats.sets}/{stats.deletes}</p>
+                    <p className="text-2xl font-bold">
+                      {stats.sets}/{stats.deletes}
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -175,16 +180,26 @@ export default function CacheMonitorPage() {
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className={cn(
-                    'p-2 rounded-xl',
-                    stats.hitRate >= 80 ? 'bg-success/10' : 
-                    stats.hitRate >= 50 ? 'bg-warning/10' : 'bg-danger/10'
-                  )}>
-                    <Clock className={cn(
-                      'h-5 w-5',
-                      stats.hitRate >= 80 ? 'text-success' : 
-                      stats.hitRate >= 50 ? 'text-warning' : 'text-danger'
-                    )} />
+                  <div
+                    className={cn(
+                      'p-2 rounded-xl',
+                      stats.hitRate >= 80
+                        ? 'bg-success/10'
+                        : stats.hitRate >= 50
+                          ? 'bg-warning/10'
+                          : 'bg-danger/10',
+                    )}
+                  >
+                    <Clock
+                      className={cn(
+                        'h-5 w-5',
+                        stats.hitRate >= 80
+                          ? 'text-success'
+                          : stats.hitRate >= 50
+                            ? 'text-warning'
+                            : 'text-danger',
+                      )}
+                    />
                   </div>
                   <div>
                     <p className="text-xs text-foreground-muted">Hit Rate</p>
@@ -200,7 +215,11 @@ export default function CacheMonitorPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium">Hit Rate</span>
-                <Badge variant={stats.hitRate >= 80 ? 'success' : stats.hitRate >= 50 ? 'warning' : 'danger'}>
+                <Badge
+                  variant={
+                    stats.hitRate >= 80 ? 'success' : stats.hitRate >= 50 ? 'warning' : 'danger'
+                  }
+                >
                   {stats.hitRate}%
                 </Badge>
               </div>
@@ -208,8 +227,11 @@ export default function CacheMonitorPage() {
                 <div
                   className={cn(
                     'h-full rounded-full transition-all duration-500',
-                    stats.hitRate >= 80 ? 'bg-success' : 
-                    stats.hitRate >= 50 ? 'bg-warning' : 'bg-danger'
+                    stats.hitRate >= 80
+                      ? 'bg-success'
+                      : stats.hitRate >= 50
+                        ? 'bg-warning'
+                        : 'bg-danger',
                   )}
                   style={{ width: `${stats.hitRate}%` }}
                 />

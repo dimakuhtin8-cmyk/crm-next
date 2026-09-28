@@ -1,13 +1,17 @@
 'use client';
 
-import { useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui';
 import { MessageSquare } from 'lucide-react';
+import { useEffect } from 'react';
+
+import { Card, CardContent } from '@/components/ui';
 
 export default function MessagesPage() {
   // Mark messages as read when visiting the page
   useEffect(() => {
-    fetch('/api/messages/read', { method: 'POST' }).catch(() => {});
+    fetch('/api/messages/read', { method: 'POST' }).catch(() => {
+      // фонова помітка прочитаним: мовчазно, бейдж оновиться наступним тиком
+      console.warn('[messages] mark-read failed');
+    });
   }, []);
 
   return (
@@ -26,7 +30,8 @@ export default function MessagesPage() {
           </div>
           <h3 className="text-lg font-semibold mb-1">Повідомлень поки немає</h3>
           <p className="text-sm text-foreground-muted max-w-sm">
-            Тут з&apos;являться ваші розмови з клієнтами через Telegram, WhatsApp та Email після підключення месенджерів.
+            Тут з&apos;являться ваші розмови з клієнтами через Telegram, WhatsApp та Email після
+            підключення месенджерів.
           </p>
         </CardContent>
       </Card>

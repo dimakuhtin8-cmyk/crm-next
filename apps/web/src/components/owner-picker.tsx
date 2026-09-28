@@ -22,7 +22,10 @@ export function useTeam(): { members: TeamMember[]; currentRole: string | null }
         setMembers(data.members || []);
         setCurrentRole(data.currentRole || null);
       })
-      .catch(() => {});
+      .catch(() => {
+        // команда/роль: мовчазно, UI ховає owner-контроли без ролі
+        console.warn('[owner-picker] team fetch failed');
+      });
   }, []);
 
   return { members, currentRole };

@@ -1,8 +1,8 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Bell } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 
 import { cn } from '@/lib/utils';
 
@@ -37,6 +37,7 @@ function loadSeen(): Set<string> {
     const raw = localStorage.getItem(SEEN_KEY);
     return new Set(raw ? (JSON.parse(raw) as string[]) : []);
   } catch {
+    // битый localStorage — начинаем с пустого
     return new Set();
   }
 }
@@ -44,7 +45,9 @@ function loadSeen(): Set<string> {
 function saveSeen(seen: Set<string>) {
   try {
     localStorage.setItem(SEEN_KEY, JSON.stringify([...seen].slice(-200)));
-  } catch {}
+  } catch {
+    // localStorage недоступен — seen живёт только в памяти
+  }
 }
 
 const positionClasses: Record<ToastPosition, string> = {
@@ -68,7 +71,10 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       const data = await res.json();
       if (typeof data?.toast?.enabled === 'boolean') setEnabled(data.toast.enabled);
       if (typeof data?.toast?.position === 'string') setPosition(data.toast.position);
-    } catch {}
+    } catch {
+      // фоновые преференсы тостов: мовчазно, дефолты уже стоят
+      console.warn('[notifications] prefs load failed');
+    }
   }, []);
 
   const refresh = useCallback(async () => {
@@ -77,7 +83,11 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       if (!res.ok) return;
       const data = await res.json();
       const list = (data.notifications || []) as Array<{
-        id: string; title: string; message: string; link: string | null; type: string;
+        id: string;
+        title: string;
+        message: string;
+        link: string | null;
+        type: string;
       }>;
       setUnreadCount(data.unreadCount || 0);
 
@@ -92,7 +102,10 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
           return [...next, ...prev].slice(0, 5);
         });
       }
-    } catch {}
+    } catch {
+      // фоновый опрос уведомлений: мовчазно, следующий тик через 30с
+      console.warn('[notifications] refresh failed');
+    }
   }, []);
 
   useEffect(() => {
@@ -124,13 +137,16 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ids: [t.id] }),
         });
-      } catch {}
+      } catch {
+        // пометка прочитанным best-effort: тост всё равно закрываем
+        console.warn('[notifications] mark-read failed');
+      }
       dismiss(t.id);
       refresh();
       if (t.link) router.push(t.link);
       else router.push('/dashboard/notifications');
     },
-    [dismiss, refresh, router]
+    [dismiss, refresh, router],
   );
 
   useEffect(() => {
@@ -146,7 +162,10 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       {children}
       {enabled && toasts.length > 0 && (
         <div
-          className={cn('fixed z-[100] flex flex-col gap-2 w-[320px] max-w-[calc(100vw-2rem)]', positionClasses[position])}
+          className={cn(
+            'fixed z-[100] flex flex-col gap-2 w-[320px] max-w-[calc(100vw-2rem)]',
+            positionClasses[position],
+          )}
           aria-live="polite"
         >
           {toasts.map((t) => (

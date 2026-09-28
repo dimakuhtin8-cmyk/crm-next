@@ -73,7 +73,10 @@ export function Sidebar({ collapsed = false, onToggle, onMobileClose }: SidebarP
           localStorage.setItem('tenantId', data.tenants[0].id);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        // фоновий список компаній для перемикача: мовчазно
+        console.warn('[sidebar] tenants fetch failed');
+      });
   }, []);
 
   // Fetch unread message count

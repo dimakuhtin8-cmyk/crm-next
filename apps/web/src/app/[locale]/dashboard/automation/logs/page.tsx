@@ -1,6 +1,6 @@
 /**
  * Automation Logs — история выполнения автоматизаций
- * 
+ *
  * Показывает:
  * - Все выполненные действия
  * - Фильтр по правилам, сделкам, результату
@@ -9,10 +9,8 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, Button, Badge, Select } from '@/components/ui';
-import { 
-  Activity, 
+import {
+  Activity,
   RefreshCw,
   Trash2,
   CheckCircle,
@@ -20,7 +18,10 @@ import {
   AlertTriangle,
   Filter,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useState, useEffect } from 'react';
+
+import { DataError } from '@/components/data-error';
+import { Card, CardContent, Button, Badge, Select } from '@/components/ui';
 
 interface AutomationLog {
   id: string;
@@ -40,6 +41,7 @@ export default function AutomationLogsPage() {
   const [total, setTotal] = useState(0);
   const [resultFilter, setResultFilter] = useState<string>('all');
   const [limit, setLimit] = useState(50);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchLogs();
@@ -48,16 +50,19 @@ export default function AutomationLogsPage() {
   const fetchLogs = async () => {
     try {
       setLoading(true);
+      setLoadError(null);
       const params = new URLSearchParams();
       params.set('limit', limit.toString());
       if (resultFilter !== 'all') params.set('result', resultFilter);
-      
+
       const res = await fetch(`/api/automation/logs?${params}`);
-      if (res.ok) {
-        const data = await res.json();
-        setLogs(data.data.logs);
-        setTotal(data.data.total);
-      }
+      if (!res.ok) throw new Error(`Помилка ${res.status}`);
+      const data = await res.json();
+      setLogs(data.data.logs);
+      setTotal(data.data.total);
+    } catch (err) {
+      setLogs([]);
+      setLoadError(err instanceof Error ? err.message : 'Помилка завантаження');
     } finally {
       setLoading(false);
     }
@@ -65,11 +70,14 @@ export default function AutomationLogsPage() {
 
   const handleCleanup = async () => {
     if (!confirm('Видалити логи старіші за 30 днів?')) return;
-    
+
     try {
-      await fetch('/api/automation/logs?olderThan=30', { method: 'DELETE' });
+      const res = await fetch('/api/automation/logs?olderThan=30', { method: 'DELETE' });
+      if (!res.ok) throw new Error(`Помилка ${res.status}`);
       fetchLogs();
-    } catch {}
+    } catch {
+      alert('Не вдалося очистити логи. Спробуйте ще раз.');
+    }
   };
 
   const getResultIcon = (result: string) => {
@@ -170,9 +178,7 @@ export default function AutomationLogsPage() {
               <option value="success">Успішні</option>
               <option value="error">Помилки</option>
             </Select>
-            <div className="text-sm text-foreground-muted">
-              Знайдено: {total}
-            </div>
+            <div className="text-sm text-foreground-muted">Знайдено: {total}</div>
           </div>
         </CardContent>
       </Card>
@@ -184,6 +190,8 @@ export default function AutomationLogsPage() {
             <div key={i} className="h-24 bg-muted rounded-2xl animate-pulse" />
           ))}
         </div>
+      ) : loadError ? (
+        <DataError message={loadError} onRetry={fetchLogs} />
       ) : logs.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center">
@@ -197,29 +205,25 @@ export default function AutomationLogsPage() {
             <Card key={log.id}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-4">
-                  <div className="mt-1">
-                    {getResultIcon(log.result)}
-                  </div>
-                  
+                  <div className="mt-1">{getResultIcon(log.result)}</div>
+
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-1">
                       <span className="font-semibold">{log.ruleName}</span>
                       {getResultBadge(log.result)}
                     </div>
-                    
+
                     <div className="flex items-center gap-4 text-sm text-foreground-muted">
                       <span>{getTriggerLabel(log.triggerType)}</span>
                       <span>→</span>
                       <span>{getActionLabel(log.actionType)}</span>
                     </div>
-                    
+
                     {log.details && (
-                      <p className="text-sm text-foreground-muted mt-1 truncate">
-                        {log.details}
-                      </p>
+                      <p className="text-sm text-foreground-muted mt-1 truncate">{log.details}</p>
                     )}
                   </div>
-                  
+
                   <div className="text-right text-sm text-foreground-muted">
                     {formatDate(log.executedAt)}
                   </div>
@@ -233,10 +237,13 @@ export default function AutomationLogsPage() {
       {/* Load More */}
       {logs.length < total && (
         <div className="text-center">
-          <Button variant="outline" onClick={() => {
-            setLimit(prev => prev + 50);
-            fetchLogs();
-          }}>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setLimit((prev) => prev + 50);
+              fetchLogs();
+            }}
+          >
             Завантажити ще
           </Button>
         </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+
 import { Card, CardContent, Button } from '@/components/ui';
 
 type DatabaseType = 'shared' | 'postgresql' | 'mysql' | 'mariadb' | 'sqlserver';
@@ -14,7 +15,11 @@ interface DatabaseConfig {
 }
 
 const DB_OPTIONS: { value: DatabaseType; label: string; description: string }[] = [
-  { value: 'shared', label: 'Спільна база даних', description: 'Використовувати базу даних CRM-системи' },
+  {
+    value: 'shared',
+    label: 'Спільна база даних',
+    description: 'Використовувати базу даних CRM-системи',
+  },
   { value: 'postgresql', label: 'PostgreSQL', description: 'Підключити власну базу PostgreSQL' },
   { value: 'mysql', label: 'MySQL', description: 'Підключити власну базу MySQL' },
   { value: 'mariadb', label: 'MariaDB', description: 'Підключити власну базу MariaDB' },
@@ -27,19 +32,30 @@ export default function DatabaseSettingsPage() {
   const [databaseUrl, setDatabaseUrl] = useState('');
   const [testing, setTesting] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [testResult, setTestResult] = useState<{ success: boolean; version?: string; error?: string } | null>(null);
+  const [testResult, setTestResult] = useState<{
+    success: boolean;
+    version?: string;
+    error?: string;
+  } | null>(null);
   const [message, setMessage] = useState('');
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     fetch('/api/tenant/database')
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`Помилка ${r.status}`);
+        return r.json();
+      })
       .then((data) => {
         if (data.success) {
           setConfig(data.data);
           setSelectedType(data.data.type);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        // конфіг просто не підвантажиться — форма працює з дефолтами
+        setLoadError(true);
+      });
   }, []);
 
   const handleTest = async () => {
@@ -60,7 +76,7 @@ export default function DatabaseSettingsPage() {
         setTestResult(data.data);
       }
     } catch {
-      setTestResult({ success: false, error: 'Помилка з\'єднання з сервером' });
+      setTestResult({ success: false, error: "Помилка з'єднання з сервером" });
     } finally {
       setTesting(false);
     }
@@ -82,7 +98,9 @@ export default function DatabaseSettingsPage() {
       const data = await res.json();
       if (data.success) {
         setMessage('Налаштування збережено');
-        setConfig((prev) => prev ? { ...prev, type: data.data.type, status: data.data.status } : null);
+        setConfig((prev) =>
+          prev ? { ...prev, type: data.data.type, status: data.data.status } : null,
+        );
       } else {
         setMessage(`Помилка: ${data.error}`);
       }
@@ -106,7 +124,7 @@ export default function DatabaseSettingsPage() {
         setSelectedType('shared');
         setDatabaseUrl('');
         setMessage('Відключено від зовнішньої бази даних');
-        setConfig((prev) => prev ? { ...prev, type: 'shared', hasExternalDb: false } : null);
+        setConfig((prev) => (prev ? { ...prev, type: 'shared', hasExternalDb: false } : null));
       }
     } catch {
       setMessage('Помилка відключення');
@@ -124,6 +142,12 @@ export default function DatabaseSettingsPage() {
         </p>
       </div>
 
+      {loadError && (
+        <p className="text-sm text-destructive">
+          Не вдалося завантажити поточний конфіг — показано значення за замовчуванням
+        </p>
+      )}
+
       {/* Current Status */}
       {config && (
         <Card>
@@ -132,20 +156,29 @@ export default function DatabaseSettingsPage() {
               <div>
                 <h3 className="font-medium">Поточний статус</h3>
                 <p className="text-sm text-foreground-muted mt-1">
-                  Тип: <span className="font-medium">{DB_OPTIONS.find((o) => o.value === config.type)?.label || config.type}</span>
+                  Тип:{' '}
+                  <span className="font-medium">
+                    {DB_OPTIONS.find((o) => o.value === config.type)?.label || config.type}
+                  </span>
                 </p>
                 {config.lastError && (
                   <p className="text-sm text-red-500 mt-1">Помилка: {config.lastError}</p>
                 )}
               </div>
-              <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                config.type === 'shared'
-                  ? 'bg-secondary text-foreground-muted'
+              <div
+                className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  config.type === 'shared'
+                    ? 'bg-secondary text-foreground-muted'
+                    : config.status === 'active'
+                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                      : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                }`}
+              >
+                {config.type === 'shared'
+                  ? 'Спільна'
                   : config.status === 'active'
-                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                  : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-              }`}>
-                {config.type === 'shared' ? 'Спільна' : config.status === 'active' ? 'Підключено' : 'Помилка'}
+                    ? 'Підключено'
+                    : 'Помилка'}
               </div>
             </div>
           </CardContent>
@@ -203,32 +236,21 @@ export default function DatabaseSettingsPage() {
                 selectedType === 'postgresql'
                   ? 'postgresql://user:password@localhost:5432/mydb'
                   : selectedType === 'mysql' || selectedType === 'mariadb'
-                  ? 'mysql://user:password@localhost:3306/mydb'
-                  : 'sqlserver://user:password@localhost:1433/mydb'
+                    ? 'mysql://user:password@localhost:3306/mydb'
+                    : 'sqlserver://user:password@localhost:1433/mydb'
               }
               className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
 
             <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={handleTest}
-                disabled={!databaseUrl || testing}
-              >
-                {testing ? 'Тестування...' : 'Тестувати з\'єднання'}
+              <Button variant="outline" onClick={handleTest} disabled={!databaseUrl || testing}>
+                {testing ? 'Тестування...' : "Тестувати з'єднання"}
               </Button>
-              <Button
-                onClick={handleSave}
-                disabled={saving}
-              >
+              <Button onClick={handleSave} disabled={saving}>
                 {saving ? 'Збереження...' : 'Зберегти'}
               </Button>
               {config?.hasExternalDb && (
-                <Button
-                  variant="destructive"
-                  onClick={handleDisconnect}
-                  disabled={saving}
-                >
+                <Button variant="destructive" onClick={handleDisconnect} disabled={saving}>
                   Відключити
                 </Button>
               )}
@@ -236,14 +258,18 @@ export default function DatabaseSettingsPage() {
 
             {/* Test Result */}
             {testResult && (
-              <div className={`p-4 rounded-lg ${
-                testResult.success
-                  ? 'bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-800'
-                  : 'bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-800'
-              }`}>
+              <div
+                className={`p-4 rounded-lg ${
+                  testResult.success
+                    ? 'bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-800'
+                    : 'bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-800'
+                }`}
+              >
                 {testResult.success ? (
                   <div>
-                    <p className="text-green-700 dark:text-green-400 font-medium">З&apos;єднання успішне!</p>
+                    <p className="text-green-700 dark:text-green-400 font-medium">
+                      З&apos;єднання успішне!
+                    </p>
                     {testResult.version && (
                       <p className="text-sm text-green-600 dark:text-green-500 mt-1">
                         Версія: {testResult.version}
@@ -258,11 +284,13 @@ export default function DatabaseSettingsPage() {
 
             {/* Save Message */}
             {message && (
-              <div className={`p-4 rounded-lg ${
-                message.includes('Помилка')
-                  ? 'bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-800 text-red-700 dark:text-red-400'
-                  : 'bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-800 text-green-700 dark:text-green-400'
-              }`}>
+              <div
+                className={`p-4 rounded-lg ${
+                  message.includes('Помилка')
+                    ? 'bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-800 text-red-700 dark:text-red-400'
+                    : 'bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-800 text-green-700 dark:text-green-400'
+                }`}
+              >
                 {message}
               </div>
             )}
@@ -275,8 +303,12 @@ export default function DatabaseSettingsPage() {
         <CardContent className="p-6">
           <h3 className="font-medium mb-3">Як це працює?</h3>
           <ul className="space-y-2 text-sm text-foreground-muted">
-            <li>• <strong>Спільна база</strong> — ваші дані зберігаються в загальній базі CRM-системи</li>
-            <li>• <strong>Зовнішня база</strong> — ваші дані зберігаються на вашому сервері</li>
+            <li>
+              • <strong>Спільна база</strong> — ваші дані зберігаються в загальній базі CRM-системи
+            </li>
+            <li>
+              • <strong>Зовнішня база</strong> — ваші дані зберігаються на вашому сервері
+            </li>
             <li>• Після підключення CRM автоматично створить таблиці у вашій базі</li>
             <li>• Ви можете відключитися від зовнішньої бази в будь-який момент</li>
             <li>• Підтримуються: PostgreSQL, MySQL, MariaDB, MS SQL Server</li>

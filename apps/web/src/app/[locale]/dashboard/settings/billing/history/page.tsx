@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Download, Check, X, Clock, Receipt } from 'lucide-react';
 import Link from 'next/link';
-import { Download, Check, X, Clock, ExternalLink, Receipt } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, Skeleton } from '@/components/ui';
+import { useState, useEffect } from 'react';
+
+import { DataError } from '@/components/data-error';
+import { Card, CardContent, Skeleton } from '@/components/ui';
 
 interface Payment {
   id: string;
@@ -29,13 +31,26 @@ interface PaymentsResponse {
 export default function PaymentHistoryPage() {
   const [data, setData] = useState<PaymentsResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const loadInvoices = () => {
+    setLoadError(null);
+    setLoading(true);
+    fetch('/api/billing/invoices', { credentials: 'include' })
+      .then((r) => {
+        if (!r.ok) throw new Error(`Помилка ${r.status}`);
+        return r.json();
+      })
+      .then(setData)
+      .catch((err: unknown) => {
+        setData(null);
+        setLoadError(err instanceof Error ? err.message : 'Помилка завантаження');
+      })
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => {
-    fetch('/api/billing/invoices', { credentials: 'include' })
-      .then(r => r.json())
-      .then(setData)
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    loadInvoices();
   }, []);
 
   const formatAmount = (cents: number, currency: string): string => {
@@ -62,11 +77,16 @@ export default function PaymentHistoryPage() {
 
   const statusLabel = (status: string) => {
     switch (status) {
-      case 'succeeded': return 'Успішно';
-      case 'failed': return 'Помилка';
-      case 'pending': return 'Очікує';
-      case 'refunded': return 'Повернення';
-      default: return status;
+      case 'succeeded':
+        return 'Успішно';
+      case 'failed':
+        return 'Помилка';
+      case 'pending':
+        return 'Очікує';
+      case 'refunded':
+        return 'Повернення';
+      default:
+        return status;
     }
   };
 
@@ -74,7 +94,12 @@ export default function PaymentHistoryPage() {
     return (
       <div className="max-w-3xl mx-auto space-y-6">
         <div className="flex items-center gap-3">
-          <Link href="/dashboard/settings/billing" className="text-muted-foreground hover:text-foreground">← Назад</Link>
+          <Link
+            href="/dashboard/settings/billing"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            ← Назад
+          </Link>
           <h1 className="text-2xl font-bold">Історія платежів</h1>
         </div>
         <div className="space-y-3">
@@ -89,16 +114,28 @@ export default function PaymentHistoryPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/dashboard/settings/billing" className="text-muted-foreground hover:text-foreground">← Назад</Link>
+        <Link
+          href="/dashboard/settings/billing"
+          className="text-muted-foreground hover:text-foreground"
+        >
+          ← Назад
+        </Link>
         <h1 className="text-2xl font-bold">Історія платежів</h1>
       </div>
 
       <Card>
         <CardContent className="p-0">
-          {data && data.payments.length > 0 ? (
+          {loadError ? (
+            <div className="p-4">
+              <DataError message={loadError} onRetry={loadInvoices} />
+            </div>
+          ) : data && data.payments.length > 0 ? (
             <div className="divide-y divide-border">
               {data.payments.map((payment) => (
-                <div key={payment.id} className="flex items-center justify-between p-4 hover:bg-accent/30 transition-colors">
+                <div
+                  key={payment.id}
+                  className="flex items-center justify-between p-4 hover:bg-accent/30 transition-colors"
+                >
                   <div className="flex items-center gap-4">
                     <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-accent/50">
                       <Receipt className="w-5 h-5 text-foreground-muted" />
@@ -120,7 +157,9 @@ export default function PaymentHistoryPage() {
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-1.5">
                       {statusIcon(payment.status)}
-                      <span className="text-xs text-foreground-muted">{statusLabel(payment.status)}</span>
+                      <span className="text-xs text-foreground-muted">
+                        {statusLabel(payment.status)}
+                      </span>
                     </div>
 
                     <p className="text-sm font-semibold w-24 text-right">

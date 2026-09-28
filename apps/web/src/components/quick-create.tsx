@@ -212,6 +212,7 @@ export function QuickDealForm({ onCreated }: QuickFormProps) {
   const [pipelines, setPipelines] = useState<PipelineOpt[]>([]);
   const [pipelineId, setPipelineId] = useState('');
   const [stageId, setStageId] = useState('');
+  const [stagesError, setStagesError] = useState(false);
   const { saving, error, submit } = useQuickSubmit(
     '/api/deals',
     () => ({
@@ -223,18 +224,31 @@ export function QuickDealForm({ onCreated }: QuickFormProps) {
     onCreated,
   );
 
-  useEffect(() => {
+  const loadPipelines = () => {
+    setStagesError(false);
     fetch('/api/pipelines')
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`Помилка ${r.status}`);
+        return r.json();
+      })
       .then((d) => {
         const list: PipelineOpt[] = d.pipelines || [];
         setPipelines(list);
         if (list.length > 0) {
           setPipelineId(list[0].id);
           setStageId(list[0].stages?.[0]?.id || '');
+        } else {
+          setStagesError(true);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        // П3.3: без етапів кнопка мовчки неактивна — показуємо причину + повтор.
+        setStagesError(true);
+      });
+  };
+
+  useEffect(() => {
+    loadPipelines();
   }, []);
 
   const selected = pipelines.find((p) => p.id === pipelineId);
@@ -255,22 +269,50 @@ export function QuickDealForm({ onCreated }: QuickFormProps) {
         placeholder="Сума, грн"
         inputMode="decimal"
       />
-      {pipelines.length > 1 && (
-        <select
-          value={pipelineId}
-          onChange={(e) => {
-            const p = pipelines.find((x) => x.id === e.target.value);
-            setPipelineId(e.target.value);
-            setStageId(p?.stages?.[0]?.id || '');
-          }}
-          className={selectCls}
-        >
-          {pipelines.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
+      {stagesError ? (
+        <div className="p-2.5 bg-destructive/10 rounded-lg text-sm space-y-2">
+          <p className="text-destructive">Не вдалося завантажити етапи воронки</p>
+          <button
+            type="button"
+            onClick={loadPipelines}
+            className="font-medium text-primary hover:underline"
+          >
+            Спробувати ще раз
+          </button>
+        </div>
+      ) : (
+        <>
+          {pipelines.length > 1 && (
+            <select
+              value={pipelineId}
+              onChange={(e) => {
+                const p = pipelines.find((x) => x.id === e.target.value);
+                setPipelineId(e.target.value);
+                setStageId(p?.stages?.[0]?.id || '');
+              }}
+              className={selectCls}
+            >
+              {pipelines.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          )}
+          {selected && selected.stages?.length > 0 && (
+            <select
+              value={stageId}
+              onChange={(e) => setStageId(e.target.value)}
+              className={selectCls}
+            >
+              {selected.stages.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          )}
+        </>
       )}
       {selected && selected.stages?.length > 0 && (
         <select value={stageId} onChange={(e) => setStageId(e.target.value)} className={selectCls}>
@@ -458,6 +500,7 @@ export function QuickRuleForm({
 export function QuickWebhookForm({ onCreated }: QuickFormProps) {
   const [url, setUrl] = useState('');
   const [events, setEvents] = useState<Array<{ event: string; description: string }>>([]);
+  const [eventsError, setEventsError] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const [secret, setSecret] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -465,9 +508,15 @@ export function QuickWebhookForm({ onCreated }: QuickFormProps) {
 
   useEffect(() => {
     fetch('/api/v1/webhooks')
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`Помилка ${r.status}`);
+        return r.json();
+      })
       .then((d) => setEvents(d.data?.availableEvents || []))
-      .catch(() => {});
+      .catch(() => {
+        // Без списку подій обрати нічого — показуємо причину.
+        setEventsError(true);
+      });
   }, []);
 
   const toggle = (ev: string) =>
@@ -529,6 +578,11 @@ export function QuickWebhookForm({ onCreated }: QuickFormProps) {
         placeholder="https://... *"
         autoFocus
       />
+      {eventsError && (
+        <p className="text-xs text-destructive">
+          Не вдалося завантажити список подій — вебхук не створити
+        </p>
+      )}
       {events.length > 0 && (
         <div className="space-y-1.5 max-h-40 overflow-y-auto">
           {events.map((ev) => (

@@ -155,7 +155,10 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
         setOverdueReminders(data.overdue || []);
         setUpcomingReminders(data.upcoming || []);
       })
-      .catch(() => {});
+      .catch(() => {
+        // фоновий бейдж нагадувань: мовчазно, лічильник лишається 0
+        console.warn('[header] reminders fetch failed');
+      });
   }, []);
 
   // Close dropdowns on outside click

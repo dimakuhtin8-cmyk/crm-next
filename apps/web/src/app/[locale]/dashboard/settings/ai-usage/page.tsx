@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { BarChart3, TrendingUp, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
-import { BarChart3, TrendingUp, Clock, AlertTriangle, Loader2 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, Badge, Skeleton } from '@/components/ui';
+import { useState, useEffect } from 'react';
+
+import { DataError } from '@/components/data-error';
+import { Card, CardContent, CardHeader, CardTitle, Skeleton } from '@/components/ui';
 
 interface UsageData {
   today: { requests: number; limit: number; percentage: number };
@@ -23,13 +25,26 @@ interface UsageData {
 export default function AiUsagePage() {
   const [data, setData] = useState<UsageData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const loadUsage = () => {
+    setLoadError(null);
+    setLoading(true);
+    fetch('/api/ai/usage', { credentials: 'include' })
+      .then((r) => {
+        if (!r.ok) throw new Error(`Помилка ${r.status}`);
+        return r.json();
+      })
+      .then(setData)
+      .catch((err: unknown) => {
+        setData(null);
+        setLoadError(err instanceof Error ? err.message : 'Помилка завантаження');
+      })
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => {
-    fetch('/api/ai/usage', { credentials: 'include' })
-      .then(r => r.json())
-      .then(setData)
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    loadUsage();
   }, []);
 
   const formatNumber = (n: number): string => {
@@ -49,7 +64,9 @@ export default function AiUsagePage() {
     return (
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="flex items-center gap-3">
-          <Link href="/dashboard/settings" className="text-muted-foreground hover:text-foreground">← Назад</Link>
+          <Link href="/dashboard/settings" className="text-muted-foreground hover:text-foreground">
+            ← Назад
+          </Link>
           <h1 className="text-2xl font-bold">Використання AI</h1>
         </div>
         <div className="space-y-4">
@@ -63,9 +80,13 @@ export default function AiUsagePage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/dashboard/settings" className="text-muted-foreground hover:text-foreground">← Назад</Link>
+        <Link href="/dashboard/settings" className="text-muted-foreground hover:text-foreground">
+          ← Назад
+        </Link>
         <h1 className="text-2xl font-bold">Використання AI</h1>
       </div>
+
+      {loadError && <DataError message={loadError} onRetry={loadUsage} />}
 
       {/* Today's Usage */}
       <Card>
@@ -116,7 +137,8 @@ export default function AiUsagePage() {
                 <div className="flex items-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
                   <AlertTriangle className="w-4 h-4 text-red-600" />
                   <p className="text-sm text-red-700 dark:text-red-300">
-                    Денний ліміт вичерпано. Нові AI-запити будуть відхилені до {new Date(data.limitStatus.resetAt).toLocaleTimeString('uk')}.
+                    Денний ліміт вичерпано. Нові AI-запити будуть відхилені до{' '}
+                    {new Date(data.limitStatus.resetAt).toLocaleTimeString('uk')}.
                   </p>
                 </div>
               )}
@@ -166,7 +188,10 @@ export default function AiUsagePage() {
           {data && Object.keys(data.byProvider).length > 0 ? (
             <div className="space-y-3">
               {Object.entries(data.byProvider).map(([provider, stats]) => (
-                <div key={provider} className="flex items-center justify-between p-3 rounded-xl bg-accent/30">
+                <div
+                  key={provider}
+                  className="flex items-center justify-between p-3 rounded-xl bg-accent/30"
+                >
                   <div>
                     <p className="text-sm font-medium capitalize">{provider}</p>
                     <p className="text-xs text-foreground-muted">

@@ -1,6 +1,6 @@
 /**
  * Observability Dashboard — полная картина по здоровью системы
- * 
+ *
  * Показывает:
  * - SLO статус (availability, latency, error rate)
  * - Error Budget (сколько осталось)
@@ -10,22 +10,21 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, Button, Badge } from '@/components/ui';
-import { 
-  Activity, 
+import {
+  Activity,
   RefreshCw,
   AlertTriangle,
   CheckCircle,
   XCircle,
-  Clock,
-  Zap,
   Database,
   Brain,
   Server,
   TrendingUp,
-  TrendingDown,
 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+
+import { DataError } from '@/components/data-error';
+import { Card, CardContent, Button, Badge } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
 interface SLOData {
@@ -59,6 +58,7 @@ export default function ObservabilityPage() {
   const [sloData, setSloData] = useState<SLOData | null>(null);
   const [metricsData, setMetricsData] = useState<MetricsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -73,16 +73,19 @@ export default function ObservabilityPage() {
         fetch('/api/v1/metrics?format=json'),
       ]);
 
-      if (sloRes.ok) {
-        const sloJson = await sloRes.json();
-        setSloData(sloJson.data);
+      if (!sloRes.ok || !metricsRes.ok) {
+        throw new Error(`SLO: ${sloRes.status}, метрики: ${metricsRes.status}`);
       }
-
-      if (metricsRes.ok) {
-        const metricsJson = await metricsRes.json();
-        setMetricsData(metricsJson.data);
-      }
-    } catch {} finally {
+      const sloJson = await sloRes.json();
+      setSloData(sloJson.data);
+      const metricsJson = await metricsRes.json();
+      setMetricsData(metricsJson.data);
+      setLoadError(null);
+    } catch (err) {
+      // тик опроса молча (warn), но первая загрузка — с ошибкой на экран
+      console.warn('[observability] fetch failed');
+      setLoadError((prev) => prev ?? (err instanceof Error ? err.message : 'Помилка завантаження'));
+    } finally {
       setLoading(false);
     }
   };
@@ -128,19 +131,31 @@ export default function ObservabilityPage() {
         </Button>
       </div>
 
+      {loadError && <DataError message={loadError} onRetry={fetchData} />}
+
       {/* Overall Status */}
-      <Card className={cn(
-        'border-2',
-        sloData?.overall === 'healthy' ? 'border-success' :
-        sloData?.overall === 'warning' ? 'border-warning' : 'border-danger'
-      )}>
+      <Card
+        className={cn(
+          'border-2',
+          sloData?.overall === 'healthy'
+            ? 'border-success'
+            : sloData?.overall === 'warning'
+              ? 'border-warning'
+              : 'border-danger',
+        )}
+      >
         <CardContent className="p-6">
           <div className="flex items-center gap-4">
-            <div className={cn(
-              'p-3 rounded-2xl',
-              sloData?.overall === 'healthy' ? 'bg-success/10' :
-              sloData?.overall === 'warning' ? 'bg-warning/10' : 'bg-danger/10'
-            )}>
+            <div
+              className={cn(
+                'p-3 rounded-2xl',
+                sloData?.overall === 'healthy'
+                  ? 'bg-success/10'
+                  : sloData?.overall === 'warning'
+                    ? 'bg-warning/10'
+                    : 'bg-danger/10',
+              )}
+            >
               {sloData?.overall === 'healthy' ? (
                 <CheckCircle className="h-8 w-8 text-success" />
               ) : sloData?.overall === 'warning' ? (
@@ -151,11 +166,14 @@ export default function ObservabilityPage() {
             </div>
             <div>
               <h2 className="text-xl font-bold">
-                {sloData?.overall === 'healthy' ? 'Все нормально' :
-                 sloData?.overall === 'warning' ? 'Попередження' : 'Критична ситуація'}
+                {sloData?.overall === 'healthy'
+                  ? 'Все нормально'
+                  : sloData?.overall === 'warning'
+                    ? 'Попередження'
+                    : 'Критична ситуація'}
               </h2>
               <p className="text-foreground-muted">
-                {sloData?.overall === 'healthy' 
+                {sloData?.overall === 'healthy'
                   ? 'Всі SLO в рамках норми'
                   : 'Деякі SLO перевищують допустимі межі'}
               </p>
@@ -177,10 +195,15 @@ export default function ObservabilityPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-semibold text-sm">{slo.description}</h3>
-                <Badge variant={
-                  slo.budget.status === 'healthy' ? 'success' :
-                  slo.budget.status === 'warning' ? 'warning' : 'danger'
-                }>
+                <Badge
+                  variant={
+                    slo.budget.status === 'healthy'
+                      ? 'success'
+                      : slo.budget.status === 'warning'
+                        ? 'warning'
+                        : 'danger'
+                  }
+                >
                   {slo.current}%
                 </Badge>
               </div>
@@ -190,8 +213,11 @@ export default function ObservabilityPage() {
                 <div
                   className={cn(
                     'h-full rounded-full transition-all',
-                    slo.budget.status === 'healthy' ? 'bg-success' :
-                    slo.budget.status === 'warning' ? 'bg-warning' : 'bg-danger'
+                    slo.budget.status === 'healthy'
+                      ? 'bg-success'
+                      : slo.budget.status === 'warning'
+                        ? 'bg-warning'
+                        : 'bg-danger',
                   )}
                   style={{ width: `${slo.current}%` }}
                 />
@@ -216,11 +242,17 @@ export default function ObservabilityPage() {
             </h3>
             <div className="space-y-2">
               {sloData.alerts.map((alert, i) => (
-                <div key={i} className={cn(
-                  'flex items-center gap-3 p-3 rounded-lg',
-                  alert.severity === 'critical' ? 'bg-danger/10' :
-                  alert.severity === 'warning' ? 'bg-warning/10' : 'bg-info/10'
-                )}>
+                <div
+                  key={i}
+                  className={cn(
+                    'flex items-center gap-3 p-3 rounded-lg',
+                    alert.severity === 'critical'
+                      ? 'bg-danger/10'
+                      : alert.severity === 'warning'
+                        ? 'bg-warning/10'
+                        : 'bg-info/10',
+                  )}
+                >
                   {alert.severity === 'critical' ? (
                     <XCircle className="h-5 w-5 text-danger" />
                   ) : alert.severity === 'warning' ? (
@@ -252,7 +284,8 @@ export default function ObservabilityPage() {
                   <p className="text-xs text-foreground-muted">Пам'ять</p>
                   <p className="font-bold">
                     {formatBytes(
-                      metricsData.gauges.find(g => g.name === 'system_memory_heap_used_bytes')?.value || 0
+                      metricsData.gauges.find((g) => g.name === 'system_memory_heap_used_bytes')
+                        ?.value || 0,
                     )}
                   </p>
                 </div>
@@ -269,7 +302,7 @@ export default function ObservabilityPage() {
                 <div>
                   <p className="text-xs text-foreground-muted">Запити</p>
                   <p className="font-bold">
-                    {metricsData.counters.find(c => c.name === 'http_requests_total')?.value || 0}
+                    {metricsData.counters.find((c) => c.name === 'http_requests_total')?.value || 0}
                   </p>
                 </div>
               </div>
@@ -285,7 +318,7 @@ export default function ObservabilityPage() {
                 <div>
                   <p className="text-xs text-foreground-muted">DB запити</p>
                   <p className="font-bold">
-                    {metricsData.counters.find(c => c.name === 'db_queries_total')?.value || 0}
+                    {metricsData.counters.find((c) => c.name === 'db_queries_total')?.value || 0}
                   </p>
                 </div>
               </div>
@@ -301,7 +334,7 @@ export default function ObservabilityPage() {
                 <div>
                   <p className="text-xs text-foreground-muted">AI запити</p>
                   <p className="font-bold">
-                    {metricsData.counters.find(c => c.name === 'ai_requests_total')?.value || 0}
+                    {metricsData.counters.find((c) => c.name === 'ai_requests_total')?.value || 0}
                   </p>
                 </div>
               </div>

@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 
+import { RevenueChart, PieChartWidget, FunnelChart } from '@/components/analytics/charts';
+import { DataError } from '@/components/data-error';
 import { Card, Skeleton } from '@/components/ui';
-import { BarChartWidget, RevenueChart, PieChartWidget, FunnelChart } from '@/components/analytics/charts';
 
 interface AnalyticsData {
   stats: {
@@ -22,22 +23,38 @@ interface AnalyticsData {
 }
 
 const typeLabels: Record<string, string> = {
-  call: 'Дзвінки', email: 'Листи', meeting: 'Зустрічі',
-  task: 'Задачі', note: 'Нотатки', sms: 'SMS',
+  call: 'Дзвінки',
+  email: 'Листи',
+  meeting: 'Зустрічі',
+  task: 'Задачі',
+  note: 'Нотатки',
+  sms: 'SMS',
 };
 
 export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [period, setPeriod] = useState('30');
 
-  useEffect(() => {
+  const loadAnalytics = () => {
     setLoading(true);
+    setLoadError(null);
     fetch(`/api/analytics?period=${period}`)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`Помилка ${r.status}`);
+        return r.json();
+      })
       .then(setData)
-      .catch(() => {})
+      .catch((err: unknown) => {
+        setData(null);
+        setLoadError(err instanceof Error ? err.message : 'Помилка завантаження');
+      })
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadAnalytics();
   }, [period]);
 
   if (loading) {
@@ -45,10 +62,13 @@ export default function AnalyticsPage() {
       <div className="space-y-6">
         <Skeleton className="h-8 w-48" />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24" />)}
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-24" />
+          ))}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Skeleton className="h-80" /><Skeleton className="h-80" />
+          <Skeleton className="h-80" />
+          <Skeleton className="h-80" />
         </div>
       </div>
     );
@@ -75,21 +95,29 @@ export default function AnalyticsPage() {
         </select>
       </div>
 
+      {loadError && <DataError message={loadError} onRetry={loadAnalytics} />}
+
       {/* Stats */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="p-5">
           <p className="text-sm text-foreground-muted">Конверсія</p>
           <p className="mt-2 text-3xl font-bold text-primary">{s?.conversionRate || 0}%</p>
-          <p className="text-sm text-foreground-muted">{s?.wonDeals || 0} виграних з {s?.wonDeals! + s?.lostDeals! || 0}</p>
+          <p className="text-sm text-foreground-muted">
+            {s?.wonDeals || 0} виграних з {(s?.wonDeals || 0) + (s?.lostDeals || 0)}
+          </p>
         </Card>
         <Card className="p-5">
           <p className="text-sm text-foreground-muted">Загальна виручка</p>
-          <p className="mt-2 text-3xl font-bold text-success">₴{(s?.totalRevenue || 0).toLocaleString('uk')}</p>
+          <p className="mt-2 text-3xl font-bold text-success">
+            ₴{(s?.totalRevenue || 0).toLocaleString('uk')}
+          </p>
           <p className="text-sm text-foreground-muted">Від виграних угод</p>
         </Card>
         <Card className="p-5">
           <p className="text-sm text-foreground-muted">Прогноз</p>
-          <p className="mt-2 text-3xl font-bold text-warning">₴{(s?.forecast || 0).toLocaleString('uk')}</p>
+          <p className="mt-2 text-3xl font-bold text-warning">
+            ₴{(s?.forecast || 0).toLocaleString('uk')}
+          </p>
           <p className="text-sm text-foreground-muted">На основі середньої угоди</p>
         </Card>
         <Card className="p-5">

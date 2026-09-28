@@ -1,18 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Bell, CheckSquare, Phone, Mail, Calendar, Repeat, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
 
+import { DataError } from '@/components/data-error';
 import { Card, Badge, Skeleton } from '@/components/ui';
-import {
-  Bell,
-  CheckSquare,
-  Phone,
-  Mail,
-  Calendar,
-  Repeat,
-  ArrowLeft,
-} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ReminderTask {
@@ -74,47 +67,66 @@ export default function NotificationsPage() {
   const [appNotifs, setAppNotifs] = useState<AppNotification[]>([]);
   const [sysOpen, setSysOpen] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
 
-  useEffect(() => {
-    fetch('/api/tasks/reminders?hours=24')
-      .then((r) => r.json())
-      .then((data) => {
-        setOverdue(data.overdue || []);
-        setUpcoming(data.upcoming || []);
+  const loadAll = () => {
+    setLoadError(null);
+    setLoading(true);
+    Promise.all([
+      fetch('/api/tasks/reminders?hours=24').then((r) => {
+        if (!r.ok) throw new Error(`Нагадування: помилка ${r.status}`);
+        return r.json();
+      }),
+      fetch('/api/notifications').then((r) => {
+        if (!r.ok) throw new Error(`Сповіщення: помилка ${r.status}`);
+        return r.json();
+      }),
+    ])
+      .then(([rem, notifs]) => {
+        setOverdue(rem.overdue || []);
+        setUpcoming(rem.upcoming || []);
+        setAppNotifs(notifs.notifications || []);
       })
-      .catch(() => {})
+      .catch((err: unknown) => {
+        setLoadError(err instanceof Error ? err.message : 'Помилка завантаження');
+      })
       .finally(() => setLoading(false));
+  };
 
-    // In-app системні сповіщення (автоматизації, інтеграції)
-    fetch('/api/notifications')
-      .then((r) => r.json())
-      .then((data) => setAppNotifs(data.notifications || []))
-      .catch(() => {});
+  useEffect(() => {
+    loadAll();
   }, []);
 
   const markOneRead = async (id: string) => {
     try {
-      await fetch('/api/notifications', {
+      const res = await fetch('/api/notifications', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids: [id] }),
       });
+      if (!res.ok) throw new Error(`Помилка ${res.status}`);
       setAppNotifs((prev) => prev.filter((n) => n.id !== id));
       window.dispatchEvent(new Event('notif-read'));
-    } catch {}
+    } catch {
+      // тост не зникає — повтор по кліку
+      console.warn('[notifications] mark-one-read failed');
+    }
   };
 
   const markAllRead = async () => {
     try {
-      await fetch('/api/notifications', {
+      const res = await fetch('/api/notifications', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
       });
+      if (!res.ok) throw new Error(`Помилка ${res.status}`);
       setAppNotifs([]);
       window.dispatchEvent(new Event('notif-read'));
-    } catch {}
+    } catch {
+      console.warn('[notifications] mark-all-read failed');
+    }
   };
 
   const visible = useMemo(() => {
@@ -165,7 +177,7 @@ export default function NotificationsPage() {
               'inline-flex min-h-10 items-center gap-2 rounded-xl border px-4 text-sm font-semibold transition-colors',
               filter === tab.id
                 ? 'border-[#111214] bg-[#111214] text-[#FFC700]'
-                : 'border-border bg-card text-[#111214] hover:border-[#111214]'
+                : 'border-border bg-card text-[#111214] hover:border-[#111214]',
             )}
           >
             {tab.label}
@@ -173,6 +185,8 @@ export default function NotificationsPage() {
           </button>
         ))}
       </div>
+
+      {loadError && !loading && <DataError message={loadError} onRetry={loadAll} />}
 
       {appNotifs.length > 0 && (
         <Card className="overflow-hidden">
@@ -194,32 +208,40 @@ export default function NotificationsPage() {
             </button>
           </div>
           {sysOpen && (
-          <div className="divide-y divide-border">
-            {appNotifs.map((n) => (
-              <div
-                key={n.id}
-                onClick={() => markOneRead(n.id)}
-                className="flex items-start gap-3 px-4 py-3.5 sm:px-5 cursor-pointer hover:bg-secondary/50 transition-colors"
-                title="Позначити прочитаним"
-              >
-                <span className={cn('mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg', appTypeConfig[n.type] || appTypeConfig.info)}>
-                  <Bell className="h-4 w-4" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-semibold">{n.title}</span>
-                  <span className="block text-xs text-foreground-muted mt-0.5">{n.message}</span>
-                  <span className="block text-[11px] text-foreground-muted/70 mt-1">
-                    {formatDateTime(n.createdAt)}
-                    {n.link && (
-                      <Link href={n.link} className="ml-2 font-semibold text-[#111214] underline-offset-4 hover:underline">
-                        Відкрити →
-                      </Link>
+            <div className="divide-y divide-border">
+              {appNotifs.map((n) => (
+                <div
+                  key={n.id}
+                  onClick={() => markOneRead(n.id)}
+                  className="flex items-start gap-3 px-4 py-3.5 sm:px-5 cursor-pointer hover:bg-secondary/50 transition-colors"
+                  title="Позначити прочитаним"
+                >
+                  <span
+                    className={cn(
+                      'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
+                      appTypeConfig[n.type] || appTypeConfig.info,
                     )}
+                  >
+                    <Bell className="h-4 w-4" />
                   </span>
-                </span>
-              </div>
-            ))}
-          </div>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold">{n.title}</span>
+                    <span className="block text-xs text-foreground-muted mt-0.5">{n.message}</span>
+                    <span className="block text-[11px] text-foreground-muted/70 mt-1">
+                      {formatDateTime(n.createdAt)}
+                      {n.link && (
+                        <Link
+                          href={n.link}
+                          className="ml-2 font-semibold text-[#111214] underline-offset-4 hover:underline"
+                        >
+                          Відкрити →
+                        </Link>
+                      )}
+                    </span>
+                  </span>
+                </div>
+              ))}
+            </div>
           )}
         </Card>
       )}
@@ -249,22 +271,31 @@ export default function NotificationsPage() {
               <span
                 className={cn(
                   'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
-                  task.flag === 'overdue' ? 'bg-danger/10 text-danger' : 'bg-[#111214] text-[#FFC700]'
+                  task.flag === 'overdue'
+                    ? 'bg-danger/10 text-danger'
+                    : 'bg-[#111214] text-[#FFC700]',
                 )}
               >
                 {typeIcons[task.type] || <CheckSquare className="h-4 w-4" />}
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-semibold">{task.title}</span>
-                <span className={cn(
-                  'block text-xs',
-                  task.flag === 'overdue' ? 'text-danger' : 'text-foreground-muted'
-                )}>
+                <span
+                  className={cn(
+                    'block text-xs',
+                    task.flag === 'overdue' ? 'text-danger' : 'text-foreground-muted',
+                  )}
+                >
                   {task.flag === 'overdue' ? 'Протерміновано · ' : ''}
                   {formatDateTime(task.reminderAt)}
                 </span>
               </span>
-              <span className={cn('shrink-0 text-xs font-semibold', priorityConfig[task.priority]?.color)}>
+              <span
+                className={cn(
+                  'shrink-0 text-xs font-semibold',
+                  priorityConfig[task.priority]?.color,
+                )}
+              >
                 {priorityConfig[task.priority]?.label}
               </span>
             </Link>
