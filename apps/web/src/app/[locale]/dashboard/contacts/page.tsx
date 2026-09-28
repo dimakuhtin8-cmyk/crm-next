@@ -409,8 +409,8 @@ export default function ContactsPage() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {/* Table header */}
-          <div className="grid grid-cols-12 gap-4 px-4 py-2 text-xs font-medium text-foreground-muted">
+          {/* Table header — desktop only */}
+          <div className="hidden md:grid grid-cols-12 gap-4 px-4 py-2 text-xs font-medium text-foreground-muted">
             <div className="col-span-1">
               <input
                 type="checkbox"
@@ -427,98 +427,165 @@ export default function ContactsPage() {
             <div className="col-span-1">Теги</div>
           </div>
 
-          {/* Rows */}
-          {contacts.map((contact) => (
-            <div
-              key={contact.id}
-              className={cn(
-                'grid grid-cols-12 gap-4 px-4 py-3 bg-card rounded-lg border border-border hover:bg-secondary/50 transition-colors cursor-pointer items-center',
-                selectedIds.has(contact.id) && 'border-primary bg-primary/5',
-              )}
-            >
-              <div className="col-span-1">
-                <input
-                  type="checkbox"
-                  checked={selectedIds.has(contact.id)}
-                  onChange={() => toggleSelect(contact.id)}
-                  onClick={(e) => e.stopPropagation()}
-                  className="h-4 w-4 rounded border-border"
-                />
-              </div>
+          {/* Mobile cards (<md): имя + компания крупно, остальное ниже, тап = карточка */}
+          <div className="md:hidden space-y-2">
+            {contacts.map((contact) => (
               <div
-                className="col-span-3"
+                key={contact.id}
                 onClick={() => router.push(`/dashboard/contacts/${contact.id}`)}
+                className={cn(
+                  'bg-card rounded-lg border border-border p-4 space-y-2 cursor-pointer active:bg-secondary/50 transition-colors',
+                  selectedIds.has(contact.id) && 'border-primary bg-primary/5',
+                )}
               >
                 <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
                     {contact.firstName.charAt(0)}
                   </div>
-                  <div className="min-w-0">
-                    <p className="font-medium truncate">{getName(contact)}</p>
-                    {contact.position && (
-                      <p className="text-xs text-foreground-muted truncate">{contact.position}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-base truncate">{getName(contact)}</p>
+                    {(contact.company || contact.position) && (
+                      <p className="text-sm text-foreground-muted truncate">
+                        {[contact.position, contact.company].filter(Boolean).join(' · ')}
+                      </p>
                     )}
                   </div>
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(contact.id)}
+                    onChange={() => toggleSelect(contact.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="h-5 w-5 rounded border-border shrink-0"
+                    aria-label="Обрати контакт"
+                  />
+                </div>
+                {(contact.phone || contact.email) && (
+                  <p className="text-sm text-foreground-muted truncate pl-[52px]">
+                    {[contact.phone, contact.email].filter(Boolean).join(' · ')}
+                  </p>
+                )}
+                <div className="flex gap-1.5 flex-wrap items-center pl-[52px]">
+                  <Badge
+                    variant={statusConfig[contact.status]?.variant || 'outline'}
+                    className="text-xs"
+                  >
+                    {statusConfig[contact.status]?.label || contact.status}
+                  </Badge>
+                  {contact.tags?.slice(0, 3).map((ct) => (
+                    <Badge
+                      key={ct.tag.id}
+                      variant="outline"
+                      className="text-xs"
+                      style={
+                        ct.tag.color
+                          ? { borderColor: ct.tag.color, color: ct.tag.color }
+                          : undefined
+                      }
+                    >
+                      {ct.tag.name}
+                    </Badge>
+                  ))}
                 </div>
               </div>
+            ))}
+          </div>
 
+          {/* Rows — desktop table */}
+          <div className="hidden md:block space-y-2">
+            {contacts.map((contact) => (
               <div
-                className="col-span-2 text-sm text-foreground-muted truncate"
-                onClick={() => router.push(`/dashboard/contacts/${contact.id}`)}
-              >
-                {contact.company || '—'}
-              </div>
-
-              <div
-                className="col-span-2 text-sm truncate"
-                onClick={() => router.push(`/dashboard/contacts/${contact.id}`)}
-              >
-                {contact.email || '—'}
-              </div>
-
-              <div
-                className="col-span-2 text-sm truncate"
-                onClick={() => router.push(`/dashboard/contacts/${contact.id}`)}
-              >
-                {contact.phone || '—'}
-              </div>
-
-              <div
-                className="col-span-1"
-                onClick={() => router.push(`/dashboard/contacts/${contact.id}`)}
-              >
-                <Badge
-                  variant={statusConfig[contact.status]?.variant || 'outline'}
-                  className="text-xs"
-                >
-                  {statusConfig[contact.status]?.label || contact.status}
-                </Badge>
-              </div>
-
-              <div
-                className="col-span-1 flex gap-1 flex-wrap"
-                onClick={() => router.push(`/dashboard/contacts/${contact.id}`)}
-              >
-                {contact.tags?.slice(0, 2).map((ct) => (
-                  <Badge
-                    key={ct.tag.id}
-                    variant="outline"
-                    className="text-xs"
-                    style={
-                      ct.tag.color ? { borderColor: ct.tag.color, color: ct.tag.color } : undefined
-                    }
-                  >
-                    {ct.tag.name}
-                  </Badge>
-                ))}
-                {(contact.tags?.length || 0) > 2 && (
-                  <Badge variant="outline" className="text-xs">
-                    +{contact.tags!.length - 2}
-                  </Badge>
+                key={contact.id}
+                className={cn(
+                  'grid grid-cols-12 gap-4 px-4 py-3 bg-card rounded-lg border border-border hover:bg-secondary/50 transition-colors cursor-pointer items-center',
+                  selectedIds.has(contact.id) && 'border-primary bg-primary/5',
                 )}
+              >
+                <div className="col-span-1">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(contact.id)}
+                    onChange={() => toggleSelect(contact.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="h-4 w-4 rounded border-border"
+                  />
+                </div>
+                <div
+                  className="col-span-3"
+                  onClick={() => router.push(`/dashboard/contacts/${contact.id}`)}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                      {contact.firstName.charAt(0)}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{getName(contact)}</p>
+                      {contact.position && (
+                        <p className="text-xs text-foreground-muted truncate">{contact.position}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  className="col-span-2 text-sm text-foreground-muted truncate"
+                  onClick={() => router.push(`/dashboard/contacts/${contact.id}`)}
+                >
+                  {contact.company || '—'}
+                </div>
+
+                <div
+                  className="col-span-2 text-sm truncate"
+                  onClick={() => router.push(`/dashboard/contacts/${contact.id}`)}
+                >
+                  {contact.email || '—'}
+                </div>
+
+                <div
+                  className="col-span-2 text-sm truncate"
+                  onClick={() => router.push(`/dashboard/contacts/${contact.id}`)}
+                >
+                  {contact.phone || '—'}
+                </div>
+
+                <div
+                  className="col-span-1"
+                  onClick={() => router.push(`/dashboard/contacts/${contact.id}`)}
+                >
+                  <Badge
+                    variant={statusConfig[contact.status]?.variant || 'outline'}
+                    className="text-xs"
+                  >
+                    {statusConfig[contact.status]?.label || contact.status}
+                  </Badge>
+                </div>
+
+                <div
+                  className="col-span-1 flex gap-1 flex-wrap"
+                  onClick={() => router.push(`/dashboard/contacts/${contact.id}`)}
+                >
+                  {contact.tags?.slice(0, 2).map((ct) => (
+                    <Badge
+                      key={ct.tag.id}
+                      variant="outline"
+                      className="text-xs"
+                      style={
+                        ct.tag.color
+                          ? { borderColor: ct.tag.color, color: ct.tag.color }
+                          : undefined
+                      }
+                    >
+                      {ct.tag.name}
+                    </Badge>
+                  ))}
+                  {(contact.tags?.length || 0) > 2 && (
+                    <Badge variant="outline" className="text-xs">
+                      +{contact.tags!.length - 2}
+                    </Badge>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
