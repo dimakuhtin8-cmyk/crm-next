@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import { QuickCreatePopover, QuickTaskForm } from '@/components/quick-create';
-import { Button, Input, Badge, Card, CardContent } from '@/components/ui';
+import { Button, Input, Badge, Card, CardContent, EmptyState } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
 interface Task {
@@ -373,9 +373,12 @@ export default function TasksPage() {
           </div>
         ) : tasks.length === 0 ? (
           <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-foreground-muted mb-4">Задач не знайдено</p>
-              <Button onClick={() => setQuickOpen(true)}>Створити задачу</Button>
+            <CardContent>
+              <EmptyState
+                title="Задач не знайдено"
+                description="Створіть першу задачу, щоб нічого не забути"
+                action={<Button onClick={() => setQuickOpen(true)}>Створити задачу</Button>}
+              />
             </CardContent>
           </Card>
         ) : (

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import { QuickCreatePopover, QuickContactForm } from '@/components/quick-create';
-import { Button, Input, Badge, Card, CardContent } from '@/components/ui';
+import { Button, Input, Badge, Card, CardContent, EmptyState } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
 interface Contact {
@@ -390,21 +390,26 @@ export default function ContactsPage() {
         </div>
       ) : contacts.length === 0 ? (
         <Card>
-          <CardContent className="py-12 text-center">
-            <svg
-              className="h-12 w-12 mx-auto text-foreground-muted mb-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-            >
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
-            <p className="text-foreground-muted mb-4">Контактів не знайдено</p>
-            <Button onClick={() => setQuickOpen(true)}>Додати перший контакт</Button>
+          <CardContent>
+            <EmptyState
+              icon={
+                <svg
+                  className="h-12 w-12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                >
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+              }
+              title="Контактів не знайдено"
+              description="Додайте перший контакт, щоб почати роботу"
+              action={<Button onClick={() => setQuickOpen(true)}>Додати перший контакт</Button>}
+            />
           </CardContent>
         </Card>
       ) : (

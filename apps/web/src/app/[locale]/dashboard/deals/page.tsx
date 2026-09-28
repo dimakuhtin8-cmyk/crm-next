@@ -29,7 +29,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { QuickCreatePopover, QuickDealForm } from '@/components/quick-create';
-import { Button } from '@/components/ui';
+import { Button, Card, CardContent, EmptyState } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
 interface Pipeline {
@@ -412,134 +412,150 @@ export default function DealsPage() {
       )}
 
       {/* Kanban Board */}
-      {selectedPipeline && (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCorners}
-          onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
-          onDragEnd={handleDragEnd}
-        >
-          <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4">
-            {selectedPipeline.stages.map((stage, stageIdx) => {
-              const stageDeals = getStageDeals(stage.id);
-              const total = getStageTotal(stage.id);
-              const weighted = getWeightedValue(stage.id);
-              const isOver = overStageId === stage.id;
-              const conversion = getConversionRate(stageIdx);
+      {selectedPipeline && deals.length === 0 ? (
+        <Card>
+          <CardContent>
+            <EmptyState
+              title="Угод поки немає"
+              description="Створіть першу угоду, щоб воронка ожила"
+              action={<Button onClick={() => setQuickOpen(true)}>Створити угоду</Button>}
+            />
+          </CardContent>
+        </Card>
+      ) : (
+        selectedPipeline && (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCorners}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDragEnd={handleDragEnd}
+          >
+            <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4">
+              {selectedPipeline.stages.map((stage, stageIdx) => {
+                const stageDeals = getStageDeals(stage.id);
+                const total = getStageTotal(stage.id);
+                const weighted = getWeightedValue(stage.id);
+                const isOver = overStageId === stage.id;
+                const conversion = getConversionRate(stageIdx);
 
-              return (
-                <DroppableStage key={stage.id} stage={stage} isOver={isOver}>
-                  {/* Stage header */}
-                  <div className="p-4 border-b border-border">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2.5">
-                        <div
-                          className={cn(
-                            'h-3 w-3 rounded-full shadow-sm',
-                            `bg-gradient-to-br ${stageColors[stageIdx % stageColors.length]}`,
-                          )}
-                        />
-                        <h3 className="font-semibold text-sm">{stage.name}</h3>
-                        <span className="flex items-center justify-center h-5 min-w-5 rounded-full bg-secondary px-1.5 text-xs font-bold text-foreground-muted">
-                          {stageDeals.length}
-                        </span>
+                return (
+                  <DroppableStage key={stage.id} stage={stage} isOver={isOver}>
+                    {/* Stage header */}
+                    <div className="p-4 border-b border-border">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2.5">
+                          <div
+                            className={cn(
+                              'h-3 w-3 rounded-full shadow-sm',
+                              `bg-gradient-to-br ${stageColors[stageIdx % stageColors.length]}`,
+                            )}
+                          />
+                          <h3 className="font-semibold text-sm">{stage.name}</h3>
+                          <span className="flex items-center justify-center h-5 min-w-5 rounded-full bg-secondary px-1.5 text-xs font-bold text-foreground-muted">
+                            {stageDeals.length}
+                          </span>
+                        </div>
+                        <button className="p-1 rounded-lg hover:bg-secondary text-foreground-muted hover:text-foreground transition-colors">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </button>
                       </div>
-                      <button className="p-1 rounded-lg hover:bg-secondary text-foreground-muted hover:text-foreground transition-colors">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </button>
-                    </div>
 
-                    <div className="flex items-center gap-4">
-                      <div>
-                        <p className="text-xs text-foreground-muted">Сума</p>
-                        <p className="text-sm font-bold text-foreground">
-                          {total > 0 ? `${currencySymbols.UAH}${total.toLocaleString('uk')}` : '—'}
-                        </p>
+                      <div className="flex items-center gap-4">
+                        <div>
+                          <p className="text-xs text-foreground-muted">Сума</p>
+                          <p className="text-sm font-bold text-foreground">
+                            {total > 0
+                              ? `${currencySymbols.UAH}${total.toLocaleString('uk')}`
+                              : '—'}
+                          </p>
+                        </div>
+                        <div className="h-6 w-px bg-border" />
+                        <div>
+                          <p className="text-xs text-foreground-muted">Зважена</p>
+                          <p className="text-sm font-bold text-foreground">
+                            {weighted > 0
+                              ? `${currencySymbols.UAH}${Math.round(weighted).toLocaleString('uk')}`
+                              : '—'}
+                          </p>
+                        </div>
                       </div>
-                      <div className="h-6 w-px bg-border" />
-                      <div>
-                        <p className="text-xs text-foreground-muted">Зважена</p>
-                        <p className="text-sm font-bold text-foreground">
-                          {weighted > 0
-                            ? `${currencySymbols.UAH}${Math.round(weighted).toLocaleString('uk')}`
-                            : '—'}
-                        </p>
-                      </div>
-                    </div>
 
-                    {stageIdx > 0 && (
-                      <div className="flex items-center gap-1.5 mt-2">
-                        <ArrowRight className="h-3 w-3 text-foreground-muted" />
-                        <span
-                          className={cn(
-                            'text-xs font-medium',
-                            conversion >= 50
-                              ? 'text-success'
-                              : conversion >= 25
-                                ? 'text-warning'
-                                : 'text-danger',
-                          )}
-                        >
-                          {conversion}% конверсія
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Deals list */}
-                  <div className="flex-1 p-3 space-y-2.5 overflow-y-auto max-h-[calc(100vh-340px)]">
-                    {stageDeals.map((deal) => (
-                      <DraggableDeal
-                        key={deal.id}
-                        deal={deal}
-                        isDragging={activeDeal?.id === deal.id}
-                        onClick={() => router.push(`/dashboard/deals/${deal.id}`)}
-                      />
-                    ))}
-
-                    {stageDeals.length === 0 && (
-                      <div className="py-8 text-center">
-                        <p className="text-xs text-foreground-muted/60">Перетягніть угоду сюди</p>
-                      </div>
-                    )}
-                  </div>
-                </DroppableStage>
-              );
-            })}
-          </div>
-
-          <DragOverlay dropAnimation={null}>
-            {activeDeal ? (
-              <div className="kanban-card ring-2 ring-primary shadow-2xl rotate-3 opacity-90 max-w-[320px]">
-                <div className="flex items-start gap-2">
-                  <GripVertical className="h-4 w-4 text-foreground-muted/40 mt-0.5 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm mb-1.5 line-clamp-2">{activeDeal.title}</p>
-                    {activeDeal.value != null && (
-                      <p className="text-base font-bold text-primary mb-2">
-                        {currencySymbols[activeDeal.currency] || activeDeal.currency}
-                        {activeDeal.value.toLocaleString('uk')}
-                      </p>
-                    )}
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {activeDeal.aiScore != null && (
-                        <span
-                          className={cn(
-                            'inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-lg',
-                            getScoreColor(activeDeal.aiScore),
-                          )}
-                        >
-                          AI {activeDeal.aiScore}%
-                        </span>
+                      {stageIdx > 0 && (
+                        <div className="flex items-center gap-1.5 mt-2">
+                          <ArrowRight className="h-3 w-3 text-foreground-muted" />
+                          <span
+                            className={cn(
+                              'text-xs font-medium',
+                              conversion >= 50
+                                ? 'text-success'
+                                : conversion >= 25
+                                  ? 'text-warning'
+                                  : 'text-danger',
+                            )}
+                          >
+                            {conversion}% конверсія
+                          </span>
+                        </div>
                       )}
+                    </div>
+
+                    {/* Deals list */}
+                    <div className="flex-1 p-3 space-y-2.5 overflow-y-auto max-h-[calc(100vh-340px)]">
+                      {stageDeals.map((deal) => (
+                        <DraggableDeal
+                          key={deal.id}
+                          deal={deal}
+                          isDragging={activeDeal?.id === deal.id}
+                          onClick={() => router.push(`/dashboard/deals/${deal.id}`)}
+                        />
+                      ))}
+
+                      {stageDeals.length === 0 && (
+                        <div className="py-8 text-center">
+                          <p className="text-xs text-foreground-muted/60">Перетягніть угоду сюди</p>
+                        </div>
+                      )}
+                    </div>
+                  </DroppableStage>
+                );
+              })}
+            </div>
+
+            <DragOverlay dropAnimation={null}>
+              {activeDeal ? (
+                <div className="kanban-card ring-2 ring-primary shadow-2xl rotate-3 opacity-90 max-w-[320px]">
+                  <div className="flex items-start gap-2">
+                    <GripVertical className="h-4 w-4 text-foreground-muted/40 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm mb-1.5 line-clamp-2">
+                        {activeDeal.title}
+                      </p>
+                      {activeDeal.value != null && (
+                        <p className="text-base font-bold text-primary mb-2">
+                          {currencySymbols[activeDeal.currency] || activeDeal.currency}
+                          {activeDeal.value.toLocaleString('uk')}
+                        </p>
+                      )}
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {activeDeal.aiScore != null && (
+                          <span
+                            className={cn(
+                              'inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-lg',
+                              getScoreColor(activeDeal.aiScore),
+                            )}
+                          >
+                            AI {activeDeal.aiScore}%
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ) : null}
-          </DragOverlay>
-        </DndContext>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
+        )
       )}
     </div>
   );

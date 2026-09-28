@@ -145,6 +145,14 @@ export default function DashboardPage() {
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [customizing, setCustomizing] = useState(false);
   const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null);
+  const [steps, setSteps] = useState<{
+    hasContacts: boolean;
+    hasDeals: boolean;
+    telegramConnected: boolean;
+    aiConnected: boolean;
+    hasTeammates: boolean;
+  } | null>(null);
+  const [stepsHidden, setStepsHidden] = useState(false);
   const [widgetOrder, setWidgetOrder] = useState<WidgetId[]>(() =>
     DEFAULT_WIDGETS.map((w) => w.id),
   );
@@ -174,6 +182,20 @@ export default function DashboardPage() {
       })
       .catch(() => {
         // фоновая проверка триала: баннера просто не будет
+      });
+    // «Перші кроки» — из данных, тихий сбой допустим.
+    try {
+      if (localStorage.getItem('first-steps-hidden') === '1') setStepsHidden(true);
+    } catch {
+      // localStorage недоступен — карточка покажется
+    }
+    fetch('/api/onboarding/checklist', { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d) setSteps(d);
+      })
+      .catch(() => {
+        // фоновий чеклист: мовчазно, картки просто не буде
       });
   }, []);
 
@@ -572,6 +594,79 @@ export default function DashboardPage() {
           </p>
         </div>
       )}
+
+      {/* First steps */}
+      {steps &&
+        !stepsHidden &&
+        !(
+          steps.hasContacts &&
+          steps.hasDeals &&
+          steps.telegramConnected &&
+          steps.aiConnected &&
+          steps.hasTeammates
+        ) && (
+          <Card className="p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-bold">Перші кроки</h2>
+              <button
+                onClick={() => {
+                  try {
+                    localStorage.setItem('first-steps-hidden', '1');
+                  } catch {
+                    // localStorage недоступен — просто скрываем до перезагрузки
+                  }
+                  setStepsHidden(true);
+                }}
+                className="text-sm text-foreground-muted hover:text-foreground transition-colors"
+              >
+                Пізніше
+              </button>
+            </div>
+            <div className="space-y-2">
+              {[
+                {
+                  done: steps.hasContacts,
+                  label: 'Додати або імпортувати контакти',
+                  href: '/dashboard/contacts',
+                },
+                { done: steps.hasDeals, label: 'Створити першу угоду', href: '/dashboard/deals' },
+                {
+                  done: steps.telegramConnected,
+                  label: 'Підключити Telegram',
+                  href: '/dashboard/settings/telegram',
+                },
+                {
+                  done: steps.aiConnected,
+                  label: 'Підключити AI',
+                  href: '/dashboard/settings/ai-keys',
+                },
+                {
+                  done: steps.hasTeammates,
+                  label: 'Запросити колегу',
+                  href: '/dashboard/settings/tenants',
+                },
+              ].map((s) => (
+                <Link
+                  key={s.label}
+                  href={s.href}
+                  className="flex items-center gap-3 rounded-xl border border-border px-4 py-2.5 text-sm transition-colors hover:border-primary/50 hover:bg-primary/5"
+                >
+                  <span
+                    className={cn(
+                      'flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-bold',
+                      s.done ? 'bg-success text-white' : 'bg-secondary text-foreground-muted',
+                    )}
+                  >
+                    {s.done ? '✓' : '·'}
+                  </span>
+                  <span className={cn(s.done && 'text-foreground-muted line-through')}>
+                    {s.label}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </Card>
+        )}
 
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-3">
