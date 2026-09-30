@@ -154,14 +154,15 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                 Спробувати безкоштовно
               </Link>
               <Link
-                href={`/${locale}/auth/login`}
+                href="#mozlyvosti"
                 className="inline-flex min-h-12 items-center justify-center rounded-xl border border-foreground bg-transparent px-7 text-sm font-bold transition-colors hover:bg-secondary"
               >
-                Хочу демо
+                Дивитися можливості
               </Link>
             </div>
             <p className="mt-5 text-sm font-medium text-foreground-secondary">
-              Воронка, завдання, комунікація та контроль команди — без хаосу в таблицях.
+              Воронка, завдання, комунікація та контроль команди — без хаосу в таблицях. Без картки
+              · 14 днів пробного періоду.
             </p>
           </div>
 
@@ -198,13 +199,13 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         </div>
       </section>
 
-      {/* Stats strip */}
-      <section id="analityka" className="border-b border-border bg-secondary/40">
+      {/* Facts strip — only verifiable product facts, no invented metrics */}
+      <section className="border-b border-border bg-secondary/40">
         <div className="mx-auto grid max-w-6xl gap-4 px-4 py-10 sm:grid-cols-3 sm:px-6">
           {[
-            ['48', 'нових звернень'],
-            ['₴730 тис.', 'прогноз закриття'],
-            ['4', 'ролі доступу'],
+            ['4', 'ролі доступу: від глядача до власника'],
+            ['3', 'канали: Telegram, WhatsApp, Email'],
+            ['AI', 'Co-Pilot з доступом до ваших даних'],
           ].map(([value, label]) => (
             <div key={label} className="rounded-2xl border border-border bg-card px-5 py-6">
               <p className="text-3xl font-bold tabular-nums tracking-tight">{value}</p>
@@ -232,10 +233,10 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             </div>
           </div>
           <Link
-            href={`/${locale}/auth/register`}
+            href="#mozlyvosti"
             className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg bg-foreground px-5 text-sm font-bold text-background transition-colors hover:opacity-90"
           >
-            Дивитися демо
+            Дивитися можливості
           </Link>
         </div>
       </section>
@@ -327,7 +328,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
               </div>
             </div>
 
-            <div>
+            <div id="analityka">
               <h3 className="text-xl font-bold tracking-tight">Аналітика й контроль доступу</h3>
               <p className="mt-3 max-w-[68ch] text-sm leading-7 text-foreground-secondary sm:text-base">
                 Видно джерела лідів, завантаженість команди й вузькі місця воронки. Доступ — за
