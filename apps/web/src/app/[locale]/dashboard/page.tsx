@@ -20,6 +20,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import { BarChartWidget, PieChartWidget, LineChartWidget } from '@/components/analytics/charts';
+import { resetTour, useTour, useTourAutoStart } from '@/components/tour/tour-provider';
 import { Card, Badge, Skeleton } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
@@ -158,6 +159,9 @@ export default function DashboardPage() {
   );
   const [hiddenWidgets, setHiddenWidgets] = useState<WidgetId[]>([]);
   const [prefsLoaded, setPrefsLoaded] = useState(false);
+  const { startTour } = useTour();
+
+  useTourAutoStart('dashboard');
 
   useEffect(() => {
     Promise.all([
@@ -605,22 +609,33 @@ export default function DashboardPage() {
           steps.aiConnected &&
           steps.hasTeammates
         ) && (
-          <Card className="p-5">
+          <Card className="p-5" data-tour="first-steps">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-bold">Перші кроки</h2>
-              <button
-                onClick={() => {
-                  try {
-                    localStorage.setItem('first-steps-hidden', '1');
-                  } catch {
-                    // localStorage недоступен — просто скрываем до перезагрузки
-                  }
-                  setStepsHidden(true);
-                }}
-                className="text-sm text-foreground-muted hover:text-foreground transition-colors"
-              >
-                Пізніше
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    resetTour('dashboard');
+                    startTour('dashboard');
+                  }}
+                  className="text-sm text-foreground-muted hover:text-foreground transition-colors"
+                >
+                  Пройти тур
+                </button>
+                <button
+                  onClick={() => {
+                    try {
+                      localStorage.setItem('first-steps-hidden', '1');
+                    } catch {
+                      // localStorage недоступен — просто скрываем до перезагрузки
+                    }
+                    setStepsHidden(true);
+                  }}
+                  className="text-sm text-foreground-muted hover:text-foreground transition-colors"
+                >
+                  Пізніше
+                </button>
+              </div>
             </div>
             <div className="space-y-2">
               {[

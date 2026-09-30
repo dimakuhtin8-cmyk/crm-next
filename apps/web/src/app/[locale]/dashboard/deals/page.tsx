@@ -29,6 +29,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { QuickCreatePopover, QuickDealForm } from '@/components/quick-create';
+import { useTourAutoStart } from '@/components/tour/tour-provider';
 import { Button, Card, CardContent, EmptyState } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
@@ -223,6 +224,8 @@ export default function DealsPage() {
   const [quickOpen, setQuickOpen] = useState(false);
   const quickBtnRef = useRef<HTMLButtonElement>(null);
 
+  useTourAutoStart('deals');
+
   const handleQuickCreated = () => {
     setQuickOpen(false);
     fetchDeals();
@@ -367,7 +370,13 @@ export default function DealsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleScoreAll} disabled={scoringDeals}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleScoreAll}
+            disabled={scoringDeals}
+            data-tour="deal-score"
+          >
             <Bot className="h-4 w-4 mr-1.5" />
             {scoringDeals ? 'Оцінка...' : 'AI Оцінити все'}
           </Button>
@@ -376,7 +385,12 @@ export default function DealsPage() {
               <Settings className="h-4 w-4" />
             </Button>
           </Link>
-          <Button ref={quickBtnRef} size="sm" onClick={() => setQuickOpen(true)}>
+          <Button
+            ref={quickBtnRef}
+            size="sm"
+            onClick={() => setQuickOpen(true)}
+            data-tour="deal-add"
+          >
             <Plus className="h-4 w-4 mr-1.5" />
             Нова угода
           </Button>
@@ -431,7 +445,7 @@ export default function DealsPage() {
             onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}
           >
-            <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4">
+            <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4" data-tour="deal-kanban">
               {selectedPipeline.stages.map((stage, stageIdx) => {
                 const stageDeals = getStageDeals(stage.id);
                 const total = getStageTotal(stage.id);

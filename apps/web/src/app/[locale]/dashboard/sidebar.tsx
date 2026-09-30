@@ -294,7 +294,7 @@ export function Sidebar({ collapsed = false, onToggle, onMobileClose }: SidebarP
       )}
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6" data-tour="nav">
         {filteredGroups.map((group) => (
           <div key={group.label}>
             {!collapsed &&

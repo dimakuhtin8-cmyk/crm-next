@@ -238,6 +238,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
           {/* Search bar with Cmd+K shortcut */}
           <button
             onClick={() => setIsSearchOpen(true)}
+            data-tour="search"
             className="hidden sm:flex items-center gap-3 h-10 w-80 rounded-xl border border-border bg-background-secondary px-4 text-sm text-foreground-muted hover:border-border-hover hover:bg-background-tertiary transition-all duration-200"
           >
             <Search className="h-4 w-4" />
@@ -260,7 +261,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
         {/* Right side */}
         <div className="flex items-center gap-1.5">
           {/* Quick Actions */}
-          <div className="relative" ref={quickRef}>
+          <div className="relative" ref={quickRef} data-tour="quick-create">
             <button
               onClick={() => {
                 setIsQuickOpen(!isQuickOpen);

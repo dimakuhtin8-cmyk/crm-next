@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import { QuickCreatePopover, QuickContactForm } from '@/components/quick-create';
+import { useTourAutoStart } from '@/components/tour/tour-provider';
 import { Button, Input, Badge, Card, CardContent, EmptyState } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
@@ -59,6 +60,8 @@ export default function ContactsPage() {
   // Quick-create popover
   const [quickOpen, setQuickOpen] = useState(false);
   const quickBtnRef = useRef<HTMLButtonElement>(null);
+
+  useTourAutoStart('contacts');
 
   const handleQuickCreated = () => {
     setQuickOpen(false);
@@ -205,7 +208,7 @@ export default function ContactsPage() {
             </svg>
             Експорт
           </Button>
-          <Link href="/dashboard/contacts/import">
+          <Link href="/dashboard/contacts/import" data-tour="contact-import">
             <Button variant="outline">
               <svg
                 className="h-4 w-4 mr-2"
@@ -221,7 +224,7 @@ export default function ContactsPage() {
               Імпорт
             </Button>
           </Link>
-          <Button ref={quickBtnRef} onClick={() => setQuickOpen(true)}>
+          <Button ref={quickBtnRef} onClick={() => setQuickOpen(true)} data-tour="contact-add">
             <svg
               className="h-4 w-4 mr-2"
               viewBox="0 0 24 24"
@@ -289,7 +292,7 @@ export default function ContactsPage() {
       {/* Search + Filters */}
       <Card>
         <CardContent className="p-4">
-          <form onSubmit={handleSearch} className="flex gap-3">
+          <form onSubmit={handleSearch} className="flex gap-3" data-tour="contact-search">
             <div className="relative flex-1">
               <Input
                 placeholder="Пошук за ім'ям, email, телефоном, компанією..."

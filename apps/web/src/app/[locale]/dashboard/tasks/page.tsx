@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import { QuickCreatePopover, QuickTaskForm } from '@/components/quick-create';
+import { useTourAutoStart } from '@/components/tour/tour-provider';
 import { Button, Input, Badge, Card, CardContent, EmptyState } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
@@ -64,6 +65,8 @@ export default function TasksPage() {
   // Quick-create popover
   const [quickOpen, setQuickOpen] = useState(false);
   const quickBtnRef = useRef<HTMLButtonElement>(null);
+
+  useTourAutoStart('tasks');
 
   const handleQuickCreated = () => {
     setQuickOpen(false);
@@ -222,7 +225,10 @@ export default function TasksPage() {
         </div>
         <div className="flex gap-2">
           {/* View toggle */}
-          <div className="flex border border-border rounded-lg overflow-hidden">
+          <div
+            className="flex border border-border rounded-lg overflow-hidden"
+            data-tour="task-views"
+          >
             <button
               onClick={() => setView('list')}
               className={cn(
@@ -257,7 +263,7 @@ export default function TasksPage() {
               Календар
             </button>
           </div>
-          <Button ref={quickBtnRef} onClick={() => setQuickOpen(true)}>
+          <Button ref={quickBtnRef} onClick={() => setQuickOpen(true)} data-tour="task-add">
             <svg
               className="h-4 w-4 mr-2"
               viewBox="0 0 24 24"

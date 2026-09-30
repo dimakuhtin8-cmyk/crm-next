@@ -14,6 +14,7 @@ import {
 import { useSearchParams } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 
+import { useTourAutoStart } from '@/components/tour/tour-provider';
 import { Button, Card, CardContent, Input } from '@/components/ui';
 import { AI_PROVIDERS, getProvider } from '@/lib/ai/providers';
 
@@ -78,6 +79,8 @@ export default function CopilotPage() {
 
   // Chat state
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+
+  useTourAutoStart('copilot', aiStatus === 'ready');
   const [inputValue, setInputValue] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
   const [selectedChatModel, setSelectedChatModel] = useState('gemini-3-flash-preview');
@@ -471,7 +474,10 @@ export default function CopilotPage() {
       <div className="flex-1 min-h-0 flex gap-4">
         {/* Sessions aside */}
         {aiStatus === 'ready' && (
-          <aside className="hidden md:flex w-72 shrink-0 flex-col rounded-2xl border border-border bg-card overflow-hidden">
+          <aside
+            className="hidden md:flex w-72 shrink-0 flex-col rounded-2xl border border-border bg-card overflow-hidden"
+            data-tour="copilot-sessions"
+          >
             <div className="shrink-0 p-3 border-b border-border">
               <Button onClick={newSession} className="w-full" variant="outline">
                 <Plus className="w-4 h-4 mr-2" />
@@ -635,7 +641,10 @@ export default function CopilotPage() {
             {/* Input area */}
             <div className="shrink-0 border-t border-border p-4">
               <div className="relative">
-                <div className="flex items-end gap-2 bg-accent/40 rounded-2xl border border-border focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/20 transition-all px-4 py-3">
+                <div
+                  className="flex items-end gap-2 bg-accent/40 rounded-2xl border border-border focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/20 transition-all px-4 py-3"
+                  data-tour="copilot-input"
+                >
                   <button className="shrink-0 p-1 rounded-lg hover:bg-accent transition-colors text-foreground-muted hover:text-foreground">
                     <Paperclip className="w-5 h-5" />
                   </button>
@@ -673,7 +682,7 @@ export default function CopilotPage() {
                   </p>
 
                   {/* Model picker */}
-                  <div className="relative">
+                  <div className="relative" data-tour="copilot-model">
                     <button
                       onClick={() => setShowModelPicker(!showModelPicker)}
                       className="flex items-center gap-1.5 text-xs text-foreground-muted hover:text-foreground transition-colors px-2 py-1 rounded-lg hover:bg-accent"
