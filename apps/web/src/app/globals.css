@@ -256,6 +256,32 @@
     background-color: var(--primary-light);
     color: var(--primary);
   }
+  /* Thin inner scrollbar (modal bodies, dropdown lists) — stays inside rounded panels */
+  .thin-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .thin-scroll::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .thin-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .thin-scroll::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  .thin-scroll::-webkit-scrollbar-thumb:hover {
+    background: var(--border-hover);
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
 }
 
 @layer components {
