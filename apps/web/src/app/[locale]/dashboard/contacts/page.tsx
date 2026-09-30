@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
-import { QuickCreatePopover, QuickContactForm } from '@/components/quick-create';
+import { QuickCreatePopover, QuickContactForm, QuickSelect } from '@/components/quick-create';
 import { useTourAutoStart } from '@/components/tour/tour-provider';
 import { Button, Input, Badge, Card, CardContent, EmptyState } from '@/components/ui';
 import { cn } from '@/lib/utils';
@@ -335,36 +335,38 @@ export default function ContactsPage() {
 
           {showFilters && (
             <div className="flex gap-3 mt-3 pt-3 border-t border-border">
-              <select
-                value={filterStatus}
-                onChange={(e) => {
-                  setFilterStatus(e.target.value);
-                  setPage(1);
-                }}
-                className="h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                <option value="">Всі статуси</option>
-                <option value="active">Активний</option>
-                <option value="inactive">Неактивний</option>
-                <option value="lead">Лід</option>
-                <option value="client">Клієнт</option>
-              </select>
+              <div className="w-44">
+                <QuickSelect
+                  value={filterStatus}
+                  onChange={(v) => {
+                    setFilterStatus(v);
+                    setPage(1);
+                  }}
+                  options={[
+                    { id: '', name: 'Всі статуси' },
+                    { id: 'active', name: 'Активний' },
+                    { id: 'inactive', name: 'Неактивний' },
+                    { id: 'lead', name: 'Лід' },
+                    { id: 'client', name: 'Клієнт' },
+                  ]}
+                  placeholder="Всі статуси"
+                />
+              </div>
 
-              <select
-                value={filterTag}
-                onChange={(e) => {
-                  setFilterTag(e.target.value);
-                  setPage(1);
-                }}
-                className="h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                <option value="">Всі теги</option>
-                {tags.map((tag) => (
-                  <option key={tag.id} value={tag.name}>
-                    {tag.name}
-                  </option>
-                ))}
-              </select>
+              <div className="w-44">
+                <QuickSelect
+                  value={filterTag}
+                  onChange={(v) => {
+                    setFilterTag(v);
+                    setPage(1);
+                  }}
+                  options={[
+                    { id: '', name: 'Всі теги' },
+                    ...tags.map((tag) => ({ id: tag.name, name: tag.name })),
+                  ]}
+                  placeholder="Всі теги"
+                />
+              </div>
 
               {(filterStatus || filterTag) && (
                 <Button
