@@ -45,7 +45,7 @@ interface AppNotification {
 type Filter = 'all' | 'overdue' | 'upcoming';
 
 const appTypeConfig: Record<string, string> = {
-  info: 'bg-[#111214] text-[#FFC700]',
+  info: 'bg-primary text-primary-foreground',
   success: 'bg-success/10 text-success',
   warning: 'bg-warning/10 text-warning',
   error: 'bg-danger/10 text-danger',
@@ -150,17 +150,17 @@ export default function NotificationsPage() {
       <div>
         <Link
           href="/dashboard"
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-foreground-muted transition-colors hover:text-[#111214]"
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-foreground-muted transition-colors hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
           До огляду
         </Link>
         <div className="mt-2 flex flex-wrap items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#111214]">
-            <Bell className="h-5 w-5 text-[#FFC700]" />
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
+            <Bell className="h-5 w-5 text-primary-foreground" />
           </span>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[#111214]">Сповіщення</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Сповіщення</h1>
             <p className="text-foreground-secondary">Нагадування за найближчі 24 години</p>
           </div>
         </div>
@@ -176,8 +176,8 @@ export default function NotificationsPage() {
             className={cn(
               'inline-flex min-h-10 items-center gap-2 rounded-xl border px-4 text-sm font-semibold transition-colors',
               filter === tab.id
-                ? 'border-[#111214] bg-[#111214] text-[#FFC700]'
-                : 'border-border bg-card text-[#111214] hover:border-[#111214]',
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-border bg-card text-foreground hover:border-primary',
             )}
           >
             {tab.label}
@@ -202,7 +202,7 @@ export default function NotificationsPage() {
             </button>
             <button
               onClick={markAllRead}
-              className="text-xs font-semibold text-foreground-muted underline-offset-4 hover:text-[#111214] hover:underline"
+              className="text-xs font-semibold text-foreground-muted underline-offset-4 hover:text-foreground hover:underline"
             >
               Прочитати всі
             </button>
@@ -232,7 +232,7 @@ export default function NotificationsPage() {
                       {n.link && (
                         <Link
                           href={n.link}
-                          className="ml-2 font-semibold text-[#111214] underline-offset-4 hover:underline"
+                          className="ml-2 font-semibold text-foreground underline-offset-4 hover:underline"
                         >
                           Відкрити →
                         </Link>
@@ -254,8 +254,8 @@ export default function NotificationsPage() {
         </div>
       ) : visible.length === 0 && appNotifs.length === 0 ? (
         <Card className="p-10 text-center">
-          <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#FFC700]/20">
-            <CheckSquare className="h-6 w-6 text-[#111214]" />
+          <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/15">
+            <CheckSquare className="h-6 w-6 text-foreground" />
           </span>
           <p className="font-semibold">Немає сповіщень</p>
           <p className="mt-1 text-sm text-foreground-muted">Все під контролем!</p>
@@ -273,7 +273,7 @@ export default function NotificationsPage() {
                   'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
                   task.flag === 'overdue'
                     ? 'bg-danger/10 text-danger'
-                    : 'bg-[#111214] text-[#FFC700]',
+                    : 'bg-primary text-primary-foreground',
                 )}
               >
                 {typeIcons[task.type] || <CheckSquare className="h-4 w-4" />}

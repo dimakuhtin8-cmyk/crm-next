@@ -187,8 +187,8 @@ export default function NotificationsSettingsPage() {
         >
           <div className="rounded-xl border border-border bg-card p-3.5 shadow-xl">
             <div className="flex items-start gap-2.5">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#111214]">
-                <Bell className="h-4 w-4 text-[#FFC700]" />
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary">
+                <Bell className="h-4 w-4 text-primary-foreground" />
               </span>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-bold">Автоматизація</p>

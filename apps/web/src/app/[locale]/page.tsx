@@ -1,11 +1,11 @@
 import Link from 'next/link';
 
 const stages = [
-  { name: 'Нові звернення', count: 48, amount: '₴1,2 млн', width: '92%', bar: 'bg-[#111214]' },
-  { name: 'Кваліфікація', count: 31, amount: '₴860 тис.', width: '68%', bar: 'bg-[#111214]' },
-  { name: 'Переговори', count: 18, amount: '₴540 тис.', width: '46%', bar: 'bg-[#FFC700]' },
-  { name: 'Узгодження', count: 9, amount: '₴310 тис.', width: '28%', bar: 'bg-[#111214]' },
-  { name: 'Оплата', count: 6, amount: '₴190 тис.', width: '18%', bar: 'bg-[#111214]' },
+  { name: 'Нові звернення', count: 48, amount: '₴1,2 млн', width: '92%', bar: 'bg-foreground' },
+  { name: 'Кваліфікація', count: 31, amount: '₴860 тис.', width: '68%', bar: 'bg-foreground' },
+  { name: 'Переговори', count: 18, amount: '₴540 тис.', width: '46%', bar: 'bg-primary' },
+  { name: 'Узгодження', count: 9, amount: '₴310 тис.', width: '28%', bar: 'bg-foreground' },
+  { name: 'Оплата', count: 6, amount: '₴190 тис.', width: '18%', bar: 'bg-foreground' },
 ];
 
 const channels = [
@@ -42,10 +42,10 @@ function Icon({ d }: { d: string }) {
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   return (
-    <main className="min-h-screen bg-white text-[#111214] antialiased">
+    <main className="min-h-screen bg-background text-foreground antialiased">
       <style>{`
-        ::selection { background: #FFC700; color: #111214; }
-        :focus-visible { outline: 2px solid #111214; outline-offset: 3px; border-radius: 8px; }
+        ::selection { background: #C73651; color: #FFF8F0; }
+        :focus-visible { outline: 2px solid #C73651; outline-offset: 3px; border-radius: 8px; }
         @keyframes landing-rise {
           from { opacity: 0; transform: translateY(14px); }
           to { opacity: 1; transform: translateY(0); }
@@ -56,16 +56,16 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         }
       `}</style>
 
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-[#E5E7EB] bg-white/95 backdrop-blur">
+      {/* Header — coal */}
+      <header className="sticky top-0 z-50 border-b border-border bg-[#1D1B1D]/95 text-[#E5E0D4] backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
           <Link
             href={`/${locale}`}
             className="flex items-center gap-2"
             aria-label="CRM-Next — на головну"
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#111214]">
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="#FFC700" aria-hidden="true">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="#FFF8F0" aria-hidden="true">
                 <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
               </svg>
             </span>
@@ -73,22 +73,22 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           </Link>
 
           <nav
-            className="hidden items-center gap-6 text-sm font-medium text-[#4B5563] md:flex"
+            className="hidden items-center gap-6 text-sm font-medium text-[#B3AC9C] md:flex"
             aria-label="Розділи"
           >
-            <Link className="transition-colors hover:text-[#111214]" href="#mozlyvosti">
+            <Link className="transition-colors hover:text-[#E5E0D4]" href="#mozlyvosti">
               Можливості
             </Link>
-            <Link className="transition-colors hover:text-[#111214]" href="#kanaly">
+            <Link className="transition-colors hover:text-[#E5E0D4]" href="#kanaly">
               Канали
             </Link>
-            <Link className="transition-colors hover:text-[#111214]" href="#avtomatyzatsiya">
+            <Link className="transition-colors hover:text-[#E5E0D4]" href="#avtomatyzatsiya">
               Автоматизація
             </Link>
-            <Link className="transition-colors hover:text-[#111214]" href="#analityka">
+            <Link className="transition-colors hover:text-[#E5E0D4]" href="#analityka">
               Аналітика
             </Link>
-            <Link className="transition-colors hover:text-[#111214]" href="#faq">
+            <Link className="transition-colors hover:text-[#E5E0D4]" href="#faq">
               FAQ
             </Link>
           </nav>
@@ -96,23 +96,23 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           <div className="hidden items-center gap-3 md:flex">
             <Link
               href={`/${locale}/auth/login`}
-              className="text-sm font-semibold text-[#111214] underline-offset-4 hover:underline"
+              className="text-sm font-semibold text-[#E5E0D4] underline-offset-4 hover:underline"
             >
               Увійти
             </Link>
             <Link
               href={`/${locale}/auth/register`}
-              className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[#FFC700] px-5 text-sm font-bold text-[#111214] shadow-[0_10px_24px_-12px_rgba(0,0,0,0.45)] transition-colors hover:bg-[#EAB308]"
+              className="inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-5 text-sm font-bold text-primary-foreground shadow-[0_10px_24px_-12px_rgba(199,54,81,0.7)] transition-colors hover:bg-primary-hover"
             >
               Спробувати безкоштовно
             </Link>
           </div>
 
           <details className="relative md:hidden">
-            <summary className="inline-flex min-h-11 cursor-pointer list-none items-center rounded-lg border border-[#E5E7EB] px-4 text-sm font-semibold [&::-webkit-details-marker]:hidden">
+            <summary className="inline-flex min-h-11 cursor-pointer list-none items-center rounded-lg border border-white/15 px-4 text-sm font-semibold [&::-webkit-details-marker]:hidden">
               Меню
             </summary>
-            <div className="absolute right-0 mt-2 w-64 rounded-xl border border-[#E5E7EB] bg-white p-2 shadow-[0_24px_48px_-24px_rgba(0,0,0,0.35)]">
+            <div className="absolute right-0 mt-2 w-64 rounded-xl border border-border bg-card p-2 text-foreground shadow-xl">
               {[
                 ['#mozlyvosti', 'Можливості'],
                 ['#kanaly', 'Канали'],
@@ -125,7 +125,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                 <Link
                   key={href + label}
                   href={href}
-                  className="block rounded-lg px-3 py-2.5 text-sm font-medium text-[#111214] hover:bg-[#F5F6F7]"
+                  className="block rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-secondary"
                 >
                   {label}
                 </Link>
@@ -135,66 +135,40 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         </div>
       </header>
 
-      {/* AI banner */}
-      <section id="ai" className="border-b border-[#E5E7EB] bg-[#F5F6F7]">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-6 sm:px-6 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-start gap-3">
-            <span className="mt-0.5 text-[#111214]">
-              <Icon d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
-            </span>
-            <div>
-              <h2 className="text-lg font-bold tracking-tight">
-                AI Co-Pilot замість ручного пошуку
-              </h2>
-              <p className="mt-1 max-w-[68ch] text-sm leading-6 text-[#4B5563]">
-                Запитайте про угоду, клієнта або наступну дію — CRM-Next підкаже рішення на основі
-                ваших даних.
-              </p>
-            </div>
-          </div>
-          <Link
-            href={`/${locale}/auth/register`}
-            className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg bg-[#111214] px-5 text-sm font-bold text-white transition-colors hover:bg-black"
-          >
-            Дивитися демо
-          </Link>
-        </div>
-      </section>
-
       {/* Hero */}
-      <section className="border-b border-[#E5E7EB]">
+      <section className="border-b border-border">
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:py-20">
           <div>
             <h1 className="text-balance text-4xl font-bold leading-[1.05] tracking-[-0.03em] sm:text-5xl lg:text-6xl">
               CRM-система для всієї команди
             </h1>
-            <p className="mt-5 max-w-[62ch] text-base leading-7 text-[#4B5563] sm:text-lg sm:leading-8">
+            <p className="mt-5 max-w-[62ch] text-base leading-7 text-foreground-secondary sm:text-lg sm:leading-8">
               База клієнтів, воронка продажу, автоматизація, завдання й аналітика — в одному вікні.
               Інтерфейс українською.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href={`/${locale}/auth/register`}
-                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#FFC700] px-7 text-sm font-bold text-[#111214] shadow-[0_18px_36px_-18px_rgba(0,0,0,0.5)] transition-colors hover:bg-[#EAB308]"
+                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-7 text-sm font-bold text-primary-foreground shadow-[0_18px_36px_-18px_rgba(199,54,81,0.6)] transition-colors hover:bg-primary-hover"
               >
                 Спробувати безкоштовно
               </Link>
               <Link
                 href={`/${locale}/auth/login`}
-                className="inline-flex min-h-12 items-center justify-center rounded-xl border border-[#111214] bg-white px-7 text-sm font-bold text-[#111214] transition-colors hover:bg-[#F5F6F7]"
+                className="inline-flex min-h-12 items-center justify-center rounded-xl border border-foreground bg-transparent px-7 text-sm font-bold transition-colors hover:bg-secondary"
               >
                 Хочу демо
               </Link>
             </div>
-            <p className="mt-5 text-sm font-medium text-[#4B5563]">
+            <p className="mt-5 text-sm font-medium text-foreground-secondary">
               Воронка, завдання, комунікація та контроль команди — без хаосу в таблицях.
             </p>
           </div>
 
-          <div className="landing-rise rounded-2xl border border-[#E5E7EB] bg-white p-5 shadow-[0_28px_56px_-28px_rgba(0,0,0,0.35)] sm:p-6">
+          <div className="landing-rise rounded-2xl border border-border bg-card p-5 shadow-lg sm:p-6">
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm font-bold">Воронка продажу</p>
-              <p className="rounded-full bg-[#F5F6F7] px-3 py-1 text-xs font-semibold text-[#4B5563]">
+              <p className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-foreground-secondary">
                 Сьогодні
               </p>
             </div>
@@ -203,11 +177,11 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                 <li key={stage.name}>
                   <div className="flex items-baseline justify-between gap-3 text-sm">
                     <span className="font-semibold">{stage.name}</span>
-                    <span className="tabular-nums text-[#4B5563]">
+                    <span className="tabular-nums text-foreground-secondary">
                       {stage.count} · {stage.amount}
                     </span>
                   </div>
-                  <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-[#F0F1F3]">
+                  <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-background-tertiary">
                     <div
                       className={`h-full rounded-full ${stage.bar}`}
                       style={{ width: stage.width }}
@@ -216,7 +190,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                 </li>
               ))}
             </ul>
-            <div className="mt-6 flex items-center justify-between border-t border-[#E5E7EB] pt-4 text-sm">
+            <div className="mt-6 flex items-center justify-between border-t border-border pt-4 text-sm">
               <span className="font-semibold">Прогноз закриття</span>
               <span className="font-bold tabular-nums">₴730 тис.</span>
             </div>
@@ -224,12 +198,54 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         </div>
       </section>
 
+      {/* Stats strip */}
+      <section id="analityka" className="border-b border-border bg-secondary/40">
+        <div className="mx-auto grid max-w-6xl gap-4 px-4 py-10 sm:grid-cols-3 sm:px-6">
+          {[
+            ['48', 'нових звернень'],
+            ['₴730 тис.', 'прогноз закриття'],
+            ['4', 'ролі доступу'],
+          ].map(([value, label]) => (
+            <div key={label} className="rounded-2xl border border-border bg-card px-5 py-6">
+              <p className="text-3xl font-bold tabular-nums tracking-tight">{value}</p>
+              <p className="mt-1 text-sm font-medium text-foreground-secondary">{label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* AI banner */}
+      <section id="ai" className="border-b border-border">
+        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 sm:px-6 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 text-primary">
+              <Icon d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
+            </span>
+            <div>
+              <h2 className="text-lg font-bold tracking-tight">
+                AI Co-Pilot замість ручного пошуку
+              </h2>
+              <p className="mt-1 max-w-[68ch] text-sm leading-6 text-foreground-secondary">
+                Запитайте про угоду, клієнта або наступну дію — CRM-Next підкаже рішення на основі
+                ваших даних.
+              </p>
+            </div>
+          </div>
+          <Link
+            href={`/${locale}/auth/register`}
+            className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg bg-foreground px-5 text-sm font-bold text-background transition-colors hover:opacity-90"
+          >
+            Дивитися демо
+          </Link>
+        </div>
+      </section>
+
       {/* Capabilities */}
-      <section id="mozlyvosti" className="border-b border-[#E5E7EB]">
+      <section id="mozlyvosti" className="border-b border-border">
         <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[280px_1fr] lg:py-20">
           <div className="lg:sticky lg:top-24 lg:self-start">
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Можливості</h2>
-            <p className="mt-3 text-sm leading-6 text-[#4B5563]">
+            <p className="mt-3 text-sm leading-6 text-foreground-secondary">
               Чотири опори щоденної роботи відділу продажу.
             </p>
             <nav className="mt-6 space-y-1 text-sm font-semibold" aria-label="Можливості">
@@ -242,7 +258,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                 <Link
                   key={href}
                   href={href}
-                  className="block rounded-lg px-3 py-2.5 hover:bg-[#F5F6F7]"
+                  className="block rounded-lg px-3 py-2.5 hover:bg-secondary"
                 >
                   {label}
                 </Link>
@@ -255,18 +271,18 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
               <h3 className="text-xl font-bold tracking-tight">
                 База клієнтів і воронка без втрат
               </h3>
-              <p className="mt-3 max-w-[68ch] text-sm leading-7 text-[#4B5563] sm:text-base">
+              <p className="mt-3 max-w-[68ch] text-sm leading-7 text-foreground-secondary sm:text-base">
                 Кожен контакт має картку з історією, завданнями й документами. Угоди рухаються
                 етапами, прострочене підсвічується.
               </p>
-              <ul className="mt-5 divide-y divide-[#E5E7EB] rounded-2xl border border-[#E5E7EB]">
+              <ul className="mt-5 divide-y divide-border rounded-2xl border border-border bg-card">
                 {[
                   'Імпорт бази та дедублікація контактів',
                   'Картка клієнта: комунікація, файли, завдання',
                   'Канбан воронки з drag-and-drop',
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-3 px-4 py-3.5 text-sm font-medium">
-                    <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#FFC700] text-[#111214]">
+                    <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                       <Icon d="M5 12l5 5 9-11" />
                     </span>
                     {item}
@@ -277,14 +293,16 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
             <div id="kanaly">
               <h3 className="text-xl font-bold tracking-tight">Уся комунікація — в CRM</h3>
-              <p className="mt-3 max-w-[68ch] text-sm leading-7 text-[#4B5563] sm:text-base">
+              <p className="mt-3 max-w-[68ch] text-sm leading-7 text-foreground-secondary sm:text-base">
                 Менеджер не перемикається між застосунками: контекст клієнта завжди поруч.
               </p>
-              <dl className="mt-5 grid gap-px overflow-hidden rounded-2xl border border-[#E5E7EB] bg-[#E5E7EB] sm:grid-cols-2">
+              <dl className="mt-5 grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-2">
                 {channels.map((channel) => (
-                  <div key={channel.name} className="bg-white p-5">
+                  <div key={channel.name} className="bg-card p-5">
                     <dt className="text-sm font-bold">{channel.name}</dt>
-                    <dd className="mt-2 text-sm leading-6 text-[#4B5563]">{channel.text}</dd>
+                    <dd className="mt-2 text-sm leading-6 text-foreground-secondary">
+                      {channel.text}
+                    </dd>
                   </div>
                 ))}
               </dl>
@@ -292,58 +310,48 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
             <div id="avtomatyzatsiya">
               <h3 className="text-xl font-bold tracking-tight">Автоматизація рутини</h3>
-              <p className="mt-3 max-w-[68ch] text-sm leading-7 text-[#4B5563] sm:text-base">
+              <p className="mt-3 max-w-[68ch] text-sm leading-7 text-foreground-secondary sm:text-base">
                 Правила самі розподіляють лідів, створюють завдання й рухають угоди.
               </p>
-              <div className="mt-5 rounded-2xl bg-[#111214] p-5 text-sm leading-7 text-white">
-                <p className="font-mono text-[13px] text-[#FFC700]">
+              <div className="mt-5 rounded-2xl bg-[#1D1B1D] p-5 text-sm leading-7 text-[#E5E0D4]">
+                <p className="font-mono text-[13px] text-[#E7C89F]">
                   Якщо угода 3 дні без активності
                 </p>
-                <p className="mt-2 font-mono text-[13px] text-white/90">
+                <p className="mt-2 font-mono text-[13px] text-[#E5E0D4]/90">
                   → створити завдання менеджеру
                 </p>
-                <p className="font-mono text-[13px] text-white/90">→ нагадати керівнику</p>
-                <p className="font-mono text-[13px] text-white/90">→ підсвітити угоду у воронці</p>
+                <p className="font-mono text-[13px] text-[#E5E0D4]/90">→ нагадати керівнику</p>
+                <p className="font-mono text-[13px] text-[#E5E0D4]/90">
+                  → підсвітити угоду у воронці
+                </p>
               </div>
             </div>
 
-            <div id="analityka">
+            <div>
               <h3 className="text-xl font-bold tracking-tight">Аналітика й контроль доступу</h3>
-              <p className="mt-3 max-w-[68ch] text-sm leading-7 text-[#4B5563] sm:text-base">
+              <p className="mt-3 max-w-[68ch] text-sm leading-7 text-foreground-secondary sm:text-base">
                 Видно джерела лідів, завантаженість команди й вузькі місця воронки. Доступ — за
                 ролями.
               </p>
-              <div className="mt-5 grid gap-4 sm:grid-cols-3">
-                {[
-                  ['48', 'нових звернень'],
-                  ['₴730 тис.', 'прогноз закриття'],
-                  ['4', 'ролі доступу'],
-                ].map(([value, label]) => (
-                  <div key={label} className="rounded-2xl border border-[#E5E7EB] px-4 py-5">
-                    <p className="text-2xl font-bold tabular-nums tracking-tight">{value}</p>
-                    <p className="mt-1 text-sm font-medium text-[#4B5563]">{label}</p>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Segments */}
-      <section id="dlya-kogo" className="border-b border-[#E5E7EB] bg-[#F5F6F7]">
+      <section id="dlya-kogo" className="border-b border-border bg-secondary/40">
         <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:py-20">
           <h2 className="max-w-[22ch] text-2xl font-bold tracking-tight sm:text-3xl">
             Для яких команд підходить CRM-Next
           </h2>
-          <div className="mt-8 divide-y divide-[#E5E7EB] rounded-2xl border border-[#E5E7EB] bg-white">
+          <div className="mt-8 divide-y divide-border rounded-2xl border border-border bg-card">
             {segments.map((segment) => (
               <div
                 key={segment.name}
                 className="grid gap-1 px-5 py-5 sm:grid-cols-[240px_1fr] sm:items-baseline sm:gap-6"
               >
                 <p className="text-base font-bold">{segment.name}</p>
-                <p className="text-sm leading-6 text-[#4B5563] sm:text-base sm:leading-7">
+                <p className="text-sm leading-6 text-foreground-secondary sm:text-base sm:leading-7">
                   {segment.text}
                 </p>
               </div>
@@ -353,19 +361,19 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       </section>
 
       {/* Security */}
-      <section id="bezpeka" className="border-b border-[#E5E7EB]">
+      <section id="bezpeka" className="border-b border-border">
         <div className="mx-auto grid max-w-6xl gap-8 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:py-20">
           <div>
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
               Безпека і порядок у даних
             </h2>
-            <p className="mt-4 max-w-[64ch] text-sm leading-7 text-[#4B5563] sm:text-base">
+            <p className="mt-4 max-w-[64ch] text-sm leading-7 text-foreground-secondary sm:text-base">
               Ролі owner, admin, member і viewer розділяють доступ. Чутливі поля шифруються, дії
               користувачів фіксуються в аудиті.
             </p>
             <Link
               href={`/${locale}/auth/register`}
-              className="mt-7 inline-flex min-h-12 items-center justify-center rounded-xl bg-[#111214] px-7 text-sm font-bold text-white transition-colors hover:bg-black"
+              className="mt-7 inline-flex min-h-12 items-center justify-center rounded-xl bg-foreground px-7 text-sm font-bold text-background transition-colors hover:opacity-90"
             >
               Спробувати безкоштовно
             </Link>
@@ -379,9 +387,9 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             ].map((item) => (
               <li
                 key={item}
-                className="flex items-start gap-3 rounded-xl border border-[#E5E7EB] bg-white px-4 py-3.5"
+                className="flex items-start gap-3 rounded-xl border border-border bg-card px-4 py-3.5"
               >
-                <span className="mt-0.5 text-[#111214]">
+                <span className="mt-0.5 text-primary">
                   <Icon d="M12 3l7 3v5c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6l7-3z" />
                 </span>
                 {item}
@@ -392,7 +400,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="border-b border-[#E5E7EB] bg-[#F5F6F7]">
+      <section id="faq" className="border-b border-border bg-secondary/40">
         <div className="mx-auto max-w-4xl px-4 py-14 sm:px-6 lg:py-20">
           <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Часті запитання</h2>
           <div className="mt-8 space-y-3">
@@ -416,7 +424,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             ].map((item) => (
               <details
                 key={item.q}
-                className="group rounded-2xl border border-[#E5E7EB] bg-white px-5 py-4"
+                className="group rounded-2xl border border-border bg-card px-5 py-4"
               >
                 <summary className="cursor-pointer list-none text-base font-bold [&::-webkit-details-marker]:hidden">
                   <span className="flex items-center justify-between gap-4">
@@ -429,7 +437,9 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                     </span>
                   </span>
                 </summary>
-                <p className="mt-3 max-w-[68ch] text-sm leading-7 text-[#4B5563]">{item.a}</p>
+                <p className="mt-3 max-w-[68ch] text-sm leading-7 text-foreground-secondary">
+                  {item.a}
+                </p>
               </details>
             ))}
           </div>
@@ -437,32 +447,32 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       </section>
 
       {/* Final CTA */}
-      <section className="bg-white">
+      <section className="bg-background">
         <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:py-20">
-          <div className="rounded-3xl bg-[#111214] px-6 py-12 text-center text-white sm:px-12">
+          <div className="rounded-3xl bg-[#1D1B1D] px-6 py-12 text-center text-[#E5E0D4] sm:px-12">
             <h2 className="mx-auto max-w-[20ch] text-balance text-3xl font-bold tracking-tight sm:text-4xl">
               Наведіть лад у продажах цього тижня
             </h2>
-            <p className="mx-auto mt-4 max-w-[60ch] text-sm leading-7 text-white/75 sm:text-base">
+            <p className="mx-auto mt-4 max-w-[60ch] text-sm leading-7 text-[#E5E0D4]/75 sm:text-base">
               Почніть з бази й воронки, далі підключіть автоматизацію та AI-підказки.
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <Link
                 href={`/${locale}/auth/register`}
-                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#FFC700] px-7 text-sm font-bold text-[#111214] transition-colors hover:bg-[#EAB308]"
+                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-7 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary-hover"
               >
                 Спробувати безкоштовно
               </Link>
               <Link
                 href={`/${locale}/auth/login`}
-                className="inline-flex min-h-12 items-center justify-center rounded-xl border border-white/30 px-7 text-sm font-bold text-white transition-colors hover:bg-white/10"
+                className="inline-flex min-h-12 items-center justify-center rounded-xl border border-white/25 px-7 text-sm font-bold text-[#E5E0D4] transition-colors hover:bg-white/10"
               >
                 Увійти
               </Link>
             </div>
           </div>
-          <footer className="flex flex-col gap-3 pt-10 text-sm text-[#4B5563] sm:flex-row sm:items-center sm:justify-between">
-            <p className="font-bold text-[#111214]">CRM-Next</p>
+          <footer className="flex flex-col gap-3 pt-10 text-sm text-foreground-secondary sm:flex-row sm:items-center sm:justify-between">
+            <p className="font-bold text-foreground">CRM-Next</p>
             <p>База клієнтів · Воронка · Автоматизація · Аналітика</p>
           </footer>
         </div>

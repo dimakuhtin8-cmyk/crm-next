@@ -19,16 +19,16 @@ interface Pipeline {
 }
 
 const stageColors = [
-  '#3b82f6',
-  '#10b981',
-  '#f59e0b',
-  '#ef4444',
-  '#8b5cf6',
-  '#ec4899',
-  '#06b6d4',
-  '#84cc16',
-  '#f97316',
-  '#6366f1',
+  '#C73651',
+  '#929789',
+  '#C6A27F',
+  '#7B5337',
+  '#30304A',
+  '#A52C43',
+  '#6f7a5c',
+  '#d4b28c',
+  '#8f8fb0',
+  '#5f6a4e',
 ];
 
 export default function PipelinesPage() {

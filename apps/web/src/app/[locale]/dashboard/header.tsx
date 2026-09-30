@@ -180,28 +180,28 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
       type: 'contact' as const,
       href: null as string | null,
       icon: Users,
-      color: 'text-[#111214]',
+      color: 'text-foreground',
     },
     {
       label: 'Нова угода',
       type: 'deal' as const,
       href: null as string | null,
       icon: TrendingUp,
-      color: 'text-[#111214]',
+      color: 'text-foreground',
     },
     {
       label: 'Нова задача',
       type: 'task' as const,
       href: null as string | null,
       icon: CheckSquare,
-      color: 'text-[#111214]',
+      color: 'text-foreground',
     },
     {
       label: 'Повідомлення',
       type: null,
       href: '/dashboard/messages',
       icon: MessageSquare,
-      color: 'text-[#111214]',
+      color: 'text-foreground',
     },
   ];
 
@@ -267,7 +267,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
                 setIsNotifOpen(false);
                 setIsProfileOpen(false);
               }}
-              className="flex items-center gap-2 rounded-xl bg-[#FFC700] px-3 py-2 text-sm font-bold text-[#111214] transition-all duration-200 hover:bg-[#EAB308]"
+              className="flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-bold text-primary-foreground transition-all duration-200 hover:bg-primary-hover"
             >
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">Створити</span>
@@ -358,7 +358,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
                     <Link
                       href="/dashboard/timeline"
                       onClick={() => setIsNotifOpen(false)}
-                      className="text-xs font-semibold text-[#111214] underline-offset-4 transition-colors hover:underline"
+                      className="text-xs font-semibold text-foreground underline-offset-4 transition-colors hover:underline"
                     >
                       Таймлайн →
                     </Link>
@@ -419,8 +419,8 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
                         )}
                         {upcomingReminders.length > 0 && (
                           <div>
-                            <div className="px-4 py-2 bg-[#FFC700]/15 border-b border-border">
-                              <p className="text-xs font-semibold text-[#111214]">
+                            <div className="px-4 py-2 bg-primary/10 border-b border-border">
+                              <p className="text-xs font-semibold text-foreground">
                                 Найближчі ({upcomingReminders.length})
                               </p>
                             </div>
@@ -431,7 +431,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
                                 onClick={() => setIsNotifOpen(false)}
                                 className="flex items-center gap-3 border-b border-border px-4 py-3 hover:bg-secondary/50 transition-colors"
                               >
-                                <div className="p-1.5 rounded-lg bg-[#111214] text-[#FFC700]">
+                                <div className="p-1.5 rounded-lg bg-foreground text-background">
                                   {typeIcons[task.type] || <CheckSquare className="h-4 w-4" />}
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -465,14 +465,14 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
                     <Link
                       href="/dashboard/notifications"
                       onClick={() => setIsNotifOpen(false)}
-                      className="block rounded-lg bg-[#FFC700] px-3 py-2 text-center text-xs font-bold text-[#111214] transition-colors hover:bg-[#EAB308]"
+                      className="block rounded-lg bg-primary px-3 py-2 text-center text-xs font-bold text-primary-foreground transition-colors hover:bg-primary-hover"
                     >
                       Відкрити всі сповіщення →
                     </Link>
                     <Link
                       href="/dashboard/tasks"
                       onClick={() => setIsNotifOpen(false)}
-                      className="block text-center text-xs font-semibold text-[#111214] underline-offset-4 transition-colors hover:underline"
+                      className="block text-center text-xs font-semibold text-foreground underline-offset-4 transition-colors hover:underline"
                     >
                       Всі задачі →
                     </Link>

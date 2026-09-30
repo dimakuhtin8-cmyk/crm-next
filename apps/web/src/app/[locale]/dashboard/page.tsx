@@ -302,7 +302,7 @@ export default function DashboardPage() {
         {statCards.map((stat) => (
           <Card
             key={stat.name}
-            className={cn('p-5', stat.accent && 'border-black bg-[#111214] text-white')}
+            className={cn('p-5', stat.accent && 'bg-[#1D1B1D] text-[#E5E0D4] border-[#1D1B1D]')}
           >
             <p className={cn('text-sm', stat.accent ? 'text-white/60' : 'text-foreground-muted')}>
               {stat.name}
@@ -310,7 +310,7 @@ export default function DashboardPage() {
             <p
               className={cn(
                 'mt-2 text-3xl font-bold tabular-nums tracking-tight',
-                stat.accent ? 'text-[#FFC700]' : 'text-[#111214]',
+                stat.accent ? 'text-[#E7C89F]' : 'text-foreground',
               )}
             >
               {stat.value}
@@ -392,12 +392,12 @@ export default function DashboardPage() {
         <div className="p-5 border-b border-border">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-[#111214]" />
+              <Clock className="h-5 w-5 text-foreground" />
               <h2 className="text-lg font-semibold">Ближчі задачі</h2>
             </div>
             <Link
               href="/dashboard/tasks"
-              className="text-sm font-semibold text-[#111214] underline-offset-4 hover:underline"
+              className="text-sm font-semibold text-foreground underline-offset-4 hover:underline"
             >
               Всі →
             </Link>
@@ -421,7 +421,7 @@ export default function DashboardPage() {
                   <div
                     className={cn(
                       'p-2 rounded-lg',
-                      task.isOverdue ? 'bg-danger/10 text-danger' : 'bg-[#111214] text-[#FFC700]',
+                      task.isOverdue ? 'bg-danger/10 text-danger' : 'bg-foreground text-background',
                     )}
                   >
                     {activityIcons[task.type] || <CheckSquare className="h-4 w-4" />}
@@ -452,12 +452,12 @@ export default function DashboardPage() {
         <div className="p-5 border-b border-border">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Activity className="h-5 w-5 text-[#111214]" />
+              <Activity className="h-5 w-5 text-foreground" />
               <h2 className="text-lg font-semibold">Останні активності</h2>
             </div>
             <Link
               href="/dashboard/timeline"
-              className="text-sm font-semibold text-[#111214] underline-offset-4 hover:underline"
+              className="text-sm font-semibold text-foreground underline-offset-4 hover:underline"
             >
               Таймлайн →
             </Link>
@@ -499,11 +499,11 @@ export default function DashboardPage() {
     quick: (
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Link href="/dashboard/contacts">
-          <Card className="p-5 hover:shadow-md transition-shadow cursor-pointer hover:border-[#111214]">
+          <Card className="p-5 hover:shadow-md transition-shadow cursor-pointer hover:border-primary">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-[#111214] flex items-center justify-center">
+              <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center">
                 <svg
-                  className="h-5 w-5 text-[#FFC700]"
+                  className="h-5 w-5 text-primary-foreground"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -523,11 +523,11 @@ export default function DashboardPage() {
           </Card>
         </Link>
         <Link href="/dashboard/deals">
-          <Card className="p-5 hover:shadow-md transition-shadow cursor-pointer hover:border-[#111214]">
+          <Card className="p-5 hover:shadow-md transition-shadow cursor-pointer hover:border-primary">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-[#111214] flex items-center justify-center">
+              <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center">
                 <svg
-                  className="h-5 w-5 text-[#FFC700]"
+                  className="h-5 w-5 text-primary-foreground"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -546,11 +546,11 @@ export default function DashboardPage() {
           </Card>
         </Link>
         <Link href="/dashboard/tasks">
-          <Card className="p-5 hover:shadow-md transition-shadow cursor-pointer hover:border-[#111214]">
+          <Card className="p-5 hover:shadow-md transition-shadow cursor-pointer hover:border-primary">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-[#111214] flex items-center justify-center">
+              <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center">
                 <svg
-                  className="h-5 w-5 text-[#FFC700]"
+                  className="h-5 w-5 text-primary-foreground"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -671,7 +671,7 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#111214]">Огляд</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Огляд</h1>
           <p className="text-foreground-secondary">Статистика за останні 30 днів</p>
         </div>
         <button
@@ -679,8 +679,8 @@ export default function DashboardPage() {
           className={cn(
             'inline-flex min-h-10 items-center gap-2 rounded-xl border px-4 text-sm font-semibold transition-colors',
             customizing
-              ? 'border-[#111214] bg-[#111214] text-[#FFC700]'
-              : 'border-border bg-card text-[#111214] hover:border-[#111214]',
+              ? 'border-primary bg-primary text-primary-foreground'
+              : 'border-border bg-card text-foreground hover:border-primary',
           )}
           aria-expanded={customizing}
         >
@@ -695,7 +695,7 @@ export default function DashboardPage() {
             <h2 className="text-base font-bold">Віджети дашборда</h2>
             <button
               onClick={resetWidgets}
-              className="text-sm font-semibold text-[#111214] underline-offset-4 hover:underline"
+              className="text-sm font-semibold text-foreground underline-offset-4 hover:underline"
             >
               Скинути
             </button>
@@ -733,7 +733,7 @@ export default function DashboardPage() {
                     className={cn(
                       'rounded-lg p-2 transition-colors',
                       hidden
-                        ? 'bg-[#FFC700]/20 text-[#111214] hover:bg-[#FFC700]/30'
+                        ? 'bg-primary/15 text-foreground hover:bg-primary/25'
                         : 'text-foreground-muted hover:bg-secondary hover:text-foreground',
                     )}
                     title={hidden ? 'Показати' : 'Приховати'}

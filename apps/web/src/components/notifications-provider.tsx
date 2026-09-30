@@ -171,18 +171,18 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
           {toasts.map((t) => (
             <div
               key={t.id}
-              className="rounded-xl border border-border bg-card p-3.5 shadow-xl cursor-pointer hover:border-[#111214] transition-colors"
+              className="rounded-xl border border-border bg-card p-3.5 shadow-xl cursor-pointer hover:border-primary transition-colors"
               onClick={() => openToast(t)}
             >
               <div className="flex items-start gap-2.5">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#111214]">
-                  <Bell className="h-4 w-4 text-[#FFC700]" />
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary">
+                  <Bell className="h-4 w-4 text-primary-foreground" />
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-bold truncate">{t.title}</p>
                   <p className="text-xs text-foreground-muted mt-0.5 line-clamp-2">{t.message}</p>
                   {t.link ? (
-                    <span className="text-xs font-semibold text-[#111214] underline-offset-4 hover:underline">
+                    <span className="text-xs font-semibold text-foreground underline-offset-4 hover:underline">
                       Відкрити →
                     </span>
                   ) : null}
