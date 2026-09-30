@@ -218,19 +218,13 @@ export default function BillingPage() {
   const statusBadge = (status: string) => {
     switch (status) {
       case 'active':
-        return (
-          <Badge className="bg-green-500/10 text-green-700 dark:text-green-300">Активна</Badge>
-        );
+        return <Badge className="bg-success/10 text-success">Активна</Badge>;
       case 'trialing':
-        return (
-          <Badge className="bg-blue-500/10 text-blue-700 dark:text-blue-300">Пробний період</Badge>
-        );
+        return <Badge className="bg-info/10 text-info">Пробний період</Badge>;
       case 'past_due':
-        return (
-          <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-300">Прострочена</Badge>
-        );
+        return <Badge className="bg-warning/10 text-warning">Прострочена</Badge>;
       case 'canceled':
-        return <Badge className="bg-red-500/10 text-red-700 dark:text-red-300">Скасована</Badge>;
+        return <Badge className="bg-danger/10 text-danger">Скасована</Badge>;
       default:
         return <Badge>{status}</Badge>;
     }
@@ -266,7 +260,7 @@ export default function BillingPage() {
       {loadError && !data && <DataError message={loadError} onRetry={loadSubscription} />}
 
       {message && (
-        <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20 text-sm text-green-700 dark:text-green-300">
+        <div className="p-4 rounded-xl bg-success/10 border border-success/20 text-sm text-success">
           {message}
         </div>
       )}
@@ -290,7 +284,7 @@ export default function BillingPage() {
               </div>
               {data.subscription.isTrial && data.subscription.trialDaysLeft > 0 && (
                 <div className="text-right">
-                  <p className="text-sm font-medium text-amber-600">Пробний період</p>
+                  <p className="text-sm font-medium text-warning">Пробний період</p>
                   <p className="text-2xl font-bold">{data.subscription.trialDaysLeft} дн.</p>
                 </div>
               )}
@@ -377,7 +371,7 @@ export default function BillingPage() {
                 : 'text-foreground-muted hover:text-foreground'
             }`}
           >
-            Щорічно <span className="text-green-600 text-xs">-17%</span>
+            Щорічно <span className="text-success text-xs">-17%</span>
           </button>
         </div>
       </div>
@@ -416,7 +410,7 @@ export default function BillingPage() {
                 <ul className="space-y-2">
                   {plan.features.map((f, i) => (
                     <li key={i} className="flex items-center gap-2 text-sm">
-                      <Check className="w-4 h-4 text-green-600 shrink-0" />
+                      <Check className="w-4 h-4 text-success shrink-0" />
                       {f}
                     </li>
                   ))}
@@ -434,7 +428,7 @@ export default function BillingPage() {
                   <Button
                     onClick={() => handleUpgrade(plan.id)}
                     disabled={checkoutLoading === plan.id}
-                    className={`w-full ${plan.isPopular ? 'bg-gradient-to-r from-primary to-purple-600 text-white' : ''}`}
+                    className={`w-full ${plan.isPopular ? 'bg-gradient-to-r from-primary to-primary-hover text-primary-foreground' : ''}`}
                   >
                     {checkoutLoading === plan.id ? (
                       <Loader2 className="w-4 h-4 animate-spin" />

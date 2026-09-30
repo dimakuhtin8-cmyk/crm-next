@@ -402,7 +402,7 @@ export default function AiKeysSettingsPage() {
             <Button
               onClick={handleSave}
               disabled={!apiKey.trim() || saving}
-              className="flex-1 bg-gradient-to-r from-primary to-purple-600 hover:from-primary-hover hover:to-purple-700 text-white shadow-lg shadow-primary/20"
+              className="flex-1 bg-primary hover:bg-primary-hover text-primary-foreground shadow-lg shadow-primary/20"
             >
               {saving ? (
                 <span className="flex items-center gap-2">

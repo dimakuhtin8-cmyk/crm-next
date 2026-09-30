@@ -106,7 +106,7 @@ export default function RegisterPage() {
         <div className="text-center">
           <Link href="/" className="inline-flex items-center gap-2">
             <svg
-              className="h-8 w-8 text-indigo-500"
+              className="h-8 w-8 text-primary"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -138,7 +138,7 @@ export default function RegisterPage() {
               onChange={(e) => setName(e.target.value)}
               required
               autoComplete="name"
-              className="mt-1 flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="mt-1 flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
           <div>
@@ -153,7 +153,7 @@ export default function RegisterPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
-              className="mt-1 flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="mt-1 flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
           <div>
@@ -168,7 +168,7 @@ export default function RegisterPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               autoComplete="new-password"
-              className="mt-1 flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="mt-1 flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
           <div>
@@ -183,13 +183,13 @@ export default function RegisterPage() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
               autoComplete="new-password"
-              className="mt-1 flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="mt-1 flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
           <button
             type="submit"
             disabled={isLoading}
-            className="flex h-10 w-full items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 hover:bg-indigo-500 disabled:opacity-50"
+            className="flex h-10 w-full items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary-hover disabled:opacity-50"
           >
             {isLoading ? 'Реєстрація...' : 'Зареєструватися'}
           </button>
@@ -249,7 +249,7 @@ export default function RegisterPage() {
           Вже є акаунт?{' '}
           <Link
             href={lp('/auth/login')}
-            className="text-indigo-500 hover:text-indigo-400 font-medium"
+            className="text-primary hover:text-primary-hover font-medium"
           >
             Увійти
           </Link>

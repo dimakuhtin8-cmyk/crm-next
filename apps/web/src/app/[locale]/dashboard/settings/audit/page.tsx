@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { RefreshCw, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import Link from 'next/link';
-import { RefreshCw, ChevronLeft, ChevronRight, Search, Filter } from 'lucide-react';
-import { Button, Card, CardContent, CardHeader, CardTitle, CardDescription, Badge, Skeleton } from '@/components/ui';
+import { useState, useEffect, useCallback } from 'react';
+
+import { Button, Card, CardContent, Badge, Skeleton } from '@/components/ui';
 
 interface AuditLogEntry {
   id: string;
@@ -44,12 +45,12 @@ const ACTION_COLORS: Record<string, string> = {
   create: 'bg-green-500/10 text-green-700 dark:text-green-300',
   update: 'bg-blue-500/10 text-blue-700 dark:text-blue-300',
   delete: 'bg-red-500/10 text-red-700 dark:text-red-300',
-  login: 'bg-purple-500/10 text-purple-700 dark:text-purple-300',
+  login: 'bg-primary/10 text-primary',
   logout: 'bg-gray-500/10 text-gray-600 dark:text-gray-400',
   invite: 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
   role_change: 'bg-orange-500/10 text-orange-700 dark:text-orange-300',
   export: 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-300',
-  import: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300',
+  import: 'bg-info/10 text-info',
 };
 
 export default function AuditLogPage() {
@@ -81,21 +82,28 @@ export default function AuditLogPage() {
     }
   }, [page, actionFilter, entityFilter]);
 
-  useEffect(() => { fetchLogs(); }, [fetchLogs]);
+  useEffect(() => {
+    fetchLogs();
+  }, [fetchLogs]);
 
   const totalPages = Math.ceil(total / limit);
 
   function formatDate(dateStr: string) {
     return new Date(dateStr).toLocaleString('uk-UA', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
   }
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/dashboard/settings" className="text-muted-foreground hover:text-foreground">← Назад</Link>
+        <Link href="/dashboard/settings" className="text-muted-foreground hover:text-foreground">
+          ← Назад
+        </Link>
         <h1 className="text-2xl font-bold">Журнал аудиту</h1>
       </div>
 
@@ -107,33 +115,41 @@ export default function AuditLogPage() {
               <Filter className="w-4 h-4 text-foreground-muted" />
               <select
                 value={actionFilter}
-                onChange={(e) => { setActionFilter(e.target.value); setPage(1); }}
+                onChange={(e) => {
+                  setActionFilter(e.target.value);
+                  setPage(1);
+                }}
                 className="bg-background border border-input rounded-md px-3 py-1.5 text-sm"
               >
                 <option value="">Всі дії</option>
                 {Object.entries(ACTION_LABELS).map(([k, v]) => (
-                  <option key={k} value={k}>{v}</option>
+                  <option key={k} value={k}>
+                    {v}
+                  </option>
                 ))}
               </select>
             </div>
             <div className="flex items-center gap-2">
               <select
                 value={entityFilter}
-                onChange={(e) => { setEntityFilter(e.target.value); setPage(1); }}
+                onChange={(e) => {
+                  setEntityFilter(e.target.value);
+                  setPage(1);
+                }}
                 className="bg-background border border-input rounded-md px-3 py-1.5 text-sm"
               >
                 <option value="">Всі сутності</option>
                 {Object.entries(ENTITY_LABELS).map(([k, v]) => (
-                  <option key={k} value={k}>{v}</option>
+                  <option key={k} value={k}>
+                    {v}
+                  </option>
                 ))}
               </select>
             </div>
             <Button variant="outline" size="sm" onClick={fetchLogs}>
               <RefreshCw className="w-4 h-4" />
             </Button>
-            <span className="text-sm text-foreground-muted ml-auto">
-              {total} записів
-            </span>
+            <span className="text-sm text-foreground-muted ml-auto">{total} записів</span>
           </div>
         </CardContent>
       </Card>
@@ -148,9 +164,7 @@ export default function AuditLogPage() {
               ))}
             </div>
           ) : logs.length === 0 ? (
-            <div className="text-center py-12 text-foreground-muted">
-              Журнал порожній
-            </div>
+            <div className="text-center py-12 text-foreground-muted">Журнал порожній</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -171,16 +185,19 @@ export default function AuditLogPage() {
                         {formatDate(log.createdAt)}
                       </td>
                       <td className="px-4 py-3">
-                        {log.user?.name || log.user?.email || <span className="text-foreground-muted">—</span>}
+                        {log.user?.name || log.user?.email || (
+                          <span className="text-foreground-muted">—</span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
-                        <Badge variant="secondary" className={`${ACTION_COLORS[log.action] || ''} text-xs`}>
+                        <Badge
+                          variant="secondary"
+                          className={`${ACTION_COLORS[log.action] || ''} text-xs`}
+                        >
                           {ACTION_LABELS[log.action] || log.action}
                         </Badge>
                       </td>
-                      <td className="px-4 py-3">
-                        {ENTITY_LABELS[log.entity] || log.entity}
-                      </td>
+                      <td className="px-4 py-3">{ENTITY_LABELS[log.entity] || log.entity}</td>
                       <td className="px-4 py-3 font-mono text-xs text-foreground-muted max-w-[120px] truncate">
                         {log.entityId || '—'}
                       </td>
@@ -202,7 +219,7 @@ export default function AuditLogPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setPage(p => Math.max(1, p - 1))}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
           >
             <ChevronLeft className="w-4 h-4" />
@@ -213,7 +230,7 @@ export default function AuditLogPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page === totalPages}
           >
             <ChevronRight className="w-4 h-4" />

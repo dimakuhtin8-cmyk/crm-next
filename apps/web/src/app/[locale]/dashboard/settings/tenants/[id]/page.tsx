@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { AI_PROVIDERS, getProvider } from '@/lib/ai/providers';
 
 interface Tenant {
@@ -34,7 +35,15 @@ export default function TenantDetailPage() {
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ name: '', slug: '', domain: '', geminiApiKey: '', aiProvider: 'gemini', aiModel: '', aiApiKey: '' });
+  const [form, setForm] = useState({
+    name: '',
+    slug: '',
+    domain: '',
+    geminiApiKey: '',
+    aiProvider: 'gemini',
+    aiModel: '',
+    aiApiKey: '',
+  });
   const [error, setError] = useState<string | null>(null);
   const [newMemberEmail, setNewMemberEmail] = useState('');
   const [addingMember, setAddingMember] = useState(false);
@@ -161,7 +170,10 @@ export default function TenantDetailPage() {
           <p className="text-muted-foreground">/{tenant.slug}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => router.push(`/dashboard/settings/tenants/${tenantId}/team`)}>
+          <Button
+            variant="outline"
+            onClick={() => router.push(`/dashboard/settings/tenants/${tenantId}/team`)}
+          >
             Команда
           </Button>
           <Button variant="outline" onClick={() => router.back()}>
@@ -171,9 +183,7 @@ export default function TenantDetailPage() {
       </div>
 
       {error && (
-        <div className="p-3 bg-destructive/10 text-destructive rounded-lg text-sm">
-          {error}
-        </div>
+        <div className="p-3 bg-destructive/10 text-destructive rounded-lg text-sm">{error}</div>
       )}
 
       {/* General Settings */}
@@ -247,7 +257,9 @@ export default function TenantDetailPage() {
       <Card>
         <CardHeader>
           <CardTitle>AI-налаштування</CardTitle>
-          <CardDescription>Оберіть AI-провайдера та введіть API-ключ для AI-функцій CRM</CardDescription>
+          <CardDescription>
+            Оберіть AI-провайдера та введіть API-ключ для AI-функцій CRM
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {editing ? (
@@ -256,11 +268,17 @@ export default function TenantDetailPage() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">AI-провайдер</label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {AI_PROVIDERS.filter(p => p.id !== 'custom').map((provider) => (
+                  {AI_PROVIDERS.filter((p) => p.id !== 'custom').map((provider) => (
                     <button
                       key={provider.id}
                       type="button"
-                      onClick={() => setForm(prev => ({ ...prev, aiProvider: provider.id, aiModel: provider.models[0]?.id || '' }))}
+                      onClick={() =>
+                        setForm((prev) => ({
+                          ...prev,
+                          aiProvider: provider.id,
+                          aiModel: provider.models[0]?.id || '',
+                        }))
+                      }
                       className={`p-3 rounded-lg border text-left transition-all ${
                         form.aiProvider === provider.id
                           ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
@@ -298,7 +316,7 @@ export default function TenantDetailPage() {
                     <label className="text-sm font-medium">Модель</label>
                     <select
                       value={form.aiModel}
-                      onChange={(e) => setForm(prev => ({ ...prev, aiModel: e.target.value }))}
+                      onChange={(e) => setForm((prev) => ({ ...prev, aiModel: e.target.value }))}
                       className="w-full p-2 rounded-md border border-border bg-background text-sm"
                     >
                       {selectedProvider.models.map((model) => (
@@ -320,9 +338,9 @@ export default function TenantDetailPage() {
                   onChange={(e) => {
                     const val = e.target.value;
                     if (form.aiProvider === 'gemini') {
-                      setForm(prev => ({ ...prev, geminiApiKey: val, aiApiKey: val }));
+                      setForm((prev) => ({ ...prev, geminiApiKey: val, aiApiKey: val }));
                     } else {
-                      setForm(prev => ({ ...prev, aiApiKey: val, geminiApiKey: val }));
+                      setForm((prev) => ({ ...prev, aiApiKey: val, geminiApiKey: val }));
                     }
                   }}
                   placeholder={getProvider(form.aiProvider)?.keyPlaceholder || 'your-api-key'}
@@ -348,11 +366,17 @@ export default function TenantDetailPage() {
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
-                  <span className="text-lg">{getProvider(tenant.aiProvider || 'gemini')?.logo || '🔷'}</span>
-                  <span className="font-medium">{getProvider(tenant.aiProvider || 'gemini')?.name || 'Gemini'}</span>
+                  <span className="text-lg">
+                    {getProvider(tenant.aiProvider || 'gemini')?.logo || '🔷'}
+                  </span>
+                  <span className="font-medium">
+                    {getProvider(tenant.aiProvider || 'gemini')?.name || 'Gemini'}
+                  </span>
                 </div>
-                <span className={`text-xs px-2 py-1 rounded-full ${(tenant.aiApiKey || tenant.geminiApiKey) ? 'bg-green-500/10 text-green-600' : 'bg-yellow-500/10 text-yellow-600'}`}>
-                  {(tenant.aiApiKey || tenant.geminiApiKey) ? '✅ Підключено' : '⚠️ Не налаштовано'}
+                <span
+                  className={`text-xs px-2 py-1 rounded-full ${tenant.aiApiKey || tenant.geminiApiKey ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}
+                >
+                  {tenant.aiApiKey || tenant.geminiApiKey ? '✅ Підключено' : '⚠️ Не налаштовано'}
                 </span>
               </div>
               {(tenant.aiApiKey || tenant.geminiApiKey) && (
@@ -400,12 +424,8 @@ export default function TenantDetailPage() {
                     {member.user.name?.charAt(0) || member.user.email?.charAt(0) || '?'}
                   </div>
                   <div>
-                    <p className="text-sm font-medium">
-                      {member.user.name || member.user.email}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {member.user.email}
-                    </p>
+                    <p className="text-sm font-medium">{member.user.name || member.user.email}</p>
+                    <p className="text-xs text-muted-foreground">{member.user.email}</p>
                   </div>
                 </div>
                 <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">

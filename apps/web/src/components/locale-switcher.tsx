@@ -28,7 +28,7 @@ export function LocaleSwitcher() {
           onClick={() => handleLocaleChange(l.code)}
           className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${
             locale === l.code
-              ? 'bg-indigo-500/10 text-indigo-500'
+              ? 'bg-primary/10 text-primary'
               : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
           }`}
           title={l.label}

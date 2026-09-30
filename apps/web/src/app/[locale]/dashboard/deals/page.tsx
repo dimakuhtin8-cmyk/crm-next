@@ -68,17 +68,17 @@ const currencySymbols: Record<string, string> = {
 };
 
 const stageColors = [
-  'from-blue-500 to-blue-600',
-  'from-violet-500 to-violet-600',
-  'from-amber-500 to-amber-600',
-  'from-emerald-500 to-emerald-600',
-  'from-rose-500 to-rose-600',
+  'from-primary to-primary-hover',
+  'from-accent-foreground to-accent',
+  'from-[#C6A27F] to-[#7B5337]',
+  'from-success to-success-hover',
+  'from-danger to-danger-hover',
 ];
 
 function getScoreColor(score: number) {
-  if (score >= 80) return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400';
-  if (score >= 50) return 'bg-amber-500/10 text-amber-600 dark:text-amber-400';
-  return 'bg-rose-500/10 text-rose-600 dark:text-rose-400';
+  if (score >= 80) return 'bg-success/10 text-success';
+  if (score >= 50) return 'bg-warning/10 text-warning';
+  return 'bg-danger/10 text-danger';
 }
 
 function DraggableDeal({
@@ -137,10 +137,10 @@ function DraggableDeal({
                   className={cn(
                     'w-1.5 h-1.5 rounded-full',
                     deal.aiScore >= 80
-                      ? 'bg-emerald-500'
+                      ? 'bg-success'
                       : deal.aiScore >= 50
-                        ? 'bg-amber-500'
-                        : 'bg-rose-500',
+                        ? 'bg-warning'
+                        : 'bg-danger',
                   )}
                 />
                 AI {deal.aiScore}%

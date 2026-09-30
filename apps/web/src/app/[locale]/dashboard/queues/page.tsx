@@ -226,7 +226,7 @@ export default function QueuesPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50">
-                  <Brain className="h-5 w-5 text-violet-500" />
+                  <Brain className="h-5 w-5 text-accent-foreground" />
                   <div>
                     <p className="text-sm font-medium">AI</p>
                     <p className="text-xs text-foreground-muted">Обробка даних</p>

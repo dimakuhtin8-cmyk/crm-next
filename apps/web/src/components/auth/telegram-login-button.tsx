@@ -28,7 +28,7 @@ export function TelegramLoginButton() {
       </button>
 
       {showNotice && (
-        <div className="absolute -top-12 left-1/2 z-50 -translate-x-1/2 whitespace-nowrap rounded-lg bg-yellow-500/10 px-3 py-2 text-sm text-yellow-500 border border-yellow-500/20">
+        <div className="absolute -top-12 left-1/2 z-50 -translate-x-1/2 whitespace-nowrap rounded-lg bg-warning/10 px-3 py-2 text-sm text-warning border border-warning/20">
           🚧 Telegram авторизація в розробці
         </div>
       )}

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Check, X, Loader2, Key, BarChart3, FileText } from 'lucide-react';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, Badge } from '@/components/ui';
-import { Check, X, Loader2, ExternalLink, Key, BarChart3, FileText } from 'lucide-react';
+import { useState, useEffect } from 'react';
+
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui';
 
 interface ProviderStatus {
   status: 'connected' | 'error' | 'not_configured';
@@ -19,8 +20,8 @@ export default function IntegrationsSettingsPage() {
   useEffect(() => {
     // Check AI connection status
     fetch('/api/ai', { credentials: 'include' })
-      .then(r => r.json())
-      .then(d => {
+      .then((r) => r.json())
+      .then((d) => {
         setAiStatus({
           status: d.available ? 'connected' : 'not_configured',
           message: d.available ? 'Підключено' : 'Не налаштовано',
@@ -42,21 +43,21 @@ export default function IntegrationsSettingsPage() {
     switch (status) {
       case 'connected':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-700 dark:text-green-300">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-success/10 text-success">
             <Check className="w-3 h-3" />
             Підключено
           </span>
         );
       case 'error':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-700 dark:text-red-300">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-danger/10 text-danger">
             <X className="w-3 h-3" />
             Помилка ключа
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-500/10 text-gray-600 dark:text-gray-400">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
             Не налаштовано
           </span>
         );
@@ -66,7 +67,9 @@ export default function IntegrationsSettingsPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/dashboard/settings" className="text-muted-foreground hover:text-foreground">← Назад</Link>
+        <Link href="/dashboard/settings" className="text-muted-foreground hover:text-foreground">
+          ← Назад
+        </Link>
         <h1 className="text-2xl font-bold">Інтеграції</h1>
       </div>
 
@@ -142,7 +145,10 @@ export default function IntegrationsSettingsPage() {
           <CardDescription>Бот для сповіщень та керування CRM через Telegram</CardDescription>
         </CardHeader>
         <CardContent>
-          <Link href="/dashboard/settings/telegram" className="text-primary hover:underline text-sm">
+          <Link
+            href="/dashboard/settings/telegram"
+            className="text-primary hover:underline text-sm"
+          >
             Налаштувати бота →
           </Link>
         </CardContent>
@@ -155,7 +161,10 @@ export default function IntegrationsSettingsPage() {
           <CardDescription>API для спілкування з клієнтами через WhatsApp</CardDescription>
         </CardHeader>
         <CardContent>
-          <Link href="/dashboard/settings/whatsapp" className="text-primary hover:underline text-sm">
+          <Link
+            href="/dashboard/settings/whatsapp"
+            className="text-primary hover:underline text-sm"
+          >
             Налаштувати API →
           </Link>
         </CardContent>

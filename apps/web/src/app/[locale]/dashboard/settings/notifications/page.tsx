@@ -97,7 +97,7 @@ export default function NotificationsSettingsPage() {
       </div>
 
       {success && (
-        <div className="p-3 bg-green-500/10 text-green-600 rounded-lg text-sm">{success}</div>
+        <div className="p-3 bg-success/10 text-success rounded-lg text-sm">{success}</div>
       )}
       {saveError && (
         <div className="p-3 bg-destructive/10 text-destructive rounded-lg text-sm">{saveError}</div>

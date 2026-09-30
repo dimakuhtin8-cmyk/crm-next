@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
+import { useState } from 'react';
+
 import { Button, Card, CardContent, CardHeader, CardTitle, Input } from '@/components/ui';
 
 export default function SecuritySettingsPage() {
@@ -45,12 +46,18 @@ export default function SecuritySettingsPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/dashboard/settings" className="text-muted-foreground hover:text-foreground">← Назад</Link>
+        <Link href="/dashboard/settings" className="text-muted-foreground hover:text-foreground">
+          ← Назад
+        </Link>
         <h1 className="text-2xl font-bold">Безпека</h1>
       </div>
 
-      {success && <div className="p-3 bg-green-500/10 text-green-600 rounded-lg text-sm">{success}</div>}
-      {error && <div className="p-3 bg-destructive/10 text-destructive rounded-lg text-sm">{error}</div>}
+      {success && (
+        <div className="p-3 bg-success/10 text-success rounded-lg text-sm">{success}</div>
+      )}
+      {error && (
+        <div className="p-3 bg-destructive/10 text-destructive rounded-lg text-sm">{error}</div>
+      )}
 
       <Card>
         <CardHeader>
@@ -60,15 +67,31 @@ export default function SecuritySettingsPage() {
           <form onSubmit={handlePasswordChange} className="space-y-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Поточний пароль</label>
-              <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
+              <Input
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                required
+              />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Новий пароль</label>
-              <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={8} />
+              <Input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                minLength={8}
+              />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Підтвердження пароля</label>
-              <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+              <Input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
             </div>
             <Button type="submit" disabled={saving}>
               {saving ? 'Збереження...' : 'Змінити пароль'}

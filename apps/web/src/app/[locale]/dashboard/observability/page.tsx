@@ -328,8 +328,8 @@ export default function ObservabilityPage() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-violet-100">
-                  <Brain className="h-5 w-5 text-violet-600" />
+                <div className="p-2 rounded-xl bg-accent">
+                  <Brain className="h-5 w-5 text-accent-foreground" />
                 </div>
                 <div>
                   <p className="text-xs text-foreground-muted">AI запити</p>

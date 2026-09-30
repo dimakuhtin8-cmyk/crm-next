@@ -28,7 +28,7 @@ export function Dropdown({ trigger, items, className }: DropdownProps) {
             onClick={item.onClick}
             className={cn(
               'flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-secondary',
-              item.danger && 'text-red-500 hover:bg-red-500/10',
+              item.danger && 'text-danger hover:bg-danger/10',
             )}
           >
             {item.icon}

@@ -49,7 +49,7 @@ export default function LoginPage() {
         <div className="text-center">
           <Link href="/" className="inline-flex items-center gap-2">
             <svg
-              className="h-8 w-8 text-indigo-500"
+              className="h-8 w-8 text-primary"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -81,7 +81,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="your@email.com"
-              className="mt-1 flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="mt-1 flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
           <div>
@@ -95,13 +95,13 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="mt-1 flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="mt-1 flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
           <button
             type="submit"
             disabled={isLoading || loading}
-            className="flex h-10 w-full items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 hover:bg-indigo-500 disabled:opacity-50"
+            className="flex h-10 w-full items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary-hover disabled:opacity-50"
           >
             {isLoading ? 'Вхід...' : 'Увійти'}
           </button>
@@ -147,7 +147,7 @@ export default function LoginPage() {
 
         <p className="text-center text-sm text-muted-foreground">
           Ще немає акаунту?{' '}
-          <Link href={lp('/auth/register')} className="text-indigo-500 hover:text-indigo-400">
+          <Link href={lp('/auth/register')} className="text-primary hover:text-primary-hover">
             Зареєструватися
           </Link>
         </p>

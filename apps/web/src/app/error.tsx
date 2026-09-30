@@ -12,9 +12,9 @@ export default function Error({
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-4">
       <div className="max-w-md text-center">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-500/10">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-danger/10">
           <svg
-            className="h-8 w-8 text-red-500"
+            className="h-8 w-8 text-danger"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -30,7 +30,7 @@ export default function Error({
         <div className="mt-6 flex justify-center gap-4">
           <button
             onClick={reset}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
           >
             Спробувати знову
           </button>

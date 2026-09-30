@@ -29,22 +29,22 @@ interface LogsResponse {
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   success: {
     label: 'Успішно',
-    color: 'bg-green-500/10 text-green-700 dark:text-green-300',
+    color: 'bg-success/10 text-success',
     icon: <Check className="w-3 h-3" />,
   },
   error: {
     label: 'Помилка',
-    color: 'bg-red-500/10 text-red-700 dark:text-red-300',
+    color: 'bg-danger/10 text-danger',
     icon: <X className="w-3 h-3" />,
   },
   rate_limited: {
     label: 'Ліміт',
-    color: 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
+    color: 'bg-warning/10 text-warning',
     icon: <Clock className="w-3 h-3" />,
   },
   timeout: {
     label: 'Тайм-аут',
-    color: 'bg-orange-500/10 text-orange-700 dark:text-orange-300',
+    color: 'bg-warning/10 text-warning',
     icon: <Clock className="w-3 h-3" />,
   },
 };

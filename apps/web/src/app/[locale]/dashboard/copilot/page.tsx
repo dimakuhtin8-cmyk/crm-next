@@ -431,7 +431,7 @@ export default function CopilotPage() {
               <Button
                 onClick={handleQuickSetup}
                 disabled={savingKey || !quickKey.trim()}
-                className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary-hover hover:to-purple-700 text-white shadow-lg shadow-primary/20 px-6"
+                className="bg-gradient-to-r from-primary to-primary-hover text-primary-foreground shadow-lg shadow-primary/20 px-6"
               >
                 {savingKey ? (
                   <span className="flex items-center gap-2">
@@ -463,7 +463,7 @@ export default function CopilotPage() {
 
       {aiStatus === 'ready' && justConnected && (
         <div className="flex items-center gap-2 px-1">
-          <span className="text-sm text-green-600">✅ AI підключено</span>
+          <span className="text-sm text-success">✅ AI підключено</span>
         </div>
       )}
 

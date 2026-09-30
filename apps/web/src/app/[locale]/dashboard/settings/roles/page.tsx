@@ -13,25 +13,25 @@ const ROLE_CONFIG: Record<
 > = {
   owner: {
     label: 'Власник',
-    color: 'bg-purple-500/10 text-purple-700 dark:text-purple-300',
+    color: 'bg-primary/10 text-primary',
     icon: <Crown className="w-4 h-4" />,
     description: 'Повний доступ до всього',
   },
   admin: {
     label: 'Адміністратор',
-    color: 'bg-blue-500/10 text-blue-700 dark:text-blue-300',
+    color: 'bg-info/10 text-info',
     icon: <Shield className="w-4 h-4" />,
     description: 'Керування учасниками та налаштуваннями',
   },
   member: {
     label: 'Менеджер',
-    color: 'bg-green-500/10 text-green-700 dark:text-green-300',
+    color: 'bg-success/10 text-success',
     icon: <Users className="w-4 h-4" />,
     description: 'Створення та редагування власних даних',
   },
   viewer: {
     label: 'Глядач',
-    color: 'bg-gray-500/10 text-gray-600 dark:text-gray-400',
+    color: 'bg-muted text-muted-foreground',
     icon: <Eye className="w-4 h-4" />,
     description: 'Тільки перегляд даних',
   },
@@ -132,8 +132,8 @@ export default function RolesSettingsPage() {
                           key={perm}
                           className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
                             hasPerm
-                              ? 'bg-green-500/10 text-green-700 dark:text-green-300'
-                              : 'bg-red-500/10 text-red-700 dark:text-red-300 line-through opacity-50'
+                              ? 'bg-success/10 text-success'
+                              : 'bg-danger/10 text-danger line-through opacity-50'
                           }`}
                         >
                           {hasPerm ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
@@ -150,15 +150,13 @@ export default function RolesSettingsPage() {
       </Card>
 
       {/* Info */}
-      <Card className="border-amber-500/20 bg-amber-500/5">
+      <Card className="border-warning/20 bg-warning/5">
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
-            <Shield className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+            <Shield className="w-5 h-5 text-warning mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                Кастомні ролі
-              </p>
-              <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+              <p className="text-sm font-medium text-warning">Кастомні ролі</p>
+              <p className="text-xs text-warning mt-1">
                 Наразі підтримуються 4 стандартні ролі. Кастомні ролі з гнучкою матрицею прав будуть
                 доступні у наступних оновленнях.
               </p>

@@ -63,13 +63,13 @@ export default function PaymentHistoryPage() {
   const statusIcon = (status: string) => {
     switch (status) {
       case 'succeeded':
-        return <Check className="w-4 h-4 text-green-600" />;
+        return <Check className="w-4 h-4 text-success" />;
       case 'failed':
-        return <X className="w-4 h-4 text-red-600" />;
+        return <X className="w-4 h-4 text-danger" />;
       case 'pending':
-        return <Clock className="w-4 h-4 text-amber-600" />;
+        return <Clock className="w-4 h-4 text-warning" />;
       case 'refunded':
-        return <X className="w-4 h-4 text-orange-600" />;
+        return <X className="w-4 h-4 text-warning" />;
       default:
         return null;
     }
