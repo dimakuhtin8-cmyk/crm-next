@@ -47,7 +47,13 @@ export function QuickCreatePopover({
       if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    // Лочим скролл страницы: иначе её скролбар торчит из-под модалки
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
   }, [open, onClose]);
 
   if (!open || typeof document === 'undefined') return null;
@@ -55,7 +61,7 @@ export function QuickCreatePopover({
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className={`absolute inset-0 bg-background/40 backdrop-blur-[2px] transition-opacity duration-200 ${
+        className={`absolute inset-0 bg-[#1D1B1D]/60 transition-opacity duration-200 ${
           shown ? 'opacity-100' : 'opacity-0'
         }`}
         onClick={onClose}
