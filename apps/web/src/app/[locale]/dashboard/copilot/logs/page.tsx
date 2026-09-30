@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
 import { DataError } from '@/components/data-error';
+import { QuickSelect } from '@/components/quick-create';
 import { Button, Card, CardContent, Skeleton } from '@/components/ui';
 import { AI_PROVIDERS } from '@/lib/ai/providers';
 
@@ -110,36 +111,41 @@ export default function CopilotLogsPage() {
               <span className="text-sm font-medium">Фільтри:</span>
             </div>
 
-            <select
-              value={providerFilter}
-              onChange={(e) => {
-                setProviderFilter(e.target.value);
-                setPage(1);
-              }}
-              className="px-3 py-1.5 text-sm rounded-lg border border-border bg-background"
-            >
-              <option value="">Всі провайдери</option>
-              {AI_PROVIDERS.filter((p) => p.id !== 'custom').map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
+            <div className="w-44">
+              <QuickSelect
+                value={providerFilter}
+                onChange={(v) => {
+                  setProviderFilter(v);
+                  setPage(1);
+                }}
+                options={[
+                  { id: '', name: 'Всі провайдери' },
+                  ...AI_PROVIDERS.filter((p) => p.id !== 'custom').map((p) => ({
+                    id: p.id,
+                    name: p.name,
+                  })),
+                ]}
+                placeholder="Всі провайдери"
+              />
+            </div>
 
-            <select
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setPage(1);
-              }}
-              className="px-3 py-1.5 text-sm rounded-lg border border-border bg-background"
-            >
-              <option value="">Всі статуси</option>
-              <option value="success">Успішно</option>
-              <option value="error">Помилка</option>
-              <option value="rate_limited">Ліміт</option>
-              <option value="timeout">Тайм-аут</option>
-            </select>
+            <div className="w-44">
+              <QuickSelect
+                value={statusFilter}
+                onChange={(v) => {
+                  setStatusFilter(v);
+                  setPage(1);
+                }}
+                options={[
+                  { id: '', name: 'Всі статуси' },
+                  { id: 'success', name: 'Успішно' },
+                  { id: 'error', name: 'Помилка' },
+                  { id: 'rate_limited', name: 'Ліміт' },
+                  { id: 'timeout', name: 'Тайм-аут' },
+                ]}
+                placeholder="Всі статуси"
+              />
+            </div>
 
             {(providerFilter || statusFilter) && (
               <Button

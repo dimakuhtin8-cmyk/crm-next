@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 
+import { QuickSelect } from '@/components/quick-create';
 import { Button, Input, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 
 interface TeamMember {
@@ -128,61 +129,58 @@ export function TaskForm({ taskId, initialData }: TaskFormProps) {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Тип</label>
-                <select
+                <QuickSelect
                   value={form.type}
-                  onChange={(e) => setForm({ ...form, type: e.target.value })}
-                  className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  <option value="task">Задача</option>
-                  <option value="call">Дзвінок</option>
-                  <option value="email">Лист</option>
-                  <option value="meeting">Зустріч</option>
-                  <option value="follow_up">Фоллов-ап</option>
-                </select>
+                  onChange={(id) => setForm({ ...form, type: id })}
+                  options={[
+                    { id: 'task', name: 'Задача' },
+                    { id: 'call', name: 'Дзвінок' },
+                    { id: 'email', name: 'Лист' },
+                    { id: 'meeting', name: 'Зустріч' },
+                    { id: 'follow_up', name: 'Фоллов-ап' },
+                  ]}
+                />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Пріоритет</label>
-                <select
+                <QuickSelect
                   value={form.priority}
-                  onChange={(e) => setForm({ ...form, priority: e.target.value })}
-                  className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  <option value="low">Низький</option>
-                  <option value="medium">Середній</option>
-                  <option value="high">Високий</option>
-                  <option value="urgent">Терміново</option>
-                </select>
+                  onChange={(id) => setForm({ ...form, priority: id })}
+                  options={[
+                    { id: 'low', name: 'Низький' },
+                    { id: 'medium', name: 'Середній' },
+                    { id: 'high', name: 'Високий' },
+                    { id: 'urgent', name: 'Терміново' },
+                  ]}
+                />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Статус</label>
-                <select
+                <QuickSelect
                   value={form.status}
-                  onChange={(e) => setForm({ ...form, status: e.target.value })}
-                  className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  <option value="todo">До виконання</option>
-                  <option value="in_progress">В роботі</option>
-                  <option value="done">Готово</option>
-                  <option value="cancelled">Скасовано</option>
-                </select>
+                  onChange={(id) => setForm({ ...form, status: id })}
+                  options={[
+                    { id: 'todo', name: 'До виконання' },
+                    { id: 'in_progress', name: 'В роботі' },
+                    { id: 'done', name: 'Готово' },
+                    { id: 'cancelled', name: 'Скасовано' },
+                  ]}
+                />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Відповідальний</label>
-                <select
+                <QuickSelect
                   value={form.assigneeId}
-                  onChange={(e) => setForm({ ...form, assigneeId: e.target.value })}
-                  className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  <option value="">Не призначено</option>
-                  {teamMembers.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name || m.email}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(id) => setForm({ ...form, assigneeId: id })}
+                  options={[
+                    { id: '', name: 'Не призначено' },
+                    ...teamMembers.map((m) => ({ id: m.id, name: m.name || m.email || '?' })),
+                  ]}
+                  placeholder="Не призначено"
+                />
               </div>
             </div>
 
@@ -220,18 +218,19 @@ export function TaskForm({ taskId, initialData }: TaskFormProps) {
             {form.isRecurring && (
               <div className="space-y-2">
                 <label className="text-sm font-medium">Правило повторення</label>
-                <select
+                <QuickSelect
                   value={form.recurrenceRule}
-                  onChange={(e) => setForm({ ...form, recurrenceRule: e.target.value })}
-                  className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  <option value="">Оберіть...</option>
-                  <option value="daily">Щодня</option>
-                  <option value="weekly">Щотижня</option>
-                  <option value="biweekly">Кожні 2 тижні</option>
-                  <option value="monthly">Щомісяця</option>
-                  <option value="quarterly">Щокварталу</option>
-                </select>
+                  onChange={(id) => setForm({ ...form, recurrenceRule: id })}
+                  options={[
+                    { id: '', name: 'Оберіть...' },
+                    { id: 'daily', name: 'Щодня' },
+                    { id: 'weekly', name: 'Щотижня' },
+                    { id: 'biweekly', name: 'Кожні 2 тижні' },
+                    { id: 'monthly', name: 'Щомісяця' },
+                    { id: 'quarterly', name: 'Щокварталу' },
+                  ]}
+                  placeholder="Оберіть..."
+                />
               </div>
             )}
 

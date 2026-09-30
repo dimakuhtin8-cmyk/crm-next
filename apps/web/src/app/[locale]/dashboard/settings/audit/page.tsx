@@ -4,6 +4,7 @@ import { RefreshCw, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect, useCallback } from 'react';
 
+import { QuickSelect } from '@/components/quick-create';
 import { Button, Card, CardContent, Badge, Skeleton } from '@/components/ui';
 
 interface AuditLogEntry {
@@ -113,38 +114,36 @@ export default function AuditLogPage() {
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
               <Filter className="w-4 h-4 text-foreground-muted" />
-              <select
-                value={actionFilter}
-                onChange={(e) => {
-                  setActionFilter(e.target.value);
-                  setPage(1);
-                }}
-                className="bg-background border border-input rounded-md px-3 py-1.5 text-sm"
-              >
-                <option value="">Всі дії</option>
-                {Object.entries(ACTION_LABELS).map(([k, v]) => (
-                  <option key={k} value={k}>
-                    {v}
-                  </option>
-                ))}
-              </select>
+              <div className="w-44">
+                <QuickSelect
+                  value={actionFilter}
+                  onChange={(v) => {
+                    setActionFilter(v);
+                    setPage(1);
+                  }}
+                  options={[
+                    { id: '', name: 'Всі дії' },
+                    ...Object.entries(ACTION_LABELS).map(([k, v]) => ({ id: k, name: v })),
+                  ]}
+                  placeholder="Всі дії"
+                />
+              </div>
             </div>
             <div className="flex items-center gap-2">
-              <select
-                value={entityFilter}
-                onChange={(e) => {
-                  setEntityFilter(e.target.value);
-                  setPage(1);
-                }}
-                className="bg-background border border-input rounded-md px-3 py-1.5 text-sm"
-              >
-                <option value="">Всі сутності</option>
-                {Object.entries(ENTITY_LABELS).map(([k, v]) => (
-                  <option key={k} value={k}>
-                    {v}
-                  </option>
-                ))}
-              </select>
+              <div className="w-44">
+                <QuickSelect
+                  value={entityFilter}
+                  onChange={(v) => {
+                    setEntityFilter(v);
+                    setPage(1);
+                  }}
+                  options={[
+                    { id: '', name: 'Всі сутності' },
+                    ...Object.entries(ENTITY_LABELS).map(([k, v]) => ({ id: k, name: v })),
+                  ]}
+                  placeholder="Всі сутності"
+                />
+              </div>
             </div>
             <Button variant="outline" size="sm" onClick={fetchLogs}>
               <RefreshCw className="w-4 h-4" />

@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 
+import { QuickSelect } from '@/components/quick-create';
 import { Button, Input, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
@@ -200,16 +201,16 @@ export function ContactForm({ contactId, initialData }: ContactFormProps) {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Статус</label>
-                <select
+                <QuickSelect
                   value={form.status}
-                  onChange={(e) => setForm({ ...form, status: e.target.value })}
-                  className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  <option value="active">Активний</option>
-                  <option value="lead">Лід</option>
-                  <option value="client">Клієнт</option>
-                  <option value="inactive">Неактивний</option>
-                </select>
+                  onChange={(id) => setForm({ ...form, status: id })}
+                  options={[
+                    { id: 'active', name: 'Активний' },
+                    { id: 'lead', name: 'Лід' },
+                    { id: 'client', name: 'Клієнт' },
+                    { id: 'inactive', name: 'Неактивний' },
+                  ]}
+                />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Джерело</label>

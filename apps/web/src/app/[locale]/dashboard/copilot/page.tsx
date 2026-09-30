@@ -14,6 +14,7 @@ import {
 import { useSearchParams } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 
+import { QuickSelect } from '@/components/quick-create';
 import { useTourAutoStart } from '@/components/tour/tour-provider';
 import { Button, Card, CardContent, Input } from '@/components/ui';
 import { AI_PROVIDERS, getProvider } from '@/lib/ai/providers';
@@ -405,20 +406,15 @@ export default function CopilotPage() {
 
             {currentProvider && currentProvider.models.length > 0 && (
               <div className="mb-4">
-                <label className="block text-xs font-medium text-foreground-muted mb-1.5">
-                  Модель
-                </label>
-                <select
+                <QuickSelect
                   value={quickModel}
-                  onChange={(e) => setQuickModel(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-                >
-                  {currentProvider.models.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name} — {m.description}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setQuickModel}
+                  options={currentProvider.models.map((m) => ({
+                    id: m.id,
+                    name: `${m.name} — ${m.description}`,
+                  }))}
+                  label="Модель"
+                />
               </div>
             )}
 

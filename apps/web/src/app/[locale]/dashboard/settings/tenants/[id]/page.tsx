@@ -3,6 +3,7 @@
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import { QuickSelect } from '@/components/quick-create';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -314,17 +315,14 @@ export default function TenantDetailPage() {
                 return (
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Модель</label>
-                    <select
+                    <QuickSelect
                       value={form.aiModel}
-                      onChange={(e) => setForm((prev) => ({ ...prev, aiModel: e.target.value }))}
-                      className="w-full p-2 rounded-md border border-border bg-background text-sm"
-                    >
-                      {selectedProvider.models.map((model) => (
-                        <option key={model.id} value={model.id}>
-                          {model.name} — {model.description}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(id) => setForm((prev) => ({ ...prev, aiModel: id }))}
+                      options={selectedProvider.models.map((model) => ({
+                        id: model.id,
+                        name: `${model.name} — ${model.description}`,
+                      }))}
+                    />
                   </div>
                 );
               })()}

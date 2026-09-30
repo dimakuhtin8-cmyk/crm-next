@@ -71,7 +71,7 @@ export function QuickCreatePopover({
         role="dialog"
         aria-label={title}
         style={{ maxWidth: width }}
-        className="relative w-full rounded-3xl border border-border bg-card shadow-2xl transition-all duration-200 ease-out data-[shown=true]:opacity-100 data-[shown=true]:scale-100 data-[shown=true]:translate-y-0 data-[shown=false]:opacity-0 data-[shown=false]:scale-95 data-[shown=false]:translate-y-3"
+        className="relative w-full overflow-hidden rounded-3xl border border-border bg-card shadow-2xl transition-all duration-200 ease-out data-[shown=true]:opacity-100 data-[shown=true]:scale-100 data-[shown=true]:translate-y-0 data-[shown=false]:opacity-0 data-[shown=false]:scale-95 data-[shown=false]:translate-y-3"
         data-shown={shown}
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">

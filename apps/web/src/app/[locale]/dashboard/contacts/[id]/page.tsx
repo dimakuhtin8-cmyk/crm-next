@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { DataError } from '@/components/data-error';
 import { InlineEdit } from '@/components/inline-edit';
 import { OwnerPicker, useTeam } from '@/components/owner-picker';
+import { QuickSelect } from '@/components/quick-create';
 import { Button, Input, Badge, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 
 interface Owner {
@@ -280,16 +281,18 @@ export default function ContactDetailPage() {
                 />
                 <div>
                   <p className="text-xs text-foreground-muted mb-1">Статус</p>
-                  <select
-                    value={contact.status}
-                    onChange={(e) => handleInlineSave('status', e.target.value)}
-                    className="h-8 rounded-lg border border-border bg-background px-2 text-sm"
-                  >
-                    <option value="active">Активний</option>
-                    <option value="inactive">Неактивний</option>
-                    <option value="lead">Лід</option>
-                    <option value="client">Клієнт</option>
-                  </select>
+                  <div className="w-44">
+                    <QuickSelect
+                      value={contact.status}
+                      onChange={(v) => handleInlineSave('status', v)}
+                      options={[
+                        { id: 'active', name: 'Активний' },
+                        { id: 'inactive', name: 'Неактивний' },
+                        { id: 'lead', name: 'Лід' },
+                        { id: 'client', name: 'Клієнт' },
+                      ]}
+                    />
+                  </div>
                 </div>
                 <InlineEdit
                   label="Джерело"
@@ -389,18 +392,18 @@ export default function ContactDetailPage() {
                   onSubmit={handleAddActivity}
                   className="space-y-3 p-3 bg-secondary/50 rounded-lg"
                 >
-                  <select
+                  <QuickSelect
                     value={activityForm.type}
-                    onChange={(e) => setActivityForm({ ...activityForm, type: e.target.value })}
-                    className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  >
-                    <option value="note">Нотатка</option>
-                    <option value="call">Дзвінок</option>
-                    <option value="email">Лист</option>
-                    <option value="meeting">Зустріч</option>
-                    <option value="task">Задача</option>
-                    <option value="sms">SMS</option>
-                  </select>
+                    onChange={(v) => setActivityForm({ ...activityForm, type: v })}
+                    options={[
+                      { id: 'note', name: 'Нотатка' },
+                      { id: 'call', name: 'Дзвінок' },
+                      { id: 'email', name: 'Лист' },
+                      { id: 'meeting', name: 'Зустріч' },
+                      { id: 'task', name: 'Задача' },
+                      { id: 'sms', name: 'SMS' },
+                    ]}
+                  />
                   <Input
                     placeholder="Заголовок"
                     value={activityForm.title}

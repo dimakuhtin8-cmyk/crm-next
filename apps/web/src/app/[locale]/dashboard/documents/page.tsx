@@ -4,6 +4,7 @@ import { Save, FileText, Trash2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useState, useEffect } from 'react';
 
+import { QuickSelect } from '@/components/quick-create';
 import { Button, Card, CardContent, Input } from '@/components/ui';
 
 const KPDocument = dynamic(() => import('@/components/pdf/kp-document').then((m) => m.KPDocument), {
@@ -262,15 +263,15 @@ export default function DocumentsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Валюта</label>
-                  <select
+                  <QuickSelect
                     value={currency}
-                    onChange={(e) => setCurrency(e.target.value)}
-                    className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  >
-                    <option value="UAH">UAH ₴</option>
-                    <option value="USD">USD $</option>
-                    <option value="EUR">EUR €</option>
-                  </select>
+                    onChange={setCurrency}
+                    options={[
+                      { id: 'UAH', name: 'UAH ₴' },
+                      { id: 'USD', name: 'USD $' },
+                      { id: 'EUR', name: 'EUR €' },
+                    ]}
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Дійсно до</label>

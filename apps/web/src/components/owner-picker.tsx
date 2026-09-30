@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 
+import { QuickSelect } from '@/components/quick-create';
+
 interface TeamMember {
   id: string;
   name: string | null;
@@ -74,18 +76,15 @@ export function OwnerPicker({
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium">{label}</label>
-      <select
+      <QuickSelect
         value={value || ''}
-        onChange={(e) => onChange(e.target.value || null)}
-        className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-      >
-        <option value="">Не призначено</option>
-        {members.map((m) => (
-          <option key={m.id} value={m.id}>
-            {m.name || m.email}
-          </option>
-        ))}
-      </select>
+        onChange={(id) => onChange(id || null)}
+        options={[
+          { id: '', name: 'Не призначено' },
+          ...members.map((m) => ({ id: m.id, name: m.name || m.email || '?' })),
+        ]}
+        placeholder="Не призначено"
+      />
     </div>
   );
 }

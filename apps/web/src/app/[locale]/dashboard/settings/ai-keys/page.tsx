@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
 import { DataError } from '@/components/data-error';
+import { QuickSelect } from '@/components/quick-create';
 import {
   Button,
   Card,
@@ -329,24 +330,18 @@ export default function AiKeysSettingsPage() {
           {/* Model selection (dynamic list when available, static fallback otherwise) */}
           {currentProvider && currentProvider.models.length > 0 && (
             <div>
-              <label className="block text-xs font-medium text-foreground-muted mb-1.5">
-                Модель
-              </label>
-              <select
+              <QuickSelect
                 value={selectedModel}
-                onChange={(e) => setSelectedModel(e.target.value)}
-                className="w-full p-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-              >
-                {(dynamicModels && dynamicModels.length > 0
+                onChange={setSelectedModel}
+                options={(dynamicModels && dynamicModels.length > 0
                   ? dynamicModels.map((m) => ({ id: m.id, name: m.name, description: '' }))
                   : currentProvider.models
-                ).map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}
-                    {m.description ? ` — ${m.description}` : ''}
-                  </option>
-                ))}
-              </select>
+                ).map((m) => ({
+                  id: m.id,
+                  name: m.description ? `${m.name} — ${m.description}` : m.name,
+                }))}
+                label="Модель"
+              />
             </div>
           )}
 
@@ -524,18 +519,17 @@ export default function AiKeysSettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <select
+          <QuickSelect
             value={fallbackProvider}
-            onChange={(e) => setFallbackProvider(e.target.value)}
-            className="w-full p-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-          >
-            <option value="">Не налаштовано</option>
-            {AI_PROVIDERS.filter((p) => p.id !== selectedProvider && p.id !== 'custom').map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
+            onChange={setFallbackProvider}
+            options={[
+              { id: '', name: 'Не налаштовано' },
+              ...AI_PROVIDERS.filter((p) => p.id !== selectedProvider && p.id !== 'custom').map(
+                (p) => ({ id: p.id, name: p.name }),
+              ),
+            ]}
+            placeholder="Не налаштовано"
+          />
         </CardContent>
       </Card>
     </div>

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { RevenueChart, PieChartWidget, FunnelChart } from '@/components/analytics/charts';
 import { DataError } from '@/components/data-error';
+import { QuickSelect } from '@/components/quick-create';
 import { Card, Skeleton } from '@/components/ui';
 
 interface AnalyticsData {
@@ -83,16 +84,18 @@ export default function AnalyticsPage() {
           <h1 className="text-2xl font-bold tracking-tight">Аналітика</h1>
           <p className="text-foreground-secondary">Динаміка та статистика CRM</p>
         </div>
-        <select
-          value={period}
-          onChange={(e) => setPeriod(e.target.value)}
-          className="h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-        >
-          <option value="7">За 7 днів</option>
-          <option value="30">За 30 днів</option>
-          <option value="90">За 90 днів</option>
-          <option value="365">За рік</option>
-        </select>
+        <div className="w-44">
+          <QuickSelect
+            value={period}
+            onChange={setPeriod}
+            options={[
+              { id: '7', name: 'За 7 днів' },
+              { id: '30', name: 'За 30 днів' },
+              { id: '90', name: 'За 90 днів' },
+              { id: '365', name: 'За рік' },
+            ]}
+          />
+        </div>
       </div>
 
       {loadError && <DataError message={loadError} onRetry={loadAnalytics} />}

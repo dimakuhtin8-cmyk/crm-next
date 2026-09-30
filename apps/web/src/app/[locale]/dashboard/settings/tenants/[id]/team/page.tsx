@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 
+import { QuickSelect } from '@/components/quick-create';
 import { useTourAutoStart } from '@/components/tour/tour-provider';
 import {
   Button,
@@ -315,14 +316,16 @@ export default function TeamPage() {
                   required
                   className="flex-1"
                 />
-                <select
-                  value={inviteRole}
-                  onChange={(e) => setInviteRole(e.target.value)}
-                  className="h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  <option value="member">Учасник</option>
-                  <option value="admin">Адміністратор</option>
-                </select>
+                <div className="w-40 shrink-0">
+                  <QuickSelect
+                    value={inviteRole}
+                    onChange={setInviteRole}
+                    options={[
+                      { id: 'member', name: 'Учасник' },
+                      { id: 'admin', name: 'Адміністратор' },
+                    ]}
+                  />
+                </div>
                 <Button type="submit" disabled={inviteLoading}>
                   {inviteLoading ? 'Надсилання...' : 'Надіслати'}
                 </Button>
@@ -375,15 +378,17 @@ export default function TeamPage() {
 
                   <div className="flex items-center gap-2">
                     {canManage && !isOwner && !isCurrentUser ? (
-                      <select
-                        value={member.role}
-                        onChange={(e) => handleChangeRole(member.id, e.target.value)}
-                        disabled={changingRole === member.id}
-                        className="h-7 rounded border border-border bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
-                      >
-                        <option value="member">Учасник</option>
-                        <option value="admin">Адміністратор</option>
-                      </select>
+                      <div className="w-36">
+                        <QuickSelect
+                          value={member.role}
+                          onChange={(v) => handleChangeRole(member.id, v)}
+                          disabled={changingRole === member.id}
+                          options={[
+                            { id: 'member', name: 'Учасник' },
+                            { id: 'admin', name: 'Адміністратор' },
+                          ]}
+                        />
+                      </div>
                     ) : (
                       <Badge variant={roleVariants[member.role] || 'outline'}>
                         {roleLabels[member.role] || member.role}

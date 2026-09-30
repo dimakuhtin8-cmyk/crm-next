@@ -4,6 +4,7 @@ import { Bell } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
+import { QuickSelect } from '@/components/quick-create';
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
@@ -73,15 +74,17 @@ export default function NotificationsSettingsPage() {
     onChange: (v: boolean) => void;
     label: string;
   }) => (
-    <label className="flex items-center justify-between py-3">
+    <label className="flex items-center justify-between py-3 cursor-pointer">
       <span className="text-sm">{label}</span>
       <button
         type="button"
+        role="switch"
+        aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${checked ? 'bg-primary' : 'bg-muted'}`}
+        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-300 ease-out active:scale-95 ${checked ? 'bg-primary' : 'bg-muted'}`}
       >
         <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${checked ? 'translate-x-6' : 'translate-x-1'}`}
+          className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-all duration-300 ease-[cubic-bezier(0.34,1.4,0.64,1)] ${checked ? 'translate-x-6' : 'translate-x-1'}`}
         />
       </button>
     </label>
@@ -139,16 +142,16 @@ export default function NotificationsSettingsPage() {
           />
           <div>
             <p className="text-sm mb-1.5">Позиція на екрані</p>
-            <select
+            <QuickSelect
               value={toastPosition}
-              onChange={(e) => setToastPosition(e.target.value as ToastPosition)}
+              onChange={(v) => setToastPosition(v as ToastPosition)}
+              options={[
+                { id: 'bottom-left', name: 'Зліва знизу' },
+                { id: 'bottom-right', name: 'Справа знизу' },
+                { id: 'top-right', name: 'Справа зверху' },
+              ]}
               disabled={!toastEnabled}
-              className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-            >
-              <option value="bottom-left">Зліва знизу</option>
-              <option value="bottom-right">Справа знизу</option>
-              <option value="top-right">Справа зверху</option>
-            </select>
+            />
           </div>
           <div>
             <Button

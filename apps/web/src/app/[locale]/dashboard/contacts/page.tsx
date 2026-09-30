@@ -260,21 +260,21 @@ export default function ContactsPage() {
                 </Button>
               </div>
               <div className="flex items-center gap-2">
-                <select
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      handleBulkStatus(e.target.value);
-                      e.target.value = '';
-                    }
-                  }}
-                  className="h-8 rounded-lg border border-border bg-background px-2 text-sm"
-                >
-                  <option value="">Змінити статус...</option>
-                  <option value="active">Активний</option>
-                  <option value="inactive">Неактивний</option>
-                  <option value="lead">Лід</option>
-                  <option value="client">Клієнт</option>
-                </select>
+                <div className="w-44">
+                  <QuickSelect
+                    value=""
+                    onChange={(v) => {
+                      if (v) handleBulkStatus(v);
+                    }}
+                    options={[
+                      { id: 'active', name: 'Активний' },
+                      { id: 'inactive', name: 'Неактивний' },
+                      { id: 'lead', name: 'Лід' },
+                      { id: 'client', name: 'Клієнт' },
+                    ]}
+                    placeholder="Змінити статус..."
+                  />
+                </div>
                 <Button
                   variant="destructive"
                   size="sm"

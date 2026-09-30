@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import { DataError } from '@/components/data-error';
+import { QuickSelect } from '@/components/quick-create';
 import { Button, Card, CardContent, Badge } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
@@ -103,22 +104,25 @@ export default function TimelinePage() {
           <p className="text-foreground-muted">Історія всіх активностей · {total} подій</p>
         </div>
         <div className="flex gap-2">
-          <select
-            value={filterType}
-            onChange={(e) => {
-              setFilterType(e.target.value);
-              setPage(1);
-            }}
-            className="h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-          >
-            <option value="">Всі типи</option>
-            <option value="call">Дзвінки</option>
-            <option value="email">Листи</option>
-            <option value="meeting">Зустрічі</option>
-            <option value="task">Задачі</option>
-            <option value="note">Нотатки</option>
-            <option value="sms">SMS</option>
-          </select>
+          <div className="w-44">
+            <QuickSelect
+              value={filterType}
+              onChange={(v) => {
+                setFilterType(v);
+                setPage(1);
+              }}
+              options={[
+                { id: '', name: 'Всі типи' },
+                { id: 'call', name: 'Дзвінки' },
+                { id: 'email', name: 'Листи' },
+                { id: 'meeting', name: 'Зустрічі' },
+                { id: 'task', name: 'Задачі' },
+                { id: 'note', name: 'Нотатки' },
+                { id: 'sms', name: 'SMS' },
+              ]}
+              placeholder="Всі типи"
+            />
+          </div>
         </div>
       </div>
 

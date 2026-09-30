@@ -1,6 +1,6 @@
 /**
  * Logs — системні логи застосунку
- * 
+ *
  * Показує:
  * - Помилки API
  * - Події безпеки
@@ -10,20 +10,20 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, Button, Badge } from '@/components/ui';
-import { 
-  Activity, 
+import {
+  Activity,
   RefreshCw,
   AlertTriangle,
   AlertCircle,
   CheckCircle,
-  Clock,
   Trash2,
   Filter,
   Download,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useState, useEffect } from 'react';
+
+import { QuickSelect } from '@/components/quick-create';
+import { Card, CardContent, Button, Badge } from '@/components/ui';
 
 interface LogEntry {
   id: string;
@@ -44,7 +44,11 @@ interface LogStats {
 const logStore: LogEntry[] = [];
 let logId = 0;
 
-export function addLog(level: LogEntry['level'], message: string, context?: Record<string, unknown>) {
+export function addLog(
+  level: LogEntry['level'],
+  message: string,
+  context?: Record<string, unknown>,
+) {
   logStore.unshift({
     id: String(++logId),
     level,
@@ -137,16 +141,16 @@ export default function LogsPage() {
 
       setStats({
         total: mockLogs.length,
-        errors: mockLogs.filter(l => l.level === 'error').length,
-        warnings: mockLogs.filter(l => l.level === 'warn').length,
-        info: mockLogs.filter(l => l.level === 'info').length,
+        errors: mockLogs.filter((l) => l.level === 'error').length,
+        warnings: mockLogs.filter((l) => l.level === 'warn').length,
+        info: mockLogs.filter((l) => l.level === 'info').length,
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredLogs = logs.filter(log => {
+  const filteredLogs = logs.filter((log) => {
     if (levelFilter !== 'all' && log.level !== levelFilter) return false;
     if (searchQuery && !log.message.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     return true;
@@ -154,17 +158,23 @@ export default function LogsPage() {
 
   const getLevelIcon = (level: string) => {
     switch (level) {
-      case 'error': return <AlertCircle className="h-4 w-4 text-danger" />;
-      case 'warn': return <AlertTriangle className="h-4 w-4 text-warning" />;
-      default: return <CheckCircle className="h-4 w-4 text-success" />;
+      case 'error':
+        return <AlertCircle className="h-4 w-4 text-danger" />;
+      case 'warn':
+        return <AlertTriangle className="h-4 w-4 text-warning" />;
+      default:
+        return <CheckCircle className="h-4 w-4 text-success" />;
     }
   };
 
   const getLevelBadge = (level: string) => {
     switch (level) {
-      case 'error': return <Badge variant="danger">Помилка</Badge>;
-      case 'warn': return <Badge variant="warning">Попередження</Badge>;
-      default: return <Badge variant="success">Інфо</Badge>;
+      case 'error':
+        return <Badge variant="danger">Помилка</Badge>;
+      case 'warn':
+        return <Badge variant="warning">Попередження</Badge>;
+      default:
+        return <Badge variant="success">Інфо</Badge>;
     }
   };
 
@@ -179,12 +189,15 @@ export default function LogsPage() {
   };
 
   const handleExport = () => {
-    const text = filteredLogs.map(log => 
-      `[${log.timestamp}] [${log.level.toUpperCase()}] ${log.message}${
-        log.context ? ' | ' + JSON.stringify(log.context) : ''
-      }`
-    ).join('\n');
-    
+    const text = filteredLogs
+      .map(
+        (log) =>
+          `[${log.timestamp}] [${log.level.toUpperCase()}] ${log.message}${
+            log.context ? ' | ' + JSON.stringify(log.context) : ''
+          }`,
+      )
+      .join('\n');
+
     const blob = new Blob([text], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -199,9 +212,7 @@ export default function LogsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Системні логи</h1>
-          <p className="text-foreground-muted text-sm mt-1">
-            Моніторинг подій та помилок системи
-          </p>
+          <p className="text-foreground-muted text-sm mt-1">Моніторинг подій та помилок системи</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleExport}>
@@ -287,19 +298,19 @@ export default function LogsPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="flex-1 h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
-            <select
-              value={levelFilter}
-              onChange={(e) => setLevelFilter(e.target.value)}
-              className="h-9 rounded-lg border border-border bg-background px-3 text-sm"
-            >
-              <option value="all">Всі рівні</option>
-              <option value="error">Помилки</option>
-              <option value="warn">Попередження</option>
-              <option value="info">Інфо</option>
-            </select>
-            <span className="text-sm text-foreground-muted">
-              Знайдено: {filteredLogs.length}
-            </span>
+            <div className="w-44">
+              <QuickSelect
+                value={levelFilter}
+                onChange={setLevelFilter}
+                options={[
+                  { id: 'all', name: 'Всі рівні' },
+                  { id: 'error', name: 'Помилки' },
+                  { id: 'warn', name: 'Попередження' },
+                  { id: 'info', name: 'Інфо' },
+                ]}
+              />
+            </div>
+            <span className="text-sm text-foreground-muted">Знайдено: {filteredLogs.length}</span>
           </div>
         </CardContent>
       </Card>
@@ -324,9 +335,7 @@ export default function LogsPage() {
             <Card key={log.id}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
-                  <div className="mt-1">
-                    {getLevelIcon(log.level)}
-                  </div>
+                  <div className="mt-1">{getLevelIcon(log.level)}</div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       {getLevelBadge(log.level)}

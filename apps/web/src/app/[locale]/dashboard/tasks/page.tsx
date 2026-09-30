@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
-import { QuickCreatePopover, QuickTaskForm } from '@/components/quick-create';
+import { QuickCreatePopover, QuickTaskForm, QuickSelect } from '@/components/quick-create';
 import { useTourAutoStart } from '@/components/tour/tour-provider';
 import { Button, Input, Badge, Card, CardContent, EmptyState } from '@/components/ui';
 import { cn } from '@/lib/utils';
@@ -323,34 +323,40 @@ export default function TasksPage() {
           </form>
           {showFilters && (
             <div className="flex gap-3 mt-3 pt-3 border-t border-border">
-              <select
-                value={filterStatus}
-                onChange={(e) => {
-                  setFilterStatus(e.target.value);
-                  setPage(1);
-                }}
-                className="h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                <option value="">Всі статуси</option>
-                <option value="todo">До виконання</option>
-                <option value="in_progress">В роботі</option>
-                <option value="done">Готово</option>
-                <option value="cancelled">Скасовано</option>
-              </select>
-              <select
-                value={filterPriority}
-                onChange={(e) => {
-                  setFilterPriority(e.target.value);
-                  setPage(1);
-                }}
-                className="h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                <option value="">Всі пріоритети</option>
-                <option value="urgent">Терміново</option>
-                <option value="high">Високий</option>
-                <option value="medium">Середній</option>
-                <option value="low">Низький</option>
-              </select>
+              <div className="w-44">
+                <QuickSelect
+                  value={filterStatus}
+                  onChange={(v) => {
+                    setFilterStatus(v);
+                    setPage(1);
+                  }}
+                  options={[
+                    { id: '', name: 'Всі статуси' },
+                    { id: 'todo', name: 'До виконання' },
+                    { id: 'in_progress', name: 'В роботі' },
+                    { id: 'done', name: 'Готово' },
+                    { id: 'cancelled', name: 'Скасовано' },
+                  ]}
+                  placeholder="Всі статуси"
+                />
+              </div>
+              <div className="w-44">
+                <QuickSelect
+                  value={filterPriority}
+                  onChange={(v) => {
+                    setFilterPriority(v);
+                    setPage(1);
+                  }}
+                  options={[
+                    { id: '', name: 'Всі пріоритети' },
+                    { id: 'urgent', name: 'Терміново' },
+                    { id: 'high', name: 'Високий' },
+                    { id: 'medium', name: 'Середній' },
+                    { id: 'low', name: 'Низький' },
+                  ]}
+                  placeholder="Всі пріоритети"
+                />
+              </div>
               {(filterStatus || filterPriority) && (
                 <Button
                   variant="ghost"

@@ -1,11 +1,10 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useState, useRef } from 'react';
 
-import { Button, Input, Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui';
-import { cn } from '@/lib/utils';
+import { QuickSelect } from '@/components/quick-create';
+import { Button, Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui';
 
 interface ParsedCSV {
   headers: string[];
@@ -25,14 +24,18 @@ const fieldLabels: Record<string, string> = {
 const requiredFields = ['firstName'];
 
 export default function ImportContactsPage() {
-  const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState<'upload' | 'mapping' | 'result'>('upload');
   const [csvData, setCsvData] = useState<ParsedCSV | null>(null);
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [importing, setImporting] = useState(false);
-  const [result, setResult] = useState<{ imported: number; skipped: number; errors: Array<{ row: number; error: string }>; total: number } | null>(null);
+  const [result, setResult] = useState<{
+    imported: number;
+    skipped: number;
+    errors: Array<{ row: number; error: string }>;
+    total: number;
+  } | null>(null);
 
   const parseCSV = (text: string): ParsedCSV => {
     const lines = text.split('\n').filter((l) => l.trim());
@@ -63,7 +66,7 @@ export default function ImportContactsPage() {
 
       // Auto-map common column names
       const autoMap: Record<string, string> = {};
-      const namePatterns = ['name', "ім'я", 'ім\'я', 'first_name', 'firstname', 'first'];
+      const namePatterns = ['name', "ім'я", "ім'я", 'first_name', 'firstname', 'first'];
       const lastPatterns = ['last_name', 'lastname', 'last', 'прізвище'];
       const emailPatterns = ['email', 'e-mail', 'пошта', 'email_address'];
       const phonePatterns = ['phone', 'телефон', 'mobile', 'cell'];
@@ -113,6 +116,7 @@ export default function ImportContactsPage() {
       setResult(data);
       setStep('result');
     } catch {
+      // збій мережі: лишаємось на кроці маппінгу, кнопка знову активна
     } finally {
       setImporting(false);
     }
@@ -125,7 +129,9 @@ export default function ImportContactsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Імпорт контактів</h1>
-          <p className="text-foreground-muted">Завантажте CSV файл (amoCRM, Bitrix24, Google Contacts)</p>
+          <p className="text-foreground-muted">
+            Завантажте CSV файл (amoCRM, Bitrix24, Google Contacts)
+          </p>
         </div>
         <Link href="/dashboard/contacts">
           <Button variant="outline">Назад</Button>
@@ -144,7 +150,13 @@ export default function ImportContactsPage() {
               className="border-2 border-dashed border-border rounded-xl p-12 text-center hover:border-primary/50 transition-colors cursor-pointer"
               onClick={() => fileRef.current?.click()}
             >
-              <svg className="h-12 w-12 mx-auto text-foreground-muted mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <svg
+                className="h-12 w-12 mx-auto text-foreground-muted mb-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                 <polyline points="7 10 12 15 17 10" />
                 <line x1="12" y1="15" x2="12" y2="3" />
@@ -179,7 +191,9 @@ export default function ImportContactsPage() {
                 <thead>
                   <tr className="border-b border-border">
                     {csvData.headers.map((h) => (
-                      <th key={h} className="px-3 py-2 text-left font-medium text-foreground-muted">{h}</th>
+                      <th key={h} className="px-3 py-2 text-left font-medium text-foreground-muted">
+                        {h}
+                      </th>
                     ))}
                   </tr>
                 </thead>
@@ -187,7 +201,9 @@ export default function ImportContactsPage() {
                   {csvData.rows.slice(0, 3).map((row, i) => (
                     <tr key={i} className="border-b border-border/50">
                       {csvData.headers.map((h) => (
-                        <td key={h} className="px-3 py-1.5 text-foreground-muted">{row[h] || '—'}</td>
+                        <td key={h} className="px-3 py-1.5 text-foreground-muted">
+                          {row[h] || '—'}
+                        </td>
                       ))}
                     </tr>
                   ))}
@@ -202,16 +218,15 @@ export default function ImportContactsPage() {
               {Object.entries(fieldLabels).map(([field, label]) => (
                 <div key={field} className="space-y-1">
                   <label className="text-sm font-medium">{label}</label>
-                  <select
+                  <QuickSelect
                     value={mapping[field] || ''}
-                    onChange={(e) => setMapping({ ...mapping, [field]: e.target.value })}
-                    className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  >
-                    <option value="">— Не імпортувати —</option>
-                    {csvData.headers.map((h) => (
-                      <option key={h} value={h}>{h}</option>
-                    ))}
-                  </select>
+                    onChange={(v) => setMapping({ ...mapping, [field]: v })}
+                    options={[
+                      { id: '', name: '— Не імпортувати —' },
+                      ...csvData.headers.map((h) => ({ id: h, name: h })),
+                    ]}
+                    placeholder="— Не імпортувати —"
+                  />
                 </div>
               ))}
             </div>
@@ -224,7 +239,13 @@ export default function ImportContactsPage() {
               <Button onClick={handleImport} disabled={!hasRequiredFields || importing}>
                 {importing ? 'Імпорт...' : `Імпортувати ${csvData.totalRows} контактів`}
               </Button>
-              <Button variant="outline" onClick={() => { setStep('upload'); setCsvData(null); }}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setStep('upload');
+                  setCsvData(null);
+                }}
+              >
                 Завантажити інший файл
               </Button>
             </div>
@@ -271,7 +292,14 @@ export default function ImportContactsPage() {
               <Link href="/dashboard/contacts">
                 <Button>Перейти до контактів</Button>
               </Link>
-              <Button variant="outline" onClick={() => { setStep('upload'); setCsvData(null); setResult(null); }}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setStep('upload');
+                  setCsvData(null);
+                  setResult(null);
+                }}
+              >
                 Імпортувати ще
               </Button>
             </div>
