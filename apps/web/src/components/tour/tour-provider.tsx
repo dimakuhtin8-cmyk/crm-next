@@ -112,33 +112,79 @@ function Overlay({
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  // Позиция подсказки: снизу от цели, иначе сверху
+  // Позиция подсказки: снизу от цели, иначе сверху, иначе dock снизу экрана
   let tipStyle: React.CSSProperties = { left: 16, right: 16, top: 16 };
   if (rect && typeof window !== 'undefined') {
     const w = Math.min(340, window.innerWidth - 32);
     const below = rect.bottom + 12;
     const above = rect.top - 12;
     const left = Math.max(16, Math.min(rect.left, window.innerWidth - w - 16));
-    // Примерная высота подсказки — решаем направление по месту
     const fitsBelow = below + 220 < window.innerHeight;
+    const fitsAbove = above - 220 > 16;
     tipStyle = fitsBelow
       ? { left, top: below, width: w }
-      : { left, top: Math.max(16, above - 220), width: w };
+      : fitsAbove
+        ? { left, top: above - 220, width: w }
+        : { left: 16, right: 16, bottom: 16 };
   }
 
   return (
     <div className="fixed inset-0 z-[90]" role="dialog" aria-label={step.title}>
-      <div className="absolute inset-0 bg-[#1D1B1D]/70 backdrop-blur-[2px]" onClick={onClose} />
-      {rect && (
-        <div
-          className="absolute rounded-xl border-2 border-primary shadow-[0_0_0_4px_rgba(199,54,81,0.25)] transition-all duration-200"
-          style={{
-            left: rect.left - 6,
-            top: rect.top - 6,
-            width: rect.width + 12,
-            height: rect.height + 12,
-          }}
-        />
+      {rect && typeof window !== 'undefined' ? (
+        <>
+          {/* Затемнение из 4 полос вокруг отверстия: цель остаётся резкой */}
+          <div
+            className="absolute left-0 right-0 top-0 bg-[#1D1B1D]/70 backdrop-blur-[2px]"
+            style={{ height: Math.max(0, rect.top - 6) }}
+            onClick={onClose}
+          />
+          <div
+            className="absolute left-0 right-0 bottom-0 bg-[#1D1B1D]/70 backdrop-blur-[2px]"
+            style={{ top: rect.bottom + 6 }}
+            onClick={onClose}
+          />
+          <div
+            className="absolute bg-[#1D1B1D]/70 backdrop-blur-[2px]"
+            style={{
+              top: Math.max(0, rect.top - 6),
+              height: rect.height + 12,
+              left: 0,
+              width: Math.max(0, rect.left - 6),
+            }}
+            onClick={onClose}
+          />
+          <div
+            className="absolute bg-[#1D1B1D]/70 backdrop-blur-[2px]"
+            style={{
+              top: Math.max(0, rect.top - 6),
+              height: rect.height + 12,
+              left: rect.right + 6,
+              right: 0,
+            }}
+            onClick={onClose}
+          />
+          {/* Невидимый блокировщик кликов по самому отверстию */}
+          <div
+            className="absolute"
+            style={{
+              left: rect.left - 6,
+              top: rect.top - 6,
+              width: rect.width + 12,
+              height: rect.height + 12,
+            }}
+          />
+          <div
+            className="absolute rounded-xl border-2 border-primary shadow-[0_0_0_4px_rgba(199,54,81,0.25)] transition-all duration-200 pointer-events-none"
+            style={{
+              left: rect.left - 6,
+              top: rect.top - 6,
+              width: rect.width + 12,
+              height: rect.height + 12,
+            }}
+          />
+        </>
+      ) : (
+        <div className="absolute inset-0 bg-[#1D1B1D]/70" onClick={onClose} />
       )}
       <div
         ref={tipRef}
