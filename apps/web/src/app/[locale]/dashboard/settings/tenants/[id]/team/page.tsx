@@ -1,11 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { useEffect, useState } from 'react';
 
-import { Button, Card, CardContent, CardHeader, CardTitle, CardDescription, Input, Badge } from '@/components/ui';
+import { useTourAutoStart } from '@/components/tour/tour-provider';
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  Input,
+  Badge,
+} from '@/components/ui';
+import { currentLocaleFromPath } from '@/lib/use-locale-path';
 import { cn } from '@/lib/utils';
 
 interface Tenant {
@@ -44,7 +55,6 @@ const roleVariants: Record<string, 'default' | 'secondary' | 'outline' | 'succes
 };
 
 export default function TeamPage() {
-  const router = useRouter();
   const params = useParams();
   const { data: session } = useSession();
   const tenantId = params.id as string;
@@ -60,11 +70,14 @@ export default function TeamPage() {
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [inviteSuccess, setInviteSuccess] = useState<string | null>(null);
+  const [manualLink, setManualLink] = useState<string | null>(null);
 
   // Role change
   const [changingRole, setChangingRole] = useState<string | null>(null);
 
   const currentUserId = session?.user?.id;
+
+  useTourAutoStart('team');
 
   useEffect(() => {
     fetchData();
@@ -97,18 +110,28 @@ export default function TeamPage() {
     setInviteLoading(true);
     setInviteError(null);
     setInviteSuccess(null);
+    setManualLink(null);
 
     try {
       const response = await fetch(`/api/tenants/${tenantId}/invites`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
+        body: JSON.stringify({
+          email: inviteEmail,
+          role: inviteRole,
+          locale: currentLocaleFromPath(),
+        }),
       });
 
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
 
-      setInviteSuccess(`Запрошення надіслано на ${inviteEmail}`);
+      if (data.emailSent) {
+        setInviteSuccess(`Запрошення надіслано на ${inviteEmail}`);
+      } else {
+        setInviteSuccess(`Запрошення створено, але лист не надіслано — скопіюйте посилання вручну`);
+        setManualLink(data.inviteUrl || null);
+      }
       setInviteEmail('');
       setInviteRole('member');
       fetchData();
@@ -211,16 +234,34 @@ export default function TeamPage() {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2 text-sm text-foreground-muted mb-1">
-            <Link href="/dashboard/settings/tenants" className="hover:text-foreground transition-colors">
+            <Link
+              href="/dashboard/settings/tenants"
+              className="hover:text-foreground transition-colors"
+            >
               Компанії
             </Link>
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              className="h-4 w-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <polyline points="9 18 15 12 9 6" />
             </svg>
-            <Link href={`/dashboard/settings/tenants/${tenantId}`} className="hover:text-foreground transition-colors">
+            <Link
+              href={`/dashboard/settings/tenants/${tenantId}`}
+              className="hover:text-foreground transition-colors"
+            >
               {tenant.name}
             </Link>
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              className="h-4 w-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <polyline points="9 18 15 12 9 6" />
             </svg>
           </div>
@@ -234,7 +275,7 @@ export default function TeamPage() {
 
       {/* Invite Form */}
       {canManage && (
-        <Card>
+        <Card data-tour="team-invite">
           <CardHeader>
             <CardTitle>Запросити учасника</CardTitle>
             <CardDescription>Надішліть запрошення на email</CardDescription>
@@ -249,6 +290,19 @@ export default function TeamPage() {
               {inviteSuccess && (
                 <div className="p-3 bg-success/10 text-success rounded-lg text-sm">
                   {inviteSuccess}
+                </div>
+              )}
+              {manualLink && (
+                <div className="flex items-center gap-2 p-3 bg-secondary/50 rounded-lg">
+                  <code className="flex-1 min-w-0 truncate text-xs font-mono">{manualLink}</code>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigator.clipboard?.writeText(manualLink).catch(() => {})}
+                  >
+                    Копіювати
+                  </Button>
                 </div>
               )}
 
@@ -283,7 +337,7 @@ export default function TeamPage() {
       )}
 
       {/* Members */}
-      <Card>
+      <Card data-tour="team-members">
         <CardHeader>
           <CardTitle>Учасники ({members.length})</CardTitle>
           <CardDescription>Поточні учасники компанії</CardDescription>
@@ -301,7 +355,9 @@ export default function TeamPage() {
                   key={member.id}
                   className={cn(
                     'flex items-center justify-between p-3 rounded-lg transition-colors',
-                    isCurrentUser ? 'bg-primary-light/30 border border-primary/20' : 'bg-secondary/50',
+                    isCurrentUser
+                      ? 'bg-primary-light/30 border border-primary/20'
+                      : 'bg-secondary/50',
                   )}
                 >
                   <div className="flex items-center gap-3">
@@ -336,11 +392,22 @@ export default function TeamPage() {
 
                     {canManage && !isOwner && !isCurrentUser && (
                       <button
-                        onClick={() => handleRemoveMember(member.id, member.user.name || member.user.email || 'учасника')}
+                        onClick={() =>
+                          handleRemoveMember(
+                            member.id,
+                            member.user.name || member.user.email || 'учасника',
+                          )
+                        }
                         className="rounded p-1.5 text-foreground-muted hover:text-danger hover:bg-danger/10 transition-colors"
                         title="Видалити з команди"
                       >
-                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg
+                          className="h-4 w-4"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
                           <line x1="18" y1="6" x2="6" y2="18" />
                           <line x1="6" y1="6" x2="18" y2="18" />
                         </svg>
@@ -356,14 +423,16 @@ export default function TeamPage() {
 
       {/* Pending Invites */}
       {canManage && (
-        <Card>
+        <Card data-tour="team-invites">
           <CardHeader>
             <CardTitle>Очікуючі запрошення ({invites.length})</CardTitle>
             <CardDescription>Нещодавно надіслані запрошення</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {invites.length === 0 ? (
-              <p className="text-sm text-foreground-muted text-center py-4">Немає очікуючих запрошень</p>
+              <p className="text-sm text-foreground-muted text-center py-4">
+                Немає очікуючих запрошень
+              </p>
             ) : (
               invites.map((invite) => (
                 <div
@@ -372,7 +441,13 @@ export default function TeamPage() {
                 >
                   <div className="flex items-center gap-3">
                     <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-warning/10 text-sm text-warning">
-                      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg
+                        className="h-4 w-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
                         <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
                         <polyline points="22,6 12,13 2,6" />
                       </svg>
@@ -395,7 +470,13 @@ export default function TeamPage() {
                       className="rounded p-1.5 text-foreground-muted hover:text-danger hover:bg-danger/10 transition-colors"
                       title="Відкликати запрошення"
                     >
-                      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg
+                        className="h-4 w-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
                         <line x1="18" y1="6" x2="6" y2="18" />
                         <line x1="6" y1="6" x2="18" y2="18" />
                       </svg>
@@ -417,15 +498,22 @@ export default function TeamPage() {
           <div className="grid gap-3">
             <div className="flex items-start gap-3 p-3 bg-secondary/30 rounded-lg">
               <Badge variant="default">Власник</Badge>
-              <p className="text-sm text-foreground-muted">Повний доступ. може видаляти компанію, змінювати будь-які налаштування, керувати всіма учасниками.</p>
+              <p className="text-sm text-foreground-muted">
+                Повний доступ. може видаляти компанію, змінювати будь-які налаштування, керувати
+                всіма учасниками.
+              </p>
             </div>
             <div className="flex items-start gap-3 p-3 bg-secondary/30 rounded-lg">
               <Badge variant="secondary">Адміністратор</Badge>
-              <p className="text-sm text-foreground-muted">Може додавати/видаляти учасників, змінювати ролі, керувати контактами та угодами.</p>
+              <p className="text-sm text-foreground-muted">
+                Може додавати/видаляти учасників, змінювати ролі, керувати контактами та угодами.
+              </p>
             </div>
             <div className="flex items-start gap-3 p-3 bg-secondary/30 rounded-lg">
               <Badge variant="outline">Учасник</Badge>
-              <p className="text-sm text-foreground-muted">Може переглядати та редагувати контакти, угоди, задачі в межах компанії.</p>
+              <p className="text-sm text-foreground-muted">
+                Може переглядати та редагувати контакти, угоди, задачі в межах компанії.
+              </p>
             </div>
           </div>
         </CardContent>

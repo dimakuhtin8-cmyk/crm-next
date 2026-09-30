@@ -5,7 +5,7 @@ export interface TourStep {
   text: string;
 }
 
-export type TourKey = 'dashboard' | 'contacts' | 'deals' | 'tasks' | 'copilot';
+export type TourKey = 'dashboard' | 'contacts' | 'deals' | 'tasks' | 'copilot' | 'team';
 
 export const TOURS: Record<TourKey, TourStep[]> = {
   dashboard: [
@@ -91,6 +91,23 @@ export const TOURS: Record<TourKey, TourStep[]> = {
       target: '[data-tour="copilot-model"]',
       title: 'Модель',
       text: 'Перемикач моделі під полем вводу. Список — лише перевірені моделі вашого провайдера.',
+    },
+  ],
+  team: [
+    {
+      target: '[data-tour="team-invite"]',
+      title: 'Запрошення',
+      text: 'Введіть email співробітника й роль — йому прийде лист із посиланням. Запрошення дійсне 7 днів. Співробітник реєструється на той самий email і приймає запрошення.',
+    },
+    {
+      target: '[data-tour="team-members"]',
+      title: 'Учасники та ролі',
+      text: 'Тут видно всю команду. Роль міняється прямо в списку: Учасник працює з даними, Адміністратор ще й керує командою. Себе і власника чіпати не можна.',
+    },
+    {
+      target: '[data-tour="team-invites"]',
+      title: 'Очікуючі',
+      text: 'Надіслані, але ще не прийняті запрошення. Можна відкликати. Якщо лист не дійшов — скопіюйте посилання вручну кнопкою «Копіювати».',
     },
   ],
 };

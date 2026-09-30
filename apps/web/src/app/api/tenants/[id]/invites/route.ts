@@ -4,12 +4,13 @@ import { prisma } from '@crm-next/database';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 
 import { extractUserId } from '@/lib/auth-utils';
 import { csrfProtection } from '@/lib/csrf';
+import { sendInviteEmail } from '@/lib/email';
+import { localeUrl } from '@/lib/locale-path';
 import { hasMinRole, getUserRole } from '@/lib/rbac';
-
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -51,10 +52,7 @@ export async function GET(request: NextRequest, { params }: Params) {
     return NextResponse.json({ invites });
   } catch (error) {
     console.error('List invites error:', error);
-    return NextResponse.json(
-      { error: 'Помилка отримання списку запрошень' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Помилка отримання списку запрошень' }, { status: 500 });
   }
 }
 
@@ -64,6 +62,7 @@ export async function GET(request: NextRequest, { params }: Params) {
 const inviteSchema = z.object({
   email: z.string().email(),
   role: z.enum(['member', 'admin', 'viewer']).default('member'),
+  locale: z.string().optional(),
 });
 
 export async function POST(request: NextRequest, { params }: Params) {
@@ -78,11 +77,11 @@ export async function POST(request: NextRequest, { params }: Params) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Невірні дані', details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    const { email, role } = parsed.data;
+    const { email, role, locale } = parsed.data;
     const userId = await extractUserId(request);
     if (!userId) {
       return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
@@ -90,10 +89,7 @@ export async function POST(request: NextRequest, { params }: Params) {
 
     // Only owner/admin can invite
     if (!(await hasMinRole(userId, id, 'admin'))) {
-      return NextResponse.json(
-        { error: 'Недостатньо прав для запрошення' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'Недостатньо прав для запрошення' }, { status: 403 });
     }
 
     // Check if user is already a member
@@ -105,7 +101,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       if (existingMember) {
         return NextResponse.json(
           { error: 'Користувач вже є учасником цієї компанії' },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -121,10 +117,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     });
 
     if (existingInvite) {
-      return NextResponse.json(
-        { error: 'Запрошення вже надіслано' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Запрошення вже надіслано' }, { status: 400 });
     }
 
     // Create invite token
@@ -151,15 +144,20 @@ export async function POST(request: NextRequest, { params }: Params) {
     });
 
     // TODO: Send email with invite link
-    const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL}/invites/${token}`;
+    const inviteUrl = localeUrl(`/invites/${token}`, locale);
+    let emailSent = false;
+    try {
+      await sendInviteEmail(email, token, invite.tenant.name, locale);
+      emailSent = true;
+    } catch (emailError) {
+      // Інвайт створено, але лист не пішов — адмін скопіює посилання вручну.
+      console.warn(`[Invite] email to ${email} failed, manual link: ${inviteUrl}`, emailError);
+    }
     console.log(`[Invite] Email: ${email}\nLink: ${inviteUrl}\nExpires: ${expiresAt}`);
 
-    return NextResponse.json({ invite, inviteUrl }, { status: 201 });
+    return NextResponse.json({ invite, inviteUrl, emailSent }, { status: 201 });
   } catch (error) {
     console.error('Send invite error:', error);
-    return NextResponse.json(
-      { error: 'Помилка надсилання запрошення' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Помилка надсилання запрошення' }, { status: 500 });
   }
 }

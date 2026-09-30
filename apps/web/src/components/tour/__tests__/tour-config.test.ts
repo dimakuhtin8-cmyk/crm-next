@@ -4,10 +4,10 @@ import { describe, it, expect } from 'vitest';
 
 import { TOURS, tourDoneKey, type TourKey } from '@/components/tour/tour-config';
 
-const KEYS: TourKey[] = ['dashboard', 'contacts', 'deals', 'tasks', 'copilot'];
+const KEYS: TourKey[] = ['dashboard', 'contacts', 'deals', 'tasks', 'copilot', 'team'];
 
 describe('tour-config', () => {
-  it('усі 5 турів існують і мають щонайменше 2 кроки', () => {
+  it('усі тури існують і мають щонайменше 2 кроки', () => {
     for (const key of KEYS) {
       expect(Array.isArray(TOURS[key])).toBe(true);
       expect(TOURS[key].length).toBeGreaterThanOrEqual(2);
