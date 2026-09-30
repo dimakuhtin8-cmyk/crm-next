@@ -1,25 +1,23 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 
+import { TOURS, tourDoneKey } from '@/components/tour/tour-config';
 import { Button, Card, CardContent } from '@/components/ui';
-import { currentLocaleFromPath } from '@/lib/use-locale-path';
+import {
+  EXPERIENCES,
+  INDUSTRIES,
+  PRIORITIES,
+  ROLES,
+  nextStepsFor,
+  stagesForIndustry,
+  type SurveyAnswers,
+} from '@/lib/onboarding/survey';
+import { useLocalePath, currentLocaleFromPath } from '@/lib/use-locale-path';
+import { cn } from '@/lib/utils';
 
-const INDUSTRIES = [
-  'IT та технології',
-  'Маркетинг',
-  'Консалтинг',
-  'Нерухомість',
-  'Фінанси',
-  "Охорона здоров'я",
-  'Освіта',
-  'Виробництво',
-  'Роздрібна торгівля',
-  'Транспорт',
-  'Інше',
-];
-
-const DEFAULT_STAGES = ['Лід', 'Кваліфікація', 'Пропозиція', 'Переговори', 'Завершено'];
+const TOTAL_STEPS = 8;
 
 const BENEFITS = [
   'Автоматичне розподілення задач по етапах воронки',
@@ -28,45 +26,156 @@ const BENEFITS = [
   'Нагадування про важливі дії та дедлайни',
 ];
 
+function RadioCards({
+  options,
+  value,
+  onPick,
+}: {
+  options: Array<{ id: string; name: string }>;
+  value: string;
+  onPick: (id: string) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      {options.map((o) => (
+        <button
+          key={o.id}
+          type="button"
+          onClick={() => onPick(o.id)}
+          aria-pressed={value === o.id}
+          className={cn(
+            'flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm font-medium transition-all',
+            value === o.id
+              ? 'border-primary bg-primary/10 text-primary'
+              : 'border-border hover:border-primary/50',
+          )}
+        >
+          <span
+            className={cn(
+              'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2',
+              value === o.id ? 'border-primary' : 'border-border',
+            )}
+          >
+            {value === o.id && <span className="h-2 w-2 rounded-full bg-primary" />}
+          </span>
+          {o.name}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function OnboardingPage() {
+  const lp = useLocalePath();
   const [step, setStep] = useState(0);
   const [companyName, setCompanyName] = useState('');
   const [industry, setIndustry] = useState('');
-  const [stages, setStages] = useState<string[]>(DEFAULT_STAGES);
+  const [industryCustom, setIndustryCustom] = useState('');
+  const [role, setRole] = useState('');
+  const [roleCustom, setRoleCustom] = useState('');
+  const [experience, setExperience] = useState('');
+  const [experienceText, setExperienceText] = useState('');
+  const [priorityTask, setPriorityTask] = useState('');
+  const [priorityCustom, setPriorityCustom] = useState('');
+  const [stages, setStages] = useState<string[]>(stagesForIndustry('other'));
+  const [stagesTouched, setStagesTouched] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showSkipConfirm, setShowSkipConfirm] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const handleSubmit = async () => {
+  const pickIndustry = (id: string) => {
+    setIndustry(id);
+    if (!stagesTouched) setStages(stagesForIndustry(id));
+  };
+
+  const canNextSphere = industry !== '' && (industry !== 'other' || industryCustom.trim() !== '');
+  const canNextRole = role !== '' && (role !== 'other' || roleCustom.trim() !== '');
+  const canNextExp = experience !== '';
+  const canNextTask =
+    priorityTask !== '' && (priorityTask !== 'other' || priorityCustom.trim() !== '');
+
+  const survey: SurveyAnswers | null =
+    industry && role && experience && priorityTask
+      ? {
+          industry,
+          industryCustom: industry === 'other' ? industryCustom.trim() : null,
+          role,
+          roleCustom: role === 'other' ? roleCustom.trim() : null,
+          experience,
+          experienceText: experienceText.trim() || null,
+          priorityTask,
+          priorityCustom: priorityTask === 'other' ? priorityCustom.trim() : null,
+        }
+      : null;
+
+  const suppressTours = () => {
+    // Досвідченим тури не навʼязуємо: позначаємо всі як пройдені.
+    try {
+      for (const key of Object.keys(TOURS)) {
+        localStorage.setItem(tourDoneKey(key as keyof typeof TOURS), '1');
+      }
+    } catch {
+      // localStorage недоступен — тури просто покажуться
+    }
+  };
+
+  const handleSubmit = async (withSurvey: boolean) => {
     setLoading(true);
+    setSubmitError(null);
     try {
       const res = await fetch('/api/onboarding', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ companyName, industry, pipelineStages: stages }),
+        body: JSON.stringify({
+          companyName,
+          pipelineStages: stages,
+          survey: withSurvey ? survey : null,
+        }),
       });
       const data = await res.json();
-      if (res.ok) {
-        window.location.href = `/${currentLocaleFromPath()}/dashboard`;
+      if (!res.ok) throw new Error(data.error || 'Помилка збереження. Спробуйте ще раз.');
+      // Новачкам лишаємо автостарт турів, досвідченим — вимикаємо.
+      if (withSurvey && survey && survey.experience !== 'none') suppressTours();
+      if (withSurvey) {
+        setStep(7);
       } else {
-        console.error('Onboarding error:', data);
-        alert(data.error || 'Помилка збереження. Спробуйте ще раз.');
+        window.location.href = `/${currentLocaleFromPath()}/dashboard`;
       }
     } catch (err) {
-      console.error('Network error:', err);
-      alert("Помилка з'єднання. Перевірте чи ви увійшли в систему.");
+      setSubmitError(err instanceof Error ? err.message : 'Помилка збереження.');
     } finally {
       setLoading(false);
     }
   };
 
-  const addStage = () => setStages([...stages, '']);
+  const addStage = () => {
+    setStagesTouched(true);
+    setStages([...stages, '']);
+  };
   const updateStage = (i: number, value: string) => {
+    setStagesTouched(true);
     const next = [...stages];
     next[i] = value;
     setStages(next);
   };
-  const removeStage = (i: number) => setStages(stages.filter((_, idx) => idx !== i));
+  const removeStage = (i: number) => {
+    setStagesTouched(true);
+    setStages(stages.filter((_, idx) => idx !== i));
+  };
+
+  const nav = (back: number, next: number | null, canNext: boolean, nextLabel = 'Далі') => (
+    <div className="flex gap-3 pt-4">
+      <Button onClick={() => setStep(back)} variant="outline" className="flex-1">
+        Назад
+      </Button>
+      {next !== null && (
+        <Button onClick={() => setStep(next)} className="flex-1" disabled={!canNext}>
+          {nextLabel}
+        </Button>
+      )}
+    </div>
+  );
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -74,7 +183,7 @@ export default function OnboardingPage() {
         <CardContent className="p-8">
           {/* Progress */}
           <div className="flex items-center gap-2 mb-8">
-            {[0, 1, 2].map((i) => (
+            {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
               <div key={i} className="flex-1 h-1.5 rounded-full bg-secondary transition-colors">
                 <div
                   className={`h-full rounded-full transition-all ${i <= step ? 'bg-primary w-full' : 'w-0'}`}
@@ -83,13 +192,22 @@ export default function OnboardingPage() {
             ))}
           </div>
 
+          {submitError && (
+            <div className="mb-4 p-3 bg-destructive/10 text-destructive rounded-lg text-sm">
+              {submitError}
+            </div>
+          )}
+
           {/* Step 0: Welcome */}
           {step === 0 && (
             <div className="space-y-4">
               <div className="text-center mb-6">
                 <div className="text-4xl mb-3">👋</div>
                 <h1 className="text-2xl font-bold">Ласкаво просимо до CRM-Next</h1>
-                <p className="text-foreground-muted mt-2">Налаштуємо ваш CRM за кілька кроків</p>
+                <p className="text-foreground-muted mt-2">
+                  4 короткі питання — і CRM підлаштується під вашу сферу. Це займе не більше 2
+                  хвилин.
+                </p>
               </div>
               <div className="space-y-3">
                 <Button onClick={() => setStep(1)} className="w-full" size="lg">
@@ -131,8 +249,13 @@ export default function OnboardingPage() {
                         >
                           Все ж таки налаштувати
                         </Button>
-                        <Button onClick={handleSubmit} variant="ghost" className="flex-1">
-                          Пропустити
+                        <Button
+                          onClick={() => handleSubmit(false)}
+                          variant="ghost"
+                          className="flex-1"
+                          disabled={loading}
+                        >
+                          {loading ? 'Збереження...' : 'Пропустити'}
                         </Button>
                       </div>
                     </CardContent>
@@ -142,8 +265,89 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {/* Step 1: Company */}
+          {/* Step 1: Sphere */}
           {step === 1 && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold">Яка ваша сфера діяльності?</h2>
+              <RadioCards options={INDUSTRIES} value={industry} onPick={pickIndustry} />
+              {industry === 'other' && (
+                <input
+                  type="text"
+                  value={industryCustom}
+                  onChange={(e) => setIndustryCustom(e.target.value)}
+                  placeholder="Введіть вашу сферу"
+                  className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              )}
+              {nav(0, 2, canNextSphere)}
+            </div>
+          )}
+
+          {/* Step 2: Role */}
+          {step === 2 && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold">Ваша посада?</h2>
+              <RadioCards options={ROLES} value={role} onPick={setRole} />
+              {role === 'other' && (
+                <input
+                  type="text"
+                  value={roleCustom}
+                  onChange={(e) => setRoleCustom(e.target.value)}
+                  placeholder="Введіть вашу посаду"
+                  className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              )}
+              {nav(1, 3, canNextRole)}
+            </div>
+          )}
+
+          {/* Step 3: Experience */}
+          {step === 3 && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold">Раніше користувалися CRM?</h2>
+              <RadioCards options={EXPERIENCES} value={experience} onPick={setExperience} />
+              {(experience === 'other_crm' || experience === 'migrating') && (
+                <input
+                  type="text"
+                  value={experienceText}
+                  onChange={(e) => setExperienceText(e.target.value)}
+                  placeholder="Якою саме? (необовʼязково)"
+                  className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              )}
+              {experience === 'migrating' && (
+                <p className="text-xs text-foreground-muted">
+                  Підказка: базу можна перенести через{' '}
+                  <Link href={lp('/dashboard/contacts')} className="text-primary hover:underline">
+                    імпорт контактів
+                  </Link>
+                  .
+                </p>
+              )}
+              {nav(2, 4, canNextExp)}
+            </div>
+          )}
+
+          {/* Step 4: Priority task */}
+          {step === 4 && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold">Ваша першочергова задача?</h2>
+              <RadioCards options={PRIORITIES} value={priorityTask} onPick={setPriorityTask} />
+              {priorityTask === 'other' && (
+                <input
+                  type="text"
+                  value={priorityCustom}
+                  onChange={(e) => setPriorityCustom(e.target.value)}
+                  placeholder="Введіть вашу задачу"
+                  className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              )}
+              {nav(3, 5, canNextTask)}
+            </div>
+          )}
+
+          {/* Step 5: Company */}
+          {step === 5 && (
             <div className="space-y-4">
               <h2 className="text-xl font-bold">Ваша компанія</h2>
               <div>
@@ -156,41 +360,16 @@ export default function OnboardingPage() {
                   className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Сфера діяльності</label>
-                <div className="flex flex-wrap gap-2">
-                  {INDUSTRIES.map((ind) => (
-                    <button
-                      key={ind}
-                      onClick={() => setIndustry(ind)}
-                      className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
-                        industry === ind
-                          ? 'border-primary bg-primary/10 text-primary'
-                          : 'border-border hover:border-foreground/30'
-                      }`}
-                    >
-                      {ind}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="flex gap-3 pt-4">
-                <Button onClick={() => setStep(0)} variant="outline" className="flex-1">
-                  Назад
-                </Button>
-                <Button onClick={() => setStep(2)} className="flex-1">
-                  Далі
-                </Button>
-              </div>
+              {nav(4, 6, true)}
             </div>
           )}
 
-          {/* Step 2: Pipeline */}
-          {step === 2 && (
+          {/* Step 6: Pipeline */}
+          {step === 6 && (
             <div className="space-y-4">
               <h2 className="text-xl font-bold">Воронка продажів</h2>
               <p className="text-foreground-muted text-sm">
-                Налаштуйте етапи вашої воронки. Пізніше зможете змінити.
+                Етапи підібрані під вашу сферу. Можна змінити — пізніше теж.
               </p>
               <div className="space-y-2">
                 {stages.map((stage, i) => (
@@ -222,13 +401,51 @@ export default function OnboardingPage() {
                 + Додати етап
               </button>
               <div className="flex gap-3 pt-4">
-                <Button onClick={() => setStep(1)} variant="outline" className="flex-1">
+                <Button onClick={() => setStep(5)} variant="outline" className="flex-1">
                   Назад
                 </Button>
-                <Button onClick={handleSubmit} className="flex-1" disabled={loading}>
+                <Button
+                  onClick={() => handleSubmit(true)}
+                  className="flex-1"
+                  disabled={loading || stages.some((s) => !s.trim())}
+                >
                   {loading ? 'Збереження...' : 'Завершити'}
                 </Button>
               </div>
+            </div>
+          )}
+
+          {/* Step 7: Finish */}
+          {step === 7 && survey && (
+            <div className="space-y-4">
+              <div className="text-center mb-2">
+                <div className="text-4xl mb-3">✅</div>
+                <h2 className="text-xl font-bold">Готово! CRM налаштовано</h2>
+                <p className="text-foreground-muted text-sm mt-1">
+                  {survey.experience === 'none'
+                    ? 'Оскільки це ваша перша CRM — при вході вас зустріне короткий тур по інтерфейсу.'
+                    : 'Підказки вимкнено: ви досвідчений користувач, але тур можна пройти з картки «Перші кроки».'}
+                </p>
+              </div>
+              <div className="space-y-2">
+                {nextStepsFor(survey.priorityTask).map((s) => (
+                  <Link
+                    key={s.href + s.label}
+                    href={s.href}
+                    className="flex items-center gap-3 rounded-xl border border-border px-4 py-3 text-sm transition-colors hover:border-primary/50 hover:bg-primary/5"
+                  >
+                    <span className="font-medium">{s.label}</span>
+                    <span className="text-xs text-foreground-muted">{s.hint}</span>
+                  </Link>
+                ))}
+              </div>
+              <Button
+                onClick={() => (window.location.href = `/${currentLocaleFromPath()}/dashboard`)}
+                className="w-full"
+                size="lg"
+              >
+                До дашборду
+              </Button>
             </div>
           )}
         </CardContent>
