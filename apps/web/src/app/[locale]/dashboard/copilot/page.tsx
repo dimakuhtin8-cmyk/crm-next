@@ -16,7 +16,19 @@ import { useState, useEffect, useRef } from 'react';
 
 import { QuickSelect } from '@/components/quick-create';
 import { useTourAutoStart } from '@/components/tour/tour-provider';
-import { Button, Card, CardContent, Input } from '@/components/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+  Input,
+  Textarea,
+} from '@/components/ui';
 import { AI_PROVIDERS, getProvider } from '@/lib/ai/providers';
 
 interface ChatMessage {
@@ -358,11 +370,11 @@ export default function CopilotPage() {
     <div className="w-full h-[calc(100dvh-112px)] min-h-[480px] flex flex-col gap-4">
       {/* Quick Setup Panel */}
       {aiStatus === 'no-key' && (
-        <Card className="shrink-0 border-primary/30 bg-gradient-to-br from-primary/5 to-background overflow-hidden">
+        <Card className="shrink-0 border-primary/30 bg-gradient-to-br from-primary/5 to-background overflow-hidden shadow-sm">
           <CardContent className="p-5">
             <div className="flex items-center gap-3 mb-2">
-              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10">
-                <Bot className="w-5 h-5 text-primary" />
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-indigo-500/10">
+                <Bot className="w-5 h-5 text-indigo-500" />
               </div>
               <h3 className="font-semibold text-lg">Підключіть AI</h3>
             </div>
@@ -372,10 +384,10 @@ export default function CopilotPage() {
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-5">
               {AI_PROVIDERS.filter((p) => p.id !== 'custom').map((p) => (
-                <button
+                <Card
                   key={p.id}
                   onClick={() => handleProviderSelect(p.id)}
-                  className={`group relative p-3.5 rounded-xl border-2 text-left transition-all duration-200 ${
+                  className={`relative cursor-pointer border-2 p-3.5 text-left transition-all duration-200 ${
                     selectedProvider === p.id
                       ? 'border-primary bg-primary/5 shadow-sm shadow-primary/10'
                       : 'border-border/60 hover:border-primary/40 hover:bg-accent/50'
@@ -390,7 +402,7 @@ export default function CopilotPage() {
                   {selectedProvider === p.id && (
                     <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary animate-pulse" />
                   )}
-                </button>
+                </Card>
               ))}
             </div>
 
@@ -430,7 +442,7 @@ export default function CopilotPage() {
               <Button
                 onClick={handleQuickSetup}
                 disabled={savingKey || !quickKey.trim()}
-                className="bg-gradient-to-r from-primary to-primary-hover text-primary-foreground shadow-lg shadow-primary/20 px-6"
+                className="bg-indigo-500 px-6 text-white shadow-lg shadow-indigo-500/25 hover:bg-indigo-600"
               >
                 {savingKey ? (
                   <span className="flex items-center gap-2">
@@ -471,7 +483,7 @@ export default function CopilotPage() {
         {/* Sessions aside */}
         {aiStatus === 'ready' && (
           <aside
-            className="hidden md:flex w-72 shrink-0 flex-col rounded-2xl border border-border bg-card overflow-hidden"
+            className="hidden md:flex w-72 shrink-0 flex-col rounded-2xl border border-border bg-card overflow-hidden shadow-sm"
             data-tour="copilot-sessions"
           >
             <div className="shrink-0 p-3 border-b border-border">
@@ -504,16 +516,19 @@ export default function CopilotPage() {
                       })}
                     </p>
                   </div>
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title="Видалити"
+                    aria-label="Видалити розмову"
+                    className="h-7 w-7 shrink-0 text-foreground-muted opacity-0 transition-all hover:bg-danger/10 hover:text-danger focus-visible:opacity-100 group-hover:opacity-100"
                     onClick={(e) => {
                       e.stopPropagation();
                       deleteSession(s.id);
                     }}
-                    title="Видалити"
-                    className="shrink-0 p-1.5 rounded-lg text-foreground-muted opacity-0 group-hover:opacity-100 hover:text-danger hover:bg-danger/10 transition-all"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  </Button>
                 </div>
               ))}
             </div>
@@ -521,14 +536,14 @@ export default function CopilotPage() {
         )}
 
         {/* === CHAT PANEL (Claude-style, full-page) === */}
-        <Card className="flex-1 min-h-0 flex flex-col overflow-hidden">
+        <Card className="flex-1 min-h-0 flex flex-col overflow-hidden shadow-sm">
           <CardContent className="flex-1 min-h-0 flex flex-col p-0">
             {/* Chat messages area */}
             <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-6">
               {messages.length === 0 && (
                 <div className="flex flex-col items-center justify-center h-full text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                    <Bot className="w-8 h-8 text-primary" />
+                  <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center mb-4">
+                    <Bot className="w-8 h-8 text-indigo-500" />
                   </div>
                   <h3 className="text-lg font-semibold mb-1">Як я можу допомогти?</h3>
                   <p className="text-sm text-foreground-muted max-w-sm">
@@ -538,16 +553,18 @@ export default function CopilotPage() {
                   <div className="flex flex-wrap gap-2 mt-4 justify-center">
                     {['Покажи топ угод', 'Згенеруй КП', 'План на сьогодні', 'Аналіз контактів'].map(
                       (q) => (
-                        <button
+                        <Button
                           key={q}
+                          variant="outline"
+                          size="sm"
+                          className="h-7 rounded-full px-3 font-normal"
                           onClick={() => {
                             setInputValue(q);
                             inputRef.current?.focus();
                           }}
-                          className="px-3 py-1.5 text-xs rounded-full border border-border hover:border-primary/50 hover:bg-primary/5 transition-all"
                         >
                           {q}
-                        </button>
+                        </Button>
                       ),
                     )}
                   </div>
@@ -562,12 +579,12 @@ export default function CopilotPage() {
                   <div className={`max-w-[80%] ${msg.role === 'user' ? 'order-1' : 'order-1'}`}>
                     {msg.role === 'assistant' && (
                       <div className="flex items-center gap-2 mb-1.5">
-                        <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <Bot className="w-3.5 h-3.5 text-primary" />
+                        <div className="w-6 h-6 rounded-lg bg-indigo-500/10 flex items-center justify-center">
+                          <Bot className="w-3.5 h-3.5 text-indigo-500" />
                         </div>
-                        <span className="text-xs font-medium text-foreground-muted">
+                        <Badge className="border-transparent bg-indigo-500/10 text-indigo-500 shadow-sm shadow-indigo-500/20 hover:bg-indigo-500/10">
                           AI Co-Pilot
-                        </span>
+                        </Badge>
                       </div>
                     )}
                     <div
@@ -603,24 +620,26 @@ export default function CopilotPage() {
                 <div className="flex justify-start">
                   <div className="max-w-[80%]">
                     <div className="flex items-center gap-2 mb-1.5">
-                      <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <Bot className="w-3.5 h-3.5 text-primary" />
+                      <div className="w-6 h-6 rounded-lg bg-indigo-500/10 flex items-center justify-center">
+                        <Bot className="w-3.5 h-3.5 text-indigo-500" />
                       </div>
-                      <span className="text-xs font-medium text-foreground-muted">AI Co-Pilot</span>
+                      <Badge className="border-transparent bg-indigo-500/10 text-indigo-500 shadow-sm shadow-indigo-500/20 hover:bg-indigo-500/10">
+                        AI Co-Pilot
+                      </Badge>
                     </div>
                     <div className="bg-accent/60 rounded-2xl rounded-bl-md px-4 py-3">
                       <div className="flex items-center gap-2.5">
                         <div className="flex items-center gap-1.5">
                           <div
-                            className="w-2 h-2 bg-primary/70 rounded-full animate-bounce"
+                            className="w-2 h-2 bg-indigo-500/70 rounded-full animate-bounce"
                             style={{ animationDelay: '0ms' }}
                           />
                           <div
-                            className="w-2 h-2 bg-primary/70 rounded-full animate-bounce"
+                            className="w-2 h-2 bg-indigo-500/70 rounded-full animate-bounce"
                             style={{ animationDelay: '150ms' }}
                           />
                           <div
-                            className="w-2 h-2 bg-primary/70 rounded-full animate-bounce"
+                            className="w-2 h-2 bg-indigo-500/70 rounded-full animate-bounce"
                             style={{ animationDelay: '300ms' }}
                           />
                         </div>
@@ -638,13 +657,18 @@ export default function CopilotPage() {
             <div className="shrink-0 border-t border-border p-4">
               <div className="relative">
                 <div
-                  className="flex items-end gap-2 bg-accent/40 rounded-2xl border border-border focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/20 transition-all px-4 py-3"
+                  className="flex items-end gap-2 bg-accent/40 rounded-2xl border border-border focus-within:border-indigo-500/50 focus-within:ring-1 focus-within:ring-indigo-500/20 transition-all px-4 py-3"
                   data-tour="copilot-input"
                 >
-                  <button className="shrink-0 p-1 rounded-lg hover:bg-accent transition-colors text-foreground-muted hover:text-foreground">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Прикріпити файл"
+                    className="h-8 w-8 shrink-0 rounded-lg text-foreground-muted hover:text-foreground"
+                  >
                     <Paperclip className="w-5 h-5" />
-                  </button>
-                  <textarea
+                  </Button>
+                  <Textarea
                     ref={inputRef}
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
@@ -654,7 +678,7 @@ export default function CopilotPage() {
                       chatLoading ? 'AI відповідає — зачекайте…' : 'Напишіть повідомлення...'
                     }
                     rows={1}
-                    className="flex-1 bg-transparent border-0 outline-none resize-none text-sm text-foreground placeholder:text-foreground-muted/60 min-h-[24px] max-h-[120px] leading-relaxed"
+                    className="min-h-[24px] max-h-[120px] flex-1 border-0 bg-transparent px-0 py-0 leading-relaxed placeholder:text-foreground-muted/60 shadow-none focus-visible:ring-0 resize-none"
                     style={{ height: 'auto' }}
                     onInput={(e) => {
                       const target = e.target as HTMLTextAreaElement;
@@ -662,13 +686,15 @@ export default function CopilotPage() {
                       target.style.height = Math.min(target.scrollHeight, 120) + 'px';
                     }}
                   />
-                  <button
+                  <Button
+                    size="icon"
+                    aria-label="Надіслати"
                     onClick={sendMessage}
                     disabled={!inputValue.trim() || chatLoading}
-                    className="shrink-0 p-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary-hover disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    className="h-8 w-8 shrink-0 rounded-lg bg-indigo-500 text-white shadow-md shadow-indigo-500/30 hover:bg-indigo-600 disabled:opacity-30"
                   >
                     <Send className="w-4 h-4" />
-                  </button>
+                  </Button>
                 </div>
 
                 {/* Bottom bar: model picker + disclaimer */}
@@ -679,60 +705,60 @@ export default function CopilotPage() {
 
                   {/* Model picker */}
                   <div className="relative" data-tour="copilot-model">
-                    <button
-                      onClick={() => setShowModelPicker(!showModelPicker)}
-                      className="flex items-center gap-1.5 text-xs text-foreground-muted hover:text-foreground transition-colors px-2 py-1 rounded-lg hover:bg-accent"
-                    >
-                      <span className="font-medium">{currentModelName}</span>
-                      <ChevronDown className="w-3 h-3" />
-                    </button>
-
-                    {showModelPicker && (
-                      <>
-                        <div
-                          className="fixed inset-0 z-40"
-                          onClick={() => setShowModelPicker(false)}
-                        />
-                        <div className="absolute bottom-full right-0 mb-2 w-80 max-h-[400px] overflow-y-auto bg-background border border-border rounded-xl shadow-xl z-50 p-2">
-                          {AI_PROVIDERS.filter((p) => p.id !== 'custom').map((p) => {
-                            const models =
-                              dynamicModels[p.id] && dynamicModels[p.id].length > 0
-                                ? dynamicModels[p.id].map((m) => ({
-                                    id: m.id,
-                                    name: m.name,
-                                    description: '',
-                                  }))
-                                : p.models;
-                            return (
-                              <div key={p.id}>
-                                <div className="px-3 py-1.5 text-xs font-semibold text-foreground-muted uppercase tracking-wider">
-                                  {p.name}
-                                </div>
-                                {models.map((m) => (
-                                  <button
-                                    key={m.id}
-                                    onClick={() => {
-                                      setSelectedChatModel(m.id);
-                                      setShowModelPicker(false);
-                                    }}
-                                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                                      selectedChatModel === m.id
-                                        ? 'bg-primary/10 text-primary'
-                                        : 'hover:bg-accent text-foreground'
-                                    }`}
-                                  >
-                                    <div className="font-medium">{m.name}</div>
-                                    <div className="text-xs text-foreground-muted mt-0.5">
-                                      {m.description}
-                                    </div>
-                                  </button>
-                                ))}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </>
-                    )}
+                    <DropdownMenu open={showModelPicker} onOpenChange={setShowModelPicker}>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 gap-1.5 px-2 text-xs text-foreground-muted hover:text-foreground"
+                        >
+                          <span className="font-medium">{currentModelName}</span>
+                          <ChevronDown className="w-3 h-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="end"
+                        side="top"
+                        className="max-h-[400px] w-80 overflow-y-auto p-2"
+                      >
+                        {AI_PROVIDERS.filter((p) => p.id !== 'custom').map((p) => {
+                          const models =
+                            dynamicModels[p.id] && dynamicModels[p.id].length > 0
+                              ? dynamicModels[p.id].map((m) => ({
+                                  id: m.id,
+                                  name: m.name,
+                                  description: '',
+                                }))
+                              : p.models;
+                          return (
+                            <div key={p.id}>
+                              <DropdownMenuLabel className="px-3 text-xs font-semibold uppercase tracking-wider text-foreground-muted">
+                                {p.name}
+                              </DropdownMenuLabel>
+                              {models.map((m) => (
+                                <DropdownMenuItem
+                                  key={m.id}
+                                  onClick={() => {
+                                    setSelectedChatModel(m.id);
+                                    setShowModelPicker(false);
+                                  }}
+                                  className={`flex-col items-start gap-0.5 px-3 py-2 ${
+                                    selectedChatModel === m.id
+                                      ? 'bg-indigo-500/10 text-indigo-500 focus:bg-indigo-500/10'
+                                      : ''
+                                  }`}
+                                >
+                                  <span className="font-medium">{m.name}</span>
+                                  <span className="text-xs text-foreground-muted mt-0.5">
+                                    {m.description}
+                                  </span>
+                                </DropdownMenuItem>
+                              ))}
+                            </div>
+                          );
+                        })}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               </div>
