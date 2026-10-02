@@ -1,9 +1,10 @@
 'use client';
 
+import { Check, Send } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
-import { Button, Card, CardContent, Input } from '@/components/ui';
+import { Badge, Button, Card, CardContent, Input, Skeleton } from '@/components/ui';
 
 interface BotConfig {
   configured: boolean;
@@ -73,7 +74,7 @@ export default function TelegramSettingsPage() {
   if (loading) {
     return (
       <div className="max-w-2xl mx-auto space-y-6">
-        <div className="h-40 bg-muted rounded-lg animate-pulse" />
+        <Skeleton className="h-40 rounded-lg" />
       </div>
     );
   }
@@ -89,7 +90,14 @@ export default function TelegramSettingsPage() {
             ← Налаштування
           </Link>
         </div>
-        <h1 className="text-2xl font-bold">Telegram-бот</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold">Telegram-бот</h1>
+          {config?.configured ? (
+            <Badge variant="success">Підключено</Badge>
+          ) : (
+            <Badge variant="secondary">Не налаштовано</Badge>
+          )}
+        </div>
         <p className="text-foreground-muted">
           Підключіть Telegram-бота для отримання повідомлень та керування CRM
         </p>
@@ -108,19 +116,11 @@ export default function TelegramSettingsPage() {
 
       {/* Status */}
       {config?.configured ? (
-        <Card>
+        <Card className="bg-card border-border shadow-sm rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="h-12 w-12 rounded-xl bg-success-light flex items-center justify-center">
-                <svg
-                  className="h-6 w-6 text-success"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
+                <Check className="h-6 w-6 text-success" />
               </div>
               <div className="flex-1">
                 <h3 className="font-medium">Бот підключено</h3>
@@ -170,19 +170,11 @@ export default function TelegramSettingsPage() {
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <Card className="bg-card border-border shadow-sm rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4 mb-6">
               <div className="h-12 w-12 rounded-xl bg-primary-light flex items-center justify-center">
-                <svg
-                  className="h-6 w-6 text-primary"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                </svg>
+                <Send className="h-6 w-6 text-primary" />
               </div>
               <div>
                 <h3 className="font-medium">Підключити Telegram-бота</h3>
@@ -219,7 +211,7 @@ export default function TelegramSettingsPage() {
 
             <form onSubmit={handleSetup} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                <label className="block text-xs font-medium text-foreground-muted mb-1">
                   Токен бота
                 </label>
                 <Input
@@ -239,7 +231,7 @@ export default function TelegramSettingsPage() {
       )}
 
       {/* Notifications info */}
-      <Card>
+      <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardContent className="p-5">
           <h3 className="font-medium mb-3">Сповіщення</h3>
           <p className="text-sm text-foreground-muted mb-4">

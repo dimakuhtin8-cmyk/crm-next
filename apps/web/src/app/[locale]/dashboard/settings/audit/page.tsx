@@ -5,9 +5,9 @@ import Link from 'next/link';
 import { useState, useEffect, useCallback } from 'react';
 
 import { QuickSelect } from '@/components/quick-create';
-import { Button, Card, CardContent, Badge, Skeleton } from '@/components/ui';
+import { Button, Card, CardContent, Badge, Skeleton, Table } from '@/components/ui';
 
-interface AuditLogEntry {
+type AuditLogEntry = {
   id: string;
   userId: string | null;
   action: string;
@@ -18,7 +18,7 @@ interface AuditLogEntry {
   ipAddress: string | null;
   createdAt: string;
   user?: { name: string | null; email: string | null } | null;
-}
+};
 
 const ACTION_LABELS: Record<string, string> = {
   create: 'Створено',
@@ -42,16 +42,19 @@ const ENTITY_LABELS: Record<string, string> = {
   pipeline: 'Воронка',
 };
 
-const ACTION_COLORS: Record<string, string> = {
-  create: 'bg-green-500/10 text-green-700 dark:text-green-300',
-  update: 'bg-blue-500/10 text-blue-700 dark:text-blue-300',
-  delete: 'bg-red-500/10 text-red-700 dark:text-red-300',
-  login: 'bg-primary/10 text-primary',
-  logout: 'bg-gray-500/10 text-gray-600 dark:text-gray-400',
-  invite: 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
-  role_change: 'bg-orange-500/10 text-orange-700 dark:text-orange-300',
-  export: 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-300',
-  import: 'bg-info/10 text-info',
+const ACTION_VARIANTS: Record<
+  string,
+  'default' | 'secondary' | 'success' | 'warning' | 'danger' | 'info'
+> = {
+  create: 'success',
+  update: 'info',
+  delete: 'danger',
+  login: 'default',
+  logout: 'secondary',
+  invite: 'warning',
+  role_change: 'warning',
+  export: 'info',
+  import: 'info',
 };
 
 export default function AuditLogPage() {
@@ -102,14 +105,14 @@ export default function AuditLogPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/dashboard/settings" className="text-muted-foreground hover:text-foreground">
+        <Link href="/dashboard/settings" className="text-foreground-muted hover:text-foreground">
           ← Назад
         </Link>
         <h1 className="text-2xl font-bold">Журнал аудиту</h1>
       </div>
 
       {/* Filters */}
-      <Card>
+      <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardContent className="p-4">
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
@@ -154,63 +157,75 @@ export default function AuditLogPage() {
       </Card>
 
       {/* Logs Table */}
-      <Card>
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="space-y-3 p-5">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          ) : logs.length === 0 ? (
-            <div className="text-center py-12 text-foreground-muted">Журнал порожній</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/50">
-                    <th className="text-left px-4 py-3 font-medium">Дата</th>
-                    <th className="text-left px-4 py-3 font-medium">Користувач</th>
-                    <th className="text-left px-4 py-3 font-medium">Дія</th>
-                    <th className="text-left px-4 py-3 font-medium">Сутність</th>
-                    <th className="text-left px-4 py-3 font-medium">ID</th>
-                    <th className="text-left px-4 py-3 font-medium">IP</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {logs.map((log) => (
-                    <tr key={log.id} className="border-b hover:bg-muted/20 transition-colors">
-                      <td className="px-4 py-3 text-foreground-muted whitespace-nowrap">
-                        {formatDate(log.createdAt)}
-                      </td>
-                      <td className="px-4 py-3">
-                        {log.user?.name || log.user?.email || (
-                          <span className="text-foreground-muted">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge
-                          variant="secondary"
-                          className={`${ACTION_COLORS[log.action] || ''} text-xs`}
-                        >
-                          {ACTION_LABELS[log.action] || log.action}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3">{ENTITY_LABELS[log.entity] || log.entity}</td>
-                      <td className="px-4 py-3 font-mono text-xs text-foreground-muted max-w-[120px] truncate">
-                        {log.entityId || '—'}
-                      </td>
-                      <td className="px-4 py-3 text-foreground-muted text-xs">
-                        {log.ipAddress || '—'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {loading ? (
+        <div className="space-y-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-12 w-full" />
+          ))}
+        </div>
+      ) : (
+        <Table<AuditLogEntry>
+          data={logs}
+          columns={[
+            {
+              key: 'createdAt',
+              header: 'Дата',
+              className: 'px-3 py-2',
+              render: (row) => (
+                <span className="whitespace-nowrap text-foreground-muted text-xs">
+                  {formatDate(row.createdAt)}
+                </span>
+              ),
+            },
+            {
+              key: 'user',
+              header: 'Користувач',
+              className: 'px-3 py-2',
+              render: (row) =>
+                row.user?.name ||
+                row.user?.email || <span className="text-foreground-muted">—</span>,
+            },
+            {
+              key: 'action',
+              header: 'Дія',
+              className: 'px-3 py-2',
+              render: (row) => (
+                <Badge variant={ACTION_VARIANTS[row.action] ?? 'secondary'} className="text-xs">
+                  {ACTION_LABELS[row.action] || row.action}
+                </Badge>
+              ),
+            },
+            {
+              key: 'entity',
+              header: 'Сутність',
+              className: 'px-3 py-2',
+              render: (row) => ENTITY_LABELS[row.entity] || row.entity,
+            },
+            {
+              key: 'entityId',
+              header: 'ID',
+              className: 'px-3 py-2',
+              render: (row) => (
+                <span className="block max-w-[120px] truncate font-mono text-xs text-foreground-muted">
+                  {row.entityId || '—'}
+                </span>
+              ),
+            },
+            {
+              key: 'ipAddress',
+              header: 'IP',
+              className: 'px-3 py-2',
+              render: (row) => (
+                <span className="font-mono text-xs text-foreground-muted">
+                  {row.ipAddress || '—'}
+                </span>
+              ),
+            },
+          ]}
+          emptyMessage="Журнал порожній"
+          pageSize={limit}
+        />
+      )}
 
       {/* Pagination */}
       {totalPages > 1 && (

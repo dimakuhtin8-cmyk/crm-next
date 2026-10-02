@@ -4,8 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import { QuickCreatePopover, QuickTenantForm } from '@/components/quick-create';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Badge, Button, Card, CardContent, Skeleton } from '@/components/ui';
 
 interface Tenant {
   id: string;
@@ -16,6 +15,18 @@ interface Tenant {
   role: string;
   createdAt: string;
 }
+
+const roleLabels: Record<string, string> = {
+  owner: 'Власник',
+  admin: 'Адміністратор',
+  member: 'Учасник',
+};
+
+const roleVariants: Record<string, 'default' | 'secondary' | 'outline'> = {
+  owner: 'default',
+  admin: 'secondary',
+  member: 'outline',
+};
 
 export default function TenantsListPage() {
   const router = useRouter();
@@ -49,12 +60,10 @@ export default function TenantsListPage() {
 
   if (loading) {
     return (
-      <div className="p-5">
-        <div className="animate-pulse space-y-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-24 bg-muted rounded-lg" />
-          ))}
-        </div>
+      <div className="p-5 space-y-4">
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-24 rounded-lg" />
+        ))}
       </div>
     );
   }
@@ -64,7 +73,7 @@ export default function TenantsListPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Компанії</h1>
-          <p className="text-muted-foreground">Управління компаніями та командами</p>
+          <p className="text-foreground-muted">Управління компаніями та командами</p>
         </div>
         <Button ref={quickBtnRef} onClick={() => setQuickOpen(true)}>
           Створити компанію
@@ -80,9 +89,9 @@ export default function TenantsListPage() {
       </div>
 
       {tenants.length === 0 ? (
-        <Card>
+        <Card className="bg-card border-border shadow-sm rounded-xl">
           <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground mb-4">У вас ще немає компаній</p>
+            <p className="text-foreground-muted mb-4">У вас ще немає компаній</p>
             <Button onClick={() => setQuickOpen(true)}>Створити першу компанію</Button>
           </CardContent>
         </Card>
@@ -91,7 +100,7 @@ export default function TenantsListPage() {
           {tenants.map((tenant) => (
             <Card
               key={tenant.id}
-              className="cursor-pointer hover:bg-muted/50 transition-colors"
+              className="bg-card border-border shadow-sm rounded-xl cursor-pointer hover:bg-card-hover transition-colors"
               onClick={() => router.push(`/dashboard/settings/tenants/${tenant.id}`)}
             >
               <CardContent className="flex items-center justify-between p-4">
@@ -101,16 +110,16 @@ export default function TenantsListPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold">{tenant.name}</h3>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-foreground-muted">
                       /{tenant.slug}
                       {tenant.domain && ` · ${tenant.domain}`}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
-                    {tenant.role}
-                  </span>
+                  <Badge variant={roleVariants[tenant.role] || 'outline'}>
+                    {roleLabels[tenant.role] || tenant.role}
+                  </Badge>
                 </div>
               </CardContent>
             </Card>

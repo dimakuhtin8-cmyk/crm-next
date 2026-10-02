@@ -15,6 +15,8 @@ export { Label } from './label';
 export { Select } from './select';
 export { Checkbox } from './checkbox';
 export { Tabs, TabsContent, TabsList, TabsTrigger } from './tabs';
+export { Progress } from './progress';
+export { Separator } from './separator';
 export {
   Dialog,
   DialogClose,

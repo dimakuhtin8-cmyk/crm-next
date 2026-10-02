@@ -13,6 +13,11 @@ import {
   CardTitle,
   CardDescription,
   Badge,
+  Progress,
+  Skeleton,
+  Tabs,
+  TabsList,
+  TabsTrigger,
 } from '@/components/ui';
 import { useLocale } from '@/lib/use-locale-path';
 
@@ -215,16 +220,22 @@ export default function BillingPage() {
     return n === -1 ? '∞' : n.toLocaleString('uk');
   };
 
+  const usagePct = (used: number, limit: number): number | null =>
+    limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : null;
+
+  const pctColor = (pct: number): string =>
+    pct >= 100 ? 'bg-danger' : pct >= 90 ? 'bg-warning' : 'bg-success';
+
   const statusBadge = (status: string) => {
     switch (status) {
       case 'active':
-        return <Badge className="bg-success/10 text-success">Активна</Badge>;
+        return <Badge variant="success">Активна</Badge>;
       case 'trialing':
-        return <Badge className="bg-info/10 text-info">Пробний період</Badge>;
+        return <Badge variant="info">Пробний період</Badge>;
       case 'past_due':
-        return <Badge className="bg-warning/10 text-warning">Прострочена</Badge>;
+        return <Badge variant="warning">Прострочена</Badge>;
       case 'canceled':
-        return <Badge className="bg-danger/10 text-danger">Скасована</Badge>;
+        return <Badge variant="danger">Скасована</Badge>;
       default:
         return <Badge>{status}</Badge>;
     }
@@ -234,14 +245,14 @@ export default function BillingPage() {
     return (
       <div className="max-w-5xl mx-auto space-y-6">
         <div className="flex items-center gap-3">
-          <Link href="/dashboard/settings" className="text-muted-foreground hover:text-foreground">
+          <Link href="/dashboard/settings" className="text-foreground-muted hover:text-foreground">
             ← Назад
           </Link>
           <h1 className="text-2xl font-bold">Підписка та оплата</h1>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-64 bg-accent/30 rounded-xl animate-pulse" />
+            <Skeleton key={i} className="h-64 rounded-xl" />
           ))}
         </div>
       </div>
@@ -251,7 +262,7 @@ export default function BillingPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/dashboard/settings" className="text-muted-foreground hover:text-foreground">
+        <Link href="/dashboard/settings" className="text-foreground-muted hover:text-foreground">
           ← Назад
         </Link>
         <h1 className="text-2xl font-bold">Підписка та оплата</h1>
@@ -267,7 +278,10 @@ export default function BillingPage() {
 
       {/* Current Subscription */}
       {data && (
-        <Card className="border-primary/20">
+        <Card
+          id="current-plan"
+          className="bg-card border-border shadow-sm rounded-xl border-primary/20"
+        >
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               Поточна підписка
@@ -310,6 +324,13 @@ export default function BillingPage() {
                     / {formatLimit(data.limits.maxUsers)}
                   </span>
                 </p>
+                {usagePct(data.usage.users, data.limits.maxUsers) !== null && (
+                  <Progress
+                    value={usagePct(data.usage.users, data.limits.maxUsers)!}
+                    indicatorClassName={pctColor(usagePct(data.usage.users, data.limits.maxUsers)!)}
+                    className="mt-1.5"
+                  />
+                )}
               </div>
               <div>
                 <div className="flex items-center gap-1.5 text-xs text-foreground-muted mb-1">
@@ -321,6 +342,15 @@ export default function BillingPage() {
                     / {formatLimit(data.limits.maxContacts)}
                   </span>
                 </p>
+                {usagePct(data.usage.contacts, data.limits.maxContacts) !== null && (
+                  <Progress
+                    value={usagePct(data.usage.contacts, data.limits.maxContacts)!}
+                    indicatorClassName={pctColor(
+                      usagePct(data.usage.contacts, data.limits.maxContacts)!,
+                    )}
+                    className="mt-1.5"
+                  />
+                )}
               </div>
               <div>
                 <div className="flex items-center gap-1.5 text-xs text-foreground-muted mb-1">
@@ -332,10 +362,27 @@ export default function BillingPage() {
                     / {formatLimit(data.limits.maxDeals)}
                   </span>
                 </p>
+                {usagePct(data.usage.deals, data.limits.maxDeals) !== null && (
+                  <Progress
+                    value={usagePct(data.usage.deals, data.limits.maxDeals)!}
+                    indicatorClassName={pctColor(usagePct(data.usage.deals, data.limits.maxDeals)!)}
+                    className="mt-1.5"
+                  />
+                )}
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              <Button
+                onClick={() =>
+                  document
+                    .getElementById('plans')
+                    ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                }
+              >
+                Оновити план
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
               {data.plan.id !== 'free' && (
                 <Button variant="outline" onClick={handleManageSubscription}>
                   <ExternalLink className="w-4 h-4 mr-2" />
@@ -352,32 +399,18 @@ export default function BillingPage() {
 
       {/* Period Toggle */}
       <div className="flex justify-center">
-        <div className="flex items-center gap-2 p-1 rounded-xl bg-accent/50">
-          <button
-            onClick={() => setPeriod('monthly')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              period === 'monthly'
-                ? 'bg-background shadow-sm text-foreground'
-                : 'text-foreground-muted hover:text-foreground'
-            }`}
-          >
-            Щомісячно
-          </button>
-          <button
-            onClick={() => setPeriod('yearly')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              period === 'yearly'
-                ? 'bg-background shadow-sm text-foreground'
-                : 'text-foreground-muted hover:text-foreground'
-            }`}
-          >
-            Щорічно <span className="text-success text-xs">-17%</span>
-          </button>
-        </div>
+        <Tabs value={period} onValueChange={(v) => setPeriod(v as 'monthly' | 'yearly')}>
+          <TabsList>
+            <TabsTrigger value="monthly">Щомісячно</TabsTrigger>
+            <TabsTrigger value="yearly">
+              Щорічно <span className="ml-1 text-success text-xs">-17%</span>
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
       {/* Plan Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div id="plans" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 scroll-mt-6">
         {ALL_PLANS.map((plan) => {
           const isCurrent = data?.plan.id === plan.id;
           const displayPrice = period === 'yearly' ? plan.yearlyPrice : plan.price;
@@ -385,7 +418,7 @@ export default function BillingPage() {
           return (
             <Card
               key={plan.id}
-              className={`relative ${plan.isPopular ? 'border-primary shadow-lg shadow-primary/10' : ''} ${isCurrent ? 'ring-2 ring-primary' : ''}`}
+              className={`relative bg-card shadow-sm rounded-xl ${plan.isPopular ? 'border-primary shadow-lg shadow-primary/10' : ''} ${isCurrent ? 'ring-2 ring-primary' : ''}`}
             >
               {plan.isPopular && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">

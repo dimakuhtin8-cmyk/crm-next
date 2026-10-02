@@ -5,10 +5,34 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import { QuickSelect } from '@/components/quick-create';
-import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Switch,
+  Table,
+} from '@/components/ui';
 import { cn } from '@/lib/utils';
 
 type ToastPosition = 'bottom-left' | 'bottom-right' | 'top-right';
+
+const MATRIX_EVENTS = [
+  { key: 'deal_new', label: 'Нова угода' },
+  { key: 'deal_won', label: 'Угода виграна' },
+  { key: 'task_deadline', label: 'Дедлайн завдання' },
+  { key: 'contact_new', label: 'Новий контакт' },
+];
+
+type MatrixRow = {
+  id: string;
+  event: string;
+  email: boolean;
+  push: boolean;
+  telegram: boolean;
+};
 
 export default function NotificationsSettingsPage() {
   const [emailNotifications, setEmailNotifications] = useState(true);
@@ -22,6 +46,23 @@ export default function NotificationsSettingsPage() {
   const [success, setSuccess] = useState('');
   const [saveError, setSaveError] = useState('');
 
+  // Матриця «подія × канал» — візуальна повнота (API зберігає лише загальні прапорці)
+  const [matrix, setMatrix] = useState<MatrixRow[]>(
+    MATRIX_EVENTS.map((e, i) => ({
+      id: e.key,
+      event: e.label,
+      email: i < 2,
+      push: i % 2 === 0,
+      telegram: i === 0,
+    })),
+  );
+
+  const toggleMatrix = (id: string, channel: 'email' | 'push' | 'telegram') => {
+    setMatrix((prev) =>
+      prev.map((row) => (row.id === id ? { ...row, [channel]: !row[channel] } : row)),
+    );
+  };
+
   useEffect(() => {
     fetch('/api/notifications/preferences', { credentials: 'include' })
       .then((r) => r.json())
@@ -30,7 +71,7 @@ export default function NotificationsSettingsPage() {
         if (typeof d?.toast?.position === 'string') setToastPosition(d.toast.position);
       })
       .catch(() => {
-        // преференсы тостов: мовчазно, дефолты уже стоят
+        // преференси тостів: мовчазно, дефолти уже стоять
         console.warn('[settings/notifications] prefs load failed');
       });
   }, []);
@@ -65,35 +106,29 @@ export default function NotificationsSettingsPage() {
     setSaving(false);
   };
 
-  const Toggle = ({
+  const ToggleRow = ({
     checked,
     onChange,
     label,
+    htmlFor,
   }: {
     checked: boolean;
     onChange: (v: boolean) => void;
     label: string;
+    htmlFor?: string;
   }) => (
-    <label className="flex items-center justify-between py-3 cursor-pointer">
-      <span className="text-sm">{label}</span>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-300 ease-out active:scale-95 ${checked ? 'bg-primary' : 'bg-muted'}`}
-      >
-        <span
-          className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-all duration-300 ease-out ${checked ? 'translate-x-6' : 'translate-x-1'}`}
-        />
-      </button>
-    </label>
+    <div className="flex items-center justify-between py-3">
+      <label htmlFor={htmlFor} className="cursor-pointer text-sm">
+        {label}
+      </label>
+      <Switch id={htmlFor} checked={checked} onCheckedChange={onChange} />
+    </div>
   );
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/dashboard/settings" className="text-muted-foreground hover:text-foreground">
+        <Link href="/dashboard/settings" className="text-foreground-muted hover:text-foreground">
           ← Назад
         </Link>
         <h1 className="text-2xl font-bold">Сповіщення</h1>
@@ -103,39 +138,103 @@ export default function NotificationsSettingsPage() {
         <div className="p-3 bg-success/10 text-success rounded-lg text-sm">{success}</div>
       )}
       {saveError && (
-        <div className="p-3 bg-destructive/10 text-destructive rounded-lg text-sm">{saveError}</div>
+        <div className="p-3 bg-danger/10 text-danger rounded-lg text-sm">{saveError}</div>
       )}
 
-      <Card>
+      <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
           <CardTitle>Канали сповіщень</CardTitle>
         </CardHeader>
         <CardContent className="divide-y">
-          <Toggle
+          <ToggleRow
+            htmlFor="notif-email"
             checked={emailNotifications}
             onChange={setEmailNotifications}
             label="Email-сповіщення"
           />
-          <Toggle
+          <ToggleRow
+            htmlFor="notif-telegram"
             checked={telegramNotifications}
             onChange={setTelegramNotifications}
             label="Telegram-сповіщення"
           />
-          <Toggle
+          <ToggleRow
+            htmlFor="notif-tasks"
             checked={taskReminders}
             onChange={setTaskReminders}
             label="Нагадування про завдання"
           />
-          <Toggle checked={dealUpdates} onChange={setDealUpdates} label="Оновлення угод" />
+          <ToggleRow
+            htmlFor="notif-deals"
+            checked={dealUpdates}
+            onChange={setDealUpdates}
+            label="Оновлення угод"
+          />
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="bg-card border-border shadow-sm rounded-xl">
+        <CardHeader>
+          <CardTitle>Події та канали</CardTitle>
+          <CardDescription>
+            Точкове налаштування сповіщень для кожної події (демонстраційна матриця)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table<MatrixRow>
+            data={matrix}
+            columns={[
+              {
+                key: 'event',
+                header: 'Подія',
+                render: (row) => <span className="font-medium">{row.event}</span>,
+              },
+              {
+                key: 'email',
+                header: 'Email',
+                render: (row) => (
+                  <Switch
+                    checked={row.email}
+                    onCheckedChange={() => toggleMatrix(row.id, 'email')}
+                    aria-label={`Email: ${row.event}`}
+                  />
+                ),
+              },
+              {
+                key: 'push',
+                header: 'Push',
+                render: (row) => (
+                  <Switch
+                    checked={row.push}
+                    onCheckedChange={() => toggleMatrix(row.id, 'push')}
+                    aria-label={`Push: ${row.event}`}
+                  />
+                ),
+              },
+              {
+                key: 'telegram',
+                header: 'Telegram',
+                render: (row) => (
+                  <Switch
+                    checked={row.telegram}
+                    onCheckedChange={() => toggleMatrix(row.id, 'telegram')}
+                    aria-label={`Telegram: ${row.event}`}
+                  />
+                ),
+              },
+            ]}
+            emptyMessage="Немає подій"
+          />
+        </CardContent>
+      </Card>
+
+      <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
           <CardTitle>Спливаючі сповіщення</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Toggle
+          <ToggleRow
+            htmlFor="notif-toast"
             checked={toastEnabled}
             onChange={setToastEnabled}
             label="Показувати сповіщення поверх вікон"
@@ -164,7 +263,7 @@ export default function NotificationsSettingsPage() {
               Показати приклад
             </Button>
             <p className="mt-2 text-xs text-foreground-muted">
-              Приклад з'явиться там, де приходитимуть справжні сповіщення.
+              Приклад з&apos;явиться там, де приходитимуть справжні сповіщення.
             </p>
           </div>
           <p className="text-xs text-foreground-muted">
@@ -196,7 +295,7 @@ export default function NotificationsSettingsPage() {
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-bold">Автоматизація</p>
                 <p className="text-xs text-foreground-muted mt-0.5">
-                  Так виглядатиме сповіщення. Натисни — відкриється пов'язана сторінка.
+                  Так виглядатиме сповіщення. Натисни — відкриється пов&apos;язана сторінка.
                 </p>
               </div>
               <button

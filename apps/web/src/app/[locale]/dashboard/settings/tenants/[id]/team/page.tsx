@@ -1,5 +1,6 @@
 'use client';
 
+import { ChevronRight, EllipsisVertical, Mail, X } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -8,17 +9,25 @@ import { useEffect, useState } from 'react';
 import { QuickSelect } from '@/components/quick-create';
 import { useTourAutoStart } from '@/components/tour/tour-provider';
 import {
+  Avatar,
   Button,
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
   Input,
   Badge,
+  Skeleton,
+  Table,
 } from '@/components/ui';
 import { currentLocaleFromPath } from '@/lib/use-locale-path';
-import { cn } from '@/lib/utils';
 
 interface Tenant {
   id: string;
@@ -26,12 +35,12 @@ interface Tenant {
   slug: string;
 }
 
-interface Member {
+type Member = {
   id: string;
   role: string;
   userId: string;
   user: { id: string; name: string | null; email: string | null; image: string | null };
-}
+};
 
 interface Invite {
   id: string;
@@ -209,11 +218,9 @@ export default function TeamPage() {
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto space-y-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-muted rounded w-1/3" />
-          <div className="h-48 bg-muted rounded-lg" />
-          <div className="h-48 bg-muted rounded-lg" />
-        </div>
+        <Skeleton className="h-8 w-1/3 rounded" />
+        <Skeleton className="h-48 rounded-lg" />
+        <Skeleton className="h-48 rounded-lg" />
       </div>
     );
   }
@@ -241,30 +248,14 @@ export default function TeamPage() {
             >
               Компанії
             </Link>
-            <svg
-              className="h-4 w-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
+            <ChevronRight className="h-4 w-4" />
             <Link
               href={`/dashboard/settings/tenants/${tenantId}`}
               className="hover:text-foreground transition-colors"
             >
               {tenant.name}
             </Link>
-            <svg
-              className="h-4 w-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
+            <ChevronRight className="h-4 w-4" />
           </div>
           <h1 className="text-2xl font-bold">Команда</h1>
           <p className="text-foreground-muted">Управління учасниками та ролями</p>
@@ -276,7 +267,7 @@ export default function TeamPage() {
 
       {/* Invite Form */}
       {canManage && (
-        <Card data-tour="team-invite">
+        <Card data-tour="team-invite" className="bg-card border-border shadow-sm rounded-xl">
           <CardHeader>
             <CardTitle>Запросити учасника</CardTitle>
             <CardDescription>Надішліть запрошення на email</CardDescription>
@@ -284,9 +275,7 @@ export default function TeamPage() {
           <CardContent>
             <form onSubmit={handleInvite} className="space-y-4">
               {inviteError && (
-                <div className="p-3 bg-destructive/10 text-destructive rounded-lg text-sm">
-                  {inviteError}
-                </div>
+                <div className="p-3 bg-danger/10 text-danger rounded-lg text-sm">{inviteError}</div>
               )}
               {inviteSuccess && (
                 <div className="p-3 bg-success/10 text-success rounded-lg text-sm">
@@ -340,95 +329,112 @@ export default function TeamPage() {
       )}
 
       {/* Members */}
-      <Card data-tour="team-members">
+      <Card data-tour="team-members" className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
           <CardTitle>Учасники ({members.length})</CardTitle>
           <CardDescription>Поточні учасники компанії</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {members.length === 0 ? (
-            <p className="text-sm text-foreground-muted text-center py-4">Немає учасників</p>
-          ) : (
-            members.map((member) => {
-              const isCurrentUser = member.userId === currentUserId;
-              const isOwner = member.role === 'owner';
-
-              return (
-                <div
-                  key={member.id}
-                  className={cn(
-                    'flex items-center justify-between p-3 rounded-lg transition-colors',
-                    isCurrentUser
-                      ? 'bg-primary-light/30 border border-primary/20'
-                      : 'bg-secondary/50',
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
-                      {member.user.name?.charAt(0) || member.user.email?.charAt(0) || '?'}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">
-                        {member.user.name || 'Без імені'}
-                        {isCurrentUser && <span className="text-foreground-muted ml-1">(Ви)</span>}
-                      </p>
-                      <p className="text-xs text-foreground-muted">{member.user.email}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {canManage && !isOwner && !isCurrentUser ? (
-                      <div className="w-36">
-                        <QuickSelect
-                          value={member.role}
-                          onChange={(v) => handleChangeRole(member.id, v)}
-                          disabled={changingRole === member.id}
-                          options={[
-                            { id: 'member', name: 'Учасник' },
-                            { id: 'admin', name: 'Адміністратор' },
-                          ]}
-                        />
+        <CardContent>
+          <Table<Member>
+            data={members}
+            selectedRows={currentMember ? [currentMember] : []}
+            columns={[
+              {
+                key: 'user',
+                header: 'Учасник',
+                render: (row) => {
+                  const isCurrentUser = row.userId === currentUserId;
+                  return (
+                    <div className="flex items-center gap-3">
+                      <Avatar
+                        src={row.user.image ?? undefined}
+                        name={row.user.name || row.user.email || '?'}
+                        size="sm"
+                      />
+                      <div>
+                        <p className="text-sm font-medium">
+                          {row.user.name || 'Без імені'}
+                          {isCurrentUser && (
+                            <span className="text-foreground-muted ml-1">(Ви)</span>
+                          )}
+                        </p>
+                        <p className="text-xs text-foreground-muted">{row.user.email}</p>
                       </div>
-                    ) : (
-                      <Badge variant={roleVariants[member.role] || 'outline'}>
-                        {roleLabels[member.role] || member.role}
-                      </Badge>
-                    )}
-
-                    {canManage && !isOwner && !isCurrentUser && (
-                      <button
-                        onClick={() =>
-                          handleRemoveMember(
-                            member.id,
-                            member.user.name || member.user.email || 'учасника',
-                          )
-                        }
-                        className="rounded p-1.5 text-foreground-muted hover:text-danger hover:bg-danger/10 transition-colors"
-                        title="Видалити з команди"
-                      >
-                        <svg
-                          className="h-4 w-4"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
+                    </div>
+                  );
+                },
+              },
+              {
+                key: 'role',
+                header: 'Роль',
+                render: (row) => (
+                  <Badge variant={roleVariants[row.role] || 'outline'}>
+                    {roleLabels[row.role] || row.role}
+                  </Badge>
+                ),
+              },
+              {
+                key: 'actions',
+                header: '',
+                className: 'w-14',
+                render: (row) => {
+                  const isOwner = row.role === 'owner';
+                  const isCurrentUser = row.userId === currentUserId;
+                  if (!(canManage && !isOwner && !isCurrentUser)) {
+                    return <span className="text-foreground-muted">—</span>;
+                  }
+                  return (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={changingRole === row.id}
+                          aria-label="Дії з учасником"
                         >
-                          <line x1="18" y1="6" x2="6" y2="18" />
-                          <line x1="6" y1="6" x2="18" y2="18" />
-                        </svg>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })
-          )}
+                          <EllipsisVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Змінити роль</DropdownMenuLabel>
+                        <DropdownMenuItem
+                          disabled={row.role === 'member'}
+                          onSelect={() => handleChangeRole(row.id, 'member')}
+                        >
+                          Учасник
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={row.role === 'admin'}
+                          onSelect={() => handleChangeRole(row.id, 'admin')}
+                        >
+                          Адміністратор
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-danger focus:text-danger"
+                          onSelect={() =>
+                            handleRemoveMember(
+                              row.id,
+                              row.user.name || row.user.email || 'учасника',
+                            )
+                          }
+                        >
+                          Видалити з команди
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  );
+                },
+              },
+            ]}
+            emptyMessage="Немає учасників"
+          />
         </CardContent>
       </Card>
 
       {/* Pending Invites */}
       {canManage && (
-        <Card data-tour="team-invites">
+        <Card data-tour="team-invites" className="bg-card border-border shadow-sm rounded-xl">
           <CardHeader>
             <CardTitle>Очікуючі запрошення ({invites.length})</CardTitle>
             <CardDescription>Нещодавно надіслані запрошення</CardDescription>
@@ -446,16 +452,7 @@ export default function TeamPage() {
                 >
                   <div className="flex items-center gap-3">
                     <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-warning/10 text-sm text-warning">
-                      <svg
-                        className="h-4 w-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                        <polyline points="22,6 12,13 2,6" />
-                      </svg>
+                      <Mail className="h-4 w-4" />
                     </div>
                     <div>
                       <p className="text-sm font-medium">{invite.email}</p>
@@ -470,22 +467,15 @@ export default function TeamPage() {
                     <Badge variant={roleVariants[invite.role] || 'outline'}>
                       {roleLabels[invite.role] || invite.role}
                     </Badge>
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => handleRevokeInvite(invite.id)}
-                      className="rounded p-1.5 text-foreground-muted hover:text-danger hover:bg-danger/10 transition-colors"
+                      aria-label="Відкликати запрошення"
                       title="Відкликати запрошення"
                     >
-                      <svg
-                        className="h-4 w-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                      </svg>
-                    </button>
+                      <X className="h-4 w-4 text-foreground-muted hover:text-danger" />
+                    </Button>
                   </div>
                 </div>
               ))
@@ -495,7 +485,7 @@ export default function TeamPage() {
       )}
 
       {/* Roles description */}
-      <Card>
+      <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
           <CardTitle>Ролі та дозволи</CardTitle>
         </CardHeader>

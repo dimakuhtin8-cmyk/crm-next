@@ -15,6 +15,7 @@ import {
   CardDescription,
   Input,
   Badge,
+  Skeleton,
 } from '@/components/ui';
 import { AI_PROVIDERS, getProvider } from '@/lib/ai/providers';
 import { ApiError, apiGet } from '@/lib/client-api';
@@ -237,22 +238,20 @@ export default function AiKeysSettingsPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/dashboard/settings" className="text-muted-foreground hover:text-foreground">
+        <Link href="/dashboard/settings" className="text-foreground-muted hover:text-foreground">
           ← Назад
         </Link>
         <h1 className="text-2xl font-bold">API-ключі AI</h1>
       </div>
 
       {/* Security Notice */}
-      <Card className="border-green-500/20 bg-green-500/5">
+      <Card className="border-success/20 bg-success/5 shadow-sm rounded-xl">
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
-            <Shield className="w-5 h-5 text-green-600 mt-0.5 shrink-0" />
+            <Shield className="w-5 h-5 text-success mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                Безпечне зберігання
-              </p>
-              <p className="text-xs text-green-700 dark:text-green-300 mt-1">
+              <p className="text-sm font-medium text-success">Безпечне зберігання</p>
+              <p className="text-xs text-foreground-muted mt-1">
                 API-ключі шифруються AES-256-GCM перед збереженням у базі даних. Ми ніколи не
                 повертаємо розшифрований ключ з сервера.
               </p>
@@ -262,7 +261,7 @@ export default function AiKeysSettingsPage() {
       </Card>
 
       {/* Provider Selection */}
-      <Card>
+      <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
           <CardTitle>Оберіть провайдера</CardTitle>
           <CardDescription>Активний AI-провайдер для вашого тенанту</CardDescription>
@@ -270,30 +269,32 @@ export default function AiKeysSettingsPage() {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             {AI_PROVIDERS.filter((p) => p.id !== 'custom').map((p) => (
-              <button
+              <Card
                 key={p.id}
+                className={`bg-card relative p-3.5 rounded-xl text-left transition-all duration-200 cursor-pointer ${
+                  selectedProvider === p.id
+                    ? 'border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20'
+                    : 'border-border/60 hover:border-primary/40 hover:bg-accent/50 shadow-sm'
+                }`}
                 onClick={() => {
                   setSelectedProvider(p.id);
                   setSelectedModel(p.models[0]?.id || '');
                   setApiKey('');
                   setTestResult(null);
                 }}
-                className={`group relative p-3.5 rounded-xl border-2 text-left transition-all duration-200 ${
-                  selectedProvider === p.id
-                    ? 'border-primary bg-primary/5 shadow-sm shadow-primary/10'
-                    : 'border-border/60 hover:border-primary/40 hover:bg-accent/50'
-                }`}
               >
-                <div className="flex items-center gap-2.5">
-                  <img src={p.logo} alt={p.name} className="h-6 w-6 shrink-0 rounded" />
-                  <span className="text-xs font-semibold leading-tight text-foreground">
-                    {p.name}
-                  </span>
-                </div>
+                <CardContent className="p-0">
+                  <div className="flex items-center gap-2.5">
+                    <img src={p.logo} alt={p.name} className="h-6 w-6 shrink-0 rounded" />
+                    <span className="text-xs font-semibold leading-tight text-foreground">
+                      {p.name}
+                    </span>
+                  </div>
+                </CardContent>
                 {selectedProvider === p.id && (
                   <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary animate-pulse" />
                 )}
-              </button>
+              </Card>
             ))}
           </div>
 
@@ -309,7 +310,7 @@ export default function AiKeysSettingsPage() {
       </Card>
 
       {/* API Key Input */}
-      <Card>
+      <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
           <CardTitle>API-ключ</CardTitle>
           <CardDescription>
@@ -347,7 +348,7 @@ export default function AiKeysSettingsPage() {
 
           {/* API Key input */}
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+            <label className="block text-xs font-medium text-foreground-muted mb-1.5">
               API-ключ {currentProvider?.keyPlaceholder && `(${currentProvider.keyPlaceholder})`}
             </label>
             <div className="flex gap-2">
@@ -419,8 +420,8 @@ export default function AiKeysSettingsPage() {
 
           {/* Save error (previously swallowed silently) */}
           {saveError && (
-            <div className="p-3 rounded-xl border border-red-500/30 bg-red-500/5">
-              <p className="text-sm font-medium text-red-800 dark:text-red-200">Не збережено</p>
+            <div className="p-3 rounded-xl border border-danger/30 bg-danger/5">
+              <p className="text-sm font-medium text-danger">Не збережено</p>
               <p className="text-xs text-foreground-muted mt-0.5">{saveError}</p>
             </div>
           )}
@@ -430,22 +431,20 @@ export default function AiKeysSettingsPage() {
             <div
               className={`p-3 rounded-xl border ${
                 testResult.status === 'connected'
-                  ? 'border-green-500/30 bg-green-500/5'
-                  : 'border-red-500/30 bg-red-500/5'
+                  ? 'border-success/30 bg-success/5'
+                  : 'border-danger/30 bg-danger/5'
               }`}
             >
               <div className="flex items-start gap-2.5">
                 {testResult.status === 'connected' ? (
-                  <Check className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
+                  <Check className="w-4 h-4 text-success mt-0.5 shrink-0" />
                 ) : (
-                  <X className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />
+                  <X className="w-4 h-4 text-danger mt-0.5 shrink-0" />
                 )}
                 <div>
                   <p
                     className={`text-sm font-medium ${
-                      testResult.status === 'connected'
-                        ? 'text-green-800 dark:text-green-200'
-                        : 'text-red-800 dark:text-red-200'
+                      testResult.status === 'connected' ? 'text-success' : 'text-danger'
                     }`}
                   >
                     {testResult.status === 'connected' ? 'Підключено' : 'Помилка'}
@@ -459,7 +458,7 @@ export default function AiKeysSettingsPage() {
       </Card>
 
       {/* Saved keys per provider */}
-      <Card>
+      <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
           <CardTitle>Збережені ключі</CardTitle>
           <CardDescription>
@@ -470,40 +469,62 @@ export default function AiKeysSettingsPage() {
           {keysError ? (
             <DataError message={keysError} onRetry={refreshSavedKeys} />
           ) : keysLoading ? (
-            <p className="text-sm text-foreground-muted animate-pulse">Завантаження...</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Skeleton className="h-28 rounded-xl" />
+              <Skeleton className="h-28 rounded-xl" />
+            </div>
           ) : savedKeys.length === 0 ? (
             <p className="text-sm text-foreground-muted">Поки що немає збережених ключів.</p>
           ) : (
-            <div className="space-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {savedKeys.map((k) => (
-                <div
-                  key={k.provider}
-                  className="flex items-center gap-3 rounded-xl border border-border/60 px-3 py-2.5"
-                >
-                  <span className="text-sm font-semibold flex-1">
-                    {getProvider(k.provider)?.name || k.provider}
-                  </span>
-                  <code className="text-xs font-mono text-foreground-muted">{k.maskedKey}</code>
-                  {selectedProvider === k.provider ? (
-                    <Badge>Активний</Badge>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleActivateKey(k.provider)}
-                    >
-                      Активувати
-                    </Button>
-                  )}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDeleteKey(k.provider)}
-                    className="text-danger hover:text-danger"
-                  >
-                    Видалити
-                  </Button>
-                </div>
+                <Card key={k.provider} className="bg-card border-border shadow-sm rounded-xl">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        {getProvider(k.provider)?.logo ? (
+                          <img
+                            src={getProvider(k.provider)!.logo}
+                            alt=""
+                            className="h-5 w-5 shrink-0 rounded"
+                          />
+                        ) : (
+                          <Key className="h-4 w-4 shrink-0 text-foreground-muted" />
+                        )}
+                        <span className="text-sm font-semibold truncate">
+                          {getProvider(k.provider)?.name || k.provider}
+                        </span>
+                      </div>
+                      {selectedProvider === k.provider ? (
+                        <Badge variant="success">Активний</Badge>
+                      ) : (
+                        <Badge variant="secondary">Збережено</Badge>
+                      )}
+                    </div>
+                    <code className="block text-xs font-mono text-foreground-muted">
+                      {k.maskedKey}
+                    </code>
+                    <div className="flex justify-end gap-2">
+                      {selectedProvider !== k.provider && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleActivateKey(k.provider)}
+                        >
+                          Активувати
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteKey(k.provider)}
+                        className="text-danger hover:text-danger"
+                      >
+                        Видалити
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           )}
@@ -511,7 +532,7 @@ export default function AiKeysSettingsPage() {
       </Card>
 
       {/* Fallback Provider */}
-      <Card>
+      <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
           <CardTitle>Резервний провайдер</CardTitle>
           <CardDescription>

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
 import { DataError } from '@/components/data-error';
-import { Card, CardContent, CardHeader, CardTitle, Skeleton } from '@/components/ui';
+import { Card, CardContent, CardHeader, CardTitle, Progress, Skeleton } from '@/components/ui';
 
 interface UsageData {
   today: { requests: number; limit: number; percentage: number };
@@ -54,17 +54,17 @@ export default function AiUsagePage() {
   };
 
   const getProgressColor = (pct: number): string => {
-    if (pct >= 100) return 'bg-red-500';
-    if (pct >= 90) return 'bg-amber-500';
-    if (pct >= 70) return 'bg-yellow-500';
-    return 'bg-green-500';
+    if (pct >= 100) return 'bg-danger';
+    if (pct >= 90) return 'bg-warning';
+    if (pct >= 70) return 'bg-primary';
+    return 'bg-success';
   };
 
   if (loading) {
     return (
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="flex items-center gap-3">
-          <Link href="/dashboard/settings" className="text-muted-foreground hover:text-foreground">
+          <Link href="/dashboard/settings" className="text-foreground-muted hover:text-foreground">
             ← Назад
           </Link>
           <h1 className="text-2xl font-bold">Використання AI</h1>
@@ -80,7 +80,7 @@ export default function AiUsagePage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/dashboard/settings" className="text-muted-foreground hover:text-foreground">
+        <Link href="/dashboard/settings" className="text-foreground-muted hover:text-foreground">
           ← Назад
         </Link>
         <h1 className="text-2xl font-bold">Використання AI</h1>
@@ -89,7 +89,7 @@ export default function AiUsagePage() {
       {loadError && <DataError message={loadError} onRetry={loadUsage} />}
 
       {/* Today's Usage */}
-      <Card>
+      <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="w-5 h-5" />
@@ -112,12 +112,11 @@ export default function AiUsagePage() {
 
               {/* Progress bar */}
               <div className="space-y-2">
-                <div className="h-3 bg-accent rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-500 ${getProgressColor(data.today.percentage)}`}
-                    style={{ width: `${Math.min(data.today.percentage, 100)}%` }}
-                  />
-                </div>
+                <Progress
+                  value={data.today.percentage}
+                  className="h-3"
+                  indicatorClassName={getProgressColor(data.today.percentage)}
+                />
                 <div className="flex justify-between text-xs text-foreground-muted">
                   <span>{data.today.percentage}% використано</span>
                   <span>{data.today.limit - data.today.requests} залишилось</span>
@@ -125,18 +124,18 @@ export default function AiUsagePage() {
               </div>
 
               {data.limitStatus?.isWarning && (
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                  <AlertTriangle className="w-4 h-4 text-amber-600" />
-                  <p className="text-sm text-amber-700 dark:text-amber-300">
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-warning/10 border border-warning/20">
+                  <AlertTriangle className="w-4 h-4 text-warning" />
+                  <p className="text-sm text-warning">
                     Увага! Використано {data.today.percentage}% денного ліміту.
                   </p>
                 </div>
               )}
 
               {data.limitStatus?.isExceeded && (
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
-                  <AlertTriangle className="w-4 h-4 text-red-600" />
-                  <p className="text-sm text-red-700 dark:text-red-300">
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-danger/10 border border-danger/20">
+                  <AlertTriangle className="w-4 h-4 text-danger" />
+                  <p className="text-sm text-danger">
                     Денний ліміт вичерпано. Нові AI-запити будуть відхилені до{' '}
                     {new Date(data.limitStatus.resetAt).toLocaleTimeString('uk')}.
                   </p>
@@ -150,7 +149,7 @@ export default function AiUsagePage() {
       </Card>
 
       {/* Monthly Stats */}
-      <Card>
+      <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="w-5 h-5" />
@@ -180,7 +179,7 @@ export default function AiUsagePage() {
       </Card>
 
       {/* By Provider */}
-      <Card>
+      <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
           <CardTitle>По провайдерах</CardTitle>
         </CardHeader>

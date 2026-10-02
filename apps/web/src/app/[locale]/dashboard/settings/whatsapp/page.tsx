@@ -1,9 +1,10 @@
 'use client';
 
+import { Check, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
-import { Button, Card, CardContent, Input } from '@/components/ui';
+import { Badge, Button, Card, CardContent, Input, Skeleton } from '@/components/ui';
 
 interface WhatsAppConfig {
   configured: boolean;
@@ -89,7 +90,7 @@ export default function WhatsAppSettingsPage() {
   if (loading) {
     return (
       <div className="max-w-2xl mx-auto space-y-6">
-        <div className="h-40 bg-muted rounded-lg animate-pulse" />
+        <Skeleton className="h-40 rounded-lg" />
       </div>
     );
   }
@@ -105,7 +106,14 @@ export default function WhatsAppSettingsPage() {
             ← Налаштування
           </Link>
         </div>
-        <h1 className="text-2xl font-bold">WhatsApp Business</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold">WhatsApp Business</h1>
+          {config?.configured ? (
+            <Badge variant="success">Підключено</Badge>
+          ) : (
+            <Badge variant="secondary">Не налаштовано</Badge>
+          )}
+        </div>
         <p className="text-foreground-muted">
           Підключіть WhatsApp Business API для спілкування з клієнтами
         </p>
@@ -123,19 +131,11 @@ export default function WhatsAppSettingsPage() {
       )}
 
       {config?.configured ? (
-        <Card>
+        <Card className="bg-card border-border shadow-sm rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="h-12 w-12 rounded-xl bg-success-light flex items-center justify-center">
-                <svg
-                  className="h-6 w-6 text-success"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
+                <Check className="h-6 w-6 text-success" />
               </div>
               <div className="flex-1">
                 <h3 className="font-medium">WhatsApp підключено</h3>
@@ -192,19 +192,11 @@ export default function WhatsAppSettingsPage() {
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <Card className="bg-card border-border shadow-sm rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4 mb-6">
               <div className="h-12 w-12 rounded-xl bg-success/10 flex items-center justify-center">
-                <svg
-                  className="h-6 w-6 text-success"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-                </svg>
+                <MessageCircle className="h-6 w-6 text-success" />
               </div>
               <div>
                 <h3 className="font-medium">Підключити WhatsApp Business</h3>
@@ -239,7 +231,7 @@ export default function WhatsAppSettingsPage() {
             <form onSubmit={handleSetup} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  <label className="block text-xs font-medium text-foreground-muted mb-1">
                     API Key
                   </label>
                   <Input
@@ -251,7 +243,7 @@ export default function WhatsAppSettingsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  <label className="block text-xs font-medium text-foreground-muted mb-1">
                     App ID
                   </label>
                   <Input
@@ -263,7 +255,7 @@ export default function WhatsAppSettingsPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                <label className="block text-xs font-medium text-foreground-muted mb-1">
                   Phone Number ID
                 </label>
                 <Input
@@ -275,7 +267,7 @@ export default function WhatsAppSettingsPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  <label className="block text-xs font-medium text-foreground-muted mb-1">
                     Номер телефону
                   </label>
                   <Input
@@ -286,7 +278,7 @@ export default function WhatsAppSettingsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  <label className="block text-xs font-medium text-foreground-muted mb-1">
                     WABA ID
                   </label>
                   <Input
@@ -306,7 +298,7 @@ export default function WhatsAppSettingsPage() {
       )}
 
       {/* Features */}
-      <Card>
+      <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardContent className="p-5">
           <h3 className="font-medium mb-3">Можливості</h3>
           <ul className="text-sm text-foreground-muted space-y-2">

@@ -4,10 +4,10 @@
 
 'use client';
 
-import { Shield, ShieldCheck, ShieldOff, Copy, Check } from 'lucide-react';
+import { Shield, ShieldCheck, ShieldOff, Copy, Check, QrCode } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
-import { Card, CardContent, Button, Input } from '@/components/ui';
+import { Button, Card, CardContent, Input, Separator, Skeleton } from '@/components/ui';
 
 export default function TwoFactorSettingsPage() {
   const [enabled, setEnabled] = useState(false);
@@ -115,8 +115,8 @@ export default function TwoFactorSettingsPage() {
   if (loading) {
     return (
       <div className="max-w-2xl mx-auto space-y-6">
-        <div className="h-8 bg-muted rounded w-1/3" />
-        <div className="h-48 bg-muted rounded-lg" />
+        <Skeleton className="h-8 w-1/3 rounded" />
+        <Skeleton className="h-48 rounded-lg" />
       </div>
     );
   }
@@ -136,7 +136,7 @@ export default function TwoFactorSettingsPage() {
       )}
 
       {/* Status */}
-      <Card>
+      <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardContent className="p-5">
           <div className="flex items-center gap-4">
             <div className={`p-3 rounded-2xl ${enabled ? 'bg-success/10' : 'bg-secondary'}`}>
@@ -170,27 +170,45 @@ export default function TwoFactorSettingsPage() {
 
       {/* Setup flow */}
       {step === 'setup' && (
-        <Card>
+        <Card className="bg-card border-border shadow-sm rounded-xl">
           <CardContent className="p-5 space-y-4">
             <h3 className="font-semibold">Крок 1: Додайте секретний ключ</h3>
             <p className="text-sm text-foreground-muted">
               Скопіюйте цей ключ та додайте його в додаток автентифікації (Google Authenticator,
               Authy, тощо)
             </p>
-            <div className="flex items-center gap-2">
-              <code className="flex-1 p-3 bg-secondary rounded-lg text-sm font-mono break-all">
-                {secret}
-              </code>
-              <button
-                onClick={copySecret}
-                className="p-2 rounded-lg hover:bg-secondary transition-colors"
-              >
-                {copied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
-              </button>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              <div className="flex h-32 w-32 shrink-0 flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-background">
+                <QrCode className="h-10 w-10 text-foreground-muted" />
+                <span className="text-[10px] text-foreground-muted">QR-код</span>
+              </div>
+              <div className="flex-1 space-y-2">
+                <p className="text-xs text-foreground-muted">
+                  QR-код генерується на сервері — поки що введіть ключ вручну
+                </p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 p-3 bg-secondary rounded-lg text-sm font-mono break-all">
+                    {secret}
+                  </code>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={copySecret}
+                    aria-label="Скопіювати секретний ключ"
+                  >
+                    {copied ? (
+                      <Check className="h-4 w-4 text-success" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
             </div>
 
-            <div className="pt-4 border-t border-border">
-              <h3 className="font-semibold mb-2">Крок 2: Підтвердіть кодом</h3>
+            <div className="pt-4 space-y-4">
+              <Separator />
+              <h3 className="font-semibold">Крок 2: Підтвердіть кодом</h3>
               <p className="text-sm text-foreground-muted mb-3">
                 Введіть 6-значний код з додатку автентифікації
               </p>
@@ -213,7 +231,7 @@ export default function TwoFactorSettingsPage() {
 
       {/* Disable flow */}
       {step === 'disable' && enabled && (
-        <Card className="border-danger">
+        <Card className="border-danger bg-card shadow-sm rounded-xl">
           <CardContent className="p-5 space-y-4">
             <h3 className="font-semibold text-danger">Вимкнути 2FA</h3>
             <p className="text-sm text-foreground-muted">
@@ -240,7 +258,7 @@ export default function TwoFactorSettingsPage() {
       )}
 
       {/* Info */}
-      <Card>
+      <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardContent className="p-5">
           <h3 className="font-semibold mb-3">Як це працює</h3>
           <ul className="space-y-2 text-sm text-foreground-muted">

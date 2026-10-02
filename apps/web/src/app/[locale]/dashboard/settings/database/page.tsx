@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 
-import { Card, CardContent, Button } from '@/components/ui';
+import { Button, Card, CardContent, Input, Label, Separator } from '@/components/ui';
 
 type DatabaseType = 'shared' | 'postgresql' | 'mysql' | 'mariadb' | 'sqlserver';
 
@@ -39,6 +39,23 @@ export default function DatabaseSettingsPage() {
   } | null>(null);
   const [message, setMessage] = useState('');
   const [loadError, setLoadError] = useState(false);
+  // Класична форма параметрів з'єднання — збирає databaseUrl на клієнті
+  const [dbForm, setDbForm] = useState({ host: '', port: '', user: '', password: '', dbname: '' });
+
+  const schemeFor = (t: DatabaseType) =>
+    t === 'postgresql' ? 'postgresql' : t === 'sqlserver' ? 'sqlserver' : 'mysql';
+  const defaultPortFor = (t: DatabaseType) =>
+    t === 'postgresql' ? '5432' : t === 'sqlserver' ? '1433' : '3306';
+
+  const updateDbField = (field: keyof typeof dbForm, value: string) => {
+    const next = { ...dbForm, [field]: value };
+    setDbForm(next);
+    if (next.host && next.user && next.dbname) {
+      const port = next.port || defaultPortFor(selectedType);
+      const creds = `${encodeURIComponent(next.user)}:${encodeURIComponent(next.password)}`;
+      setDatabaseUrl(`${schemeFor(selectedType)}://${creds}@${next.host}:${port}/${next.dbname}`);
+    }
+  };
 
   useEffect(() => {
     fetch('/api/tenant/database')
@@ -143,14 +160,14 @@ export default function DatabaseSettingsPage() {
       </div>
 
       {loadError && (
-        <p className="text-sm text-destructive">
+        <p className="text-sm text-danger">
           Не вдалося завантажити поточний конфіг — показано значення за замовчуванням
         </p>
       )}
 
       {/* Current Status */}
       {config && (
-        <Card>
+        <Card className="bg-card border-border shadow-sm rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <div>
@@ -162,31 +179,29 @@ export default function DatabaseSettingsPage() {
                   </span>
                 </p>
                 {config.lastError && (
-                  <p className="text-sm text-red-500 mt-1">Помилка: {config.lastError}</p>
+                  <p className="text-sm text-danger mt-1">Помилка: {config.lastError}</p>
                 )}
               </div>
-              <div
-                className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  config.type === 'shared'
-                    ? 'bg-secondary text-foreground-muted'
-                    : config.status === 'active'
-                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                      : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                }`}
-              >
-                {config.type === 'shared'
-                  ? 'Спільна'
-                  : config.status === 'active'
-                    ? 'Підключено'
-                    : 'Помилка'}
-              </div>
+              {config.type === 'shared' ? (
+                <span className="px-3 py-1 rounded-full text-sm font-medium bg-secondary text-foreground-muted">
+                  Спільна
+                </span>
+              ) : config.status === 'active' ? (
+                <span className="px-3 py-1 rounded-full text-sm font-medium bg-success/10 text-success">
+                  Підключено
+                </span>
+              ) : (
+                <span className="px-3 py-1 rounded-full text-sm font-medium bg-danger/10 text-danger">
+                  Помилка
+                </span>
+              )}
             </div>
           </CardContent>
         </Card>
       )}
 
       {/* Database Type Selection */}
-      <Card>
+      <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardContent className="p-5 space-y-4">
           <h3 className="font-medium">Тип бази даних</h3>
           <div className="grid gap-3">
@@ -217,89 +232,162 @@ export default function DatabaseSettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Connection URL (for external databases) */}
+      {/* Connection (for external databases) */}
       {selectedType !== 'shared' && (
-        <Card>
-          <CardContent className="p-5 space-y-4">
-            <h3 className="font-medium">Строка підключення</h3>
-            <p className="text-sm text-foreground-muted">
-              {selectedType === 'postgresql' && 'postgresql://user:password@host:5432/database'}
-              {selectedType === 'mysql' && 'mysql://user:password@host:3306/database'}
-              {selectedType === 'mariadb' && 'mysql://user:password@host:3306/database'}
-              {selectedType === 'sqlserver' && 'sqlserver://user:password@host:1433/database'}
-            </p>
-            <input
-              type="text"
-              value={databaseUrl}
-              onChange={(e) => setDatabaseUrl(e.target.value)}
-              placeholder={
-                selectedType === 'postgresql'
-                  ? 'postgresql://user:password@localhost:5432/mydb'
-                  : selectedType === 'mysql' || selectedType === 'mariadb'
-                    ? 'mysql://user:password@localhost:3306/mydb'
-                    : 'sqlserver://user:password@localhost:1433/mydb'
-              }
-              className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-            />
-
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={handleTest} disabled={!databaseUrl || testing}>
-                {testing ? 'Тестування...' : "Тестувати з'єднання"}
-              </Button>
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? 'Збереження...' : 'Зберегти'}
-              </Button>
-              {config?.hasExternalDb && (
-                <Button variant="destructive" onClick={handleDisconnect} disabled={saving}>
-                  Відключити
-                </Button>
-              )}
+        <Card className="bg-card border-border shadow-sm rounded-xl">
+          <CardContent className="space-y-5">
+            {/* Classic field form (ТЗ): Host, Port, User, Password, DB Name */}
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-medium">Параметри з&apos;єднання</h3>
+                <p className="text-sm text-foreground-muted">
+                  Заповніть хост, користувача та назву бази — CRM збере рядок підключення
+                  автоматично
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2 space-y-1.5">
+                  <Label htmlFor="db-host" className="text-xs text-foreground-muted">
+                    Хост (Host)
+                  </Label>
+                  <Input
+                    id="db-host"
+                    placeholder="db.example.com"
+                    value={dbForm.host}
+                    onChange={(e) => updateDbField('host', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="db-port" className="text-xs text-foreground-muted">
+                    Порт
+                  </Label>
+                  <Input
+                    id="db-port"
+                    inputMode="numeric"
+                    placeholder={defaultPortFor(selectedType)}
+                    value={dbForm.port}
+                    onChange={(e) => updateDbField('port', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="db-name" className="text-xs text-foreground-muted">
+                    Назва бази
+                  </Label>
+                  <Input
+                    id="db-name"
+                    placeholder="mydb"
+                    value={dbForm.dbname}
+                    onChange={(e) => updateDbField('dbname', e.target.value)}
+                  />
+                </div>
+                <div className="col-span-2 space-y-1.5">
+                  <Label htmlFor="db-user" className="text-xs text-foreground-muted">
+                    Користувач
+                  </Label>
+                  <Input
+                    id="db-user"
+                    placeholder="crm_user"
+                    value={dbForm.user}
+                    onChange={(e) => updateDbField('user', e.target.value)}
+                  />
+                </div>
+                <div className="col-span-2 space-y-1.5">
+                  <Label htmlFor="db-password" className="text-xs text-foreground-muted">
+                    Пароль
+                  </Label>
+                  <Input
+                    id="db-password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={dbForm.password}
+                    onChange={(e) => updateDbField('password', e.target.value)}
+                  />
+                </div>
+              </div>
             </div>
 
-            {/* Test Result */}
-            {testResult && (
-              <div
-                className={`p-4 rounded-lg ${
-                  testResult.success
-                    ? 'bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-800'
-                    : 'bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-800'
-                }`}
-              >
-                {testResult.success ? (
-                  <div>
-                    <p className="text-green-700 dark:text-green-400 font-medium">
-                      З&apos;єднання успішне!
-                    </p>
-                    {testResult.version && (
-                      <p className="text-sm text-green-600 dark:text-green-500 mt-1">
-                        Версія: {testResult.version}
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-red-700 dark:text-red-400">{testResult.error}</p>
+            <Separator />
+
+            {/* Manual connection string */}
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-medium">Або готовий рядок підключення</h3>
+                <p className="text-sm text-foreground-muted">
+                  {selectedType === 'postgresql' && 'postgresql://user:password@host:5432/database'}
+                  {selectedType === 'mysql' && 'mysql://user:password@host:3306/database'}
+                  {selectedType === 'mariadb' && 'mysql://user:password@host:3306/database'}
+                  {selectedType === 'sqlserver' && 'sqlserver://user:password@host:1433/database'}
+                </p>
+              </div>
+              <Input
+                type="text"
+                value={databaseUrl}
+                onChange={(e) => setDatabaseUrl(e.target.value)}
+                placeholder={
+                  selectedType === 'postgresql'
+                    ? 'postgresql://user:password@localhost:5432/mydb'
+                    : selectedType === 'mysql' || selectedType === 'mariadb'
+                      ? 'mysql://user:password@localhost:3306/mydb'
+                      : 'sqlserver://user:password@localhost:1433/mydb'
+                }
+                className="font-mono text-sm"
+              />
+
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={handleTest} disabled={!databaseUrl || testing}>
+                  {testing ? 'Тестування...' : "Тестувати з'єднання"}
+                </Button>
+                <Button onClick={handleSave} disabled={saving}>
+                  {saving ? 'Збереження...' : 'Зберегти'}
+                </Button>
+                {config?.hasExternalDb && (
+                  <Button variant="destructive" onClick={handleDisconnect} disabled={saving}>
+                    Відключити
+                  </Button>
                 )}
               </div>
-            )}
 
-            {/* Save Message */}
-            {message && (
-              <div
-                className={`p-4 rounded-lg ${
-                  message.includes('Помилка')
-                    ? 'bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-800 text-red-700 dark:text-red-400'
-                    : 'bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-800 text-green-700 dark:text-green-400'
-                }`}
-              >
-                {message}
-              </div>
-            )}
+              {/* Test Result */}
+              {testResult && (
+                <div
+                  className={`p-4 rounded-lg border ${
+                    testResult.success
+                      ? 'bg-success/10 border-success/20'
+                      : 'bg-danger/10 border-danger/20'
+                  }`}
+                >
+                  {testResult.success ? (
+                    <div>
+                      <p className="text-success font-medium">З&apos;єднання успішне!</p>
+                      {testResult.version && (
+                        <p className="text-sm text-success mt-1">Версія: {testResult.version}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-danger">{testResult.error}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Save Message */}
+              {message && (
+                <div
+                  className={`p-4 rounded-lg border ${
+                    message.includes('Помилка')
+                      ? 'bg-danger/10 border-danger/20 text-danger'
+                      : 'bg-success/10 border-success/20 text-success'
+                  }`}
+                >
+                  {message}
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}
 
       {/* Info Card */}
-      <Card>
+      <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardContent className="p-5">
           <h3 className="font-medium mb-3">Як це працює?</h3>
           <ul className="space-y-2 text-sm text-foreground-muted">

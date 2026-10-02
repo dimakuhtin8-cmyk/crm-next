@@ -1,13 +1,13 @@
 'use client';
 
-import { Download, Check, X, Clock, Receipt } from 'lucide-react';
+import { Download, Receipt } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
 import { DataError } from '@/components/data-error';
-import { Card, CardContent, Skeleton } from '@/components/ui';
+import { Badge, Button, Card, CardContent, Skeleton, Table } from '@/components/ui';
 
-interface Payment {
+type Payment = {
   id: string;
   stripePaymentId: string | null;
   stripeInvoiceId: string | null;
@@ -19,7 +19,7 @@ interface Payment {
   periodEnd: string | null;
   invoiceUrl: string | null;
   createdAt: string;
-}
+};
 
 interface PaymentsResponse {
   payments: Payment[];
@@ -27,6 +27,23 @@ interface PaymentsResponse {
   page: number;
   limit: number;
 }
+
+const STATUS_LABELS: Record<string, string> = {
+  succeeded: 'Сплачено',
+  failed: 'Помилка',
+  pending: 'Очікує',
+  refunded: 'Повернення',
+};
+
+const STATUS_VARIANTS: Record<
+  string,
+  'default' | 'secondary' | 'success' | 'warning' | 'danger' | 'info'
+> = {
+  succeeded: 'success',
+  failed: 'danger',
+  pending: 'warning',
+  refunded: 'info',
+};
 
 export default function PaymentHistoryPage() {
   const [data, setData] = useState<PaymentsResponse | null>(null);
@@ -60,43 +77,13 @@ export default function PaymentHistoryPage() {
     }).format(cents / 100);
   };
 
-  const statusIcon = (status: string) => {
-    switch (status) {
-      case 'succeeded':
-        return <Check className="w-4 h-4 text-success" />;
-      case 'failed':
-        return <X className="w-4 h-4 text-danger" />;
-      case 'pending':
-        return <Clock className="w-4 h-4 text-warning" />;
-      case 'refunded':
-        return <X className="w-4 h-4 text-warning" />;
-      default:
-        return null;
-    }
-  };
-
-  const statusLabel = (status: string) => {
-    switch (status) {
-      case 'succeeded':
-        return 'Успішно';
-      case 'failed':
-        return 'Помилка';
-      case 'pending':
-        return 'Очікує';
-      case 'refunded':
-        return 'Повернення';
-      default:
-        return status;
-    }
-  };
-
   if (loading) {
     return (
       <div className="max-w-3xl mx-auto space-y-6">
         <div className="flex items-center gap-3">
           <Link
             href="/dashboard/settings/billing"
-            className="text-muted-foreground hover:text-foreground"
+            className="text-foreground-muted hover:text-foreground"
           >
             ← Назад
           </Link>
@@ -116,79 +103,102 @@ export default function PaymentHistoryPage() {
       <div className="flex items-center gap-3">
         <Link
           href="/dashboard/settings/billing"
-          className="text-muted-foreground hover:text-foreground"
+          className="text-foreground-muted hover:text-foreground"
         >
           ← Назад
         </Link>
         <h1 className="text-2xl font-bold">Історія платежів</h1>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          {loadError ? (
-            <div className="p-4">
-              <DataError message={loadError} onRetry={loadInvoices} />
-            </div>
-          ) : data && data.payments.length > 0 ? (
-            <div className="divide-y divide-border">
-              {data.payments.map((payment) => (
-                <div
-                  key={payment.id}
-                  className="flex items-center justify-between p-4 hover:bg-accent/30 transition-colors"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-accent/50">
-                      <Receipt className="w-5 h-5 text-foreground-muted" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">
-                        {payment.description || 'Оплата підписки'}
-                      </p>
-                      <p className="text-xs text-foreground-muted">
-                        {new Date(payment.createdAt).toLocaleDateString('uk', {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric',
-                        })}
-                      </p>
-                    </div>
-                  </div>
+      {loadError ? (
+        <Card className="bg-card border-border shadow-sm rounded-xl">
+          <CardContent className="p-4">
+            <DataError message={loadError} onRetry={loadInvoices} />
+          </CardContent>
+        </Card>
+      ) : (
+        <Table<Payment>
+          data={data?.payments ?? []}
+          columns={[
+            {
+              key: 'createdAt',
+              header: 'Дата',
+              render: (row) => (
+                <span className="whitespace-nowrap text-sm text-foreground-muted">
+                  {new Date(row.createdAt).toLocaleDateString('uk', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  })}
+                </span>
+              ),
+            },
+            {
+              key: 'stripeInvoiceId',
+              header: 'Рахунок',
+              render: (row) => (
+                <span className="font-mono text-xs text-foreground-muted">
+                  {row.stripeInvoiceId || '—'}
+                </span>
+              ),
+            },
+            {
+              key: 'description',
+              header: 'Опис',
+              render: (row) => (
+                <span className="text-sm">{row.description || 'Оплата підписки'}</span>
+              ),
+            },
+            {
+              key: 'amount',
+              header: 'Сума',
+              className: 'text-right',
+              render: (row) => (
+                <span className="text-sm font-semibold">
+                  {formatAmount(row.amount, row.currency)}
+                </span>
+              ),
+            },
+            {
+              key: 'status',
+              header: 'Статус',
+              render: (row) => (
+                <Badge variant={STATUS_VARIANTS[row.status] ?? 'secondary'}>
+                  {STATUS_LABELS[row.status] || row.status}
+                </Badge>
+              ),
+            },
+            {
+              key: 'actions',
+              header: '',
+              className: 'w-12 text-right',
+              render: (row) =>
+                row.invoiceUrl ? (
+                  <Button variant="ghost" size="sm" asChild title="Завантажити рахунок">
+                    <a
+                      href={row.invoiceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="Завантажити рахунок"
+                    >
+                      <Download className="w-4 h-4" />
+                    </a>
+                  </Button>
+                ) : (
+                  <span className="text-foreground-muted">—</span>
+                ),
+            },
+          ]}
+          emptyMessage="Немає платежів"
+        />
+      )}
 
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1.5">
-                      {statusIcon(payment.status)}
-                      <span className="text-xs text-foreground-muted">
-                        {statusLabel(payment.status)}
-                      </span>
-                    </div>
-
-                    <p className="text-sm font-semibold w-24 text-right">
-                      {formatAmount(payment.amount, payment.currency)}
-                    </p>
-
-                    {payment.invoiceUrl && (
-                      <a
-                        href={payment.invoiceUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 rounded-lg hover:bg-accent transition-colors"
-                        title="Завантажити рахунок"
-                      >
-                        <Download className="w-4 h-4 text-foreground-muted" />
-                      </a>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="p-5 text-center">
-              <Receipt className="w-10 h-10 mx-auto text-foreground-muted/40 mb-3" />
-              <p className="text-sm text-foreground-muted">Немає платежів</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {data && data.payments.length === 0 && !loadError && (
+        <div className="text-center">
+          <Receipt className="w-10 h-10 mx-auto text-foreground-muted/40 mb-3" />
+          <p className="text-sm text-foreground-muted">Рахунків поки що немає</p>
+        </div>
+      )}
     </div>
   );
 }

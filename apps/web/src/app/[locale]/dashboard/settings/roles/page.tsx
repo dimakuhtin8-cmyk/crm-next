@@ -1,10 +1,18 @@
 'use client';
 
-import { Shield, Check, X, Users, Crown, Eye } from 'lucide-react';
+import { Shield, Users, Crown, Eye } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Checkbox,
+  Table,
+} from '@/components/ui';
 import { ROLE_HIERARCHY, PERMISSION_CATEGORIES, type TenantRole } from '@/lib/rbac';
 
 const ROLE_CONFIG: Record<
@@ -31,14 +39,36 @@ const ROLE_CONFIG: Record<
   },
   viewer: {
     label: 'Глядач',
-    color: 'bg-muted text-muted-foreground',
+    color: 'bg-secondary text-foreground-muted',
     icon: <Eye className="w-4 h-4" />,
     description: 'Тільки перегляд даних',
   },
 };
 
+type MatrixAction = 'read' | 'write' | 'delete';
+
+const actionOf = (perm: string): MatrixAction => {
+  const suffix = perm.split(':')[1];
+  if (suffix === 'read') return 'read';
+  if (suffix === 'delete' || suffix === 'remove') return 'delete';
+  return 'write';
+};
+
+type MatrixRow = {
+  id: string;
+  module: string;
+  read: boolean;
+  write: boolean;
+  delete: boolean;
+  hasRead: boolean;
+  hasWrite: boolean;
+  hasDelete: boolean;
+};
+
 export default function RolesSettingsPage() {
   const [selectedRole, setSelectedRole] = useState<string>('member');
+  // Локальні правки матриці (демонстраційні — рольову модель визначає сервер)
+  const [overrides, setOverrides] = useState<Record<string, boolean>>({});
 
   const rolePermissions: Record<string, string[]> = {
     owner: PERMISSION_CATEGORIES.flatMap((c) => c.permissions),
@@ -72,10 +102,55 @@ export default function RolesSettingsPage() {
     ],
   };
 
+  const selectRole = (key: string) => {
+    setSelectedRole(key);
+    setOverrides({});
+  };
+
+  const buildRows = (): MatrixRow[] => {
+    const perms = rolePermissions[selectedRole] || [];
+    return PERMISSION_CATEGORIES.map((category) => {
+      const exists = (action: MatrixAction) =>
+        category.permissions.some((p) => actionOf(p) === action);
+      const granted = (action: MatrixAction) =>
+        category.permissions.some((p) => actionOf(p) === action && perms.includes(p));
+      const checked = (action: MatrixAction) =>
+        overrides[`${category.name}:${action}`] ?? granted(action);
+      return {
+        id: category.name,
+        module: category.name,
+        read: checked('read'),
+        write: checked('write'),
+        delete: checked('delete'),
+        hasRead: exists('read'),
+        hasWrite: exists('write'),
+        hasDelete: exists('delete'),
+      };
+    });
+  };
+
+  const toggleCell = (row: MatrixRow, action: MatrixAction) => {
+    if (action === 'read' && !row.hasRead) return;
+    if (action === 'write' && !row.hasWrite) return;
+    if (action === 'delete' && !row.hasDelete) return;
+    setOverrides((prev) => ({ ...prev, [`${row.id}:${action}`]: !row[action] }));
+  };
+
+  const renderCheckbox = (action: MatrixAction) => (row: MatrixRow) => (
+    <Checkbox
+      checked={row[action]}
+      disabled={
+        action === 'read' ? !row.hasRead : action === 'write' ? !row.hasWrite : !row.hasDelete
+      }
+      onCheckedChange={() => toggleCell(row, action)}
+      aria-label={`${row.module}: ${action}`}
+    />
+  );
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/dashboard/settings" className="text-muted-foreground hover:text-foreground">
+        <Link href="/dashboard/settings" className="text-foreground-muted hover:text-foreground">
           ← Назад
         </Link>
         <h1 className="text-2xl font-bold">Ролі та права доступу</h1>
@@ -86,10 +161,10 @@ export default function RolesSettingsPage() {
         {Object.entries(ROLE_CONFIG).map(([key, config]) => (
           <Card
             key={key}
-            className={`cursor-pointer transition-all hover:shadow-md ${
+            className={`bg-card border-border shadow-sm rounded-xl cursor-pointer transition-all hover:shadow-md ${
               selectedRole === key ? 'border-primary ring-1 ring-primary/20' : ''
             }`}
-            onClick={() => setSelectedRole(key)}
+            onClick={() => selectRole(key)}
           >
             <CardContent className="p-4 text-center">
               <div
@@ -108,49 +183,34 @@ export default function RolesSettingsPage() {
       </div>
 
       {/* Permission Matrix */}
-      <Card>
+      <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
           <CardTitle>Матриця прав: {ROLE_CONFIG[selectedRole]?.label}</CardTitle>
           <CardDescription>
-            Права доступу для ролі "{ROLE_CONFIG[selectedRole]?.label}"
+            Доступ ролі «{ROLE_CONFIG[selectedRole]?.label}» за модулями: перегляд, запис, видалення
+            (позначки можна перемикати — це демонстраційна матриця)
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {PERMISSION_CATEGORIES.map((category) => {
-              const categoryPerms = rolePermissions[selectedRole] || [];
-              return (
-                <div key={category.name}>
-                  <h4 className="text-sm font-medium text-foreground-muted mb-2">
-                    {category.name}
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {category.permissions.map((perm) => {
-                      const hasPerm = categoryPerms.includes(perm);
-                      return (
-                        <span
-                          key={perm}
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
-                            hasPerm
-                              ? 'bg-success/10 text-success'
-                              : 'bg-danger/10 text-danger line-through opacity-50'
-                          }`}
-                        >
-                          {hasPerm ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
-                          {perm}
-                        </span>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <Table<MatrixRow>
+            data={buildRows()}
+            columns={[
+              {
+                key: 'module',
+                header: 'Модуль',
+                render: (row) => <span className="font-medium">{row.module}</span>,
+              },
+              { key: 'read', header: 'Перегляд', render: renderCheckbox('read') },
+              { key: 'write', header: 'Запис', render: renderCheckbox('write') },
+              { key: 'delete', header: 'Видалення', render: renderCheckbox('delete') },
+            ]}
+            emptyMessage="Немає модулів"
+          />
         </CardContent>
       </Card>
 
       {/* Info */}
-      <Card className="border-warning/20 bg-warning/5">
+      <Card className="border-warning/20 bg-warning/5 shadow-sm rounded-xl">
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
             <Shield className="w-5 h-5 text-warning mt-0.5 shrink-0" />

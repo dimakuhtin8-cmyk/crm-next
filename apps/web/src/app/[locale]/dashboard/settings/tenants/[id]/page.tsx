@@ -4,9 +4,20 @@ import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { QuickSelect } from '@/components/quick-create';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import {
+  Avatar,
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Input,
+  Label,
+  Separator,
+  Skeleton,
+} from '@/components/ui';
 import { AI_PROVIDERS, getProvider } from '@/lib/ai/providers';
 
 interface Tenant {
@@ -143,11 +154,9 @@ export default function TenantDetailPage() {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto p-5">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-muted rounded w-1/3" />
-          <div className="h-48 bg-muted rounded-lg" />
-        </div>
+      <div className="max-w-4xl mx-auto p-5 space-y-4">
+        <Skeleton className="h-8 w-1/3 rounded" />
+        <Skeleton className="h-48 rounded-lg" />
       </div>
     );
   }
@@ -168,7 +177,7 @@ export default function TenantDetailPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">{tenant.name}</h1>
-          <p className="text-muted-foreground">/{tenant.slug}</p>
+          <p className="text-foreground-muted">/{tenant.slug}</p>
         </div>
         <div className="flex gap-2">
           <Button
@@ -183,12 +192,10 @@ export default function TenantDetailPage() {
         </div>
       </div>
 
-      {error && (
-        <div className="p-3 bg-destructive/10 text-destructive rounded-lg text-sm">{error}</div>
-      )}
+      {error && <div className="p-3 bg-danger/10 text-danger rounded-lg text-sm">{error}</div>}
 
       {/* General Settings */}
-      <Card>
+      <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
           <CardTitle>Загальні налаштування</CardTitle>
           <CardDescription>Основна інформація про компанію</CardDescription>
@@ -197,7 +204,7 @@ export default function TenantDetailPage() {
           {editing ? (
             <form onSubmit={handleUpdate} className="space-y-4">
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Назва</label>
+                <Label className="text-xs text-foreground-muted">Назва</Label>
                 <Input
                   value={form.name}
                   onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
@@ -205,7 +212,7 @@ export default function TenantDetailPage() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Slug</label>
+                <Label className="text-xs text-foreground-muted">Slug</Label>
                 <Input
                   value={form.slug}
                   onChange={(e) => setForm((prev) => ({ ...prev, slug: e.target.value }))}
@@ -214,7 +221,7 @@ export default function TenantDetailPage() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Домен</label>
+                <Label className="text-xs text-foreground-muted">Домен</Label>
                 <Input
                   value={form.domain}
                   onChange={(e) => setForm((prev) => ({ ...prev, domain: e.target.value }))}
@@ -229,24 +236,27 @@ export default function TenantDetailPage() {
               </div>
             </form>
           ) : (
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Назва:</span>
+            <div>
+              <div className="flex justify-between py-2">
+                <span className="text-foreground-muted">Назва:</span>
                 <span>{tenant.name}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Slug:</span>
+              <Separator />
+              <div className="flex justify-between py-2">
+                <span className="text-foreground-muted">Slug:</span>
                 <span>/{tenant.slug}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Домен:</span>
+              <Separator />
+              <div className="flex justify-between py-2">
+                <span className="text-foreground-muted">Домен:</span>
                 <span>{tenant.domain || '—'}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Створено:</span>
+              <Separator />
+              <div className="flex justify-between py-2">
+                <span className="text-foreground-muted">Створено:</span>
                 <span>{new Date(tenant.createdAt).toLocaleDateString('uk')}</span>
               </div>
-              <Button variant="outline" onClick={() => setEditing(true)}>
+              <Button variant="outline" className="mt-3" onClick={() => setEditing(true)}>
                 Редагувати
               </Button>
             </div>
@@ -255,7 +265,7 @@ export default function TenantDetailPage() {
       </Card>
 
       {/* AI Settings */}
-      <Card>
+      <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
           <CardTitle>AI-налаштування</CardTitle>
           <CardDescription>
@@ -267,12 +277,16 @@ export default function TenantDetailPage() {
             <>
               {/* Provider selector */}
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">AI-провайдер</label>
+                <Label className="text-xs text-foreground-muted">AI-провайдер</Label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {AI_PROVIDERS.filter((p) => p.id !== 'custom').map((provider) => (
-                    <button
+                    <Card
                       key={provider.id}
-                      type="button"
+                      className={`bg-card cursor-pointer transition-all ${
+                        form.aiProvider === provider.id
+                          ? 'border-primary bg-primary/5 ring-1 ring-primary/20 shadow-sm'
+                          : 'hover:border-primary/50 shadow-sm'
+                      }`}
                       onClick={() =>
                         setForm((prev) => ({
                           ...prev,
@@ -280,17 +294,18 @@ export default function TenantDetailPage() {
                           aiModel: provider.models[0]?.id || '',
                         }))
                       }
-                      className={`p-3 rounded-lg border text-left transition-all ${
-                        form.aiProvider === provider.id
-                          ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
-                          : 'border-border hover:border-primary/50'
-                      }`}
                     >
-                      <div className="flex items-center gap-2">
-                        <img src={provider.logo} alt={provider.name} className="h-5 w-5 shrink-0" />
-                        <span className="text-xs font-medium leading-tight">{provider.name}</span>
-                      </div>
-                    </button>
+                      <CardContent className="p-3">
+                        <div className="flex items-center gap-2">
+                          <img
+                            src={provider.logo}
+                            alt={provider.name}
+                            className="h-5 w-5 shrink-0"
+                          />
+                          <span className="text-xs font-medium leading-tight">{provider.name}</span>
+                        </div>
+                      </CardContent>
+                    </Card>
                   ))}
                 </div>
               </div>
@@ -300,7 +315,7 @@ export default function TenantDetailPage() {
                 const selectedProvider = getProvider(form.aiProvider);
                 if (!selectedProvider) return null;
                 return (
-                  <div className="p-3 bg-secondary/50 rounded-lg text-xs text-muted-foreground">
+                  <div className="p-3 bg-secondary/50 rounded-lg text-xs text-foreground-muted">
                     {selectedProvider.description}
                     <br />
                     Безкоштовний тариф: {selectedProvider.freeQuota}
@@ -314,7 +329,7 @@ export default function TenantDetailPage() {
                 if (!selectedProvider || selectedProvider.models.length <= 1) return null;
                 return (
                   <div className="space-y-2">
-                    <label className="text-xs font-medium text-muted-foreground">Модель</label>
+                    <Label className="text-xs text-foreground-muted">Модель</Label>
                     <QuickSelect
                       value={form.aiModel}
                       onChange={(id) => setForm((prev) => ({ ...prev, aiModel: id }))}
@@ -329,7 +344,7 @@ export default function TenantDetailPage() {
 
               {/* API Key input */}
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">API-ключ</label>
+                <Label className="text-xs text-foreground-muted">API-ключ</Label>
                 <Input
                   type="password"
                   value={form.aiApiKey || form.geminiApiKey}
@@ -343,7 +358,7 @@ export default function TenantDetailPage() {
                   }}
                   placeholder={getProvider(form.aiProvider)?.keyPlaceholder || 'your-api-key'}
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-foreground-muted">
                   Ваш ключ зберігається тільки у вашій компанії. Він не передається третім особам.
                 </p>
               </div>
@@ -364,21 +379,27 @@ export default function TenantDetailPage() {
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
-                  <span className="text-lg">
-                    {getProvider(tenant.aiProvider || 'gemini')?.logo || '🔷'}
-                  </span>
+                  {getProvider(tenant.aiProvider || 'gemini')?.logo ? (
+                    <img
+                      src={getProvider(tenant.aiProvider || 'gemini')!.logo}
+                      alt=""
+                      className="h-5 w-5"
+                    />
+                  ) : (
+                    <span className="text-lg">🔷</span>
+                  )}
                   <span className="font-medium">
                     {getProvider(tenant.aiProvider || 'gemini')?.name || 'Gemini'}
                   </span>
                 </div>
-                <span
-                  className={`text-xs px-2 py-1 rounded-full ${tenant.aiApiKey || tenant.geminiApiKey ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}
-                >
-                  {tenant.aiApiKey || tenant.geminiApiKey ? '✅ Підключено' : '⚠️ Не налаштовано'}
-                </span>
+                {tenant.aiApiKey || tenant.geminiApiKey ? (
+                  <Badge variant="success">Підключено</Badge>
+                ) : (
+                  <Badge variant="warning">Не налаштовано</Badge>
+                )}
               </div>
               {(tenant.aiApiKey || tenant.geminiApiKey) && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-foreground-muted">
                   Ключ: ••••{(tenant.aiApiKey || tenant.geminiApiKey || '').slice(-4)}
                 </p>
               )}
@@ -391,7 +412,7 @@ export default function TenantDetailPage() {
       </Card>
 
       {/* Members */}
-      <Card>
+      <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
           <CardTitle>Учасники ({tenant.members.length})</CardTitle>
           <CardDescription>Керування доступом до компанії</CardDescription>
@@ -415,20 +436,26 @@ export default function TenantDetailPage() {
             {tenant.members.map((member) => (
               <div
                 key={member.id}
-                className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm">
-                    {member.user.name?.charAt(0) || member.user.email?.charAt(0) || '?'}
-                  </div>
+                  <Avatar
+                    src={member.user.image ?? undefined}
+                    name={member.user.name || member.user.email || '?'}
+                    size="sm"
+                  />
                   <div>
                     <p className="text-sm font-medium">{member.user.name || member.user.email}</p>
-                    <p className="text-xs text-muted-foreground">{member.user.email}</p>
+                    <p className="text-xs text-foreground-muted">{member.user.email}</p>
                   </div>
                 </div>
-                <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
-                  {member.role}
-                </span>
+                <Badge variant={member.role === 'owner' ? 'default' : 'outline'}>
+                  {member.role === 'owner'
+                    ? 'Власник'
+                    : member.role === 'admin'
+                      ? 'Адміністратор'
+                      : 'Учасник'}
+                </Badge>
               </div>
             ))}
           </div>
@@ -436,12 +463,12 @@ export default function TenantDetailPage() {
       </Card>
 
       {/* Danger Zone */}
-      <Card className="border-destructive/50">
+      <Card className="border-danger/50 bg-card shadow-sm rounded-xl">
         <CardHeader>
-          <CardTitle className="text-destructive">Небезпечна зона</CardTitle>
+          <CardTitle className="text-danger">Небезпечна зона</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="text-sm text-foreground-muted mb-4">
             Видалення компанії призведе до втрати всіх даних. Цю дію неможливо скасувати.
           </p>
           <Button variant="destructive" onClick={handleDelete}>
