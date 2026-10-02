@@ -19,6 +19,7 @@ interface TableProps<T> {
   selectable?: boolean;
   selectedRows?: T[];
   onSelectionChange?: (rows: T[]) => void;
+  onRowClick?: (item: T) => void;
   emptyMessage?: string;
   className?: string;
 }
@@ -32,6 +33,7 @@ export function Table<T extends Record<string, unknown>>({
   selectable = false,
   selectedRows = [],
   onSelectionChange,
+  onRowClick,
   emptyMessage = 'Немає даних',
   className,
 }: TableProps<T>) {
@@ -64,8 +66,7 @@ export function Table<T extends Record<string, unknown>>({
   const totalPages = Math.ceil(sortedData.length / pageSize);
   const pagedData = sortedData.slice(page * pageSize, (page + 1) * pageSize);
 
-  const isSelected = (item: T) =>
-    selectedRows.some((r) => r.id === item.id);
+  const isSelected = (item: T) => selectedRows.some((r) => r.id === item.id);
 
   const toggleRow = (item: T) => {
     if (!onSelectionChange) return;
@@ -143,13 +144,15 @@ export function Table<T extends Record<string, unknown>>({
               pagedData.map((item, i) => (
                 <tr
                   key={i}
+                  onClick={onRowClick ? () => onRowClick(item) : undefined}
                   className={cn(
                     'transition-colors hover:bg-card-hover',
+                    onRowClick && 'cursor-pointer',
                     isSelected(item) && 'bg-primary-light',
                   )}
                 >
                   {selectable && (
-                    <td className="w-10 px-4 py-3">
+                    <td className="w-10 px-4 py-3" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={isSelected(item)}
@@ -202,9 +205,7 @@ export function Table<T extends Record<string, unknown>>({
                   onClick={() => setPage(pageNum)}
                   className={cn(
                     'rounded-lg px-3 py-1.5 transition-colors',
-                    page === pageNum
-                      ? 'bg-primary text-primary-foreground'
-                      : 'hover:bg-secondary',
+                    page === pageNum ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary',
                   )}
                 >
                   {pageNum + 1}

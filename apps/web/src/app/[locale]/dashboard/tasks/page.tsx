@@ -1,11 +1,25 @@
 'use client';
 
+import { Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import { QuickCreatePopover, QuickTaskForm, QuickSelect } from '@/components/quick-create';
 import { useTourAutoStart } from '@/components/tour/tour-provider';
-import { Button, Input, Badge, Card, CardContent, EmptyState } from '@/components/ui';
+import {
+  Avatar,
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  Checkbox,
+  EmptyState,
+  Input,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui';
+import { filterTasksByTab, isTaskOverdue, isTaskToday, type TaskTab } from '@/lib/task-tabs';
 import { cn } from '@/lib/utils';
 
 interface Task {
@@ -21,6 +35,15 @@ interface Task {
   dealId: string | null;
   isRecurring: boolean;
   createdAt: string;
+}
+
+/** Виконавець зі списку команди поточного тенанта. */
+interface TeamMember {
+  id: string;
+  name: string | null;
+  email: string | null;
+  image: string | null;
+  role: string;
 }
 
 const priorityConfig: Record<string, { label: string; color: string; order: number }> = {
@@ -48,21 +71,30 @@ const typeIcons: Record<string, string> = {
   follow_up: '🔄',
 };
 
+/** Варіант бейджа пріоритету для рядка списку. */
+const priorityVariant: Record<string, 'danger' | 'warning' | 'info' | 'secondary'> = {
+  urgent: 'danger',
+  high: 'warning',
+  medium: 'info',
+  low: 'secondary',
+};
+
 export default function TasksPage() {
   const router = useRouter();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
   const [filterPriority, setFilterPriority] = useState('');
+  const [tab, setTab] = useState<TaskTab>('all');
   const [page, setPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
   const [view, setView] = useState<'list' | 'kanban' | 'calendar'>('list');
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [dragOverStatus, setDragOverStatus] = useState<string | null>(null);
+  const [members, setMembers] = useState<TeamMember[]>([]);
 
-  // Quick-create popover
+  // Швидке створення задачі
   const [quickOpen, setQuickOpen] = useState(false);
   const quickBtnRef = useRef<HTMLButtonElement>(null);
 
@@ -76,14 +108,23 @@ export default function TasksPage() {
 
   useEffect(() => {
     fetchTasks();
-  }, [page, filterStatus, filterPriority]);
+  }, [page, filterPriority]);
+
+  // Виконавці для аватарів: тихий запит, без впливу на роботу сторінки
+  useEffect(() => {
+    fetch('/api/team')
+      .then((res) => res.json())
+      .then((data: { members?: TeamMember[] }) => setMembers(data.members || []))
+      .catch(() => {
+        // команда недоступна: аватарів не буде, список працює як раніше
+      });
+  }, []);
 
   const fetchTasks = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
-      if (filterStatus) params.set('status', filterStatus);
       if (filterPriority) params.set('priority', filterPriority);
       params.set('page', String(page));
       params.set('limit', '100');
@@ -92,7 +133,7 @@ export default function TasksPage() {
       setTasks(data.tasks || []);
       setTotal(data.total || 0);
     } catch {
-      // список просто останется пустым
+      // список просто лишиться порожнім
     } finally {
       setLoading(false);
     }
@@ -121,13 +162,13 @@ export default function TasksPage() {
     fetchTasks();
   };
 
-  const isOverdue = (t: Task) =>
-    t.dueDate &&
-    t.status !== 'done' &&
-    t.status !== 'cancelled' &&
-    new Date(t.dueDate) < new Date();
+  // Виконавець задачі зі стану команди
+  const assigneeOf = (t: Task): TeamMember | null => {
+    if (!t.assigneeId) return null;
+    return members.find((m) => m.id === t.assigneeId) ?? null;
+  };
 
-  // Drag-and-drop handlers
+  // Drag-and-drop обробники канбану
   const handleDragStart = (task: Task) => setDraggedTask(task);
   const handleDragEnd = () => {
     setDraggedTask(null);
@@ -144,7 +185,7 @@ export default function TasksPage() {
       handleDragEnd();
       return;
     }
-    // Optimistic update
+    // Оптимістичне оновлення
     setTasks((prev) =>
       prev.map((t) => (t.id === draggedTask.id ? { ...t, status: newStatus } : t)),
     );
@@ -160,7 +201,10 @@ export default function TasksPage() {
     handleDragEnd();
   };
 
-  // Calendar helpers
+  // Що бачить користувач: фільтр активного таба поверх завантаженого списку
+  const visibleTasks = filterTasksByTab(tasks, tab);
+
+  // Допоміжні функції календаря
   const getCalendarDays = () => {
     const now = new Date();
     const year = now.getFullYear();
@@ -170,33 +214,33 @@ export default function TasksPage() {
     const startOffset = firstDay.getDay();
     const days: Array<{ date: Date; tasks: Task[]; isCurrentMonth: boolean }> = [];
 
-    // Previous month padding
+    // Попередній місяць (доповнення згори)
     for (let i = startOffset - 1; i >= 0; i--) {
       const date = new Date(year, month, -i);
       days.push({
         date,
-        tasks: tasks.filter((t) => t.dueDate && isSameDay(new Date(t.dueDate), date)),
+        tasks: visibleTasks.filter((t) => t.dueDate && isSameDay(new Date(t.dueDate), date)),
         isCurrentMonth: false,
       });
     }
 
-    // Current month
+    // Поточний місяць
     for (let d = 1; d <= lastDay.getDate(); d++) {
       const date = new Date(year, month, d);
       days.push({
         date,
-        tasks: tasks.filter((t) => t.dueDate && isSameDay(new Date(t.dueDate), date)),
+        tasks: visibleTasks.filter((t) => t.dueDate && isSameDay(new Date(t.dueDate), date)),
         isCurrentMonth: true,
       });
     }
 
-    // Next month padding
+    // Наступний місяць (доповнення знизу)
     const remaining = 42 - days.length;
     for (let d = 1; d <= remaining; d++) {
       const date = new Date(year, month + 1, d);
       days.push({
         date,
-        tasks: tasks.filter((t) => t.dueDate && isSameDay(new Date(t.dueDate), date)),
+        tasks: visibleTasks.filter((t) => t.dueDate && isSameDay(new Date(t.dueDate), date)),
         isCurrentMonth: false,
       });
     }
@@ -209,11 +253,11 @@ export default function TasksPage() {
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate();
 
-  // Kanban: group tasks by status
+  // Канбан: групування видимих задач за статусом
   const kanbanColumns = Object.entries(statusConfig).map(([key, cfg]) => ({
     key,
     ...cfg,
-    tasks: tasks.filter((t) => t.status === key),
+    tasks: visibleTasks.filter((t) => t.status === key),
   }));
 
   return (
@@ -224,18 +268,15 @@ export default function TasksPage() {
           <p className="text-foreground-muted">{total} задач</p>
         </div>
         <div className="flex gap-2">
-          {/* View toggle */}
-          <div
-            className="flex border border-border rounded-lg overflow-hidden"
-            data-tour="task-views"
-          >
+          {/* Перемикач вигляду: список / канбан / календар */}
+          <div className="flex h-8 items-center gap-0.5 rounded-lg border border-border p-0.5">
             <button
               onClick={() => setView('list')}
               className={cn(
-                'px-3 py-1.5 text-sm transition-colors',
+                'h-7 rounded-md px-3 text-xs font-medium transition-colors',
                 view === 'list'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-background hover:bg-secondary',
+                  ? 'bg-card text-foreground shadow-sm'
+                  : 'text-foreground-muted hover:bg-secondary/50',
               )}
             >
               Список
@@ -243,10 +284,10 @@ export default function TasksPage() {
             <button
               onClick={() => setView('kanban')}
               className={cn(
-                'px-3 py-1.5 text-sm transition-colors',
+                'h-7 rounded-md px-3 text-xs font-medium transition-colors',
                 view === 'kanban'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-background hover:bg-secondary',
+                  ? 'bg-card text-foreground shadow-sm'
+                  : 'text-foreground-muted hover:bg-secondary/50',
               )}
             >
               Канбан
@@ -254,10 +295,10 @@ export default function TasksPage() {
             <button
               onClick={() => setView('calendar')}
               className={cn(
-                'px-3 py-1.5 text-sm transition-colors',
+                'h-7 rounded-md px-3 text-xs font-medium transition-colors',
                 view === 'calendar'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-background hover:bg-secondary',
+                  ? 'bg-card text-foreground shadow-sm'
+                  : 'text-foreground-muted hover:bg-secondary/50',
               )}
             >
               Календар
@@ -287,7 +328,17 @@ export default function TasksPage() {
         </div>
       </div>
 
-      {/* Search + Filters */}
+      {/* Таби: коли дивитися задачі */}
+      <Tabs value={tab} onValueChange={(v) => setTab(v as TaskTab)} className="w-full">
+        <TabsList data-tour="task-views">
+          <TabsTrigger value="all">Усі</TabsTrigger>
+          <TabsTrigger value="today">Сьогодні</TabsTrigger>
+          <TabsTrigger value="overdue">Прострочені</TabsTrigger>
+          <TabsTrigger value="completed">Завершені</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {/* Пошук + фільтри */}
       <Card>
         <CardContent className="p-4">
           <form onSubmit={handleSearch} className="flex gap-3">
@@ -325,23 +376,6 @@ export default function TasksPage() {
             <div className="flex gap-3 mt-3 pt-3 border-t border-border">
               <div className="w-44">
                 <QuickSelect
-                  value={filterStatus}
-                  onChange={(v) => {
-                    setFilterStatus(v);
-                    setPage(1);
-                  }}
-                  options={[
-                    { id: '', name: 'Всі статуси' },
-                    { id: 'todo', name: 'До виконання' },
-                    { id: 'in_progress', name: 'В роботі' },
-                    { id: 'done', name: 'Готово' },
-                    { id: 'cancelled', name: 'Скасовано' },
-                  ]}
-                  placeholder="Всі статуси"
-                />
-              </div>
-              <div className="w-44">
-                <QuickSelect
                   value={filterPriority}
                   onChange={(v) => {
                     setFilterPriority(v);
@@ -357,12 +391,11 @@ export default function TasksPage() {
                   placeholder="Всі пріоритети"
                 />
               </div>
-              {(filterStatus || filterPriority) && (
+              {filterPriority && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => {
-                    setFilterStatus('');
                     setFilterPriority('');
                     setPage(1);
                   }}
@@ -375,7 +408,7 @@ export default function TasksPage() {
         </CardContent>
       </Card>
 
-      {/* LIST VIEW */}
+      {/* ВИГЛЯД «СПИСОК» */}
       {view === 'list' &&
         (loading ? (
           <div className="space-y-2">
@@ -383,7 +416,7 @@ export default function TasksPage() {
               <div key={i} className="h-16 bg-muted rounded-lg animate-pulse" />
             ))}
           </div>
-        ) : tasks.length === 0 ? (
+        ) : visibleTasks.length === 0 ? (
           <Card>
             <CardContent>
               <EmptyState
@@ -395,94 +428,79 @@ export default function TasksPage() {
           </Card>
         ) : (
           <div className="space-y-2">
-            {tasks.map((task) => (
-              <div
-                key={task.id}
-                className={cn(
-                  'flex items-center gap-4 p-4 bg-card rounded-lg border border-border hover:bg-secondary/50 transition-colors',
-                  isOverdue(task) && 'border-l-2 border-l-danger',
-                )}
-              >
-                <button
-                  onClick={() => toggleStatus(task)}
-                  className={cn(
-                    'h-5 w-5 rounded border-2 flex items-center justify-center transition-colors flex-shrink-0',
-                    task.status === 'done'
-                      ? 'bg-success border-success'
-                      : 'border-border hover:border-primary',
-                  )}
-                >
-                  {task.status === 'done' && (
-                    <svg
-                      className="h-3 w-3 text-white"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="3"
-                    >
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  )}
-                </button>
+            {visibleTasks.map((task) => {
+              const assignee = assigneeOf(task);
+              return (
                 <div
-                  className="flex-1 min-w-0 cursor-pointer"
-                  onClick={() => router.push(`/dashboard/tasks/${task.id}`)}
+                  key={task.id}
+                  className={cn(
+                    'flex items-center gap-3 rounded-lg border border-border bg-card p-3 transition-colors hover:bg-secondary/50',
+                    isTaskOverdue(task) && 'border-l-2 border-l-danger',
+                  )}
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm">{typeIcons[task.type] || '📋'}</span>
+                  <Checkbox
+                    checked={task.status === 'done'}
+                    onCheckedChange={() => toggleStatus(task)}
+                    aria-label="Позначити виконаною"
+                    className="shrink-0"
+                  />
+                  <div
+                    className="min-w-0 flex-1 cursor-pointer"
+                    onClick={() => router.push(`/dashboard/tasks/${task.id}`)}
+                  >
                     <p
                       className={cn(
-                        'font-medium text-sm',
+                        'truncate text-sm font-medium',
                         task.status === 'done' && 'line-through text-foreground-muted',
                       )}
                     >
                       {task.title}
                     </p>
-                    {task.isRecurring && <span className="text-xs">🔄</span>}
                   </div>
                   {task.dueDate && (
-                    <span
-                      className={cn(
-                        'text-xs',
-                        isOverdue(task) ? 'text-danger font-medium' : 'text-foreground-muted',
-                      )}
+                    <Badge
+                      variant={
+                        isTaskOverdue(task) ? 'danger' : isTaskToday(task) ? 'warning' : 'outline'
+                      }
+                      className="shrink-0 whitespace-nowrap text-xs"
                     >
-                      {new Date(task.dueDate).toLocaleDateString('uk')}
-                    </span>
+                      {new Date(task.dueDate).toLocaleDateString('uk', {
+                        day: 'numeric',
+                        month: 'short',
+                      })}
+                    </Badge>
                   )}
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className={cn('text-xs font-medium', priorityConfig[task.priority]?.color)}>
-                    {priorityConfig[task.priority]?.label}
-                  </span>
                   <Badge
-                    variant={statusConfig[task.status]?.variant || 'outline'}
-                    className="text-xs"
+                    variant={priorityVariant[task.priority] ?? 'secondary'}
+                    className="hidden shrink-0 sm:inline-flex"
                   >
-                    {statusConfig[task.status]?.label}
+                    {priorityConfig[task.priority]?.label}
                   </Badge>
+                  {assignee && (
+                    <Avatar
+                      name={assignee.name || assignee.email || '?'}
+                      src={assignee.image || undefined}
+                      size="sm"
+                      className="h-6 w-6 shrink-0 text-2xs"
+                    />
+                  )}
+                  {task.assigneeId && !assignee && (
+                    <Avatar name="?" size="sm" className="h-6 w-6 shrink-0 text-2xs" />
+                  )}
                   <button
                     onClick={() => handleDelete(task.id)}
-                    className="rounded p-1 text-foreground-muted hover:text-danger transition-colors"
+                    className="shrink-0 rounded-md p-1.5 text-foreground-muted transition-colors hover:bg-danger-light hover:text-danger"
+                    aria-label="Видалити задачу"
                   >
-                    <svg
-                      className="h-4 w-4"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <polyline points="3 6 5 6 21 6" />
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                    </svg>
+                    <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ))}
 
-      {/* KANBAN VIEW */}
+      {/* ВИГЛЯД «КАНБАН» */}
       {view === 'kanban' &&
         (loading ? (
           <div className="flex gap-4">
@@ -527,7 +545,7 @@ export default function TasksPage() {
                       onClick={() => router.push(`/dashboard/tasks/${task.id}`)}
                       className={cn(
                         'p-3 bg-card rounded-lg border border-border cursor-pointer hover:shadow-md transition-all',
-                        isOverdue(task) && 'border-l-2 border-l-danger',
+                        isTaskOverdue(task) && 'border-l-2 border-l-danger',
                         draggedTask?.id === task.id && 'opacity-50 scale-95',
                       )}
                     >
@@ -547,7 +565,7 @@ export default function TasksPage() {
                         <p
                           className={cn(
                             'text-xs mt-2',
-                            isOverdue(task) ? 'text-danger' : 'text-foreground-muted',
+                            isTaskOverdue(task) ? 'text-danger' : 'text-foreground-muted',
                           )}
                         >
                           {new Date(task.dueDate).toLocaleDateString('uk')}
@@ -564,7 +582,7 @@ export default function TasksPage() {
           </div>
         ))}
 
-      {/* CALENDAR VIEW */}
+      {/* ВИГЛЯД «КАЛЕНДАР» */}
       {view === 'calendar' &&
         (loading ? (
           <div className="h-96 bg-muted rounded-lg animate-pulse" />
@@ -613,7 +631,7 @@ export default function TasksPage() {
                             task.status === 'done'
                               ? 'line-through text-foreground-muted'
                               : 'bg-primary/10',
-                            isOverdue(task) && 'bg-danger/10 text-danger',
+                            isTaskOverdue(task) && 'bg-danger/10 text-danger',
                           )}
                         >
                           {task.title}
@@ -630,7 +648,7 @@ export default function TasksPage() {
           </Card>
         ))}
 
-      {/* Pagination (list only) */}
+      {/* Пагінація (лише список) */}
       {view === 'list' && total > 100 && (
         <div className="flex items-center justify-center gap-2">
           <Button

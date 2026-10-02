@@ -20,10 +20,10 @@ import {
   Repeat,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { useState, useRef, useEffect } from 'react';
 
+import { OPEN_PALETTE_EVENT } from '@/components/command-palette';
 import { useNotifications } from '@/components/notifications-provider';
 import {
   QuickCreatePopover,
@@ -67,42 +67,32 @@ const typeIcons: Record<string, React.ReactNode> = {
 };
 
 export function Header({ onMobileMenuToggle }: HeaderProps) {
-  const router = useRouter();
   const { data: session } = useSession();
   const { resolvedTheme, setTheme } = useTheme();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isQuickOpen, setIsQuickOpen] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [overdueReminders, setOverdueReminders] = useState<ReminderTask[]>([]);
   const [upcomingReminders, setUpcomingReminders] = useState<ReminderTask[]>([]);
-  const [search, setSearch] = useState('');
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [searchResults, setSearchResults] = useState<{
-    contacts: { id: string; name: string; subtitle: string }[];
-    deals: { id: string; name: string; subtitle: string }[];
-    tasks: { id: string; name: string; subtitle: string }[];
-  } | null>(null);
 
   const profileRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
   const quickRef = useRef<HTMLDivElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const unreadCount = overdueReminders.length + upcomingReminders.length;
   // + in-app системні сповіщення (автоматизації, інтеграції)
   const { unreadCount: appUnread } = useNotifications();
   const totalUnread = unreadCount + appUnread;
 
-  // Keyboard shortcut for search (Ctrl+K / Cmd+K)
+  // Cmd+K відкриває глобальну палітру (CommandPalette слухає подію).
+  const openPalette = () => {
+    window.dispatchEvent(new Event(OPEN_PALETTE_EVENT));
+  };
+
+  // Escape — закрити дропдауни.
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        setIsSearchOpen(true);
-      }
       if (e.key === 'Escape') {
-        setIsSearchOpen(false);
         setIsProfileOpen(false);
         setIsNotifOpen(false);
         setIsQuickOpen(false);
@@ -111,40 +101,6 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
-
-  // Focus search input when opened
-  useEffect(() => {
-    if (isSearchOpen) {
-      searchInputRef.current?.focus();
-    } else {
-      setSearch('');
-      setSearchResults(null);
-    }
-  }, [isSearchOpen]);
-
-  // Debounced global search (250ms) — real /api/search, tenant-scoped.
-  useEffect(() => {
-    const q = search.trim();
-    if (!isSearchOpen || q.length < 2) {
-      setSearchResults(null);
-      setSearchLoading(false);
-      return;
-    }
-    setSearchLoading(true);
-    const t = setTimeout(() => {
-      fetch(`/api/search?q=${encodeURIComponent(q)}`, { credentials: 'include' })
-        .then((r) => (r.ok ? r.json() : null))
-        .then((d) => setSearchResults(d))
-        .catch(() => setSearchResults(null))
-        .finally(() => setSearchLoading(false));
-    }, 250);
-    return () => clearTimeout(t);
-  }, [search, isSearchOpen]);
-
-  const goSearchResult = (href: string) => {
-    setIsSearchOpen(false);
-    router.push(href);
-  };
 
   // Fetch reminders
   useEffect(() => {
@@ -237,7 +193,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
 
           {/* Search bar with Cmd+K shortcut */}
           <button
-            onClick={() => setIsSearchOpen(true)}
+            onClick={openPalette}
             data-tour="search"
             className="hidden sm:flex items-center gap-3 h-9 w-80 rounded-md border border-border bg-background-secondary px-4 text-sm text-foreground-muted hover:border-border-hover hover:bg-background-tertiary transition-all duration-200"
           >
@@ -250,7 +206,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
           </button>
           {/* Mobile search icon (same modal) */}
           <button
-            onClick={() => setIsSearchOpen(true)}
+            onClick={openPalette}
             aria-label="Пошук"
             className="sm:hidden rounded-xl p-2.5 text-foreground-muted hover:bg-secondary hover:text-foreground transition-all duration-200"
           >
@@ -540,119 +496,6 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
           </div>
         </div>
       </header>
-
-      {/* Full-screen search modal (Cmd+K) */}
-      {isSearchOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]">
-          <div
-            className="fixed inset-0 bg-foreground-inverse/50 backdrop-blur-sm"
-            onClick={() => setIsSearchOpen(false)}
-          />
-          <div className="relative w-full max-w-2xl mx-4 bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-fade-in-scale">
-            <div className="flex items-center gap-3 border-b border-border px-5 py-4">
-              <Search className="h-5 w-5 text-foreground-muted" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder="Пошук контактів, угод, задач..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="flex-1 bg-transparent border-0 outline-none text-lg text-foreground placeholder:text-foreground-muted"
-              />
-              <kbd className="hidden sm:flex items-center gap-1 px-2 py-1 text-xs text-foreground-muted bg-secondary rounded-lg border border-border">
-                Esc
-              </kbd>
-            </div>
-            <div className="max-h-96 overflow-y-auto p-2">
-              {search.trim().length < 2 ? (
-                <div className="px-4 py-8 text-center">
-                  <p className="text-sm text-foreground-muted">Почніть вводити для пошуку...</p>
-                </div>
-              ) : searchLoading && !searchResults ? (
-                <div className="px-4 py-8 text-center">
-                  <p className="text-sm text-foreground-muted animate-pulse">Шукаю...</p>
-                </div>
-              ) : searchResults &&
-                (searchResults.contacts.length > 0 ||
-                  searchResults.deals.length > 0 ||
-                  searchResults.tasks.length > 0) ? (
-                <div className="space-y-1">
-                  {searchResults.contacts.length > 0 && (
-                    <>
-                      <p className="px-3 py-1.5 text-xs font-semibold text-foreground-muted uppercase tracking-wider">
-                        Контакти
-                      </p>
-                      {searchResults.contacts.map((c) => (
-                        <button
-                          key={c.id}
-                          onClick={() => goSearchResult(`/dashboard/contacts/${c.id}`)}
-                          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm hover:bg-secondary transition-colors"
-                        >
-                          <Users className="h-4 w-4 shrink-0 text-foreground-muted" />
-                          <span className="flex-1 truncate font-medium">{c.name}</span>
-                          {c.subtitle && (
-                            <span className="truncate text-xs text-foreground-muted">
-                              {c.subtitle}
-                            </span>
-                          )}
-                        </button>
-                      ))}
-                    </>
-                  )}
-                  {searchResults.deals.length > 0 && (
-                    <>
-                      <p className="px-3 py-1.5 text-xs font-semibold text-foreground-muted uppercase tracking-wider">
-                        Угоди
-                      </p>
-                      {searchResults.deals.map((d) => (
-                        <button
-                          key={d.id}
-                          onClick={() => goSearchResult(`/dashboard/deals/${d.id}`)}
-                          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm hover:bg-secondary transition-colors"
-                        >
-                          <TrendingUp className="h-4 w-4 shrink-0 text-foreground-muted" />
-                          <span className="flex-1 truncate font-medium">{d.name}</span>
-                          {d.subtitle && (
-                            <span className="truncate text-xs text-foreground-muted">
-                              {d.subtitle}
-                            </span>
-                          )}
-                        </button>
-                      ))}
-                    </>
-                  )}
-                  {searchResults.tasks.length > 0 && (
-                    <>
-                      <p className="px-3 py-1.5 text-xs font-semibold text-foreground-muted uppercase tracking-wider">
-                        Задачі
-                      </p>
-                      {searchResults.tasks.map((t) => (
-                        <button
-                          key={t.id}
-                          onClick={() => goSearchResult(`/dashboard/tasks/${t.id}`)}
-                          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm hover:bg-secondary transition-colors"
-                        >
-                          <CheckSquare className="h-4 w-4 shrink-0 text-foreground-muted" />
-                          <span className="flex-1 truncate font-medium">{t.name}</span>
-                          {t.subtitle && (
-                            <span className="truncate text-xs text-foreground-muted">
-                              {t.subtitle}
-                            </span>
-                          )}
-                        </button>
-                      ))}
-                    </>
-                  )}
-                </div>
-              ) : (
-                <div className="px-3 py-6 text-center">
-                  <p className="text-sm text-foreground-muted">Нічого не знайдено</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Quick-create popover (anchored to the clicked menu item) */}
       <QuickCreatePopover

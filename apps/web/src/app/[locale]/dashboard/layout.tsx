@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { Header } from './header';
 import { Sidebar } from './sidebar';
 
+import { CommandPalette } from '@/components/command-palette';
 import { NotificationsProvider } from '@/components/notifications-provider';
 import { TourProvider } from '@/components/tour/tour-provider';
 
@@ -68,6 +69,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </main>
           </div>
         </div>
+        <CommandPalette />
       </TourProvider>
     </NotificationsProvider>
   );

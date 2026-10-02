@@ -1,15 +1,47 @@
 'use client';
 
+import {
+  Building2,
+  Download,
+  Filter,
+  Mail,
+  MoreHorizontal,
+  Phone,
+  Plus,
+  Search,
+  Upload,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import { QuickCreatePopover, QuickContactForm, QuickSelect } from '@/components/quick-create';
 import { useTourAutoStart } from '@/components/tour/tour-provider';
-import { Button, Input, Badge, Card, CardContent, EmptyState } from '@/components/ui';
+import {
+  Avatar,
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  EmptyState,
+  Input,
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  Skeleton,
+  Table,
+} from '@/components/ui';
 import { cn } from '@/lib/utils';
 
-interface Contact {
+type Contact = {
   id: string;
   firstName: string;
   lastName: string | null;
@@ -21,12 +53,26 @@ interface Contact {
   source: string | null;
   createdAt: string;
   tags?: Array<{ tag: { id: string; name: string; color: string | null } }>;
-}
+};
 
 interface Tag {
   id: string;
   name: string;
   color: string | null;
+}
+
+// Повна картка контакту з розшифрованими полями (GET /api/contacts/[id])
+interface ContactDetail extends Contact {
+  notes: string | null;
+  owner?: { name: string | null; email: string | null } | null;
+}
+
+// Угоди, пов'язані з контактом (GET /api/deals?contactId=)
+interface SheetDeal {
+  id: string;
+  title: string;
+  value?: number | null;
+  currency?: string | null;
 }
 
 const statusConfig: Record<
@@ -37,6 +83,18 @@ const statusConfig: Record<
   inactive: { label: 'Неактивний', variant: 'secondary' },
   lead: { label: 'Лід', variant: 'default' },
   client: { label: 'Клієнт', variant: 'outline' },
+};
+
+const currencySymbols: Record<string, string> = { UAH: '₴', USD: '$', EUR: '€' };
+
+// Сума угоди зі символом валюти; якщо суми немає — тире
+const formatDealAmount = (
+  value: number | null | undefined,
+  currency: string | null | undefined,
+): string => {
+  if (value === null || value === undefined) return '—';
+  const symbol = currency ? (currencySymbols[currency] ?? currency) : '';
+  return `${symbol}${value.toLocaleString('uk')}`;
 };
 
 export default function ContactsPage() {
@@ -61,6 +119,12 @@ export default function ContactsPage() {
   const [quickOpen, setQuickOpen] = useState(false);
   const quickBtnRef = useRef<HTMLButtonElement>(null);
 
+  // Шухляда з деталями контакту
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [sheetContact, setSheetContact] = useState<ContactDetail | null>(null);
+  const [sheetLoading, setSheetLoading] = useState(false);
+  const [sheetDeals, setSheetDeals] = useState<SheetDeal[]>([]);
+
   useTourAutoStart('contacts');
 
   const handleQuickCreated = () => {
@@ -76,6 +140,45 @@ export default function ContactsPage() {
   useEffect(() => {
     fetchContacts();
   }, [page, filterStatus, filterTag]);
+
+  // Паралельно тягнемо контакт і його угоди; помилки ковтаємо тихо
+  useEffect(() => {
+    if (!openId) {
+      setSheetContact(null);
+      setSheetDeals([]);
+      setSheetLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setSheetContact(null);
+    setSheetDeals([]);
+    setSheetLoading(true);
+
+    const loadSheet = async () => {
+      try {
+        const [contactRes, dealsRes] = await Promise.all([
+          fetch(`/api/contacts/${openId}`),
+          fetch(`/api/deals?contactId=${openId}`),
+        ]);
+        const contactData = await contactRes.json();
+        const dealsData = await dealsRes.json();
+        if (cancelled) return;
+        setSheetContact(contactData.contact || null);
+        setSheetDeals(dealsData?.data?.deals || dealsData?.deals || []);
+      } catch {
+        // тихо: шухляда просто лишиться порожньою
+      } finally {
+        if (!cancelled) setSheetLoading(false);
+      }
+    };
+
+    loadSheet();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [openId]);
 
   const fetchTags = async () => {
     try {
@@ -116,15 +219,9 @@ export default function ContactsPage() {
 
   const getName = (c: Contact) => `${c.firstName} ${c.lastName || ''}`.trim();
 
-  // Bulk operations
-  const toggleSelectAll = () => {
-    if (selectedIds.size === contacts.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(contacts.map((c) => c.id)));
-    }
-  };
+  const openSheet = (id: string) => setOpenId(id);
 
+  // Bulk operations
   const toggleSelect = (id: string) => {
     const next = new Set(selectedIds);
     if (next.has(id)) {
@@ -185,56 +282,123 @@ export default function ContactsPage() {
     URL.revokeObjectURL(url);
   };
 
+  // Стовпці десктопної таблиці
+  const columns = [
+    {
+      key: 'name',
+      header: 'Контакт',
+      render: (contact: Contact) => (
+        <div className="flex items-center gap-3">
+          <Avatar name={getName(contact)} size="sm" />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium">{getName(contact)}</p>
+            <p className="truncate text-xs text-foreground-muted">
+              {contact.position || contact.company || ''}
+            </p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'info',
+      header: 'Email / Телефон',
+      render: (contact: Contact) => (
+        <div className="min-w-0">
+          <p className="truncate text-sm">{contact.email || '—'}</p>
+          <p className="truncate text-xs text-foreground-muted">{contact.phone || '—'}</p>
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Статус',
+      render: (contact: Contact) => (
+        <Badge variant={statusConfig[contact.status]?.variant || 'outline'} className="text-xs">
+          {statusConfig[contact.status]?.label || contact.status}
+        </Badge>
+      ),
+    },
+    {
+      key: 'tags',
+      header: 'Теги',
+      render: (contact: Contact) => (
+        <div className="flex flex-wrap items-center gap-1">
+          {contact.tags?.slice(0, 2).map((ct) => (
+            <Badge
+              key={ct.tag.id}
+              variant="outline"
+              className="text-xs"
+              style={ct.tag.color ? { borderColor: ct.tag.color, color: ct.tag.color } : undefined}
+            >
+              {ct.tag.name}
+            </Badge>
+          ))}
+          {(contact.tags?.length || 0) > 2 && (
+            <Badge variant="outline" className="text-xs">
+              +{contact.tags!.length - 2}
+            </Badge>
+          )}
+          {!contact.tags?.length && <span className="text-foreground-muted">—</span>}
+        </div>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'Дії',
+      className: 'w-14',
+      render: (contact: Contact) => (
+        // Клік по меню не має відкривати шухляду
+        <div onClick={(e) => e.stopPropagation()}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Дії з контактом">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => router.push(`/dashboard/contacts/${contact.id}`)}>
+                Відкрити картку
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-danger focus:bg-danger-light focus:text-danger"
+                onClick={async () => {
+                  if (!confirm('Видалити контакт?')) return;
+                  await fetch('/api/contacts/' + contact.id, { method: 'DELETE' });
+                  if (openId === contact.id) setOpenId(null);
+                  fetchContacts();
+                }}
+              >
+                Видалити
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Контакти</h1>
-          <p className="text-foreground-muted">{total} контактів</p>
+          <p className="text-sm text-foreground-muted">{total} контактів</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleExport}>
-            <svg
-              className="h-4 w-4 mr-2"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
+            <Download className="h-4 w-4" />
             Експорт
           </Button>
           <Link href="/dashboard/contacts/import" data-tour="contact-import">
             <Button variant="outline">
-              <svg
-                className="h-4 w-4 mr-2"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
+              <Upload className="h-4 w-4" />
               Імпорт
             </Button>
           </Link>
           <Button ref={quickBtnRef} onClick={() => setQuickOpen(true)} data-tour="contact-add">
-            <svg
-              className="h-4 w-4 mr-2"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
+            <Plus className="h-4 w-4" />
             Додати контакт
           </Button>
           <QuickCreatePopover
@@ -300,16 +464,7 @@ export default function ContactsPage() {
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-10"
               />
-              <svg
-                className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-muted"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-muted" />
             </div>
             <Button type="submit" variant="secondary">
               Знайти
@@ -320,15 +475,7 @@ export default function ContactsPage() {
               onClick={() => setShowFilters(!showFilters)}
               className={cn(showFilters && 'bg-primary-light')}
             >
-              <svg
-                className="h-4 w-4 mr-1"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-              </svg>
+              <Filter className="h-4 w-4" />
               Фільтри
             </Button>
           </form>
@@ -386,11 +533,11 @@ export default function ContactsPage() {
         </CardContent>
       </Card>
 
-      {/* Contacts Table */}
+      {/* Contacts List */}
       {loading ? (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-16 bg-muted rounded-lg animate-pulse" />
+            <Skeleton key={i} className="h-16" />
           ))}
         </div>
       ) : contacts.length === 0 ? (
@@ -419,30 +566,12 @@ export default function ContactsPage() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {/* Table header — desktop only */}
-          <div className="hidden md:grid grid-cols-12 gap-4 px-4 py-2 text-xs font-medium text-foreground-muted">
-            <div className="col-span-1">
-              <input
-                type="checkbox"
-                checked={selectedIds.size === contacts.length && contacts.length > 0}
-                onChange={toggleSelectAll}
-                className="h-4 w-4 rounded border-border"
-              />
-            </div>
-            <div className="col-span-3">Ім'я</div>
-            <div className="col-span-2">Компанія</div>
-            <div className="col-span-2">Email</div>
-            <div className="col-span-2">Телефон</div>
-            <div className="col-span-1">Статус</div>
-            <div className="col-span-1">Теги</div>
-          </div>
-
-          {/* Mobile cards (<md): имя + компания крупно, остальное ниже, тап = карточка */}
-          <div className="md:hidden space-y-2">
+          {/* Мобільні картки (<md): тап відкриває шухляду */}
+          <div className="space-y-2 md:hidden">
             {contacts.map((contact) => (
               <div
                 key={contact.id}
-                onClick={() => router.push(`/dashboard/contacts/${contact.id}`)}
+                onClick={() => openSheet(contact.id)}
                 className={cn(
                   'bg-card rounded-lg border border-border p-4 space-y-2 cursor-pointer active:bg-secondary/50 transition-colors',
                   selectedIds.has(contact.id) && 'border-primary bg-primary/5',
@@ -500,80 +629,64 @@ export default function ContactsPage() {
             ))}
           </div>
 
-          {/* Rows — desktop table */}
-          <div className="hidden md:block space-y-2">
-            {contacts.map((contact) => (
-              <div
-                key={contact.id}
-                className={cn(
-                  'grid grid-cols-12 gap-4 px-4 py-3 bg-card rounded-lg border border-border hover:bg-secondary/50 transition-colors cursor-pointer items-center',
-                  selectedIds.has(contact.id) && 'border-primary bg-primary/5',
-                )}
-              >
-                <div className="col-span-1">
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.has(contact.id)}
-                    onChange={() => toggleSelect(contact.id)}
-                    onClick={(e) => e.stopPropagation()}
-                    className="h-4 w-4 rounded border-border"
-                  />
-                </div>
-                <div
-                  className="col-span-3"
-                  onClick={() => router.push(`/dashboard/contacts/${contact.id}`)}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
-                      {contact.firstName.charAt(0)}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-medium truncate">{getName(contact)}</p>
-                      {contact.position && (
-                        <p className="text-xs text-foreground-muted truncate">{contact.position}</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
+          {/* Десктопна таблиця (md+) */}
+          <div className="hidden md:block">
+            <Table
+              columns={columns}
+              data={contacts}
+              pageSize={50}
+              selectable
+              selectedRows={contacts.filter((c) => selectedIds.has(c.id))}
+              onSelectionChange={(rows) => setSelectedIds(new Set(rows.map((r) => r.id)))}
+              onRowClick={(contact) => openSheet(contact.id)}
+              emptyMessage="Контактів не знайдено"
+            />
+          </div>
+        </div>
+      )}
 
-                <div
-                  className="col-span-2 text-sm text-foreground-muted truncate"
-                  onClick={() => router.push(`/dashboard/contacts/${contact.id}`)}
-                >
-                  {contact.company || '—'}
-                </div>
+      {/* Шухляда з деталями контакту */}
+      <Sheet
+        open={!!openId}
+        onOpenChange={(o) => {
+          if (!o) setOpenId(null);
+        }}
+      >
+        <SheetContent side="right" className="sm:max-w-lg" aria-describedby={undefined}>
+          <SheetHeader>
+            <div className="flex items-center gap-3 pr-8">
+              <Avatar name={sheetContact ? getName(sheetContact) : 'Контакт'} />
+              <div className="min-w-0">
+                <SheetTitle className="truncate">
+                  {sheetContact ? getName(sheetContact) : 'Контакт'}
+                </SheetTitle>
+                <p className="truncate text-xs text-foreground-muted">
+                  {sheetContact
+                    ? [sheetContact.position, sheetContact.company].filter(Boolean).join(' · ')
+                    : ''}
+                </p>
+              </div>
+            </div>
+          </SheetHeader>
 
-                <div
-                  className="col-span-2 text-sm truncate"
-                  onClick={() => router.push(`/dashboard/contacts/${contact.id}`)}
-                >
-                  {contact.email || '—'}
-                </div>
-
-                <div
-                  className="col-span-2 text-sm truncate"
-                  onClick={() => router.push(`/dashboard/contacts/${contact.id}`)}
-                >
-                  {contact.phone || '—'}
-                </div>
-
-                <div
-                  className="col-span-1"
-                  onClick={() => router.push(`/dashboard/contacts/${contact.id}`)}
-                >
+          <div className="flex-1 space-y-4 overflow-y-auto p-4">
+            {sheetLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-12" />
+                <Skeleton className="h-12" />
+                <Skeleton className="h-12" />
+              </div>
+            ) : sheetContact ? (
+              <>
+                {/* Статус і теги */}
+                <div className="flex flex-wrap items-center gap-2">
                   <Badge
-                    variant={statusConfig[contact.status]?.variant || 'outline'}
+                    variant={statusConfig[sheetContact.status]?.variant || 'outline'}
                     className="text-xs"
                   >
-                    {statusConfig[contact.status]?.label || contact.status}
+                    {statusConfig[sheetContact.status]?.label || sheetContact.status}
                   </Badge>
-                </div>
-
-                <div
-                  className="col-span-1 flex gap-1 flex-wrap"
-                  onClick={() => router.push(`/dashboard/contacts/${contact.id}`)}
-                >
-                  {contact.tags?.slice(0, 2).map((ct) => (
+                  {sheetContact.tags?.map((ct) => (
                     <Badge
                       key={ct.tag.id}
                       variant="outline"
@@ -587,17 +700,78 @@ export default function ContactsPage() {
                       {ct.tag.name}
                     </Badge>
                   ))}
-                  {(contact.tags?.length || 0) > 2 && (
-                    <Badge variant="outline" className="text-xs">
-                      +{contact.tags!.length - 2}
-                    </Badge>
+                </div>
+
+                {/* Контактні дані */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Mail className="h-4 w-4 shrink-0 text-foreground-muted" />
+                    <span className="text-foreground-muted">{sheetContact.email || '—'}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Phone className="h-4 w-4 shrink-0 text-foreground-muted" />
+                    <span className="text-foreground-muted">{sheetContact.phone || '—'}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Building2 className="h-4 w-4 shrink-0 text-foreground-muted" />
+                    <span className="text-foreground-muted">
+                      {[sheetContact.company, sheetContact.position].filter(Boolean).join(' · ') ||
+                        '—'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Нотатки */}
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-foreground-muted">Нотатки</p>
+                  {sheetContact.notes ? (
+                    <p className="rounded-lg border border-border bg-background p-3 text-sm whitespace-pre-wrap">
+                      {sheetContact.notes}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-foreground-muted">Нотаток немає</p>
                   )}
                 </div>
-              </div>
-            ))}
+
+                {/* Пов'язані угоди */}
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-foreground-muted">Пов&apos;язані угоди</p>
+                  {sheetDeals.length > 0 ? (
+                    <div className="space-y-2">
+                      {sheetDeals.map((deal) => (
+                        <Link
+                          key={deal.id}
+                          href={`/dashboard/deals/${deal.id}`}
+                          className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 text-sm transition-colors hover:border-primary/50 hover:bg-primary/5"
+                        >
+                          <span className="truncate font-medium">{deal.title}</span>
+                          <span className="shrink-0 text-sm font-semibold text-primary">
+                            {formatDealAmount(deal.value, deal.currency)}
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-foreground-muted">Угод немає</p>
+                  )}
+                </div>
+              </>
+            ) : null}
           </div>
-        </div>
-      )}
+
+          <SheetFooter>
+            <Link
+              href={`/dashboard/contacts/${openId ?? ''}`}
+              className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-background px-4 text-sm font-medium transition-colors hover:bg-secondary"
+            >
+              Відкрити повну картку
+            </Link>
+            <SheetClose className="h-9 rounded-md px-4 text-sm font-medium text-foreground-muted transition-colors hover:bg-secondary">
+              Закрити
+            </SheetClose>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
       {/* Pagination */}
       {total > 50 && (

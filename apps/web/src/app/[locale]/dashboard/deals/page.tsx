@@ -18,19 +18,31 @@ import {
   Bot,
   Settings,
   Calendar,
-  Building2,
-  User,
   ArrowRight,
   MoreHorizontal,
   GripVertical,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { QuickCreatePopover, QuickDealForm } from '@/components/quick-create';
+import { QuickCreatePopover, QuickDealForm, QuickSelect } from '@/components/quick-create';
 import { useTourAutoStart } from '@/components/tour/tour-provider';
-import { Button, Card, CardContent, EmptyState } from '@/components/ui';
+import {
+  Avatar,
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  EmptyState,
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  Skeleton,
+} from '@/components/ui';
 import { cn } from '@/lib/utils';
 
 interface Pipeline {
@@ -68,6 +80,29 @@ const currencySymbols: Record<string, string> = {
   EUR: '€',
 };
 
+interface DealDetail {
+  id: string;
+  title: string;
+  value: number | null;
+  currency: string;
+  probability: number;
+  status: string;
+  company: string | null;
+  expectedCloseDate: string | null;
+  stageId: string;
+  contactId: string | null;
+  contact?: { id: string; firstName: string; lastName: string | null } | null;
+  owner?: { name: string } | null;
+}
+
+interface TimelineItem {
+  id: string;
+  type: string;
+  title: string;
+  body: string | null;
+  date: string;
+}
+
 const stageColors = [
   'from-primary to-primary-hover',
   'from-info to-info-hover',
@@ -76,11 +111,29 @@ const stageColors = [
   'from-danger to-danger-hover',
 ];
 
-function getScoreColor(score: number) {
-  if (score >= 80) return 'bg-success/10 text-success';
-  if (score >= 50) return 'bg-warning/10 text-warning';
-  return 'bg-danger/10 text-danger';
+function getScoreTextClass(score: number) {
+  if (score >= 80) return 'text-success';
+  if (score >= 50) return 'text-warning';
+  return 'text-danger';
 }
+
+const statusBadge: Record<
+  string,
+  { label: string; variant: 'info' | 'success' | 'danger' | 'secondary' }
+> = {
+  open: { label: 'Відкрита', variant: 'info' },
+  won: { label: 'Виграна', variant: 'success' },
+  lost: { label: 'Програна', variant: 'danger' },
+};
+
+const activityTypeLabels: Record<string, string> = {
+  call: 'Дзвінок',
+  email: 'Лист',
+  meeting: 'Зустріч',
+  task: 'Задача',
+  note: 'Нотатка',
+  sms: 'SMS',
+};
 
 function DraggableDeal({
   deal,
@@ -108,63 +161,53 @@ function DraggableDeal({
       style={style}
       onClick={onClick}
       className={cn(
-        'kanban-card group cursor-grab active:cursor-grabbing',
+        'kanban-card group cursor-grab active:cursor-grabbing p-3 rounded-xl transition-colors',
         isDragging && 'opacity-40 ring-2 ring-primary shadow-lg z-50',
       )}
     >
       <div className="flex items-start gap-2">
         <GripVertical className="h-4 w-4 text-foreground-muted/40 group-hover:text-foreground-muted mt-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-sm mb-1.5 line-clamp-2 group-hover:text-primary transition-colors">
+        <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+          <p className="text-sm font-medium leading-snug line-clamp-2 group-hover:text-primary transition-colors">
             {deal.title}
           </p>
 
           {deal.value != null && (
-            <p className="text-base font-bold text-primary mb-2">
+            <p className="text-sm font-semibold text-primary">
               {currencySymbols[deal.currency] || deal.currency}
               {deal.value.toLocaleString('uk')}
             </p>
           )}
 
-          <div className="flex flex-wrap items-center gap-1.5">
-            {deal.aiScore != null && (
-              <span
-                className={cn(
-                  'inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-lg',
-                  getScoreColor(deal.aiScore),
-                )}
-              >
-                <div
-                  className={cn(
-                    'w-1.5 h-1.5 rounded-full',
-                    deal.aiScore >= 80
-                      ? 'bg-success'
-                      : deal.aiScore >= 50
-                        ? 'bg-warning'
-                        : 'bg-danger',
-                  )}
-                />
-                AI {deal.aiScore}%
+          {deal.aiScore != null && (
+            <Badge
+              variant="outline"
+              className={cn('gap-1 text-xs font-semibold', getScoreTextClass(deal.aiScore))}
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-current" />
+              AI {deal.aiScore}%
+            </Badge>
+          )}
+
+          {deal.contact ? (
+            <div className="flex items-center gap-2">
+              <Avatar
+                name={`${deal.contact.firstName} ${deal.contact.lastName || ''}`.trim()}
+                size="sm"
+                className="h-6 w-6 text-2xs"
+              />
+              <span className="truncate text-xs text-foreground-muted">
+                {deal.contact.firstName}
               </span>
-            )}
+            </div>
+          ) : deal.company ? (
+            <span className="truncate text-xs text-foreground-muted">{deal.company}</span>
+          ) : null}
+
+          <div className="flex items-center gap-3 text-xs text-foreground-muted">
             {deal.probability > 0 && (
               <span className="text-xs text-foreground-muted bg-secondary px-1.5 py-0.5 rounded">
                 {deal.probability}%
-              </span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-3 mt-2.5 text-xs text-foreground-muted">
-            {deal.company && (
-              <span className="flex items-center gap-1 truncate">
-                <Building2 className="h-3 w-3" />
-                <span className="truncate max-w-[80px]">{deal.company}</span>
-              </span>
-            )}
-            {deal.contact && (
-              <span className="flex items-center gap-1">
-                <User className="h-3 w-3" />
-                {deal.contact.firstName}
               </span>
             )}
             {deal.expectedCloseDate && (
@@ -198,7 +241,7 @@ function DroppableStage({
     <div
       ref={setNodeRef}
       className={cn(
-        'flex-shrink-0 w-80 flex flex-col rounded-2xl border transition-all duration-200',
+        'flex-shrink-0 w-80 flex flex-col rounded-xl border transition-all duration-200',
         isOver
           ? 'border-primary bg-primary/5 shadow-lg shadow-primary/10 scale-[1.01]'
           : 'border-border bg-background-secondary/50',
@@ -210,7 +253,6 @@ function DroppableStage({
 }
 
 export default function DealsPage() {
-  const router = useRouter();
   const [pipelines, setPipelines] = useState<Pipeline[]>([]);
   const [selectedPipeline, setSelectedPipeline] = useState<Pipeline | null>(null);
   const [deals, setDeals] = useState<Deal[]>([]);
@@ -219,6 +261,12 @@ export default function DealsPage() {
   const [activeDeal, setActiveDeal] = useState<Deal | null>(null);
   const [overStageId, setOverStageId] = useState<string | null>(null);
   const [scoringDeals, setScoringDeals] = useState(false);
+
+  // Шухляда деталей угоди
+  const [openDealId, setOpenDealId] = useState<string | null>(null);
+  const [dealDetail, setDealDetail] = useState<DealDetail | null>(null);
+  const [dealLoading, setDealLoading] = useState(false);
+  const [timeline, setTimeline] = useState<TimelineItem[]>([]);
 
   // Quick-create popover
   const [quickOpen, setQuickOpen] = useState(false);
@@ -265,10 +313,83 @@ export default function DealsPage() {
       if (search) params.set('search', search);
       const res = await fetch(`/api/deals?${params}`);
       const data = await res.json();
-      // GET /api/deals отвечает через apiSuccess: { success, data: { deals } }
+      // GET /api/deals відповідає через apiSuccess: { success, data: { deals } }
       setDeals(data.data?.deals || data.deals || []);
     } catch {
-      // сделки просто не обновятся
+      // угоди просто не оновляться
+    }
+  };
+
+  // Завантаження деталей угоди для шухляди
+  useEffect(() => {
+    if (!openDealId) {
+      setDealDetail(null);
+      setTimeline([]);
+      setDealLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setDealLoading(true);
+    setDealDetail(null);
+    setTimeline([]);
+    fetch(`/api/deals/${openDealId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled && data.deal) setDealDetail(data.deal);
+      })
+      .catch(() => {
+        // деталі просто не завантажаться
+      })
+      .finally(() => {
+        if (!cancelled) setDealLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [openDealId]);
+
+  // Таймлайн активності контакту
+  useEffect(() => {
+    const contactId = dealDetail?.contactId;
+    if (!contactId) {
+      setTimeline([]);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/activity?contactId=${contactId}&limit=8`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled) setTimeline(Array.isArray(data.activities) ? data.activities : []);
+      })
+      .catch(() => {
+        // таймлайн просто не покажемо
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [dealDetail?.contactId]);
+
+  // Зміна стадії зі шухляди: оптімістичне оновлення + збереження
+  const handleStageChange = async (stageId: string) => {
+    if (!stageId || !openDealId || stageId === dealDetail?.stageId) return;
+    setDealDetail((prev) => (prev ? { ...prev, stageId } : prev));
+    try {
+      await fetch('/api/deals/move', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dealId: openDealId, stageId }),
+      });
+      fetchDeals();
+      fetch(`/api/deals/${openDealId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.deal) setDealDetail(data.deal);
+        })
+        .catch(() => {
+          // оновлення деталей просто не відбудеться
+        });
+    } catch {
+      fetchDeals();
     }
   };
 
@@ -339,7 +460,7 @@ export default function DealsPage() {
       });
       if (res.ok) fetchDeals();
     } catch {
-      // оценка просто не выполнится
+      // оцінка просто не виконається
     } finally {
       setScoringDeals(false);
     }
@@ -521,7 +642,7 @@ export default function DealsPage() {
                           key={deal.id}
                           deal={deal}
                           isDragging={activeDeal?.id === deal.id}
-                          onClick={() => router.push(`/dashboard/deals/${deal.id}`)}
+                          onClick={() => setOpenDealId(deal.id)}
                         />
                       ))}
 
@@ -538,31 +659,31 @@ export default function DealsPage() {
 
             <DragOverlay dropAnimation={null}>
               {activeDeal ? (
-                <div className="kanban-card ring-2 ring-primary shadow-2xl rotate-3 opacity-90 max-w-[320px]">
+                <div className="kanban-card p-3 rounded-xl ring-2 ring-primary shadow-2xl rotate-3 opacity-90 max-w-[320px]">
                   <div className="flex items-start gap-2">
                     <GripVertical className="h-4 w-4 text-foreground-muted/40 mt-0.5 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm mb-1.5 line-clamp-2">
+                    <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+                      <p className="text-sm font-medium leading-snug line-clamp-2">
                         {activeDeal.title}
                       </p>
                       {activeDeal.value != null && (
-                        <p className="text-base font-bold text-primary mb-2">
+                        <p className="text-sm font-semibold text-primary">
                           {currencySymbols[activeDeal.currency] || activeDeal.currency}
                           {activeDeal.value.toLocaleString('uk')}
                         </p>
                       )}
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        {activeDeal.aiScore != null && (
-                          <span
-                            className={cn(
-                              'inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-lg',
-                              getScoreColor(activeDeal.aiScore),
-                            )}
-                          >
-                            AI {activeDeal.aiScore}%
-                          </span>
-                        )}
-                      </div>
+                      {activeDeal.aiScore != null && (
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            'gap-1 text-xs font-semibold',
+                            getScoreTextClass(activeDeal.aiScore),
+                          )}
+                        >
+                          <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                          AI {activeDeal.aiScore}%
+                        </Badge>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -571,6 +692,144 @@ export default function DealsPage() {
           </DndContext>
         )
       )}
+
+      {/* Шухляда деталей угоди */}
+      <Sheet
+        open={!!openDealId}
+        onOpenChange={(o) => {
+          if (!o) setOpenDealId(null);
+        }}
+      >
+        <SheetContent side="right" className="sm:max-w-lg">
+          <SheetHeader>
+            <SheetTitle className="truncate pr-8">{dealDetail?.title || 'Угода'}</SheetTitle>
+            <SheetDescription className="sr-only">
+              Деталі угоди, стадія та таймлайн
+            </SheetDescription>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-xs">
+                {dealDetail?.probability ?? 0}%
+              </Badge>
+              <Badge
+                variant={statusBadge[dealDetail?.status || '']?.variant || 'secondary'}
+                className="text-xs"
+              >
+                {statusBadge[dealDetail?.status || '']?.label || dealDetail?.status || '—'}
+              </Badge>
+            </div>
+          </SheetHeader>
+
+          <div className="flex-1 space-y-4 overflow-y-auto p-4">
+            {dealLoading && <Skeleton className="h-32" />}
+
+            {dealDetail && (
+              <>
+                {/* Дані */}
+                <div>
+                  <p className="text-xs font-medium text-foreground-muted">Дані</p>
+                  <div className="mt-2 grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-xs text-foreground-muted">Сума</p>
+                      <p className="text-sm font-medium">
+                        {dealDetail.value != null
+                          ? `${currencySymbols[dealDetail.currency] || dealDetail.currency}${dealDetail.value.toLocaleString('uk')}`
+                          : '—'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-foreground-muted">Контакт</p>
+                      <p className="text-sm font-medium">
+                        {dealDetail.contact
+                          ? `${dealDetail.contact.firstName} ${dealDetail.contact.lastName || ''}`.trim()
+                          : '—'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-foreground-muted">Компанія</p>
+                      <p className="text-sm font-medium">{dealDetail.company || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-foreground-muted">Очікуване закриття</p>
+                      <p className="text-sm font-medium">
+                        {dealDetail.expectedCloseDate
+                          ? new Date(dealDetail.expectedCloseDate).toLocaleDateString('uk', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                            })
+                          : '—'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-foreground-muted">Власник</p>
+                      <p className="text-sm font-medium">{dealDetail.owner?.name || '—'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Стадія */}
+                <div>
+                  <p className="text-xs font-medium text-foreground-muted">Стадія</p>
+                  <div className="mt-2 w-56">
+                    <QuickSelect
+                      value={dealDetail.stageId}
+                      onChange={handleStageChange}
+                      options={
+                        selectedPipeline?.stages.map((s) => ({ id: s.id, name: s.name })) || []
+                      }
+                      placeholder="Оберіть стадію"
+                    />
+                  </div>
+                </div>
+
+                {/* Таймлайн */}
+                <div>
+                  <p className="text-xs font-medium text-foreground-muted">Таймлайн</p>
+                  <div className="mt-1">
+                    {timeline.length === 0 ? (
+                      <p className="text-sm text-foreground-muted">Таймлайн порожній</p>
+                    ) : (
+                      timeline.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-start gap-2 border-b border-border py-2 last:border-0"
+                        >
+                          <Badge variant="outline" className="shrink-0 text-xs">
+                            {activityTypeLabels[item.type] || item.type}
+                          </Badge>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm truncate">{item.title || item.body || '—'}</p>
+                            <p className="text-xs text-foreground-muted">
+                              {new Date(item.date).toLocaleString('uk', {
+                                day: '2-digit',
+                                month: 'short',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          <SheetFooter>
+            <Link
+              href={`/dashboard/deals/${openDealId}`}
+              className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-background px-4 text-sm font-medium transition-colors hover:bg-secondary"
+            >
+              Відкрити сторінку угоди
+            </Link>
+            <SheetClose className="h-9 rounded-md px-4 text-sm font-medium text-foreground-muted transition-colors hover:bg-secondary">
+              Закрити
+            </SheetClose>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
