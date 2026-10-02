@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { RevenueChart, PieChartWidget, FunnelChart } from '@/components/analytics/charts';
 import { DataError } from '@/components/data-error';
 import { QuickSelect } from '@/components/quick-create';
-import { Card, Skeleton } from '@/components/ui';
+import { Card, CardContent, CardHeader, CardTitle, Skeleton } from '@/components/ui';
 
 interface AnalyticsData {
   stats: {
@@ -102,77 +102,77 @@ export default function AnalyticsPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="p-5">
+        <Card className="p-5 shadow-sm">
           <p className="text-sm text-foreground-muted">Конверсія</p>
-          <p className="mt-2 text-3xl font-bold text-primary">{s?.conversionRate || 0}%</p>
+          <p className="mt-2 text-2xl font-bold text-primary">{s?.conversionRate || 0}%</p>
           <p className="text-sm text-foreground-muted">
             {s?.wonDeals || 0} виграних з {(s?.wonDeals || 0) + (s?.lostDeals || 0)}
           </p>
         </Card>
-        <Card className="p-5">
+        <Card className="p-5 shadow-sm">
           <p className="text-sm text-foreground-muted">Загальна виручка</p>
-          <p className="mt-2 text-3xl font-bold text-success">
+          <p className="mt-2 text-2xl font-bold text-success">
             ₴{(s?.totalRevenue || 0).toLocaleString('uk')}
           </p>
           <p className="text-sm text-foreground-muted">Від виграних угод</p>
         </Card>
-        <Card className="p-5">
+        <Card className="p-5 shadow-sm">
           <p className="text-sm text-foreground-muted">Прогноз</p>
-          <p className="mt-2 text-3xl font-bold text-warning">
+          <p className="mt-2 text-2xl font-bold text-warning">
             ₴{(s?.forecast || 0).toLocaleString('uk')}
           </p>
           <p className="text-sm text-foreground-muted">На основі середньої угоди</p>
         </Card>
-        <Card className="p-5">
+        <Card className="p-5 shadow-sm">
           <p className="text-sm text-foreground-muted">Активні угоди</p>
-          <p className="mt-2 text-3xl font-bold text-info">{s?.activeDeals || 0}</p>
+          <p className="mt-2 text-2xl font-bold text-info">{s?.activeDeals || 0}</p>
           <p className="text-sm text-foreground-muted">У робочій воронці</p>
         </Card>
       </div>
 
       {/* Revenue chart */}
-      <Card>
-        <div className="p-5 border-b border-border">
-          <h2 className="text-lg font-semibold">Виручка по місяцях</h2>
-        </div>
-        <div className="p-5">
+      <Card className="shadow-sm">
+        <CardHeader className="border-b border-border">
+          <CardTitle>Виручка по місяцях</CardTitle>
+        </CardHeader>
+        <CardContent className="p-5">
           <RevenueChart data={data?.revenueByMonth || []} />
-        </div>
+        </CardContent>
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Funnel */}
-        <Card>
-          <div className="p-5 border-b border-border">
-            <h2 className="text-lg font-semibold">Воронка продажів</h2>
-          </div>
-          <div className="p-5">
+        <Card className="shadow-sm">
+          <CardHeader className="border-b border-border">
+            <CardTitle>Воронка продажів</CardTitle>
+          </CardHeader>
+          <CardContent className="p-5">
             <FunnelChart data={data?.dealsByStage || []} />
-          </div>
+          </CardContent>
         </Card>
 
         {/* Activities */}
-        <Card>
-          <div className="p-5 border-b border-border">
-            <h2 className="text-lg font-semibold">Активності за період</h2>
-          </div>
-          <div className="p-5">
+        <Card className="shadow-sm">
+          <CardHeader className="border-b border-border">
+            <CardTitle>Активності за період</CardTitle>
+          </CardHeader>
+          <CardContent className="p-5">
             <PieChartWidget
               data={(data?.activitiesByType || []).map((a) => ({
                 name: typeLabels[a.name] || a.name,
                 value: a.count,
               }))}
             />
-          </div>
+          </CardContent>
         </Card>
       </div>
 
       {/* Top managers */}
       {data?.topManagers && data.topManagers.length > 0 && (
-        <Card>
-          <div className="p-5 border-b border-border">
-            <h2 className="text-lg font-semibold">Топ менеджери</h2>
-          </div>
+        <Card className="shadow-sm">
+          <CardHeader className="border-b border-border">
+            <CardTitle>Топ менеджери</CardTitle>
+          </CardHeader>
           <div className="divide-y divide-border">
             {data.topManagers.map((m, i) => (
               <div key={m.name} className="flex items-center justify-between p-4">
