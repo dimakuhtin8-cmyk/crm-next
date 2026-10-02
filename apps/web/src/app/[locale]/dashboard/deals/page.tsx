@@ -70,9 +70,9 @@ const currencySymbols: Record<string, string> = {
 
 const stageColors = [
   'from-primary to-primary-hover',
-  'from-accent-foreground to-accent',
-  'from-[#C6A27F] to-[#7B5337]',
+  'from-info to-info-hover',
   'from-success to-success-hover',
+  'from-warning to-warning-hover',
   'from-danger to-danger-hover',
 ];
 

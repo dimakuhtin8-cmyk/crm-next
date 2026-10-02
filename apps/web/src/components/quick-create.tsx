@@ -61,7 +61,7 @@ export function QuickCreatePopover({
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className={`absolute inset-0 bg-[#1D1B1D]/60 transition-opacity duration-200 ${
+        className={`absolute inset-0 bg-black/50 transition-opacity duration-200 ${
           shown ? 'opacity-100' : 'opacity-0'
         }`}
         onClick={onClose}
@@ -71,7 +71,7 @@ export function QuickCreatePopover({
         role="dialog"
         aria-label={title}
         style={{ maxWidth: width }}
-        className="relative w-full overflow-hidden rounded-3xl border border-border bg-card shadow-2xl transition-all duration-200 ease-out data-[shown=true]:opacity-100 data-[shown=true]:scale-100 data-[shown=true]:translate-y-0 data-[shown=false]:opacity-0 data-[shown=false]:scale-95 data-[shown=false]:translate-y-3"
+        className="relative w-full overflow-hidden rounded-xl border border-border bg-card shadow-2xl transition-all duration-200 ease-out data-[shown=true]:opacity-100 data-[shown=true]:scale-100 data-[shown=true]:translate-y-0 data-[shown=false]:opacity-0 data-[shown=false]:scale-95 data-[shown=false]:translate-y-3"
         data-shown={shown}
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
@@ -194,7 +194,7 @@ export function QuickSelect({
         type="button"
         disabled={disabled}
         onClick={toggle}
-        className="flex h-10 w-full items-center justify-between gap-2 rounded-full border border-border bg-background px-4 text-sm transition-all hover:border-primary/50 focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+        className="flex h-9 w-full items-center justify-between gap-2 rounded-full border border-border bg-background px-4 text-sm transition-all hover:border-primary/50 focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
         aria-haspopup="listbox"
         aria-expanded={open}
       >

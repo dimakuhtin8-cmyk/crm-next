@@ -15,7 +15,7 @@ export function TelegramLoginButton() {
       <button
         type="button"
         onClick={handleClick}
-        className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#0088cc]/60 px-4 py-2 text-sm font-semibold text-white cursor-not-allowed"
+        className="flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-[#0088cc]/60 px-4 py-2 text-sm font-semibold text-white cursor-not-allowed"
         disabled
       >
         <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">

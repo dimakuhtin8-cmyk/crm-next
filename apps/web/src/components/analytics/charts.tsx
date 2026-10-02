@@ -15,7 +15,7 @@ import {
   Line,
 } from 'recharts';
 
-const COLORS = ['#C73651', '#929789', '#C6A27F', '#7B5337', '#30304A', '#A52C43'];
+const COLORS = ['#c73651', '#4f46e5', '#059669', '#d97706', '#0f172a', '#64748b'];
 
 interface ChartProps {
   data: Array<{ name: string; count?: number; value?: number; revenue?: number }>;
@@ -44,7 +44,7 @@ export function BarChartWidget({ data, height = 300 }: ChartProps) {
             color: 'var(--foreground)',
           }}
         />
-        <Bar dataKey="count" fill="#C73651" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="count" fill="var(--primary)" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -73,7 +73,7 @@ export function RevenueChart({ data, height = 300 }: ChartProps) {
           }}
           formatter={(value: number) => [`${value.toLocaleString('uk')} ₴`, 'Виручка']}
         />
-        <Bar dataKey="revenue" fill="#22c55e" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="revenue" fill="var(--success)" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -104,9 +104,9 @@ export function LineChartWidget({ data, height = 300 }: ChartProps) {
         <Line
           type="monotone"
           dataKey="count"
-          stroke="#C73651"
+          stroke="var(--primary)"
           strokeWidth={2}
-          dot={{ fill: '#C73651' }}
+          dot={{ fill: 'var(--primary)' }}
         />
       </LineChart>
     </ResponsiveContainer>

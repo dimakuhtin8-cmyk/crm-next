@@ -144,7 +144,7 @@ export default function ObservabilityPage() {
               : 'border-danger',
         )}
       >
-        <CardContent className="p-6">
+        <CardContent className="p-5">
           <div className="flex items-center gap-4">
             <div
               className={cn(

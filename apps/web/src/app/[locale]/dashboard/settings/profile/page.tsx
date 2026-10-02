@@ -60,11 +60,11 @@ export default function ProfileSettingsPage() {
         <CardContent>
           <form onSubmit={handleSave} className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Ім&apos;я</label>
+              <label className="text-xs font-medium text-muted-foreground">Ім&apos;я</label>
               <Input value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Email</label>
+              <label className="text-xs font-medium text-muted-foreground">Email</label>
               <Input value={email} disabled />
               <p className="text-xs text-muted-foreground">
                 Email змінюється через налаштування акаунту

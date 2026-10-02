@@ -49,7 +49,7 @@ export default function ForgotPasswordPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md">
-          <CardContent className="p-8 text-center">
+          <CardContent className="p-5 text-center">
             <div className="flex justify-center mb-4">
               <div className="p-3 rounded-full bg-success/10">
                 <CheckCircle className="h-12 w-12 text-success" />
@@ -77,7 +77,7 @@ export default function ForgotPasswordPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
-        <CardContent className="p-8">
+        <CardContent className="p-5">
           <div className="text-center mb-6">
             <h1 className="text-2xl font-bold">Забули пароль?</h1>
             <p className="text-foreground-muted mt-2">

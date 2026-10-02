@@ -49,7 +49,7 @@ export default function TenantsListPage() {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="p-5">
         <div className="animate-pulse space-y-4">
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-24 bg-muted rounded-lg" />
@@ -60,7 +60,7 @@ export default function TenantsListPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-4xl mx-auto p-5">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Компанії</h1>

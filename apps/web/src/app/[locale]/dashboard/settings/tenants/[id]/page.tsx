@@ -143,7 +143,7 @@ export default function TenantDetailPage() {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="max-w-4xl mx-auto p-5">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-muted rounded w-1/3" />
           <div className="h-48 bg-muted rounded-lg" />
@@ -154,7 +154,7 @@ export default function TenantDetailPage() {
 
   if (!tenant) {
     return (
-      <div className="max-w-4xl mx-auto p-6 text-center">
+      <div className="max-w-4xl mx-auto p-5 text-center">
         <h2 className="text-xl font-bold mb-2">Компанію не знайдено</h2>
         <Button onClick={() => router.push('/dashboard/settings/tenants')}>
           Повернутися до списку
@@ -164,7 +164,7 @@ export default function TenantDetailPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="max-w-4xl mx-auto p-5 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">{tenant.name}</h1>
@@ -197,7 +197,7 @@ export default function TenantDetailPage() {
           {editing ? (
             <form onSubmit={handleUpdate} className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Назва</label>
+                <label className="text-xs font-medium text-muted-foreground">Назва</label>
                 <Input
                   value={form.name}
                   onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
@@ -205,7 +205,7 @@ export default function TenantDetailPage() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Slug</label>
+                <label className="text-xs font-medium text-muted-foreground">Slug</label>
                 <Input
                   value={form.slug}
                   onChange={(e) => setForm((prev) => ({ ...prev, slug: e.target.value }))}
@@ -214,7 +214,7 @@ export default function TenantDetailPage() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Домен</label>
+                <label className="text-xs font-medium text-muted-foreground">Домен</label>
                 <Input
                   value={form.domain}
                   onChange={(e) => setForm((prev) => ({ ...prev, domain: e.target.value }))}
@@ -267,7 +267,7 @@ export default function TenantDetailPage() {
             <>
               {/* Provider selector */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">AI-провайдер</label>
+                <label className="text-xs font-medium text-muted-foreground">AI-провайдер</label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {AI_PROVIDERS.filter((p) => p.id !== 'custom').map((provider) => (
                     <button
@@ -314,7 +314,7 @@ export default function TenantDetailPage() {
                 if (!selectedProvider || selectedProvider.models.length <= 1) return null;
                 return (
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Модель</label>
+                    <label className="text-xs font-medium text-muted-foreground">Модель</label>
                     <QuickSelect
                       value={form.aiModel}
                       onChange={(id) => setForm((prev) => ({ ...prev, aiModel: id }))}
@@ -329,7 +329,7 @@ export default function TenantDetailPage() {
 
               {/* API Key input */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">API-ключ</label>
+                <label className="text-xs font-medium text-muted-foreground">API-ключ</label>
                 <Input
                   type="password"
                   value={form.aiApiKey || form.geminiApiKey}

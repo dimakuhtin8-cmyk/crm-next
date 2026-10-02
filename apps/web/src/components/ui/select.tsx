@@ -11,10 +11,10 @@ function Select({ className, children, onValueChange, onChange, ...props }: Sele
   return (
     <select
       className={cn(
-        'h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium text-foreground',
+        'h-9 rounded-md border border-border bg-card px-3 text-sm font-medium text-foreground',
         'focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent',
         'disabled:opacity-50',
-        className
+        className,
       )}
       onChange={(e) => {
         onChange?.(e);

@@ -44,8 +44,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   return (
     <main className="min-h-screen bg-background text-foreground antialiased">
       <style>{`
-        ::selection { background: #C73651; color: #FFF8F0; }
-        :focus-visible { outline: 2px solid #C73651; outline-offset: 3px; border-radius: 8px; }
+        ::selection { background: var(--primary); color: var(--primary-foreground); }
+        :focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; border-radius: 8px; }
         @keyframes landing-rise {
           from { opacity: 0; transform: translateY(14px); }
           to { opacity: 1; transform: translateY(0); }
@@ -57,7 +57,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       `}</style>
 
       {/* Header — coal */}
-      <header className="sticky top-0 z-50 border-b border-border bg-[#1D1B1D]/95 text-[#E5E0D4] backdrop-blur">
+      <header className="sticky top-0 z-50 border-b border-border bg-inverse/95 text-inverse-foreground backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
           <Link
             href={`/${locale}`}
@@ -65,7 +65,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             aria-label="CRM-Next — на головну"
           >
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="#FFF8F0" aria-hidden="true">
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
               </svg>
             </span>
@@ -73,22 +73,25 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           </Link>
 
           <nav
-            className="hidden items-center gap-6 text-sm font-medium text-[#B3AC9C] md:flex"
+            className="hidden items-center gap-6 text-sm font-medium text-inverse-muted md:flex"
             aria-label="Розділи"
           >
-            <Link className="transition-colors hover:text-[#E5E0D4]" href="#mozlyvosti">
+            <Link className="transition-colors hover:text-inverse-foreground" href="#mozlyvosti">
               Можливості
             </Link>
-            <Link className="transition-colors hover:text-[#E5E0D4]" href="#kanaly">
+            <Link className="transition-colors hover:text-inverse-foreground" href="#kanaly">
               Канали
             </Link>
-            <Link className="transition-colors hover:text-[#E5E0D4]" href="#avtomatyzatsiya">
+            <Link
+              className="transition-colors hover:text-inverse-foreground"
+              href="#avtomatyzatsiya"
+            >
               Автоматизація
             </Link>
-            <Link className="transition-colors hover:text-[#E5E0D4]" href="#analityka">
+            <Link className="transition-colors hover:text-inverse-foreground" href="#analityka">
               Аналітика
             </Link>
-            <Link className="transition-colors hover:text-[#E5E0D4]" href="#faq">
+            <Link className="transition-colors hover:text-inverse-foreground" href="#faq">
               FAQ
             </Link>
           </nav>
@@ -96,7 +99,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           <div className="hidden items-center gap-3 md:flex">
             <Link
               href={`/${locale}/auth/login`}
-              className="text-sm font-semibold text-[#E5E0D4] underline-offset-4 hover:underline"
+              className="text-sm font-semibold text-inverse-foreground underline-offset-4 hover:underline"
             >
               Увійти
             </Link>
@@ -166,7 +169,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             </p>
           </div>
 
-          <div className="landing-rise rounded-2xl border border-border bg-card p-5 shadow-lg sm:p-6">
+          <div className="landing-rise rounded-2xl border border-border bg-card p-5 shadow-lg sm:p-5">
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm font-bold">Воронка продажу</p>
               <p className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-foreground-secondary">
@@ -314,15 +317,17 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
               <p className="mt-3 max-w-[68ch] text-sm leading-7 text-foreground-secondary sm:text-base">
                 Правила самі розподіляють лідів, створюють завдання й рухають угоди.
               </p>
-              <div className="mt-5 rounded-2xl bg-[#1D1B1D] p-5 text-sm leading-7 text-[#E5E0D4]">
-                <p className="font-mono text-[13px] text-[#E7C89F]">
+              <div className="mt-5 rounded-2xl bg-inverse p-5 text-sm leading-7 text-inverse-foreground">
+                <p className="font-mono text-[13px] text-inverse-accent">
                   Якщо угода 3 дні без активності
                 </p>
-                <p className="mt-2 font-mono text-[13px] text-[#E5E0D4]/90">
+                <p className="mt-2 font-mono text-[13px] text-inverse-foreground/90">
                   → створити завдання менеджеру
                 </p>
-                <p className="font-mono text-[13px] text-[#E5E0D4]/90">→ нагадати керівнику</p>
-                <p className="font-mono text-[13px] text-[#E5E0D4]/90">
+                <p className="font-mono text-[13px] text-inverse-foreground/90">
+                  → нагадати керівнику
+                </p>
+                <p className="font-mono text-[13px] text-inverse-foreground/90">
                   → підсвітити угоду у воронці
                 </p>
               </div>
@@ -450,11 +455,11 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       {/* Final CTA */}
       <section className="bg-background">
         <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:py-20">
-          <div className="rounded-3xl bg-[#1D1B1D] px-6 py-12 text-center text-[#E5E0D4] sm:px-12">
+          <div className="rounded-2xl bg-inverse px-6 py-12 text-center text-inverse-foreground sm:px-12">
             <h2 className="mx-auto max-w-[20ch] text-balance text-3xl font-bold tracking-tight sm:text-4xl">
               Наведіть лад у продажах цього тижня
             </h2>
-            <p className="mx-auto mt-4 max-w-[60ch] text-sm leading-7 text-[#E5E0D4]/75 sm:text-base">
+            <p className="mx-auto mt-4 max-w-[60ch] text-sm leading-7 text-inverse-foreground/75 sm:text-base">
               Почніть з бази й воронки, далі підключіть автоматизацію та AI-підказки.
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
@@ -466,7 +471,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
               </Link>
               <Link
                 href={`/${locale}/auth/login`}
-                className="inline-flex min-h-12 items-center justify-center rounded-xl border border-white/25 px-7 text-sm font-bold text-[#E5E0D4] transition-colors hover:bg-white/10"
+                className="inline-flex min-h-12 items-center justify-center rounded-xl border border-white/25 px-7 text-sm font-bold text-inverse-foreground transition-colors hover:bg-white/10"
               >
                 Увійти
               </Link>

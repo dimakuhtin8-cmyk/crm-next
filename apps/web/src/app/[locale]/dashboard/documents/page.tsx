@@ -179,10 +179,12 @@ export default function DocumentsPage() {
         {/* Form */}
         <div className="space-y-4">
           <Card>
-            <CardContent className="p-6 space-y-4">
+            <CardContent className="p-5 space-y-4">
               <h3 className="font-medium">Комерційна пропозиція</h3>
               <div>
-                <label className="block text-sm font-medium mb-1">Назва</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  Назва
+                </label>
                 <Input
                   placeholder="Назва послуги/проєкту"
                   value={title}
@@ -190,7 +192,9 @@ export default function DocumentsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Клієнт</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  Клієнт
+                </label>
                 <Input
                   placeholder="Назва компанії"
                   value={company}
@@ -198,7 +202,7 @@ export default function DocumentsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Опис</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Опис</label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -210,7 +214,7 @@ export default function DocumentsPage() {
           </Card>
 
           <Card>
-            <CardContent className="p-6 space-y-4">
+            <CardContent className="p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="font-medium">Послуги/Товари</h3>
                 <Button variant="outline" size="sm" onClick={addProduct}>
@@ -259,10 +263,12 @@ export default function DocumentsPage() {
           </Card>
 
           <Card>
-            <CardContent className="p-6 space-y-4">
+            <CardContent className="p-5 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Валюта</label>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">
+                    Валюта
+                  </label>
                   <QuickSelect
                     value={currency}
                     onChange={setCurrency}
@@ -274,7 +280,9 @@ export default function DocumentsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Дійсно до</label>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">
+                    Дійсно до
+                  </label>
                   <Input
                     type="date"
                     value={validUntil}
@@ -283,7 +291,9 @@ export default function DocumentsPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Примітки</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  Примітки
+                </label>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}

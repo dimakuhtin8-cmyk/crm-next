@@ -140,7 +140,7 @@ export function ContactForm({ contactId, initialData }: ContactFormProps) {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Ім'я *</label>
+                <label className="text-xs font-medium text-muted-foreground">Ім'я *</label>
                 <Input
                   value={form.firstName}
                   onChange={(e) => setForm({ ...form, firstName: e.target.value })}
@@ -149,7 +149,7 @@ export function ContactForm({ contactId, initialData }: ContactFormProps) {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Прізвище</label>
+                <label className="text-xs font-medium text-muted-foreground">Прізвище</label>
                 <Input
                   value={form.lastName}
                   onChange={(e) => setForm({ ...form, lastName: e.target.value })}
@@ -160,7 +160,7 @@ export function ContactForm({ contactId, initialData }: ContactFormProps) {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Email</label>
+                <label className="text-xs font-medium text-muted-foreground">Email</label>
                 <Input
                   type="email"
                   value={form.email}
@@ -169,7 +169,7 @@ export function ContactForm({ contactId, initialData }: ContactFormProps) {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Телефон</label>
+                <label className="text-xs font-medium text-muted-foreground">Телефон</label>
                 <Input
                   type="tel"
                   value={form.phone}
@@ -181,7 +181,7 @@ export function ContactForm({ contactId, initialData }: ContactFormProps) {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Компанія</label>
+                <label className="text-xs font-medium text-muted-foreground">Компанія</label>
                 <Input
                   value={form.company}
                   onChange={(e) => setForm({ ...form, company: e.target.value })}
@@ -189,7 +189,7 @@ export function ContactForm({ contactId, initialData }: ContactFormProps) {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Посада</label>
+                <label className="text-xs font-medium text-muted-foreground">Посада</label>
                 <Input
                   value={form.position}
                   onChange={(e) => setForm({ ...form, position: e.target.value })}
@@ -200,7 +200,7 @@ export function ContactForm({ contactId, initialData }: ContactFormProps) {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Статус</label>
+                <label className="text-xs font-medium text-muted-foreground">Статус</label>
                 <QuickSelect
                   value={form.status}
                   onChange={(id) => setForm({ ...form, status: id })}
@@ -213,7 +213,7 @@ export function ContactForm({ contactId, initialData }: ContactFormProps) {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Джерело</label>
+                <label className="text-xs font-medium text-muted-foreground">Джерело</label>
                 <Input
                   value={form.source}
                   onChange={(e) => setForm({ ...form, source: e.target.value })}
@@ -224,7 +224,7 @@ export function ContactForm({ contactId, initialData }: ContactFormProps) {
 
             {/* Tags */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Теги</label>
+              <label className="text-xs font-medium text-muted-foreground">Теги</label>
               {tagsError && (
                 <p className="text-xs text-destructive">
                   Не вдалося завантажити теги — контакт можна зберегти без них
@@ -268,7 +268,7 @@ export function ContactForm({ contactId, initialData }: ContactFormProps) {
 
             {/* Notes */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Нотатки</label>
+              <label className="text-xs font-medium text-muted-foreground">Нотатки</label>
               <textarea
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}

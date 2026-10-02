@@ -147,7 +147,7 @@ export default function ImportContactsPage() {
           </CardHeader>
           <CardContent>
             <div
-              className="border-2 border-dashed border-border rounded-xl p-12 text-center hover:border-primary/50 transition-colors cursor-pointer"
+              className="border-2 border-dashed border-border rounded-xl p-5 text-center hover:border-primary/50 transition-colors cursor-pointer"
               onClick={() => fileRef.current?.click()}
             >
               <svg
@@ -217,7 +217,7 @@ export default function ImportContactsPage() {
             <div className="grid grid-cols-2 gap-4">
               {Object.entries(fieldLabels).map(([field, label]) => (
                 <div key={field} className="space-y-1">
-                  <label className="text-sm font-medium">{label}</label>
+                  <label className="text-xs font-medium text-muted-foreground">{label}</label>
                   <QuickSelect
                     value={mapping[field] || ''}
                     onChange={(v) => setMapping({ ...mapping, [field]: v })}

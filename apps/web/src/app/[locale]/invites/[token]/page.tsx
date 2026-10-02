@@ -72,7 +72,7 @@ export default function AcceptInvitePage() {
     <div className="flex min-h-screen flex-col items-center justify-center p-4">
       <div className="w-full max-w-md">
         <Card>
-          <CardContent className="p-8 text-center">
+          <CardContent className="p-5 text-center">
             {loading || status === 'loading' ? (
               <p className="text-foreground-muted animate-pulse">Завантаження...</p>
             ) : loadError || !invite ? (

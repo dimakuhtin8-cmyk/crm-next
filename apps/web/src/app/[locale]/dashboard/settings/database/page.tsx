@@ -151,7 +151,7 @@ export default function DatabaseSettingsPage() {
       {/* Current Status */}
       {config && (
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-medium">Поточний статус</h3>
@@ -187,7 +187,7 @@ export default function DatabaseSettingsPage() {
 
       {/* Database Type Selection */}
       <Card>
-        <CardContent className="p-6 space-y-4">
+        <CardContent className="p-5 space-y-4">
           <h3 className="font-medium">Тип бази даних</h3>
           <div className="grid gap-3">
             {DB_OPTIONS.map((option) => (
@@ -220,7 +220,7 @@ export default function DatabaseSettingsPage() {
       {/* Connection URL (for external databases) */}
       {selectedType !== 'shared' && (
         <Card>
-          <CardContent className="p-6 space-y-4">
+          <CardContent className="p-5 space-y-4">
             <h3 className="font-medium">Строка підключення</h3>
             <p className="text-sm text-foreground-muted">
               {selectedType === 'postgresql' && 'postgresql://user:password@host:5432/database'}
@@ -300,7 +300,7 @@ export default function DatabaseSettingsPage() {
 
       {/* Info Card */}
       <Card>
-        <CardContent className="p-6">
+        <CardContent className="p-5">
           <h3 className="font-medium mb-3">Як це працює?</h3>
           <ul className="space-y-2 text-sm text-foreground-muted">
             <li>

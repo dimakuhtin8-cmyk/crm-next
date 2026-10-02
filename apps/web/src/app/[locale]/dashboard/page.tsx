@@ -306,15 +306,20 @@ export default function DashboardPage() {
         {statCards.map((stat) => (
           <Card
             key={stat.name}
-            className={cn('p-5', stat.accent && 'bg-[#1D1B1D] text-[#E5E0D4] border-[#1D1B1D]')}
+            className={cn('p-5', stat.accent && 'bg-foreground text-background border-foreground')}
           >
-            <p className={cn('text-sm', stat.accent ? 'text-white/60' : 'text-foreground-muted')}>
+            <p
+              className={cn(
+                'text-sm',
+                stat.accent ? 'text-background/60' : 'text-foreground-muted',
+              )}
+            >
               {stat.name}
             </p>
             <p
               className={cn(
                 'mt-2 text-3xl font-bold tabular-nums tracking-tight',
-                stat.accent ? 'text-[#E7C89F]' : 'text-foreground',
+                stat.accent ? 'text-primary' : 'text-foreground',
               )}
             >
               {stat.value}
@@ -322,7 +327,7 @@ export default function DashboardPage() {
             <p
               className={cn(
                 'mt-1 text-sm',
-                stat.accent ? 'text-white/60' : 'text-foreground-muted',
+                stat.accent ? 'text-background/60' : 'text-foreground-muted',
               )}
             >
               {stat.sub}
@@ -776,7 +781,7 @@ export default function DashboardPage() {
       </div>
 
       {widgetOrder.filter((id) => !hiddenWidgets.includes(id)).length === 0 && (
-        <Card className="p-10 text-center">
+        <Card className="p-5 text-center">
           <AlertTriangle className="mx-auto mb-3 h-10 w-10 text-foreground-muted" />
           <p className="font-semibold">Усі віджети приховано</p>
           <p className="mt-1 text-sm text-foreground-muted">

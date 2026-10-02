@@ -182,7 +182,7 @@ export default function PaymentHistoryPage() {
               ))}
             </div>
           ) : (
-            <div className="p-12 text-center">
+            <div className="p-5 text-center">
               <Receipt className="w-10 h-10 mx-auto text-foreground-muted/40 mb-3" />
               <p className="text-sm text-foreground-muted">Немає платежів</p>
             </div>

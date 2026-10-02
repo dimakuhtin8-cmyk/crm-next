@@ -75,7 +75,7 @@ export function OwnerPicker({
 
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium">{label}</label>
+      <label className="text-xs font-medium text-muted-foreground">{label}</label>
       <QuickSelect
         value={value || ''}
         onChange={(id) => onChange(id || null)}

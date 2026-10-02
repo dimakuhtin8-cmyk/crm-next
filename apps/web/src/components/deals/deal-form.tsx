@@ -144,7 +144,7 @@ export function DealForm({ dealId, initialData }: DealFormProps) {
             )}
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Назва *</label>
+              <label className="text-xs font-medium text-muted-foreground">Назва *</label>
               <Input
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -155,7 +155,7 @@ export function DealForm({ dealId, initialData }: DealFormProps) {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Воронка *</label>
+                <label className="text-xs font-medium text-muted-foreground">Воронка *</label>
                 <QuickSelect
                   value={form.pipelineId}
                   onChange={(id) => {
@@ -166,7 +166,7 @@ export function DealForm({ dealId, initialData }: DealFormProps) {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Етап *</label>
+                <label className="text-xs font-medium text-muted-foreground">Етап *</label>
                 <QuickSelect
                   value={form.stageId}
                   onChange={(id) => setForm({ ...form, stageId: id })}
@@ -180,7 +180,7 @@ export function DealForm({ dealId, initialData }: DealFormProps) {
 
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Сума</label>
+                <label className="text-xs font-medium text-muted-foreground">Сума</label>
                 <Input
                   type="number"
                   value={form.value}
@@ -191,7 +191,7 @@ export function DealForm({ dealId, initialData }: DealFormProps) {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Валюта</label>
+                <label className="text-xs font-medium text-muted-foreground">Валюта</label>
                 <QuickSelect
                   value={form.currency}
                   onChange={(id) => setForm({ ...form, currency: id })}
@@ -203,7 +203,7 @@ export function DealForm({ dealId, initialData }: DealFormProps) {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Ймовірність (%)</label>
+                <label className="text-xs font-medium text-muted-foreground">Ймовірність (%)</label>
                 <Input
                   type="number"
                   value={form.probability}
@@ -216,7 +216,7 @@ export function DealForm({ dealId, initialData }: DealFormProps) {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Контакт</label>
+                <label className="text-xs font-medium text-muted-foreground">Контакт</label>
                 <QuickSelect
                   value={form.contactId}
                   onChange={(id) => {
@@ -238,7 +238,7 @@ export function DealForm({ dealId, initialData }: DealFormProps) {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Компанія</label>
+                <label className="text-xs font-medium text-muted-foreground">Компанія</label>
                 <Input
                   value={form.company}
                   onChange={(e) => setForm({ ...form, company: e.target.value })}
@@ -248,7 +248,9 @@ export function DealForm({ dealId, initialData }: DealFormProps) {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Очікуване закриття</label>
+              <label className="text-xs font-medium text-muted-foreground">
+                Очікуване закриття
+              </label>
               <Input
                 type="date"
                 value={form.expectedCloseDate}
@@ -259,7 +261,7 @@ export function DealForm({ dealId, initialData }: DealFormProps) {
             {/* Products */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">Продукти</label>
+                <label className="text-xs font-medium text-muted-foreground">Продукти</label>
                 <Button type="button" variant="outline" size="sm" onClick={addProduct}>
                   + Додати
                 </Button>
@@ -313,7 +315,7 @@ export function DealForm({ dealId, initialData }: DealFormProps) {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Нотатки</label>
+              <label className="text-xs font-medium text-muted-foreground">Нотатки</label>
               <textarea
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}

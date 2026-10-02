@@ -19,16 +19,16 @@ interface Pipeline {
 }
 
 const stageColors = [
-  '#C73651',
-  '#929789',
-  '#C6A27F',
-  '#7B5337',
-  '#30304A',
-  '#A52C43',
-  '#6f7a5c',
-  '#d4b28c',
-  '#8f8fb0',
-  '#5f6a4e',
+  '#c73651',
+  '#4f46e5',
+  '#059669',
+  '#d97706',
+  '#0f172a',
+  '#64748b',
+  '#0891b2',
+  '#9333ea',
+  '#dc2626',
+  '#65a30d',
 ];
 
 export default function PipelinesPage() {
@@ -148,7 +148,7 @@ export default function PipelinesPage() {
           <CardContent>
             <form onSubmit={handleCreate} className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Назва воронки *</label>
+                <label className="text-xs font-medium text-muted-foreground">Назва воронки *</label>
                 <Input
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
@@ -157,7 +157,7 @@ export default function PipelinesPage() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Етапи</label>
+                <label className="text-xs font-medium text-muted-foreground">Етапи</label>
                 {formStages.map((stage, i) => (
                   <div key={i} className="flex gap-2 items-center">
                     <input

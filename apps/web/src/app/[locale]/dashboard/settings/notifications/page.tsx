@@ -84,7 +84,7 @@ export default function NotificationsSettingsPage() {
         className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-300 ease-out active:scale-95 ${checked ? 'bg-primary' : 'bg-muted'}`}
       >
         <span
-          className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-all duration-300 ease-[cubic-bezier(0.34,1.4,0.64,1)] ${checked ? 'translate-x-6' : 'translate-x-1'}`}
+          className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-all duration-300 ease-out ${checked ? 'translate-x-6' : 'translate-x-1'}`}
         />
       </button>
     </label>

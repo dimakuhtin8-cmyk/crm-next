@@ -1,3 +1,5 @@
+import tailwindcssAnimate from 'tailwindcss-animate';
+
 import type { Config } from 'tailwindcss';
 
 export default {
@@ -70,6 +72,12 @@ export default {
           DEFAULT: 'var(--border)',
           hover: 'var(--border-hover)',
           focus: 'var(--border-focus)',
+        },
+        inverse: {
+          DEFAULT: 'var(--inverse)',
+          foreground: 'var(--inverse-foreground)',
+          muted: 'var(--inverse-muted)',
+          accent: 'var(--inverse-accent)',
         },
         input: 'var(--input)',
         ring: 'var(--ring)',
@@ -194,5 +202,5 @@ export default {
       },
     },
   },
-  plugins: [require('tailwindcss-animate')],
+  plugins: [tailwindcssAnimate],
 } satisfies Config;

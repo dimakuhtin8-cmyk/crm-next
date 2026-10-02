@@ -157,7 +157,7 @@ export default function AuditLogPage() {
       <Card>
         <CardContent className="p-0">
           {loading ? (
-            <div className="space-y-3 p-6">
+            <div className="space-y-3 p-5">
               {Array.from({ length: 5 }).map((_, i) => (
                 <Skeleton key={i} className="h-12 w-full" />
               ))}

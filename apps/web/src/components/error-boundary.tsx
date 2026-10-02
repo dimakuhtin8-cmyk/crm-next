@@ -1,6 +1,6 @@
 /**
  * Error Boundary — ловит ошибки рендеринга
- * 
+ *
  * Используется для:
  * - Обработки ошибок в React компонентах
  * - Показа красивого экрана ошибки
@@ -9,8 +9,9 @@
 
 'use client';
 
-import { Component, type ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { Component, type ReactNode } from 'react';
+
 import { Button } from '@/components/ui';
 
 interface Props {
@@ -46,7 +47,7 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="flex flex-col items-center justify-center p-8 text-center">
+        <div className="flex flex-col items-center justify-center p-5 text-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-danger/10 mb-4">
             <AlertTriangle className="h-6 w-6 text-danger" />
           </div>
@@ -77,7 +78,7 @@ export class ErrorBoundary extends Component<Props, State> {
  */
 export function ErrorFallback({ error, reset }: { error: Error; reset: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[400px] p-8 text-center">
+    <div className="flex flex-col items-center justify-center min-h-[400px] p-5 text-center">
       <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-danger/10 mb-4">
         <AlertTriangle className="h-8 w-8 text-danger" />
       </div>
@@ -89,9 +90,7 @@ export function ErrorFallback({ error, reset }: { error: Error; reset: () => voi
         <Button variant="outline" onClick={reset}>
           Спробувати знову
         </Button>
-        <Button onClick={() => window.location.reload()}>
-          Перезавантажити
-        </Button>
+        <Button onClick={() => window.location.reload()}>Перезавантажити</Button>
       </div>
     </div>
   );

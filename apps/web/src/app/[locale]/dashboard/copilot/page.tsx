@@ -359,7 +359,7 @@ export default function CopilotPage() {
       {/* Quick Setup Panel */}
       {aiStatus === 'no-key' && (
         <Card className="shrink-0 border-primary/30 bg-gradient-to-br from-primary/5 to-background overflow-hidden">
-          <CardContent className="p-6">
+          <CardContent className="p-5">
             <div className="flex items-center gap-3 mb-2">
               <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10">
                 <Bot className="w-5 h-5 text-primary" />
@@ -524,7 +524,7 @@ export default function CopilotPage() {
         <Card className="flex-1 min-h-0 flex flex-col overflow-hidden">
           <CardContent className="flex-1 min-h-0 flex flex-col p-0">
             {/* Chat messages area */}
-            <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-6">
+            <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-6">
               {messages.length === 0 && (
                 <div className="flex flex-col items-center justify-center h-full text-center">
                   <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">

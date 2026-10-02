@@ -66,7 +66,7 @@ export default function SecuritySettingsPage() {
         <CardContent>
           <form onSubmit={handlePasswordChange} className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Поточний пароль</label>
+              <label className="text-xs font-medium text-muted-foreground">Поточний пароль</label>
               <Input
                 type="password"
                 value={currentPassword}
@@ -75,7 +75,7 @@ export default function SecuritySettingsPage() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Новий пароль</label>
+              <label className="text-xs font-medium text-muted-foreground">Новий пароль</label>
               <Input
                 type="password"
                 value={newPassword}
@@ -85,7 +85,9 @@ export default function SecuritySettingsPage() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Підтвердження пароля</label>
+              <label className="text-xs font-medium text-muted-foreground">
+                Підтвердження пароля
+              </label>
               <Input
                 type="password"
                 value={confirmPassword}

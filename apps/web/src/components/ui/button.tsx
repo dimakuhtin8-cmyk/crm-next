@@ -4,30 +4,23 @@ import * as React from 'react';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {
       variant: {
-        default:
-          'bg-primary text-primary-foreground hover:bg-primary-hover shadow-lg shadow-glow',
-        destructive:
-          'bg-danger text-danger-foreground hover:bg-danger-hover shadow-lg shadow-danger/25',
-        outline:
-          'border border-border bg-transparent hover:bg-secondary hover:text-foreground',
-        secondary:
-          'bg-secondary text-secondary-foreground hover:bg-secondary-hover',
-        ghost:
-          'hover:bg-secondary hover:text-foreground',
-        link:
-          'text-primary underline-offset-4 hover:underline',
-        danger:
-          'bg-danger text-danger-foreground hover:bg-danger-hover',
+        default: 'bg-primary text-primary-foreground hover:bg-primary-hover',
+        destructive: 'bg-danger text-danger-foreground hover:bg-danger-hover',
+        outline: 'border border-border bg-transparent hover:bg-secondary hover:text-foreground',
+        secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary-hover',
+        ghost: 'hover:bg-secondary hover:text-foreground',
+        link: 'text-primary underline-offset-4 hover:underline',
+        danger: 'bg-danger text-danger-foreground hover:bg-danger-hover',
       },
       size: {
         sm: 'h-8 rounded-md px-3 text-xs',
-        default: 'h-10 px-4 py-2',
-        lg: 'h-12 rounded-lg px-8 text-base',
-        icon: 'h-10 w-10',
+        default: 'h-9 px-4',
+        lg: 'h-10 rounded-md px-6 text-sm',
+        icon: 'h-9 w-9',
       },
     },
     defaultVariants: {
@@ -38,8 +31,7 @@ const buttonVariants = cva(
 );
 
 interface ButtonBaseProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   isLoading?: boolean;
 }
 
@@ -57,7 +49,10 @@ type ButtonProps = ButtonAsChildProps | ButtonDefaultProps;
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, isLoading, children, disabled, asChild, ...props }, ref) => {
     if (asChild && React.isValidElement(children)) {
-      const { className: childClassName, disabled: childDisabled, ...rest } = children.props as Record<string, unknown>;
+      const { className: childClassName, disabled: childDisabled } = children.props as Record<
+        string,
+        unknown
+      >;
       return React.cloneElement(children as React.ReactElement<Record<string, unknown>>, {
         ref,
         className: cn(

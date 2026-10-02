@@ -215,7 +215,7 @@ export default function AutomationPage() {
 
       {/* Preset rules */}
       <Card>
-        <CardContent className="p-6">
+        <CardContent className="p-5">
           <h3 className="font-medium mb-3">Шаблони правил</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[

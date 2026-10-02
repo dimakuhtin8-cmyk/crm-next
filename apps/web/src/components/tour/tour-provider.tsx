@@ -134,17 +134,17 @@ function Overlay({
         <>
           {/* Затемнение из 4 полос вокруг отверстия: цель остаётся резкой */}
           <div
-            className="absolute left-0 right-0 top-0 bg-[#1D1B1D]/70 backdrop-blur-[2px]"
+            className="absolute left-0 right-0 top-0 bg-black/60 backdrop-blur-[2px]"
             style={{ height: Math.max(0, rect.top - 6) }}
             onClick={onClose}
           />
           <div
-            className="absolute left-0 right-0 bottom-0 bg-[#1D1B1D]/70 backdrop-blur-[2px]"
+            className="absolute left-0 right-0 bottom-0 bg-black/60 backdrop-blur-[2px]"
             style={{ top: rect.bottom + 6 }}
             onClick={onClose}
           />
           <div
-            className="absolute bg-[#1D1B1D]/70 backdrop-blur-[2px]"
+            className="absolute bg-black/60 backdrop-blur-[2px]"
             style={{
               top: Math.max(0, rect.top - 6),
               height: rect.height + 12,
@@ -154,7 +154,7 @@ function Overlay({
             onClick={onClose}
           />
           <div
-            className="absolute bg-[#1D1B1D]/70 backdrop-blur-[2px]"
+            className="absolute bg-black/60 backdrop-blur-[2px]"
             style={{
               top: Math.max(0, rect.top - 6),
               height: rect.height + 12,
@@ -184,7 +184,7 @@ function Overlay({
           />
         </>
       ) : (
-        <div className="absolute inset-0 bg-[#1D1B1D]/70" onClick={onClose} />
+        <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       )}
       <div
         ref={tipRef}

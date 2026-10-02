@@ -180,7 +180,7 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-lg">
-        <CardContent className="p-8">
+        <CardContent className="p-5">
           {/* Progress */}
           <div className="flex items-center gap-2 mb-8">
             {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
@@ -222,7 +222,7 @@ export default function OnboardingPage() {
               {showSkipConfirm && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground-inverse/50 backdrop-blur-sm">
                   <Card className="w-full max-w-md mx-4">
-                    <CardContent className="p-6 space-y-4">
+                    <CardContent className="p-5 space-y-4">
                       <div className="text-center">
                         <div className="text-3xl mb-2">💡</div>
                         <h3 className="text-lg font-bold">Пропустити налаштування?</h3>
@@ -276,7 +276,7 @@ export default function OnboardingPage() {
                   value={industryCustom}
                   onChange={(e) => setIndustryCustom(e.target.value)}
                   placeholder="Введіть вашу сферу"
-                  className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               )}
               {nav(0, 2, canNextSphere)}
@@ -294,7 +294,7 @@ export default function OnboardingPage() {
                   value={roleCustom}
                   onChange={(e) => setRoleCustom(e.target.value)}
                   placeholder="Введіть вашу посаду"
-                  className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               )}
               {nav(1, 3, canNextRole)}
@@ -312,7 +312,7 @@ export default function OnboardingPage() {
                   value={experienceText}
                   onChange={(e) => setExperienceText(e.target.value)}
                   placeholder="Якою саме? (необовʼязково)"
-                  className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               )}
               {experience === 'migrating' && (
@@ -339,7 +339,7 @@ export default function OnboardingPage() {
                   value={priorityCustom}
                   onChange={(e) => setPriorityCustom(e.target.value)}
                   placeholder="Введіть вашу задачу"
-                  className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               )}
               {nav(3, 5, canNextTask)}
@@ -351,13 +351,15 @@ export default function OnboardingPage() {
             <div className="space-y-4">
               <h2 className="text-xl font-bold">Ваша компанія</h2>
               <div>
-                <label className="block text-sm font-medium mb-1">Назва компанії</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  Назва компанії
+                </label>
                 <input
                   type="text"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
                   placeholder="Назва вашої компанії"
-                  className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
               {nav(4, 6, true)}

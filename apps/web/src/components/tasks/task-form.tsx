@@ -107,7 +107,7 @@ export function TaskForm({ taskId, initialData }: TaskFormProps) {
             )}
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Назва *</label>
+              <label className="text-xs font-medium text-muted-foreground">Назва *</label>
               <Input
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -117,7 +117,7 @@ export function TaskForm({ taskId, initialData }: TaskFormProps) {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Опис</label>
+              <label className="text-xs font-medium text-muted-foreground">Опис</label>
               <textarea
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -128,7 +128,7 @@ export function TaskForm({ taskId, initialData }: TaskFormProps) {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Тип</label>
+                <label className="text-xs font-medium text-muted-foreground">Тип</label>
                 <QuickSelect
                   value={form.type}
                   onChange={(id) => setForm({ ...form, type: id })}
@@ -142,7 +142,7 @@ export function TaskForm({ taskId, initialData }: TaskFormProps) {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Пріоритет</label>
+                <label className="text-xs font-medium text-muted-foreground">Пріоритет</label>
                 <QuickSelect
                   value={form.priority}
                   onChange={(id) => setForm({ ...form, priority: id })}
@@ -158,7 +158,7 @@ export function TaskForm({ taskId, initialData }: TaskFormProps) {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Статус</label>
+                <label className="text-xs font-medium text-muted-foreground">Статус</label>
                 <QuickSelect
                   value={form.status}
                   onChange={(id) => setForm({ ...form, status: id })}
@@ -171,7 +171,7 @@ export function TaskForm({ taskId, initialData }: TaskFormProps) {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Відповідальний</label>
+                <label className="text-xs font-medium text-muted-foreground">Відповідальний</label>
                 <QuickSelect
                   value={form.assigneeId}
                   onChange={(id) => setForm({ ...form, assigneeId: id })}
@@ -186,7 +186,7 @@ export function TaskForm({ taskId, initialData }: TaskFormProps) {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Дедлайн</label>
+                <label className="text-xs font-medium text-muted-foreground">Дедлайн</label>
                 <Input
                   type="datetime-local"
                   value={form.dueDate}
@@ -194,7 +194,7 @@ export function TaskForm({ taskId, initialData }: TaskFormProps) {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Нагадування</label>
+                <label className="text-xs font-medium text-muted-foreground">Нагадування</label>
                 <Input
                   type="datetime-local"
                   value={form.reminderAt}
@@ -217,7 +217,9 @@ export function TaskForm({ taskId, initialData }: TaskFormProps) {
             </div>
             {form.isRecurring && (
               <div className="space-y-2">
-                <label className="text-sm font-medium">Правило повторення</label>
+                <label className="text-xs font-medium text-muted-foreground">
+                  Правило повторення
+                </label>
                 <QuickSelect
                   value={form.recurrenceRule}
                   onChange={(id) => setForm({ ...form, recurrenceRule: id })}

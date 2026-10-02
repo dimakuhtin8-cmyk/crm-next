@@ -168,7 +168,7 @@ export default function CopilotLogsPage() {
       <Card>
         <CardContent className="p-0">
           {loading ? (
-            <div className="p-6 space-y-3">
+            <div className="p-5 space-y-3">
               {Array.from({ length: 5 }).map((_, i) => (
                 <Skeleton key={i} className="h-12" />
               ))}
@@ -241,7 +241,7 @@ export default function CopilotLogsPage() {
               <DataError message={loadError} onRetry={fetchLogs} />
             </div>
           ) : (
-            <div className="p-12 text-center">
+            <div className="p-5 text-center">
               <FileText className="w-10 h-10 mx-auto text-foreground-muted/40 mb-3" />
               <p className="text-sm text-foreground-muted">Немає логів</p>
             </div>

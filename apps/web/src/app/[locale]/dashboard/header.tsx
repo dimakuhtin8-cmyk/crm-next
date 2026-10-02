@@ -239,7 +239,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
           <button
             onClick={() => setIsSearchOpen(true)}
             data-tour="search"
-            className="hidden sm:flex items-center gap-3 h-10 w-80 rounded-xl border border-border bg-background-secondary px-4 text-sm text-foreground-muted hover:border-border-hover hover:bg-background-tertiary transition-all duration-200"
+            className="hidden sm:flex items-center gap-3 h-9 w-80 rounded-md border border-border bg-background-secondary px-4 text-sm text-foreground-muted hover:border-border-hover hover:bg-background-tertiary transition-all duration-200"
           >
             <Search className="h-4 w-4" />
             <span className="flex-1 text-left">Пошук...</span>

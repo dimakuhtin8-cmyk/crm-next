@@ -324,7 +324,7 @@ export default function LogsPage() {
         </div>
       ) : filteredLogs.length === 0 ? (
         <Card>
-          <CardContent className="p-8 text-center">
+          <CardContent className="p-5 text-center">
             <Activity className="h-12 w-12 text-foreground-muted mx-auto mb-4" />
             <p className="text-foreground-muted">Немає логів</p>
           </CardContent>

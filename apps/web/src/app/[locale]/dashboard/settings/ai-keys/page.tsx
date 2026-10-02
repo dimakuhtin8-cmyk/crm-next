@@ -347,7 +347,7 @@ export default function AiKeysSettingsPage() {
 
           {/* API Key input */}
           <div>
-            <label className="block text-xs font-medium text-foreground-muted mb-1.5">
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
               API-ключ {currentProvider?.keyPlaceholder && `(${currentProvider.keyPlaceholder})`}
             </label>
             <div className="flex gap-2">

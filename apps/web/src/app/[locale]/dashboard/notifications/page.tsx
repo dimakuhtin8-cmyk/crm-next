@@ -253,7 +253,7 @@ export default function NotificationsPage() {
           ))}
         </div>
       ) : visible.length === 0 && appNotifs.length === 0 ? (
-        <Card className="p-10 text-center">
+        <Card className="p-5 text-center">
           <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/15">
             <CheckSquare className="h-6 w-6 text-foreground" />
           </span>
