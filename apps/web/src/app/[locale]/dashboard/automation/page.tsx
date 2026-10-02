@@ -1,10 +1,25 @@
 'use client';
 
+import { Ellipsis, Plus, Power, Search, Trash2, Workflow } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import { QuickCreatePopover, QuickRuleForm } from '@/components/quick-create';
-import { Button, Card, CardContent } from '@/components/ui';
-import { cn } from '@/lib/utils';
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  EmptyState,
+  Input,
+  Skeleton,
+  Switch,
+} from '@/components/ui';
 
 interface AutomationRule {
   id: string;
@@ -38,6 +53,9 @@ const actionLabels: Record<string, string> = {
 export default function AutomationPage() {
   const [rules, setRules] = useState<AutomationRule[]>([]);
   const [loading, setLoading] = useState(true);
+  // Клієнтський пошук за ТЗ (виключно UI: фільтрує вже завантажений список,
+  // жодних змін API/хуків/пагінації)
+  const [search, setSearch] = useState('');
 
   // Quick-create popover
   const [quickOpen, setQuickOpen] = useState(false);
@@ -91,22 +109,47 @@ export default function AutomationPage() {
     fetchRules();
   };
 
+  const query = search.trim().toLowerCase();
+  const visibleRules = query
+    ? rules.filter((rule) =>
+        [
+          rule.name,
+          rule.description || '',
+          triggerLabels[rule.triggerType] || rule.triggerType,
+          actionLabels[rule.actionType] || rule.actionType,
+        ].some((value) => value.toLowerCase().includes(query)),
+      )
+    : rules;
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Автоматизація</h1>
           <p className="text-foreground-muted">Правила автоматичних дій при зміні етапів угод</p>
         </div>
-        <Button
-          ref={quickBtnRef}
-          onClick={() => {
-            setRulePreset(null);
-            setQuickOpen(true);
-          }}
-        >
-          + Нове правило
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="relative w-56">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-muted" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Пошук правил..."
+              aria-label="Пошук правил"
+              className="pl-9"
+            />
+          </div>
+          <Button
+            ref={quickBtnRef}
+            onClick={() => {
+              setRulePreset(null);
+              setQuickOpen(true);
+            }}
+          >
+            <Plus className="h-4 w-4" />
+            Нове правило
+          </Button>
+        </div>
         <QuickCreatePopover
           anchorEl={quickBtnRef.current}
           open={quickOpen}
@@ -128,84 +171,83 @@ export default function AutomationPage() {
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 bg-muted rounded-lg animate-pulse" />
+            <Skeleton key={i} className="h-20" />
           ))}
         </div>
       ) : rules.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <svg
-              className="h-12 w-12 mx-auto text-foreground-muted mb-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-            >
-              <path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-            </svg>
-            <p className="text-foreground-muted mb-2">Немає правил автоматизації</p>
-            <p className="text-sm text-foreground-muted">
-              Створіть перше правило для автоматичних дій
-            </p>
+        <Card className="shadow-sm">
+          <CardContent className="p-0">
+            <EmptyState
+              icon={<Workflow className="h-12 w-12" strokeWidth={1.5} />}
+              title="Немає правил автоматизації"
+              description="Створіть перше правило для автоматичних дій"
+            />
+          </CardContent>
+        </Card>
+      ) : visibleRules.length === 0 ? (
+        <Card className="shadow-sm">
+          <CardContent className="p-0">
+            <EmptyState
+              icon={<Search className="h-12 w-12" strokeWidth={1.5} />}
+              title="Нічого не знайдено"
+              description={`За запитом «${search.trim()}» правил немає`}
+            />
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-3">
-          {rules.map((rule) => (
-            <Card key={rule.id}>
+          {visibleRules.map((rule) => (
+            <Card key={rule.id} className="shadow-sm">
               <CardContent className="p-4">
                 <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => toggleRule(rule.id, rule.enabled)}
-                    className={cn(
-                      'h-5 w-5 rounded border-2 flex items-center justify-center transition-colors flex-shrink-0',
-                      rule.enabled
-                        ? 'bg-success border-success'
-                        : 'border-border hover:border-primary',
-                    )}
-                  >
-                    {rule.enabled && (
-                      <svg
-                        className="h-3 w-3 text-white"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    )}
-                  </button>
+                  <Switch
+                    checked={rule.enabled}
+                    onCheckedChange={() => toggleRule(rule.id, rule.enabled)}
+                    aria-label={rule.enabled ? 'Вимкнути правило' : 'Увімкнути правило'}
+                  />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm">{rule.name}</p>
                     {rule.description && (
                       <p className="text-xs text-foreground-muted mt-0.5">{rule.description}</p>
                     )}
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs bg-secondary px-2 py-0.5 rounded">
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <Badge variant="secondary">
                         {triggerLabels[rule.triggerType] || rule.triggerType}
-                      </span>
+                      </Badge>
                       <span className="text-xs text-foreground-muted">→</span>
-                      <span className="text-xs bg-primary-light text-primary px-2 py-0.5 rounded">
+                      <Badge
+                        variant="outline"
+                        className="border-transparent bg-primary-light text-primary hover:bg-primary-light"
+                      >
                         {actionLabels[rule.actionType] || rule.actionType}
-                      </span>
+                      </Badge>
                     </div>
                   </div>
-                  <button
-                    onClick={() => deleteRule(rule.id)}
-                    className="rounded p-1.5 text-foreground-muted hover:text-danger hover:bg-danger-light transition-colors"
-                  >
-                    <svg
-                      className="h-4 w-4"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <polyline points="3 6 5 6 21 6" />
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                    </svg>
-                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 shrink-0 text-foreground-muted"
+                        aria-label="Дії з правилом"
+                      >
+                        <Ellipsis className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => toggleRule(rule.id, rule.enabled)}>
+                        <Power className="h-4 w-4" />
+                        {rule.enabled ? 'Вимкнути' : 'Увімкнути'}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => deleteRule(rule.id)}
+                        className="text-danger focus:text-danger"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Видалити
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </CardContent>
             </Card>
@@ -214,9 +256,11 @@ export default function AutomationPage() {
       )}
 
       {/* Preset rules */}
-      <Card>
+      <Card className="shadow-sm">
+        <CardHeader className="border-b border-border">
+          <CardTitle>Шаблони правил</CardTitle>
+        </CardHeader>
         <CardContent className="p-5">
-          <h3 className="font-medium mb-3">Шаблони правил</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
               {
@@ -244,14 +288,15 @@ export default function AutomationPage() {
                 desc: 'Повідомити команду про втрачену угоду',
               },
             ].map((preset) => (
-              <button
+              <Card
                 key={preset.name}
+                interactive
                 onClick={() => openPreset(preset)}
-                className="p-3 rounded-lg border border-border bg-card hover:bg-secondary/50 text-left transition-colors"
+                className="p-3"
               >
                 <p className="text-sm font-medium">{preset.name}</p>
                 <p className="text-xs text-foreground-muted mt-1">{preset.desc}</p>
-              </button>
+              </Card>
             ))}
           </div>
         </CardContent>
