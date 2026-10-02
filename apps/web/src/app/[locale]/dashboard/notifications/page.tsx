@@ -1,11 +1,32 @@
 'use client';
 
-import { Bell, CheckSquare, Phone, Mail, Calendar, Repeat, ArrowLeft } from 'lucide-react';
+import {
+  Bell,
+  CheckSquare,
+  Phone,
+  Mail,
+  Calendar,
+  Repeat,
+  ArrowLeft,
+  ArrowRight,
+  CheckCheck,
+  ChevronDown,
+  ChevronRight,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
 import { DataError } from '@/components/data-error';
-import { Card, Badge, Skeleton } from '@/components/ui';
+import {
+  Card,
+  Badge,
+  Skeleton,
+  Button,
+  buttonVariants,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui';
 import { cn } from '@/lib/utils';
 
 interface ReminderTask {
@@ -59,6 +80,30 @@ function formatDateTime(value: string | null) {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+/** Відносний час українською: «через 45 хв» / «2 год тому» / «вчора». */
+function relativeTime(value: string | null): string {
+  if (!value) return '—';
+  const diffMs = new Date(value).getTime() - Date.now();
+  const absSec = Math.abs(diffMs) / 1000;
+  const sign = diffMs >= 0 ? 1 : -1;
+  if (absSec < 60) return 'зараз';
+  try {
+    const rtf = new Intl.RelativeTimeFormat('uk', { numeric: 'auto' });
+    if (absSec < 3600) return rtf.format(sign * Math.round(absSec / 60), 'minute');
+    if (absSec < 86400) return rtf.format(sign * Math.round(absSec / 3600), 'hour');
+    return rtf.format(sign * Math.round(absSec / 86400), 'day');
+  } catch {
+    // браузер без Intl.RelativeTimeFormat — звичайна дата
+    return formatDateTime(value);
+  }
+}
+
+/** Час доби HH:MM для хвоста рядка «відносний час · 14:30». */
+function timeOfDay(value: string | null): string {
+  if (!value) return '';
+  return new Date(value).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
 }
 
 export default function NotificationsPage() {
@@ -147,6 +192,7 @@ export default function NotificationsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div>
         <Link
           href="/dashboard"
@@ -155,97 +201,113 @@ export default function NotificationsPage() {
           <ArrowLeft className="h-4 w-4" />
           До огляду
         </Link>
-        <div className="mt-2 flex flex-wrap items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
-            <Bell className="h-5 w-5 text-primary-foreground" />
-          </span>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Сповіщення</h1>
-            <p className="text-foreground-secondary">Нагадування за найближчі 24 години</p>
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
+              <Bell className="h-5 w-5 text-primary-foreground" />
+            </span>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">Сповіщення</h1>
+              <p className="text-sm text-foreground-secondary">
+                Нагадування за найближчі 24 години
+              </p>
+            </div>
           </div>
+          <Button
+            variant="outline"
+            onClick={markAllRead}
+            disabled={appNotifs.length === 0}
+            title="Позначити всі системні сповіщення прочитаними"
+          >
+            <CheckCheck className="h-4 w-4" />
+            Позначити всі прочитаними
+          </Button>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Фільтр сповіщень">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            role="tab"
-            aria-selected={filter === tab.id}
-            onClick={() => setFilter(tab.id)}
-            className={cn(
-              'inline-flex min-h-10 items-center gap-2 rounded-xl border px-4 text-sm font-semibold transition-colors',
-              filter === tab.id
-                ? 'border-primary bg-primary text-primary-foreground'
-                : 'border-border bg-card text-foreground hover:border-primary',
-            )}
-          >
-            {tab.label}
-            <Badge variant="secondary">{tab.count}</Badge>
-          </button>
-        ))}
-      </div>
+      {/* Фільтр нагадувань */}
+      <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)}>
+        <TabsList className="max-w-full overflow-x-auto">
+          {tabs.map((tab) => (
+            <TabsTrigger key={tab.id} value={tab.id}>
+              {tab.label}
+              <Badge variant="secondary">{tab.count}</Badge>
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
 
       {loadError && !loading && <DataError message={loadError} onRetry={loadAll} />}
 
+      {/* Системні сповіщення */}
       {appNotifs.length > 0 && (
-        <Card className="overflow-hidden">
-          <div className="flex items-center justify-between border-b border-border px-4 py-3 sm:px-5">
-            <button
-              onClick={() => setSysOpen(!sysOpen)}
-              className="flex items-center gap-2 text-sm font-bold hover:text-foreground-muted transition-colors"
-              aria-expanded={sysOpen}
-            >
-              <span className={cn('transition-transform', !sysOpen && '-rotate-90')}>▾</span>
-              Системні сповіщення
-              <Badge variant="secondary">{appNotifs.length}</Badge>
-            </button>
-            <button
-              onClick={markAllRead}
-              className="text-xs font-semibold text-foreground-muted underline-offset-4 hover:text-foreground hover:underline"
-            >
-              Прочитати всі
-            </button>
-          </div>
+        <div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSysOpen(!sysOpen)}
+            aria-expanded={sysOpen}
+            className="gap-2"
+          >
+            <ChevronDown className={cn('h-4 w-4 transition-transform', !sysOpen && '-rotate-90')} />
+            Системні сповіщення
+            <Badge variant="secondary">{appNotifs.length}</Badge>
+          </Button>
+
           {sysOpen && (
-            <div className="divide-y divide-border">
+            <div className="mt-2 space-y-2">
               {appNotifs.map((n) => (
-                <div
+                <Card
                   key={n.id}
                   onClick={() => markOneRead(n.id)}
-                  className="flex items-start gap-3 px-4 py-3.5 sm:px-5 cursor-pointer hover:bg-secondary/50 transition-colors"
                   title="Позначити прочитаним"
+                  className="cursor-pointer p-3 transition-colors hover:border-border-hover"
                 >
-                  <span
-                    className={cn(
-                      'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
-                      appTypeConfig[n.type] || appTypeConfig.info,
-                    )}
-                  >
-                    <Bell className="h-4 w-4" />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-semibold">{n.title}</span>
-                    <span className="block text-xs text-foreground-muted mt-0.5">{n.message}</span>
-                    <span className="block text-[11px] text-foreground-muted/70 mt-1">
-                      {formatDateTime(n.createdAt)}
-                      {n.link && (
-                        <Link
-                          href={n.link}
-                          className="ml-2 font-semibold text-foreground underline-offset-4 hover:underline"
-                        >
-                          Відкрити →
-                        </Link>
+                  <div className="flex items-start gap-3">
+                    <span
+                      className={cn(
+                        'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
+                        appTypeConfig[n.type] || appTypeConfig.info,
                       )}
+                    >
+                      <Bell className="h-4 w-4" />
                     </span>
-                  </span>
-                </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="h-2 w-2 shrink-0 rounded-full bg-info"
+                          aria-label="Непрочитане"
+                        />
+                        <p className="truncate text-sm font-semibold">{n.title}</p>
+                      </div>
+                      <p className="mt-0.5 text-xs text-foreground-muted">{n.message}</p>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-foreground-muted">
+                        <span title={formatDateTime(n.createdAt)}>
+                          {relativeTime(n.createdAt)} · {timeOfDay(n.createdAt)}
+                        </span>
+                        {n.link && (
+                          <Link
+                            href={n.link}
+                            className={cn(
+                              buttonVariants({ variant: 'outline', size: 'sm' }),
+                              'h-7 gap-1 px-2 text-2xs',
+                            )}
+                          >
+                            Відкрити
+                            <ArrowRight className="h-3 w-3" />
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </Card>
               ))}
             </div>
           )}
-        </Card>
+        </div>
       )}
 
+      {/* Нагадування задач */}
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
@@ -261,46 +323,48 @@ export default function NotificationsPage() {
           <p className="mt-1 text-sm text-foreground-muted">Все під контролем!</p>
         </Card>
       ) : (
-        <Card className="divide-y divide-border overflow-hidden">
+        <div className="space-y-2">
           {visible.map((task) => (
-            <Link
-              key={`${task.flag}-${task.id}`}
-              href={`/dashboard/tasks/${task.id}`}
-              className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-secondary/50 sm:px-5"
-            >
-              <span
-                className={cn(
-                  'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
-                  task.flag === 'overdue'
-                    ? 'bg-danger/10 text-danger'
-                    : 'bg-primary text-primary-foreground',
-                )}
-              >
-                {typeIcons[task.type] || <CheckSquare className="h-4 w-4" />}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-semibold">{task.title}</span>
-                <span
-                  className={cn(
-                    'block text-xs',
-                    task.flag === 'overdue' ? 'text-danger' : 'text-foreground-muted',
-                  )}
-                >
-                  {task.flag === 'overdue' ? 'Протерміновано · ' : ''}
-                  {formatDateTime(task.reminderAt)}
-                </span>
-              </span>
-              <span
-                className={cn(
-                  'shrink-0 text-xs font-semibold',
-                  priorityConfig[task.priority]?.color,
-                )}
-              >
-                {priorityConfig[task.priority]?.label}
-              </span>
+            <Link key={`${task.flag}-${task.id}`} href={`/dashboard/tasks/${task.id}`}>
+              <Card className="p-3 transition-colors hover:border-border-hover">
+                <div className="flex items-center gap-3">
+                  <span
+                    className={cn(
+                      'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
+                      task.flag === 'overdue'
+                        ? 'bg-danger/10 text-danger'
+                        : 'bg-primary text-primary-foreground',
+                    )}
+                  >
+                    {typeIcons[task.type] || <CheckSquare className="h-4 w-4" />}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold">{task.title}</p>
+                    <p
+                      className={cn(
+                        'mt-0.5 text-xs',
+                        task.flag === 'overdue' ? 'text-danger' : 'text-foreground-muted',
+                      )}
+                      title={formatDateTime(task.reminderAt)}
+                    >
+                      {task.flag === 'overdue' ? 'Протерміновано · ' : ''}
+                      {relativeTime(task.reminderAt)} · {timeOfDay(task.reminderAt)}
+                    </p>
+                  </div>
+                  <span
+                    className={cn(
+                      'shrink-0 text-xs font-semibold',
+                      priorityConfig[task.priority]?.color,
+                    )}
+                  >
+                    {priorityConfig[task.priority]?.label}
+                  </span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-foreground-muted" />
+                </div>
+              </Card>
             </Link>
           ))}
-        </Card>
+        </div>
       )}
     </div>
   );
