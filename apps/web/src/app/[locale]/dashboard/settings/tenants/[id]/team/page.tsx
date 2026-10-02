@@ -1,10 +1,11 @@
 'use client';
 
-import { ChevronRight, EllipsisVertical, Mail, X } from 'lucide-react';
+import { ChevronRight, EllipsisVertical, Loader2, Mail, Plus, X } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 import { QuickSelect } from '@/components/quick-create';
 import { useTourAutoStart } from '@/components/tour/tour-provider';
@@ -23,11 +24,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   Input,
+  Label,
   Badge,
+  Modal,
   Skeleton,
   Table,
 } from '@/components/ui';
 import { currentLocaleFromPath } from '@/lib/use-locale-path';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 interface Tenant {
   id: string;
@@ -74,8 +79,10 @@ export default function TeamPage() {
   const [invites, setInvites] = useState<Invite[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Invite form
+  // Invite form (діалог)
+  const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteEmailError, setInviteEmailError] = useState<string | null>(null);
   const [inviteRole, setInviteRole] = useState('member');
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
@@ -117,17 +124,28 @@ export default function TeamPage() {
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
-    setInviteLoading(true);
     setInviteError(null);
     setInviteSuccess(null);
     setManualLink(null);
 
+    const email = inviteEmail.trim();
+    if (!email) {
+      setInviteEmailError('Вкажіть email');
+      return;
+    }
+    if (!EMAIL_RE.test(email)) {
+      setInviteEmailError('Невірний формат email');
+      return;
+    }
+    setInviteEmailError(null);
+
+    setInviteLoading(true);
     try {
       const response = await fetch(`/api/tenants/${tenantId}/invites`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: inviteEmail,
+          email,
           role: inviteRole,
           locale: currentLocaleFromPath(),
         }),
@@ -137,16 +155,21 @@ export default function TeamPage() {
       if (!response.ok) throw new Error(data.error);
 
       if (data.emailSent) {
-        setInviteSuccess(`Запрошення надіслано на ${inviteEmail}`);
+        setInviteSuccess(`Запрошення надіслано на ${email}`);
+        toast.success('Запрошення надіслано', { description: email });
       } else {
         setInviteSuccess(`Запрошення створено, але лист не надіслано — скопіюйте посилання вручну`);
         setManualLink(data.inviteUrl || null);
+        toast.warning('Лист не надіслано', { description: 'Скопіюйте посилання вручну' });
       }
       setInviteEmail('');
       setInviteRole('member');
+      setInviteOpen(false);
       fetchData();
     } catch (err) {
-      setInviteError(err instanceof Error ? err.message : 'Помилка надсилання запрошення');
+      const msg = err instanceof Error ? err.message : 'Помилка надсилання запрошення';
+      setInviteError(msg);
+      toast.error('Не вдалося надіслати запрошення', { description: msg });
     } finally {
       setInviteLoading(false);
     }
@@ -166,9 +189,11 @@ export default function TeamPage() {
         throw new Error(data.error);
       }
 
+      toast.success('Роль оновлено', { description: roleLabels[newRole] || newRole });
       fetchData();
     } catch (err) {
-      console.error('Failed to change role:', err);
+      const msg = err instanceof Error ? err.message : 'Не вдалося змінити роль';
+      toast.error('Не вдалося змінити роль', { description: msg });
     } finally {
       setChangingRole(null);
     }
@@ -187,9 +212,11 @@ export default function TeamPage() {
         throw new Error(data.error);
       }
 
+      toast.success('Учасника видалено', { description: memberName });
       fetchData();
     } catch (err) {
-      console.error('Failed to remove member:', err);
+      const msg = err instanceof Error ? err.message : 'Не вдалося видалити учасника';
+      toast.error('Не вдалося видалити учасника', { description: msg });
     }
   };
 
@@ -206,9 +233,11 @@ export default function TeamPage() {
         throw new Error(data.error);
       }
 
+      toast.success('Запрошення відкликано');
       fetchData();
     } catch (err) {
-      console.error('Failed to revoke invite:', err);
+      const msg = err instanceof Error ? err.message : 'Не вдалося відкликати запрошення';
+      toast.error('Не вдалося відкликати запрошення', { description: msg });
     }
   };
 
@@ -265,18 +294,15 @@ export default function TeamPage() {
         </Link>
       </div>
 
-      {/* Invite Form */}
+      {/* Invite */}
       {canManage && (
-        <Card data-tour="team-invite" className="bg-card border-border shadow-sm rounded-xl">
-          <CardHeader>
-            <CardTitle>Запросити учасника</CardTitle>
-            <CardDescription>Надішліть запрошення на email</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleInvite} className="space-y-4">
-              {inviteError && (
-                <div className="p-3 bg-danger/10 text-danger rounded-lg text-sm">{inviteError}</div>
-              )}
+        <>
+          <Card data-tour="team-invite" className="bg-card border-border shadow-sm rounded-xl">
+            <CardHeader>
+              <CardTitle>Запросити учасника</CardTitle>
+              <CardDescription>Надішліть запрошення на email</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
               {inviteSuccess && (
                 <div className="p-3 bg-success/10 text-success rounded-lg text-sm">
                   {inviteSuccess}
@@ -295,37 +321,75 @@ export default function TeamPage() {
                   </Button>
                 </div>
               )}
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-foreground-muted">
+                  Запрошення дійсне 7 днів. Посилання буде згенеровано автоматично.
+                </p>
+                <Button onClick={() => setInviteOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Запросити учасника
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
-              <div className="flex gap-3">
+          <Modal
+            isOpen={inviteOpen}
+            onClose={() => {
+              if (!inviteLoading) setInviteOpen(false);
+            }}
+            title="Запросити учасника"
+            size="md"
+          >
+            <form onSubmit={handleInvite} noValidate className="space-y-4">
+              {inviteError && (
+                <div className="p-3 bg-danger/10 text-danger rounded-lg text-sm">{inviteError}</div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="invite-email" className="text-xs text-foreground-muted">
+                  Email
+                </Label>
                 <Input
+                  id="invite-email"
                   type="email"
                   placeholder="email@example.com"
                   value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  required
-                  className="flex-1"
+                  onChange={(e) => {
+                    setInviteEmail(e.target.value);
+                    if (inviteEmailError) setInviteEmailError(null);
+                  }}
+                  error={inviteEmailError ?? undefined}
+                  autoFocus
                 />
-                <div className="w-40 shrink-0">
-                  <QuickSelect
-                    value={inviteRole}
-                    onChange={setInviteRole}
-                    options={[
-                      { id: 'member', name: 'Учасник' },
-                      { id: 'admin', name: 'Адміністратор' },
-                    ]}
-                  />
-                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs text-foreground-muted">Роль</Label>
+                <QuickSelect
+                  value={inviteRole}
+                  onChange={setInviteRole}
+                  options={[
+                    { id: 'member', name: 'Учасник' },
+                    { id: 'admin', name: 'Адміністратор' },
+                  ]}
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setInviteOpen(false)}
+                  disabled={inviteLoading}
+                >
+                  Скасувати
+                </Button>
                 <Button type="submit" disabled={inviteLoading}>
+                  {inviteLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                   {inviteLoading ? 'Надсилання...' : 'Надіслати'}
                 </Button>
               </div>
-
-              <p className="text-xs text-foreground-muted">
-                Запрошення дійсне 7 днів. Посилання буде згенеровано автоматично.
-              </p>
             </form>
-          </CardContent>
-        </Card>
+          </Modal>
+        </>
       )}
 
       {/* Members */}

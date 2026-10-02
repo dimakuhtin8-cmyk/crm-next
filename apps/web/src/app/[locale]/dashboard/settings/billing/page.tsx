@@ -1,8 +1,18 @@
 'use client';
 
-import { Check, ArrowRight, Loader2, ExternalLink, Users, Contact, Briefcase } from 'lucide-react';
+import {
+  Check,
+  ArrowRight,
+  Loader2,
+  ExternalLink,
+  Users,
+  Contact,
+  Briefcase,
+  Sparkles,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 
 import { DataError } from '@/components/data-error';
 import {
@@ -139,6 +149,10 @@ const ALL_PLANS: PlanCard[] = [
   },
 ];
 
+interface AiUsageData {
+  today: { requests: number; limit: number; percentage: number };
+}
+
 export default function BillingPage() {
   const locale = useLocale();
   const [data, setData] = useState<SubscriptionData | null>(null);
@@ -147,6 +161,9 @@ export default function BillingPage() {
   const [period, setPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const [message, setMessage] = useState('');
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [aiUsage, setAiUsage] = useState<AiUsageData | null>(null);
+  // Вибір плану перед підтвердженням оновлення
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
 
   const loadSubscription = () => {
     setLoadError(null);
@@ -172,6 +189,16 @@ export default function BillingPage() {
       setMessage('Оплату скасовано.');
     }
     loadSubscription();
+
+    // Споживання AI-запитів для індикатора використання
+    fetch('/api/ai/usage', { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: AiUsageData | null) => {
+        if (d?.today) setAiUsage(d);
+      })
+      .catch(() => {
+        console.warn('[billing] ai usage load failed');
+      });
   }, []);
 
   const handleUpgrade = async (planId: string) => {
@@ -186,9 +213,13 @@ export default function BillingPage() {
       const json = await res.json();
       if (json.url) {
         window.location.href = json.url;
+      } else {
+        toast.error('Не вдалося створити оплату', {
+          description: json.error || 'Спробуйте ще раз',
+        });
       }
     } catch {
-      // остаёмся на странице биллинга
+      toast.error('Не вдалося створити оплату', { description: "Помилка з'єднання" });
     } finally {
       setCheckoutLoading(null);
     }
@@ -205,9 +236,15 @@ export default function BillingPage() {
       const json = await res.json();
       if (json.url) {
         window.location.href = json.url;
+      } else {
+        toast.error('Не вдалося відкрити керування підпискою', {
+          description: json.error || 'Спробуйте ще раз',
+        });
       }
     } catch {
-      // остаёмся на странице биллинга
+      toast.error('Не вдалося відкрити керування підпискою', {
+        description: "Помилка з'єднання",
+      });
     }
   };
 
@@ -240,6 +277,15 @@ export default function BillingPage() {
         return <Badge>{status}</Badge>;
     }
   };
+
+  const selectedPlan = selectedPlanId
+    ? (ALL_PLANS.find((p) => p.id === selectedPlanId) ?? null)
+    : null;
+  const selectedDisplayPrice = selectedPlan
+    ? period === 'yearly'
+      ? selectedPlan.yearlyPrice
+      : selectedPlan.price
+    : 0;
 
   if (loading) {
     return (
@@ -313,7 +359,7 @@ export default function BillingPage() {
             </div>
 
             {/* Usage */}
-            <div className="grid grid-cols-3 gap-4 p-4 rounded-xl bg-accent/30">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-xl bg-accent/30">
               <div>
                 <div className="flex items-center gap-1.5 text-xs text-foreground-muted mb-1">
                   <Users className="w-3 h-3" /> Користувачі
@@ -370,7 +416,56 @@ export default function BillingPage() {
                   />
                 )}
               </div>
+              <div>
+                <div className="flex items-center gap-1.5 text-xs text-foreground-muted mb-1">
+                  <Sparkles className="w-3 h-3" /> AI-запити (день)
+                </div>
+                <p className="text-lg font-semibold">
+                  {aiUsage ? aiUsage.today.requests : '—'}{' '}
+                  <span className="text-sm text-foreground-muted">
+                    / {aiUsage ? aiUsage.today.limit : '—'}
+                  </span>
+                </p>
+                {aiUsage && aiUsage.today.limit > 0 && (
+                  <Progress
+                    value={aiUsage.today.percentage}
+                    indicatorClassName={pctColor(aiUsage.today.percentage)}
+                    className="mt-1.5"
+                  />
+                )}
+              </div>
             </div>
+
+            {/* Вибір плану перед підтвердженням */}
+            {selectedPlan && selectedPlan.id !== data.plan.id && (
+              <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl border border-primary/30 bg-primary/5">
+                <p className="text-sm">
+                  Обрано: <span className="font-semibold">{selectedPlan.name}</span> —{' '}
+                  {formatPrice(selectedDisplayPrice * 100)}
+                  {selectedPlan.price > 0 && (
+                    <span className="text-foreground-muted">
+                      /{period === 'yearly' ? 'рік' : 'міс'}
+                    </span>
+                  )}
+                </p>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="ghost" onClick={() => setSelectedPlanId(null)}>
+                    Скасувати вибір
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => handleUpgrade(selectedPlan.id)}
+                    disabled={checkoutLoading === selectedPlan.id}
+                  >
+                    {checkoutLoading === selectedPlan.id && (
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    )}
+                    Підтвердити оновлення
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </div>
+              </div>
+            )}
 
             <div className="flex flex-wrap gap-2">
               <Button
@@ -413,12 +508,17 @@ export default function BillingPage() {
       <div id="plans" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 scroll-mt-6">
         {ALL_PLANS.map((plan) => {
           const isCurrent = data?.plan.id === plan.id;
+          const isSelected = !isCurrent && selectedPlanId === plan.id;
           const displayPrice = period === 'yearly' ? plan.yearlyPrice : plan.price;
+          const selectable = !isCurrent && plan.price > 0;
 
           return (
             <Card
               key={plan.id}
-              className={`relative bg-card shadow-sm rounded-xl ${plan.isPopular ? 'border-primary shadow-lg shadow-primary/10' : ''} ${isCurrent ? 'ring-2 ring-primary' : ''}`}
+              className={`relative bg-card shadow-sm rounded-xl ${plan.isPopular ? 'border-primary shadow-lg shadow-primary/10' : ''} ${isCurrent ? 'ring-2 ring-primary' : ''} ${isSelected ? 'ring-2 ring-primary/70 border-primary' : ''} ${selectable ? 'cursor-pointer' : ''}`}
+              onClick={() => {
+                if (selectable) setSelectedPlanId(plan.id);
+              }}
             >
               {plan.isPopular && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
@@ -457,7 +557,7 @@ export default function BillingPage() {
                   <Button disabled className="w-full" variant="outline">
                     Безкоштовний
                   </Button>
-                ) : (
+                ) : isSelected ? (
                   <Button
                     onClick={() => handleUpgrade(plan.id)}
                     disabled={checkoutLoading === plan.id}
@@ -471,6 +571,14 @@ export default function BillingPage() {
                         <ArrowRight className="w-4 h-4 ml-2" />
                       </>
                     )}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={() => setSelectedPlanId(plan.id)}
+                    className="w-full"
+                  >
+                    Обрати
                   </Button>
                 )}
               </CardContent>

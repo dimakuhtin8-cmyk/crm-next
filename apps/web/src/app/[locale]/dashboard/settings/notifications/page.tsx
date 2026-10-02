@@ -1,8 +1,9 @@
 'use client';
 
-import { Bell } from 'lucide-react';
+import { Bell, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 import { QuickSelect } from '@/components/quick-create';
 import {
@@ -43,8 +44,6 @@ export default function NotificationsSettingsPage() {
   const [toastPosition, setToastPosition] = useState<ToastPosition>('bottom-left');
   const [showPreview, setShowPreview] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState('');
-  const [saveError, setSaveError] = useState('');
 
   // Матриця «подія × канал» — візуальна повнота (API зберігає лише загальні прапорці)
   const [matrix, setMatrix] = useState<MatrixRow[]>(
@@ -74,11 +73,25 @@ export default function NotificationsSettingsPage() {
         // преференси тостів: мовчазно, дефолти уже стоять
         console.warn('[settings/notifications] prefs load failed');
       });
+
+    // Загальні прапорці сповіщень (email/telegram/нагадування/угоди)
+    fetch('/api/user/notifications', { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d) return;
+        if (typeof d.emailNotifications === 'boolean') setEmailNotifications(d.emailNotifications);
+        if (typeof d.telegramNotifications === 'boolean')
+          setTelegramNotifications(d.telegramNotifications);
+        if (typeof d.taskReminders === 'boolean') setTaskReminders(d.taskReminders);
+        if (typeof d.dealUpdates === 'boolean') setDealUpdates(d.dealUpdates);
+      })
+      .catch(() => {
+        console.warn('[settings/notifications] flags load failed');
+      });
   }, []);
 
   const handleSave = async () => {
     setSaving(true);
-    setSaveError('');
     try {
       const resUser = await fetch('/api/user/notifications', {
         method: 'PUT',
@@ -98,12 +111,12 @@ export default function NotificationsSettingsPage() {
       });
       if (!res.ok) throw new Error(`Помилка ${res.status}`);
       window.dispatchEvent(new Event('notif-prefs-changed'));
-      setSuccess('Налаштування збережено');
+      toast.success('Налаштування збережено');
     } catch {
-      setSuccess('');
-      setSaveError('Не вдалося зберегти налаштування. Спробуйте ще раз.');
+      toast.error('Не вдалося зберегти налаштування', { description: 'Спробуйте ще раз' });
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   const ToggleRow = ({
@@ -133,13 +146,6 @@ export default function NotificationsSettingsPage() {
         </Link>
         <h1 className="text-2xl font-bold">Сповіщення</h1>
       </div>
-
-      {success && (
-        <div className="p-3 bg-success/10 text-success rounded-lg text-sm">{success}</div>
-      )}
-      {saveError && (
-        <div className="p-3 bg-danger/10 text-danger rounded-lg text-sm">{saveError}</div>
-      )}
 
       <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
@@ -274,6 +280,7 @@ export default function NotificationsSettingsPage() {
       </Card>
 
       <Button onClick={handleSave} disabled={saving}>
+        {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
         {saving ? 'Збереження...' : 'Зберегти'}
       </Button>
 

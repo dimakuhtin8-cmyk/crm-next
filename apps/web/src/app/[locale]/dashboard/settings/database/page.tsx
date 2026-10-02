@@ -1,8 +1,10 @@
 'use client';
 
+import { Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 
-import { Button, Card, CardContent, Input, Label, Separator } from '@/components/ui';
+import { Button, Card, CardContent, Input, Label, SecretInput, Separator } from '@/components/ui';
 
 type DatabaseType = 'shared' | 'postgresql' | 'mysql' | 'mariadb' | 'sqlserver';
 
@@ -37,10 +39,15 @@ export default function DatabaseSettingsPage() {
     version?: string;
     error?: string;
   } | null>(null);
-  const [message, setMessage] = useState('');
   const [loadError, setLoadError] = useState(false);
   // Класична форма параметрів з'єднання — збирає databaseUrl на клієнті
   const [dbForm, setDbForm] = useState({ host: '', port: '', user: '', password: '', dbname: '' });
+  const [fieldErrors, setFieldErrors] = useState<{
+    host?: string;
+    port?: string;
+    user?: string;
+    dbname?: string;
+  }>({});
 
   const schemeFor = (t: DatabaseType) =>
     t === 'postgresql' ? 'postgresql' : t === 'sqlserver' ? 'sqlserver' : 'mysql';
@@ -48,6 +55,7 @@ export default function DatabaseSettingsPage() {
     t === 'postgresql' ? '5432' : t === 'sqlserver' ? '1433' : '3306';
 
   const updateDbField = (field: keyof typeof dbForm, value: string) => {
+    setFieldErrors((prev) => ({ ...prev, [field]: undefined }));
     const next = { ...dbForm, [field]: value };
     setDbForm(next);
     if (next.host && next.user && next.dbname) {
@@ -55,6 +63,49 @@ export default function DatabaseSettingsPage() {
       const creds = `${encodeURIComponent(next.user)}:${encodeURIComponent(next.password)}`;
       setDatabaseUrl(`${schemeFor(selectedType)}://${creds}@${next.host}:${port}/${next.dbname}`);
     }
+  };
+
+  /** Валідація параметрів з'єднання (класична форма або готовий рядок) */
+  const validateForm = (): boolean => {
+    const hasAnyField =
+      dbForm.host.trim() || dbForm.user.trim() || dbForm.dbname.trim() || dbForm.port.trim();
+
+    if (hasAnyField) {
+      const errs: typeof fieldErrors = {};
+      const host = dbForm.host.trim();
+      if (!host) errs.host = 'Вкажіть хост';
+      else if (/\s/.test(host)) errs.host = 'Хост не може містити пробіли';
+      if (!dbForm.user.trim()) errs.user = 'Вкажіть користувача';
+      if (!dbForm.dbname.trim()) errs.dbname = 'Вкажіть назву бази';
+      if (dbForm.port.trim()) {
+        const port = Number(dbForm.port);
+        if (!Number.isInteger(port) || port < 1 || port > 65535) {
+          errs.port = 'Порт: ціле число від 1 до 65535';
+        }
+      }
+      setFieldErrors(errs);
+      if (Object.keys(errs).length > 0) {
+        toast.error('Перевірте параметри з’єднання', {
+          description: 'Заповніть усі обов’язкові поля',
+        });
+        return false;
+      }
+      return true;
+    }
+
+    // Класична форма порожня — перевіряємо готовий рядок підключення
+    const url = databaseUrl.trim();
+    if (!url) {
+      toast.error('Вкажіть параметри з’єднання або рядок підключення');
+      return false;
+    }
+    if (!/^[a-z][a-z0-9+.-]*:\/\//.test(url)) {
+      toast.error('Невірний рядок підключення', {
+        description: 'Приклад: postgresql://user:password@host:5432/database',
+      });
+      return false;
+    }
+    return true;
   };
 
   useEffect(() => {
@@ -76,11 +127,11 @@ export default function DatabaseSettingsPage() {
   }, []);
 
   const handleTest = async () => {
-    if (!databaseUrl || selectedType === 'shared') return;
+    if (selectedType === 'shared') return;
+    if (!validateForm()) return;
 
     setTesting(true);
     setTestResult(null);
-    setMessage('');
 
     try {
       const res = await fetch('/api/tenant/database', {
@@ -91,17 +142,26 @@ export default function DatabaseSettingsPage() {
       const data = await res.json();
       if (data.success) {
         setTestResult(data.data);
+        toast.success('З’єднання успішне', {
+          description: data.data?.version ? `Версія: ${data.data.version}` : undefined,
+        });
+      } else {
+        const msg = data.error || 'Тест з’єднання не пройшов';
+        setTestResult({ success: false, error: msg });
+        toast.error('Тест з’єднання не пройшов', { description: msg });
       }
     } catch {
       setTestResult({ success: false, error: "Помилка з'єднання з сервером" });
+      toast.error('Тест з’єднання не пройшов', { description: "Помилка з'єднання з сервером" });
     } finally {
       setTesting(false);
     }
   };
 
   const handleSave = async () => {
+    if (selectedType !== 'shared' && !validateForm()) return;
+
     setSaving(true);
-    setMessage('');
 
     try {
       const res = await fetch('/api/tenant/database', {
@@ -114,15 +174,15 @@ export default function DatabaseSettingsPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setMessage('Налаштування збережено');
+        toast.success('Налаштування збережено');
         setConfig((prev) =>
           prev ? { ...prev, type: data.data.type, status: data.data.status } : null,
         );
       } else {
-        setMessage(`Помилка: ${data.error}`);
+        toast.error('Не вдалося зберегти', { description: data.error });
       }
     } catch {
-      setMessage('Помилка збереження');
+      toast.error('Помилка збереження', { description: "Помилка з'єднання з сервером" });
     } finally {
       setSaving(false);
     }
@@ -140,11 +200,13 @@ export default function DatabaseSettingsPage() {
       if (data.success) {
         setSelectedType('shared');
         setDatabaseUrl('');
-        setMessage('Відключено від зовнішньої бази даних');
+        toast.success('Відключено від зовнішньої бази даних');
         setConfig((prev) => (prev ? { ...prev, type: 'shared', hasExternalDb: false } : null));
+      } else {
+        toast.error('Не вдалося відключити', { description: data.error });
       }
     } catch {
-      setMessage('Помилка відключення');
+      toast.error('Помилка відключення', { description: "Помилка з'єднання з сервером" });
     } finally {
       setSaving(false);
     }
@@ -255,6 +317,7 @@ export default function DatabaseSettingsPage() {
                     placeholder="db.example.com"
                     value={dbForm.host}
                     onChange={(e) => updateDbField('host', e.target.value)}
+                    error={fieldErrors.host}
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -266,7 +329,8 @@ export default function DatabaseSettingsPage() {
                     inputMode="numeric"
                     placeholder={defaultPortFor(selectedType)}
                     value={dbForm.port}
-                    onChange={(e) => updateDbField('port', e.target.value)}
+                    onChange={(e) => updateDbField('port', e.target.value.replace(/\D/g, ''))}
+                    error={fieldErrors.port}
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -278,6 +342,7 @@ export default function DatabaseSettingsPage() {
                     placeholder="mydb"
                     value={dbForm.dbname}
                     onChange={(e) => updateDbField('dbname', e.target.value)}
+                    error={fieldErrors.dbname}
                   />
                 </div>
                 <div className="col-span-2 space-y-1.5">
@@ -289,18 +354,19 @@ export default function DatabaseSettingsPage() {
                     placeholder="crm_user"
                     value={dbForm.user}
                     onChange={(e) => updateDbField('user', e.target.value)}
+                    error={fieldErrors.user}
                   />
                 </div>
                 <div className="col-span-2 space-y-1.5">
                   <Label htmlFor="db-password" className="text-xs text-foreground-muted">
                     Пароль
                   </Label>
-                  <Input
+                  <SecretInput
                     id="db-password"
-                    type="password"
                     placeholder="••••••••"
                     value={dbForm.password}
                     onChange={(e) => updateDbField('password', e.target.value)}
+                    autoComplete="new-password"
                   />
                 </div>
               </div>
@@ -334,14 +400,17 @@ export default function DatabaseSettingsPage() {
               />
 
               <div className="flex gap-3">
-                <Button variant="outline" onClick={handleTest} disabled={!databaseUrl || testing}>
+                <Button variant="outline" onClick={handleTest} disabled={testing}>
+                  {testing && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                   {testing ? 'Тестування...' : "Тестувати з'єднання"}
                 </Button>
                 <Button onClick={handleSave} disabled={saving}>
+                  {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                   {saving ? 'Збереження...' : 'Зберегти'}
                 </Button>
                 {config?.hasExternalDb && (
                   <Button variant="destructive" onClick={handleDisconnect} disabled={saving}>
+                    {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                     Відключити
                   </Button>
                 )}
@@ -366,19 +435,6 @@ export default function DatabaseSettingsPage() {
                   ) : (
                     <p className="text-danger">{testResult.error}</p>
                   )}
-                </div>
-              )}
-
-              {/* Save Message */}
-              {message && (
-                <div
-                  className={`p-4 rounded-lg border ${
-                    message.includes('Помилка')
-                      ? 'bg-danger/10 border-danger/20 text-danger'
-                      : 'bg-success/10 border-success/20 text-success'
-                  }`}
-                >
-                  {message}
                 </div>
               )}
             </div>

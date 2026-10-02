@@ -1,7 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getTenantQuery } from '@/lib/tenant-query';
-import { hasPermission } from '@/lib/rbac';
+import { NextResponse } from 'next/server';
+
+import type { NextRequest } from 'next/server';
+
 import { getAuditLogs } from '@/lib/audit';
+import { hasPermission } from '@/lib/rbac';
+import { getTenantQuery } from '@/lib/tenant-query';
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,6 +32,7 @@ export async function GET(request: NextRequest) {
     const userIdFilter = searchParams.get('userId') || undefined;
     const from = searchParams.get('from') || undefined;
     const to = searchParams.get('to') || undefined;
+    const q = searchParams.get('q') || undefined;
 
     const result = await getAuditLogs(tq.tenantId, {
       page,
@@ -38,6 +42,7 @@ export async function GET(request: NextRequest) {
       userId: userIdFilter,
       from,
       to,
+      q,
     });
 
     return NextResponse.json(result);

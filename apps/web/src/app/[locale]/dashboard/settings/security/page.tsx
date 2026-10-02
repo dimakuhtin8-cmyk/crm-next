@@ -1,8 +1,9 @@
 'use client';
 
-import { MonitorSmartphone } from 'lucide-react';
+import { Loader2, MonitorSmartphone } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 import {
   Badge,
@@ -12,8 +13,8 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  Input,
   Label,
+  SecretInput,
   Table,
 } from '@/components/ui';
 
@@ -38,26 +39,78 @@ const INITIAL_SESSIONS: SessionRow[] = [
   { id: '3', device: 'Firefox · Ubuntu', ip: '172.16.8.4', current: false, lastActive: 'Вчора' },
 ];
 
+type FieldErrors = {
+  currentPassword?: string;
+  newPassword?: string;
+  confirmPassword?: string;
+};
+
+/** Оцінка міцності пароля: 0–4 бали за довжину, регістр, цифри, символи */
+function passwordStrength(pw: string): { score: number; label: string } {
+  if (!pw) return { score: 0, label: '' };
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score++;
+  if (/\d/.test(pw)) score++;
+  if (/[^a-zA-Z0-9]/.test(pw)) score++;
+  const label =
+    score <= 1 ? 'Слабкий' : score === 2 ? 'Середній' : score === 3 ? 'Міцний' : 'Надійний';
+  return { score, label };
+}
+
+const STRENGTH_COLORS: Record<number, string> = {
+  0: 'bg-danger',
+  1: 'bg-danger',
+  2: 'bg-warning',
+  3: 'bg-info',
+  4: 'bg-success',
+};
+
+const STRENGTH_TEXT: Record<number, string> = {
+  0: 'text-danger',
+  1: 'text-danger',
+  2: 'text-warning',
+  3: 'text-info',
+  4: 'text-success',
+};
+
 export default function SecuritySettingsPage() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState('');
-  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<FieldErrors>({});
   const [sessions, setSessions] = useState<SessionRow[]>(INITIAL_SESSIONS);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
+
+  const strength = passwordStrength(newPassword);
+
+  const validate = (): FieldErrors => {
+    const next: FieldErrors = {};
+    if (!currentPassword) next.currentPassword = 'Введіть поточний пароль';
+    if (newPassword.length < 8) next.newPassword = 'Новий пароль — щонайменше 8 символів';
+    else if (newPassword === currentPassword) {
+      next.newPassword = 'Новий пароль має відрізнятися від поточного';
+    }
+    if (confirmPassword !== newPassword) next.confirmPassword = 'Паролі не збігаються';
+    return next;
+  };
+
+  const setField = <K extends keyof FieldErrors>(key: K, value: string | undefined) => {
+    setErrors((prev) => ({ ...prev, [key]: value }));
+  };
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
 
-    if (newPassword !== confirmPassword) {
-      setError('Паролі не збігаються');
+    const nextErrors = validate();
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      toast.error('Перевірте форму', { description: 'Деякі поля заповнено неправильно' });
       return;
     }
 
-    setSaving(true);
+    setIsSubmitting(true);
     try {
       const res = await fetch('/api/user/password', {
         method: 'PUT',
@@ -66,19 +119,31 @@ export default function SecuritySettingsPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      setSuccess('Пароль оновлено');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
+      toast.success('Пароль оновлено');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Помилка');
+      toast.error('Не вдалося змінити пароль', {
+        description: err instanceof Error ? err.message : 'Спробуйте ще раз',
+      });
     } finally {
-      setSaving(false);
+      setIsSubmitting(false);
     }
   };
 
-  const revokeSession = (id: string) => {
-    setSessions((prev) => prev.filter((s) => s.id !== id));
+  const revokeSession = async (id: string) => {
+    // API сесій відсутнє — завершення локальне (демонстраційне)
+    setRevokingId(id);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      setSessions((prev) => prev.filter((s) => s.id !== id));
+      toast.success('Сесію завершено');
+    } catch {
+      toast.error('Не вдалося завершити сесію');
+    } finally {
+      setRevokingId(null);
+    }
   };
 
   return (
@@ -90,56 +155,79 @@ export default function SecuritySettingsPage() {
         <h1 className="text-2xl font-bold">Безпека</h1>
       </div>
 
-      {success && (
-        <div className="p-3 bg-success/10 text-success rounded-lg text-sm">{success}</div>
-      )}
-      {error && <div className="p-3 bg-danger/10 text-danger rounded-lg text-sm">{error}</div>}
-
       <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
           <CardTitle>Зміна пароля</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handlePasswordChange} className="space-y-4">
+          <form onSubmit={handlePasswordChange} noValidate className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="current-password" className="text-xs text-foreground-muted">
                 Поточний пароль
               </Label>
-              <Input
+              <SecretInput
                 id="current-password"
-                type="password"
                 value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                required
+                onChange={(e) => {
+                  setCurrentPassword(e.target.value);
+                  if (errors.currentPassword) setField('currentPassword', undefined);
+                }}
+                error={errors.currentPassword}
+                autoComplete="current-password"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="new-password" className="text-xs text-foreground-muted">
                 Новий пароль
               </Label>
-              <Input
+              <SecretInput
                 id="new-password"
-                type="password"
                 value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-                minLength={8}
+                onChange={(e) => {
+                  setNewPassword(e.target.value);
+                  if (errors.newPassword) setField('newPassword', undefined);
+                }}
+                error={errors.newPassword}
+                autoComplete="new-password"
               />
+              {newPassword && (
+                <div className="space-y-1">
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4].map((seg) => (
+                      <span
+                        key={seg}
+                        className={`h-1.5 flex-1 rounded-full transition-colors ${
+                          strength.score >= seg ? STRENGTH_COLORS[strength.score] : 'bg-secondary'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <p
+                    className={`text-xs ${STRENGTH_TEXT[strength.score] || 'text-foreground-muted'}`}
+                  >
+                    Міцність: {strength.label}
+                  </p>
+                </div>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirm-password" className="text-xs text-foreground-muted">
                 Підтвердження пароля
               </Label>
-              <Input
+              <SecretInput
                 id="confirm-password"
-                type="password"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  if (errors.confirmPassword) setField('confirmPassword', undefined);
+                }}
+                error={errors.confirmPassword}
+                autoComplete="new-password"
               />
             </div>
-            <Button type="submit" disabled={saving}>
-              {saving ? 'Збереження...' : 'Змінити пароль'}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              {isSubmitting ? 'Збереження...' : 'Змінити пароль'}
             </Button>
           </form>
         </CardContent>
@@ -185,7 +273,13 @@ export default function SecuritySettingsPage() {
                   row.current ? (
                     <Badge variant="info">Поточна</Badge>
                   ) : (
-                    <Button variant="destructive" size="sm" onClick={() => revokeSession(row.id)}>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      disabled={revokingId !== null}
+                      onClick={() => revokeSession(row.id)}
+                    >
+                      {revokingId === row.id && <Loader2 className="h-4 w-4 animate-spin mr-1.5" />}
                       Завершити
                     </Button>
                   ),

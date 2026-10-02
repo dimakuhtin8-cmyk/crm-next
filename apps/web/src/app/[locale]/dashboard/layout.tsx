@@ -2,16 +2,19 @@
 
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { Toaster } from 'sonner';
 
 import { Header } from './header';
 import { Sidebar } from './sidebar';
 
 import { CommandPalette } from '@/components/command-palette';
 import { NotificationsProvider } from '@/components/notifications-provider';
+import { useTheme } from '@/components/theme-provider';
 import { TourProvider } from '@/components/tour/tour-provider';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { resolvedTheme } = useTheme();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -70,6 +73,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </div>
         <CommandPalette />
+        <Toaster
+          position="top-right"
+          closeButton
+          richColors
+          theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
+        />
       </TourProvider>
     </NotificationsProvider>
   );

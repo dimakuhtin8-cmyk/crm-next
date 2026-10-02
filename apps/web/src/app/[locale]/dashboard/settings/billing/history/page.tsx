@@ -3,6 +3,7 @@
 import { Download, Receipt } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 
 import { DataError } from '@/components/data-error';
 import { Badge, Button, Card, CardContent, Skeleton, Table } from '@/components/ui';
@@ -69,6 +70,62 @@ export default function PaymentHistoryPage() {
   useEffect(() => {
     loadInvoices();
   }, []);
+
+  /**
+   * Мінімальний валідний PDF із текстовим вмістом — демонстраційний рахунок
+   * для записів без Stripe invoiceUrl (усі байти ASCII, offsets рахуються).
+   */
+  function buildMockInvoicePdf(lines: string[]): Blob {
+    const ascii = (s: string) => s.replace(/[^\x20-\x7E]/g, '?');
+    const esc = (s: string) => s.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+    const content = `BT /F1 12 Tf 50 790 Td 14 TL\n${lines
+      .map((line) => `(${esc(ascii(line))}) Tj T*`)
+      .join('\n')}\nET`;
+    const objects = [
+      '<< /Type /Catalog /Pages 2 0 R >>',
+      '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+      '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>',
+      '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+      `<< /Length ${content.length} >>\nstream\n${content}\nendstream`,
+    ];
+    let pdf = '%PDF-1.4\n';
+    const offsets: number[] = [];
+    objects.forEach((body, index) => {
+      offsets.push(pdf.length);
+      pdf += `${index + 1} 0 obj\n${body}\nendobj\n`;
+    });
+    const xrefOffset = pdf.length;
+    pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+    offsets.forEach((off) => {
+      pdf += `${String(off).padStart(10, '0')} 00000 n \n`;
+    });
+    pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+    return new Blob([pdf], { type: 'application/pdf' });
+  }
+
+  const handleDownloadMockInvoice = (row: Payment) => {
+    try {
+      const pdf = buildMockInvoicePdf([
+        'CRM-Next - Invoice (demo)',
+        `Date: ${new Date(row.createdAt).toLocaleDateString('uk')}`,
+        `Invoice: ${row.stripeInvoiceId || row.id}`,
+        `Description: ${row.description || 'Subscription payment'}`,
+        `Amount: ${(row.amount / 100).toFixed(2)} ${row.currency.toUpperCase()}`,
+        `Status: ${row.status}`,
+        '',
+        'Demo document generated client-side.',
+      ]);
+      const url = URL.createObjectURL(pdf);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `invoice-${(row.stripeInvoiceId || row.id).slice(-12)}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Рахунок завантажено', { description: 'Демонстраційний PDF' });
+    } catch {
+      toast.error('Не вдалося завантажити рахунок');
+    }
+  };
 
   const formatAmount = (cents: number, currency: string): string => {
     return new Intl.NumberFormat('uk-UA', {
@@ -185,7 +242,15 @@ export default function PaymentHistoryPage() {
                     </a>
                   </Button>
                 ) : (
-                  <span className="text-foreground-muted">—</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    title="Завантажити рахунок (демонстраційний PDF)"
+                    aria-label="Завантажити рахунок (демонстраційний PDF)"
+                    onClick={() => handleDownloadMockInvoice(row)}
+                  >
+                    <Download className="w-4 h-4" />
+                  </Button>
                 ),
             },
           ]}

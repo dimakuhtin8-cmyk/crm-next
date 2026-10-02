@@ -1,8 +1,7 @@
-import { prisma } from '@crm-next/database';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 
 import { csrfProtection } from '@/lib/csrf';
 import { getBotInfo, setWebhook, deleteWebhook } from '@/lib/telegram/bot';
@@ -10,6 +9,8 @@ import { getTenantQuery } from '@/lib/tenant-query';
 
 /**
  * GET /api/telegram/config — Get bot config for current tenant
+ * GET /api/telegram/config?action=test — перевірити збережений токен
+ *   реальним викликом getMe до Telegram API (без зміни конфігурації)
  */
 export async function GET(request: NextRequest) {
   const csrfError = csrfProtection(request);
@@ -31,6 +32,22 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    const action = new URL(request.url).searchParams.get('action');
+    if (action === 'test') {
+      if (!tenant?.telegramBotToken) {
+        return NextResponse.json({ error: 'Бота не налаштовано' }, { status: 400 });
+      }
+      const botInfo = await getBotInfo(tenant.telegramBotToken);
+      if (!botInfo.ok) {
+        return NextResponse.json({ error: 'Невірний токен бота' }, { status: 400 });
+      }
+      return NextResponse.json({
+        success: true,
+        botUsername: botInfo.result.username,
+        webhookSet: !!tenant.telegramWebhookSecret,
+      });
+    }
+
     return NextResponse.json({
       configured: !!tenant?.telegramBotToken,
       botUsername: tenant?.telegramBotUsername || null,
@@ -45,6 +62,8 @@ export async function GET(request: NextRequest) {
 /**
  * POST /api/telegram/config — Setup or update bot
  * Body: { botToken: string }
+ * POST /api/telegram/config?action=test — перевірити токен через getMe
+ *   без збереження конфігурації
  */
 const configSchema = z.object({
   botToken: z.string().min(40).max(100),
@@ -68,6 +87,15 @@ export async function POST(request: NextRequest) {
     const botInfo = await getBotInfo(parsed.data.botToken);
     if (!botInfo.ok) {
       return NextResponse.json({ error: 'Невірний токен бота' }, { status: 400 });
+    }
+
+    const action = new URL(request.url).searchParams.get('action');
+    if (action === 'test') {
+      // Тест токена: підтверджено Telegram API, але нічого не зберігаємо
+      return NextResponse.json({
+        success: true,
+        botUsername: botInfo.result.username,
+      });
     }
 
     // Generate webhook secret

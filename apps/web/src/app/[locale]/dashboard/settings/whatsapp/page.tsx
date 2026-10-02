@@ -1,10 +1,11 @@
 'use client';
 
-import { Check, MessageCircle } from 'lucide-react';
+import { Check, Loader2, MessageCircle, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
-import { Badge, Button, Card, CardContent, Input, Skeleton } from '@/components/ui';
+import { Badge, Button, Card, CardContent, Input, SecretInput, Skeleton } from '@/components/ui';
 
 interface WhatsAppConfig {
   configured: boolean;
@@ -24,8 +25,8 @@ export default function WhatsAppSettingsPage() {
     wabaId: '',
   });
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [syncing, setSyncing] = useState(false);
+  const [lastSynced, setLastSynced] = useState<string | null>(null);
   const [webhookUrl, setWebhookUrl] = useState('');
 
   useEffect(() => {
@@ -41,8 +42,6 @@ export default function WhatsAppSettingsPage() {
   const handleSetup = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    setError('');
-    setSuccess('');
 
     try {
       const res = await fetch('/api/whatsapp/config', {
@@ -53,11 +52,13 @@ export default function WhatsAppSettingsPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Помилка налаштування');
+        toast.error('Не вдалося підключити WhatsApp', {
+          description: data.error || 'Помилка налаштування',
+        });
         return;
       }
 
-      setSuccess('WhatsApp успішно підключено!');
+      toast.success('WhatsApp підключено');
       setWebhookUrl(data.webhookUrl);
       setConfig({
         configured: true,
@@ -67,7 +68,7 @@ export default function WhatsAppSettingsPage() {
       });
       setFormData({ apiKey: '', appId: '', phoneNumberId: '', phoneNumber: '', wabaId: '' });
     } catch {
-      setError("Помилка з'єднання");
+      toast.error("Помилка з'єднання");
     } finally {
       setSaving(false);
     }
@@ -77,13 +78,33 @@ export default function WhatsAppSettingsPage() {
     if (!confirm('Відключити WhatsApp?')) return;
     setSaving(true);
     try {
-      await fetch('/api/whatsapp/config', { method: 'DELETE' });
+      const res = await fetch('/api/whatsapp/config', { method: 'DELETE' });
+      if (!res.ok) throw new Error();
       setConfig({ configured: false, phoneNumber: null, phoneNumberId: null, wabaId: null });
-      setSuccess('WhatsApp відключено');
+      toast.success('WhatsApp відключено');
     } catch {
-      setError('Помилка відключення');
+      toast.error('Помилка відключення');
     } finally {
       setSaving(false);
+    }
+  };
+
+  /**
+   * Синхронізація шаблонів повідомлень — демонстраційна:
+   * інтеграція з Meta Templates API у проєкті відсутня.
+   */
+  const handleSyncTemplates = async () => {
+    setSyncing(true);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      setLastSynced(new Date().toLocaleTimeString('uk'));
+      toast.success('Шаблони синхронізовано', {
+        description: 'Демонстраційна синхронізація — Meta Templates API не інтегровано',
+      });
+    } catch {
+      toast.error('Не вдалося синхронізувати шаблони');
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -119,17 +140,6 @@ export default function WhatsAppSettingsPage() {
         </p>
       </div>
 
-      {error && (
-        <div className="p-3 rounded-lg bg-danger-light border border-danger/20 text-danger text-sm">
-          {error}
-        </div>
-      )}
-      {success && (
-        <div className="p-3 rounded-lg bg-success-light border border-success/20 text-success text-sm">
-          {success}
-        </div>
-      )}
-
       {config?.configured ? (
         <Card className="bg-card border-border shadow-sm rounded-xl">
           <CardContent className="p-5">
@@ -154,6 +164,35 @@ export default function WhatsAppSettingsPage() {
               </code>
               <p className="text-xs text-foreground-muted mt-2">
                 Встановіть цей URL у налаштуваннях 360dialog як Webhook URL
+              </p>
+            </div>
+
+            <div className="mt-4 p-4 bg-secondary/50 rounded-lg">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-sm font-medium">Шаблони повідомлень</h4>
+                  <p className="text-xs text-foreground-muted mt-1">
+                    {lastSynced
+                      ? `Остання синхронізація: ${lastSynced}`
+                      : 'Шаблони ще не синхронізувалися'}
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSyncTemplates}
+                  disabled={syncing}
+                >
+                  {syncing ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                  )}
+                  {syncing ? 'Синхронізація...' : 'Синхронізувати шаблони'}
+                </Button>
+              </div>
+              <p className="text-xs text-foreground-muted mt-2">
+                Демонстраційна синхронізація — інтеграція з Meta Templates API відсутня
               </p>
             </div>
 
@@ -234,12 +273,11 @@ export default function WhatsAppSettingsPage() {
                   <label className="block text-xs font-medium text-foreground-muted mb-1">
                     API Key
                   </label>
-                  <Input
-                    type="password"
+                  <SecretInput
                     placeholder="360dialog API key"
                     value={formData.apiKey}
                     onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
-                    required
+                    autoComplete="off"
                   />
                 </div>
                 <div>

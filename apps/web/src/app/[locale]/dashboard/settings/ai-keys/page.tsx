@@ -1,8 +1,9 @@
 'use client';
 
-import { Key, Eye, EyeOff, Check, X, Loader2, ExternalLink, Shield, Zap } from 'lucide-react';
+import { Key, Check, X, Loader2, ExternalLink, Shield, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 
 import { DataError } from '@/components/data-error';
 import { QuickSelect } from '@/components/quick-create';
@@ -13,8 +14,8 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-  Input,
   Badge,
+  SecretInput,
   Skeleton,
 } from '@/components/ui';
 import { AI_PROVIDERS, getProvider } from '@/lib/ai/providers';
@@ -33,7 +34,6 @@ export default function AiKeysSettingsPage() {
   const [selectedProvider, setSelectedProvider] = useState('gemini');
   const [selectedModel, setSelectedModel] = useState('');
   const [apiKey, setApiKey] = useState('');
-  const [showKey, setShowKey] = useState(false);
   const [fallbackProvider, setFallbackProvider] = useState('');
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -114,7 +114,7 @@ export default function AiKeysSettingsPage() {
       });
   }, [selectedProvider]);
 
-  const handleTestKey = async (): Promise<TestResult | null> => {
+  const handleTestKey = async (silent = false): Promise<TestResult | null> => {
     if (!apiKey.trim()) return null;
     setTesting(true);
     setTestResult(null);
@@ -132,6 +132,13 @@ export default function AiKeysSettingsPage() {
       });
       const result = (await res.json()) as TestResult;
       setTestResult(result);
+      if (!silent) {
+        if (result.status === 'connected') {
+          toast.success('З’єднання встановлено', { description: result.message });
+        } else {
+          toast.error('Тест не пройшов', { description: result.message });
+        }
+      }
       return result;
     } catch {
       const fallback: TestResult = {
@@ -143,6 +150,7 @@ export default function AiKeysSettingsPage() {
         latencyMs: 0,
       };
       setTestResult(fallback);
+      if (!silent) toast.error('Тест не пройшов', { description: fallback.message });
       return fallback;
     } finally {
       setTesting(false);
@@ -156,7 +164,7 @@ export default function AiKeysSettingsPage() {
     // First click tests the key AND continues to save — no dead clicks.
     let result = testResult;
     if (!result) {
-      result = await handleTestKey();
+      result = await handleTestKey(true);
       if (!result) return;
     }
 
@@ -183,16 +191,21 @@ export default function AiKeysSettingsPage() {
       if (res.ok) {
         setSaved(true);
         setApiKey('');
-        setShowKey(false);
         setTestResult(null);
         refreshSavedKeys();
+        toast.success('Ключ збережено', {
+          description: getProvider(selectedProvider)?.name || selectedProvider,
+        });
         setTimeout(() => setSaved(false), 3000);
       } else {
         const data = await res.json().catch(() => null);
-        setSaveError(data?.error || `Не вдалося зберегти (статус ${res.status})`);
+        const msg = data?.error || `Не вдалося зберегти (статус ${res.status})`;
+        setSaveError(msg);
+        toast.error('Не вдалося зберегти ключ', { description: msg });
       }
     } catch {
       setSaveError("Помилка з'єднання з сервером");
+      toast.error('Не вдалося зберегти ключ', { description: "Помилка з'єднання з сервером" });
     } finally {
       setSaving(false);
     }
@@ -207,10 +220,18 @@ export default function AiKeysSettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ provider }),
       });
-      if (res.ok) refreshSavedKeys();
-      else setSaveError('Не вдалося видалити ключ');
+      if (res.ok) {
+        refreshSavedKeys();
+        toast.success('Ключ видалено', {
+          description: getProvider(provider)?.name || provider,
+        });
+      } else {
+        setSaveError('Не вдалося видалити ключ');
+        toast.error('Не вдалося видалити ключ');
+      }
     } catch {
       setSaveError("Помилка з'єднання з сервером");
+      toast.error('Не вдалося видалити ключ', { description: "Помилка з'єднання з сервером" });
     }
   };
 
@@ -226,12 +247,17 @@ export default function AiKeysSettingsPage() {
         setSelectedProvider(provider);
         setSaved(true);
         refreshSavedKeys();
+        toast.success('Ключ активовано', {
+          description: getProvider(provider)?.name || provider,
+        });
         setTimeout(() => setSaved(false), 3000);
       } else {
         setSaveError('Не вдалося активувати ключ');
+        toast.error('Не вдалося активувати ключ');
       }
     } catch {
       setSaveError("Помилка з'єднання з сервером");
+      toast.error('Не вдалося активувати ключ', { description: "Помилка з'єднання з сервером" });
     }
   };
 
@@ -351,34 +377,23 @@ export default function AiKeysSettingsPage() {
             <label className="block text-xs font-medium text-foreground-muted mb-1.5">
               API-ключ {currentProvider?.keyPlaceholder && `(${currentProvider.keyPlaceholder})`}
             </label>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Input
-                  type={showKey ? 'text' : 'password'}
-                  placeholder={currentProvider?.keyPlaceholder || 'Введіть API-ключ'}
-                  value={apiKey}
-                  onChange={(e) => {
-                    setApiKey(e.target.value);
-                    setTestResult(null);
-                  }}
-                  className="font-mono text-sm pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowKey(!showKey)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground-muted hover:text-foreground"
-                >
-                  {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
+            <SecretInput
+              placeholder={currentProvider?.keyPlaceholder || 'Введіть API-ключ'}
+              value={apiKey}
+              onChange={(e) => {
+                setApiKey(e.target.value);
+                setTestResult(null);
+              }}
+              className="font-mono text-sm"
+              autoComplete="off"
+            />
           </div>
 
           {/* Test & Save buttons */}
           <div className="flex gap-2.5">
             <Button
               variant="outline"
-              onClick={handleTestKey}
+              onClick={() => handleTestKey()}
               disabled={!apiKey.trim() || testing}
               className="flex-1"
             >

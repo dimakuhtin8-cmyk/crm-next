@@ -1,10 +1,12 @@
 'use client';
 
-import { Shield, Users, Crown, Eye } from 'lucide-react';
+import { Shield, Users, Crown, Eye, Loader2, RotateCcw, Save } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 import {
+  Button,
   Card,
   CardContent,
   CardDescription,
@@ -14,6 +16,19 @@ import {
   Table,
 } from '@/components/ui';
 import { ROLE_HIERARCHY, PERMISSION_CATEGORIES, type TenantRole } from '@/lib/rbac';
+
+/** Демонстраційне локальне збереження правок матриці (серверна RBAC — незмінна) */
+const MATRIX_STORAGE_PREFIX = 'roles-matrix:';
+
+function loadMatrixOverrides(role: string): Record<string, boolean> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = window.localStorage.getItem(MATRIX_STORAGE_PREFIX + role);
+    return raw ? (JSON.parse(raw) as Record<string, boolean>) : {};
+  } catch {
+    return {};
+  }
+}
 
 const ROLE_CONFIG: Record<
   string,
@@ -68,7 +83,12 @@ type MatrixRow = {
 export default function RolesSettingsPage() {
   const [selectedRole, setSelectedRole] = useState<string>('member');
   // Локальні правки матриці (демонстраційні — рольову модель визначає сервер)
-  const [overrides, setOverrides] = useState<Record<string, boolean>>({});
+  const [overrides, setOverrides] = useState<Record<string, boolean>>(() =>
+    loadMatrixOverrides('member'),
+  );
+  const [saving, setSaving] = useState(false);
+
+  const hasChanges = Object.keys(overrides).length > 0;
 
   const rolePermissions: Record<string, string[]> = {
     owner: PERMISSION_CATEGORIES.flatMap((c) => c.permissions),
@@ -104,7 +124,33 @@ export default function RolesSettingsPage() {
 
   const selectRole = (key: string) => {
     setSelectedRole(key);
+    setOverrides(loadMatrixOverrides(key));
+  };
+
+  const handleSaveMatrix = async () => {
+    setSaving(true);
+    try {
+      // імітація мережевого запиту — збереження локальне (демонстраційне)
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      window.localStorage.setItem(MATRIX_STORAGE_PREFIX + selectedRole, JSON.stringify(overrides));
+      toast.success('Схему прав збережено', {
+        description: `Роль «${ROLE_CONFIG[selectedRole]?.label}»`,
+      });
+    } catch {
+      toast.error('Не вдалося зберегти схему прав');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleResetMatrix = () => {
     setOverrides({});
+    try {
+      window.localStorage.removeItem(MATRIX_STORAGE_PREFIX + selectedRole);
+    } catch {
+      // localStorage недоступний — правки скидаються лише в стані
+    }
+    toast.success('Правки скидано до базової схеми');
   };
 
   const buildRows = (): MatrixRow[] => {
@@ -187,11 +233,12 @@ export default function RolesSettingsPage() {
         <CardHeader>
           <CardTitle>Матриця прав: {ROLE_CONFIG[selectedRole]?.label}</CardTitle>
           <CardDescription>
-            Доступ ролі «{ROLE_CONFIG[selectedRole]?.label}» за модулями: перегляд, запис, видалення
-            (позначки можна перемикати — це демонстраційна матриця)
+            Доступ ролі «{ROLE_CONFIG[selectedRole]?.label}» за модулями: перегляд, запис,
+            видалення. Позначки можна перемикати та зберігати (збереження локальне, демонстраційне —
+            серверна модель прав незмінна)
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <Table<MatrixRow>
             data={buildRows()}
             columns={[
@@ -206,6 +253,22 @@ export default function RolesSettingsPage() {
             ]}
             emptyMessage="Немає модулів"
           />
+          <div className="flex items-center justify-end gap-2">
+            {hasChanges && (
+              <Button variant="outline" size="sm" onClick={handleResetMatrix} disabled={saving}>
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Скинути правки
+              </Button>
+            )}
+            <Button size="sm" onClick={handleSaveMatrix} disabled={!hasChanges || saving}>
+              {saving ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Save className="h-4 w-4 mr-2" />
+              )}
+              {saving ? 'Збереження...' : 'Зберегти схему'}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 

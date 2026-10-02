@@ -17,6 +17,7 @@ export { Checkbox } from './checkbox';
 export { Tabs, TabsContent, TabsList, TabsTrigger } from './tabs';
 export { Progress } from './progress';
 export { Separator } from './separator';
+export { SecretInput } from './secret-input';
 export {
   Dialog,
   DialogClose,

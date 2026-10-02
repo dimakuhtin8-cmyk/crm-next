@@ -1,11 +1,12 @@
 'use client';
 
-import { RefreshCw, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import { RefreshCw, ChevronLeft, ChevronRight, Download, Filter, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 
 import { QuickSelect } from '@/components/quick-create';
-import { Button, Card, CardContent, Badge, Skeleton, Table } from '@/components/ui';
+import { Button, Card, CardContent, Input, Badge, Skeleton, Table } from '@/components/ui';
 
 type AuditLogEntry = {
   id: string;
@@ -64,7 +65,20 @@ export default function AuditLogPage() {
   const [loading, setLoading] = useState(true);
   const [actionFilter, setActionFilter] = useState('');
   const [entityFilter, setEntityFilter] = useState('');
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
   const limit = 20;
+
+  // Дебаунс пошукового рядка, щоб не фетчити на кожний символ
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const fetchLogs = useCallback(async () => {
     setLoading(true);
@@ -72,6 +86,9 @@ export default function AuditLogPage() {
       const params = new URLSearchParams({ page: String(page), limit: String(limit) });
       if (actionFilter) params.set('action', actionFilter);
       if (entityFilter) params.set('entity', entityFilter);
+      if (debouncedSearch) params.set('q', debouncedSearch);
+      if (fromDate) params.set('from', fromDate);
+      if (toDate) params.set('to', `${toDate}T23:59:59`);
 
       const res = await fetch(`/api/audit?${params}`, { credentials: 'include' });
       if (res.ok) {
@@ -84,11 +101,44 @@ export default function AuditLogPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, actionFilter, entityFilter]);
+  }, [page, actionFilter, entityFilter, debouncedSearch, fromDate, toDate]);
 
   useEffect(() => {
     fetchLogs();
   }, [fetchLogs]);
+
+  /** Демонстраційний експорт поточної вибірки журналу у CSV */
+  const handleExportCsv = () => {
+    if (logs.length === 0) {
+      toast.warning('Немає записів для експорту');
+      return;
+    }
+    const escapeCell = (value: string) => `"${value.replace(/"/g, '""')}"`;
+    const header = ['Дата', 'Користувач', 'Дія', 'Сутність', 'ID', 'IP'];
+    const rows = logs.map((row) =>
+      [
+        formatDate(row.createdAt),
+        row.user?.name || row.user?.email || '',
+        ACTION_LABELS[row.action] || row.action,
+        ENTITY_LABELS[row.entity] || row.entity,
+        row.entityId || '',
+        row.ipAddress || '',
+      ]
+        .map(escapeCell)
+        .join(','),
+    );
+    const csv = `\uFEFF${[header.map(escapeCell).join(','), ...rows].join('\r\n')}`;
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `audit-log-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Експортовано записів: ${logs.length}`, {
+      description: 'Поточна сторінка журналу',
+    });
+  };
 
   const totalPages = Math.ceil(total / limit);
 
@@ -148,8 +198,48 @@ export default function AuditLogPage() {
                 />
               </div>
             </div>
+            <div className="relative w-56">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-muted" />
+              <Input
+                type="search"
+                placeholder="Пошук за дією, сутністю, ID..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-8"
+                aria-label="Пошук у журналі аудиту"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Input
+                type="date"
+                value={fromDate}
+                onChange={(e) => {
+                  setFromDate(e.target.value);
+                  setPage(1);
+                }}
+                className="w-36"
+                aria-label="Дата від"
+                title="Дата від"
+              />
+              <span className="text-xs text-foreground-muted">—</span>
+              <Input
+                type="date"
+                value={toDate}
+                onChange={(e) => {
+                  setToDate(e.target.value);
+                  setPage(1);
+                }}
+                className="w-36"
+                aria-label="Дата до"
+                title="Дата до"
+              />
+            </div>
             <Button variant="outline" size="sm" onClick={fetchLogs}>
               <RefreshCw className="w-4 h-4" />
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleExportCsv}>
+              <Download className="w-4 h-4 mr-2" />
+              Експорт CSV
             </Button>
             <span className="text-sm text-foreground-muted ml-auto">{total} записів</span>
           </div>

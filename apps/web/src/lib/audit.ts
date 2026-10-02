@@ -7,8 +7,18 @@
 
 import { prisma } from '@crm-next/database';
 
-export type AuditAction = 'create' | 'update' | 'delete' | 'login' | 'logout' | 'invite' | 'role_change' | 'export' | 'import';
-export type AuditEntity = 'contact' | 'deal' | 'task' | 'member' | 'settings' | 'auth' | 'pipeline' | 'import' | 'export';
+export type AuditAction =
+  | 'create'
+  | 'update'
+  | 'delete'
+  | 'login'
+  | 'logout'
+  | 'invite'
+  | 'role_change'
+  | 'export'
+  | 'import';
+export type AuditEntity =
+  'contact' | 'deal' | 'task' | 'member' | 'settings' | 'auth' | 'pipeline' | 'import' | 'export';
 
 interface AuditLogData {
   tenantId: string;
@@ -50,9 +60,10 @@ export async function logAuditEvent(data: AuditLogData): Promise<void> {
  * Extract request metadata for audit logging
  */
 export function extractRequestMeta(request: Request): { ipAddress: string; userAgent: string } {
-  const ipAddress = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-    || request.headers.get('x-real-ip')
-    || 'unknown';
+  const ipAddress =
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    request.headers.get('x-real-ip') ||
+    'unknown';
   const userAgent = request.headers.get('user-agent')?.slice(0, 200) || 'unknown';
   return { ipAddress, userAgent };
 }
@@ -63,7 +74,7 @@ export function extractRequestMeta(request: Request): { ipAddress: string; userA
  */
 export function computeDiff(
   oldValues: Record<string, unknown>,
-  newValues: Record<string, unknown>
+  newValues: Record<string, unknown>,
 ): { old: Record<string, unknown>; new: Record<string, unknown> } {
   const old: Record<string, unknown> = {};
   const newVals: Record<string, unknown> = {};
@@ -76,7 +87,8 @@ export function computeDiff(
 
     // Skip unchanged, skip sensitive fields
     if (oldVal === newVal) continue;
-    if (['password', 'apiKey', 'aiApiKey', 'geminiApiKey', 'stripeCustomerId'].includes(key)) continue;
+    if (['password', 'apiKey', 'aiApiKey', 'geminiApiKey', 'stripeCustomerId'].includes(key))
+      continue;
 
     if (oldVal !== undefined) old[key] = oldVal;
     if (newVal !== undefined) newVals[key] = newVal;
@@ -98,7 +110,8 @@ export async function getAuditLogs(
     userId?: string;
     from?: string;
     to?: string;
-  } = {}
+    q?: string;
+  } = {},
 ): Promise<{
   logs: Array<{
     id: string;
@@ -116,7 +129,7 @@ export async function getAuditLogs(
   page: number;
   limit: number;
 }> {
-  const { page = 1, limit = 20, action, entity, userId, from, to } = options;
+  const { page = 1, limit = 20, action, entity, userId, from, to, q } = options;
   const skip = (page - 1) * limit;
 
   const where: Record<string, unknown> = { tenantId };
@@ -128,6 +141,16 @@ export async function getAuditLogs(
       ...(from ? { gte: new Date(from) } : {}),
       ...(to ? { lte: new Date(to) } : {}),
     };
+  }
+  if (q) {
+    // Повнотекстовий пошук за дією, сутністю, ID та IP
+    const contains = { contains: q, mode: 'insensitive' as const };
+    where.OR = [
+      { action: contains },
+      { entity: contains },
+      { entityId: contains },
+      { ipAddress: contains },
+    ];
   }
 
   const [logs, total] = await Promise.all([
@@ -145,17 +168,18 @@ export async function getAuditLogs(
   ]);
 
   // Enrich with user info
-  const userIds = [...new Set(logs.map(l => l.userId).filter(Boolean))] as string[];
-  const users = userIds.length > 0
-    ? await prisma.user.findMany({
-        where: { id: { in: userIds } },
-        select: { id: true, name: true, email: true },
-      })
-    : [];
-  const userMap = new Map(users.map(u => [u.id, u]));
+  const userIds = [...new Set(logs.map((l) => l.userId).filter(Boolean))] as string[];
+  const users =
+    userIds.length > 0
+      ? await prisma.user.findMany({
+          where: { id: { in: userIds } },
+          select: { id: true, name: true, email: true },
+        })
+      : [];
+  const userMap = new Map(users.map((u) => [u.id, u]));
 
   return {
-    logs: logs.map(l => ({
+    logs: logs.map((l) => ({
       ...l,
       user: l.userId ? userMap.get(l.userId) || null : null,
     })),

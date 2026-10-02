@@ -1,10 +1,11 @@
 'use client';
 
-import { Check, Send } from 'lucide-react';
+import { Check, Loader2, Send, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
-import { Badge, Button, Card, CardContent, Input, Skeleton } from '@/components/ui';
+import { Badge, Button, Card, CardContent, SecretInput, Skeleton } from '@/components/ui';
 
 interface BotConfig {
   configured: boolean;
@@ -12,13 +13,15 @@ interface BotConfig {
   webhookSet: boolean;
 }
 
+/** Клієнтська перевірка формату токена Telegram Bot API */
+const TOKEN_RE = /^\d{6,}:[A-Za-z0-9_-]{30,}$/;
+
 export default function TelegramSettingsPage() {
   const [config, setConfig] = useState<BotConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState('');
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [testing, setTesting] = useState(false);
 
   useEffect(() => {
     fetch('/api/telegram/config')
@@ -30,30 +33,90 @@ export default function TelegramSettingsPage() {
 
   const handleSetup = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
-    setError('');
-    setSuccess('');
 
+    const trimmed = token.trim();
+    if (!TOKEN_RE.test(trimmed)) {
+      toast.error('Невірний формат токена', {
+        description: 'Очікується рядок на кшталт 123456789:ABCdef...',
+      });
+      return;
+    }
+
+    setSaving(true);
     try {
       const res = await fetch('/api/telegram/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ botToken: token }),
+        body: JSON.stringify({ botToken: trimmed }),
       });
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Помилка налаштування');
+        toast.error('Не вдалося підключити бота', {
+          description: data.error || 'Помилка налаштування',
+        });
         return;
       }
 
-      setSuccess(`Бот @${data.botUsername} успішно підключено!`);
+      toast.success('Бот підключено', { description: `@${data.botUsername}` });
       setToken('');
       setConfig({ configured: true, botUsername: data.botUsername, webhookSet: data.webhookSet });
     } catch {
-      setError("Помилка з'єднання");
+      toast.error("Помилка з'єднання");
     } finally {
       setSaving(false);
+    }
+  };
+
+  /** Тест введеного токена через Telegram getMe (без збереження) */
+  const handleTestToken = async () => {
+    const trimmed = token.trim();
+    if (!TOKEN_RE.test(trimmed)) {
+      toast.error('Невірний формат токена', {
+        description: 'Очікується рядок на кшталт 123456789:ABCdef...',
+      });
+      return;
+    }
+    setTesting(true);
+    try {
+      const res = await fetch('/api/telegram/config?action=test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ botToken: trimmed }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success('Токен дійсний', { description: `Бот @${data.botUsername} відповідає` });
+      } else {
+        toast.error('Тест не пройшов', { description: data.error });
+      }
+    } catch {
+      toast.error("Помилка з'єднання з сервером");
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  /** Тест збереженого підключення: реальний виклик getMe до Telegram */
+  const handleTestConnection = async () => {
+    setTesting(true);
+    try {
+      const res = await fetch('/api/telegram/config?action=test');
+      const data = await res.json();
+      if (res.ok) {
+        setConfig((prev) =>
+          prev ? { ...prev, botUsername: data.botUsername, webhookSet: data.webhookSet } : prev,
+        );
+        toast.success('Бот відповідає', {
+          description: `@${data.botUsername} · webhook: ${data.webhookSet ? 'встановлено' : 'не встановлено'}`,
+        });
+      } else {
+        toast.error('Тест не пройшов', { description: data.error });
+      }
+    } catch {
+      toast.error("Помилка з'єднання з сервером");
+    } finally {
+      setTesting(false);
     }
   };
 
@@ -61,11 +124,12 @@ export default function TelegramSettingsPage() {
     if (!confirm('Відключити бота?')) return;
     setSaving(true);
     try {
-      await fetch('/api/telegram/config', { method: 'DELETE' });
+      const res = await fetch('/api/telegram/config', { method: 'DELETE' });
+      if (!res.ok) throw new Error();
       setConfig({ configured: false, botUsername: null, webhookSet: false });
-      setSuccess('Бот відключено');
+      toast.success('Бот відключено');
     } catch {
-      setError('Помилка відключення');
+      toast.error('Помилка відключення');
     } finally {
       setSaving(false);
     }
@@ -103,17 +167,6 @@ export default function TelegramSettingsPage() {
         </p>
       </div>
 
-      {error && (
-        <div className="p-3 rounded-lg bg-danger-light border border-danger/20 text-danger text-sm">
-          {error}
-        </div>
-      )}
-      {success && (
-        <div className="p-3 rounded-lg bg-success-light border border-success/20 text-success text-sm">
-          {success}
-        </div>
-      )}
-
       {/* Status */}
       {config?.configured ? (
         <Card className="bg-card border-border shadow-sm rounded-xl">
@@ -126,9 +179,19 @@ export default function TelegramSettingsPage() {
                 <h3 className="font-medium">Бот підключено</h3>
                 <p className="text-sm text-foreground-muted">@{config.botUsername}</p>
               </div>
-              <Button variant="outline" onClick={handleRemove} disabled={saving}>
-                Відключити
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={handleTestConnection} disabled={testing}>
+                  {testing ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <Zap className="h-4 w-4 mr-2" />
+                  )}
+                  Перевірити з&apos;єднання
+                </Button>
+                <Button variant="outline" onClick={handleRemove} disabled={saving}>
+                  Відключити
+                </Button>
+              </div>
             </div>
 
             <div className="mt-6 p-4 bg-secondary/50 rounded-lg">
@@ -214,17 +277,31 @@ export default function TelegramSettingsPage() {
                 <label className="block text-xs font-medium text-foreground-muted mb-1">
                   Токен бота
                 </label>
-                <Input
-                  type="password"
+                <SecretInput
                   placeholder="1234567890:ABCdefGHIjklMNOpqrsTUVwxyz"
                   value={token}
                   onChange={(e) => setToken(e.target.value)}
-                  required
+                  autoComplete="off"
                 />
               </div>
-              <Button type="submit" disabled={saving || !token}>
-                {saving ? 'Налаштування...' : 'Підключити бота'}
-              </Button>
+              <div className="flex gap-2">
+                <Button type="submit" disabled={saving || !token}>
+                  {saving ? 'Налаштування...' : 'Підключити бота'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleTestToken}
+                  disabled={testing || !token}
+                >
+                  {testing ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <Zap className="h-4 w-4 mr-2" />
+                  )}
+                  Перевірити токен
+                </Button>
+              </div>
             </form>
           </CardContent>
         </Card>
