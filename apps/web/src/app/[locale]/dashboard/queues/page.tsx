@@ -25,7 +25,19 @@ import {
 import { useState, useEffect } from 'react';
 
 import { DataError } from '@/components/data-error';
-import { Card, CardContent, Button, Badge } from '@/components/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Skeleton,
+  Table,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui';
 
 interface QueueStats {
   pending: number;
@@ -35,22 +47,23 @@ interface QueueStats {
   total: number;
 }
 
+type JobRow = {
+  id: string;
+  type: string;
+  status: string;
+  priority: string;
+  attempts: number;
+  maxAttempts: number;
+  lastError: string | null;
+  createdAt: string;
+  startedAt: string | null;
+  completedAt: string | null;
+};
+
 export default function QueuesPage() {
   const [stats, setStats] = useState<QueueStats | null>(null);
-  const [jobs, setJobs] = useState<
-    Array<{
-      id: string;
-      type: string;
-      status: string;
-      priority: string;
-      attempts: number;
-      maxAttempts: number;
-      lastError: string | null;
-      createdAt: string;
-      startedAt: string | null;
-      completedAt: string | null;
-    }>
-  >([]);
+  const [jobs, setJobs] = useState<JobRow[]>([]);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [clearing, setClearing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -118,20 +131,104 @@ export default function QueuesPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <h1 className="text-2xl font-bold">Черги задач</h1>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-32 bg-muted rounded-2xl animate-pulse" />
+            <Skeleton key={i} className="h-24 rounded-xl" />
           ))}
         </div>
       </div>
     );
   }
 
+  const visibleJobs =
+    statusFilter === 'all' ? jobs : jobs.filter((job) => job.status === statusFilter);
+
+  const jobColumns = [
+    {
+      key: 'id',
+      header: 'Job ID',
+      className: 'p-2 w-[130px]',
+      render: (job: JobRow) => (
+        <span className="block truncate font-mono text-xs" title={job.id}>
+          {job.id}
+        </span>
+      ),
+    },
+    {
+      key: 'type',
+      header: 'Задача',
+      className: 'p-2',
+      render: (job: JobRow) => (
+        <div className="min-w-0">
+          <span className="text-sm font-medium">{job.type}</span>
+          {job.lastError && (
+            <p className="truncate text-xs text-danger max-w-[320px]" title={job.lastError}>
+              {job.lastError.slice(0, 120)}
+            </p>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Статус',
+      className: 'p-2 w-[130px]',
+      render: (job: JobRow) => (
+        <Badge
+          variant={
+            job.status === 'completed'
+              ? 'success'
+              : job.status === 'failed'
+                ? 'danger'
+                : job.status === 'processing'
+                  ? 'info'
+                  : 'secondary'
+          }
+          className="font-mono"
+        >
+          {job.status}
+        </Badge>
+      ),
+    },
+    {
+      key: 'attempts',
+      header: 'Спроби',
+      className: 'p-2 w-[90px] font-mono text-xs',
+      render: (job: JobRow) => `${job.attempts}/${job.maxAttempts}`,
+    },
+    {
+      key: 'createdAt',
+      header: 'Створено',
+      className: 'p-2 w-[120px] text-xs text-foreground-muted',
+      render: (job: JobRow) =>
+        new Date(job.createdAt).toLocaleString('uk', {
+          day: '2-digit',
+          month: 'short',
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+    },
+    {
+      key: 'download',
+      header: '',
+      className: 'p-2 w-[90px]',
+      render: (job: JobRow) =>
+        job.type === 'export' && job.status === 'completed' ? (
+          <a
+            href={`/api/queue/jobs/${job.id}/download`}
+            className="text-xs font-medium text-primary hover:underline"
+          >
+            Скачати
+          </a>
+        ) : null,
+    },
+  ];
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Черги задач</h1>
           <p className="text-foreground-muted text-sm mt-1">
@@ -139,12 +236,12 @@ export default function QueuesPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={fetchAll}>
-            <RefreshCw className="h-4 w-4 mr-2" />
+          <Button variant="outline" size="sm" onClick={fetchAll}>
+            <RefreshCw className="h-4 w-4" />
             Оновити
           </Button>
-          <Button variant="outline" onClick={handleCleanup} disabled={clearing}>
-            <Trash2 className="h-4 w-4 mr-2" />
+          <Button variant="destructive" size="sm" onClick={handleCleanup} disabled={clearing}>
+            <Trash2 className="h-4 w-4" />
             Очистити
           </Button>
         </div>
@@ -155,58 +252,58 @@ export default function QueuesPage() {
       {stats && (
         <>
           {/* Статистика */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="p-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Card className="shadow-sm">
+              <CardContent className="p-3">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-xl bg-warning/10">
                     <Clock className="h-5 w-5 text-warning" />
                   </div>
-                  <div>
-                    <p className="text-xs text-foreground-muted">Очікують</p>
-                    <p className="text-2xl font-bold">{stats.pending}</p>
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-foreground-muted">Очікують</p>
+                    <p className="font-mono text-2xl font-bold">{stats.pending}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardContent className="p-4">
+            <Card className="shadow-sm">
+              <CardContent className="p-3">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-xl bg-info/10">
                     <Loader className="h-5 w-5 text-info animate-spin" />
                   </div>
-                  <div>
-                    <p className="text-xs text-foreground-muted">Обробляються</p>
-                    <p className="text-2xl font-bold">{stats.processing}</p>
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-foreground-muted">Обробляються</p>
+                    <p className="font-mono text-2xl font-bold">{stats.processing}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardContent className="p-4">
+            <Card className="shadow-sm">
+              <CardContent className="p-3">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-xl bg-success/10">
                     <CheckCircle className="h-5 w-5 text-success" />
                   </div>
-                  <div>
-                    <p className="text-xs text-foreground-muted">Виконано</p>
-                    <p className="text-2xl font-bold">{stats.completed}</p>
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-foreground-muted">Виконано</p>
+                    <p className="font-mono text-2xl font-bold">{stats.completed}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardContent className="p-4">
+            <Card className="shadow-sm">
+              <CardContent className="p-3">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-xl bg-danger/10">
                     <XCircle className="h-5 w-5 text-danger" />
                   </div>
-                  <div>
-                    <p className="text-xs text-foreground-muted">Помилки</p>
-                    <p className="text-2xl font-bold">{stats.failed}</p>
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-foreground-muted">Помилки</p>
+                    <p className="font-mono text-2xl font-bold">{stats.failed}</p>
                   </div>
                 </div>
               </CardContent>
@@ -214,34 +311,36 @@ export default function QueuesPage() {
           </div>
 
           {/* Типи задач */}
-          <Card>
-            <CardContent className="p-4">
-              <h3 className="font-semibold mb-4">Типи задач</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50">
-                  <Mail className="h-5 w-5 text-blue-500" />
-                  <div>
+          <Card className="shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold">Типи задач</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-secondary/50">
+                  <Mail className="h-5 w-5 shrink-0 text-info" />
+                  <div className="min-w-0">
                     <p className="text-sm font-medium">Email</p>
                     <p className="text-xs text-foreground-muted">Розсилка листів</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50">
-                  <Brain className="h-5 w-5 text-accent-foreground" />
-                  <div>
+                <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-secondary/50">
+                  <Brain className="h-5 w-5 shrink-0 text-primary" />
+                  <div className="min-w-0">
                     <p className="text-sm font-medium">AI</p>
                     <p className="text-xs text-foreground-muted">Обробка даних</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50">
-                  <Download className="h-5 w-5 text-emerald-500" />
-                  <div>
+                <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-secondary/50">
+                  <Download className="h-5 w-5 shrink-0 text-success" />
+                  <div className="min-w-0">
                     <p className="text-sm font-medium">Експорт</p>
                     <p className="text-xs text-foreground-muted">Завантаження файлів</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50">
-                  <Bell className="h-5 w-5 text-amber-500" />
-                  <div>
+                <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-secondary/50">
+                  <Bell className="h-5 w-5 shrink-0 text-warning" />
+                  <div className="min-w-0">
                     <p className="text-sm font-medium">Сповіщення</p>
                     <p className="text-xs text-foreground-muted">Push та вбудовані</p>
                   </div>
@@ -251,87 +350,68 @@ export default function QueuesPage() {
           </Card>
 
           {/* Останні задачі (реальні дані з БД) */}
-          <Card>
-            <CardContent className="p-4">
-              <h3 className="font-semibold mb-4">Останні задачі</h3>
-              {jobs.length === 0 ? (
-                <p className="text-sm text-foreground-muted">
-                  Задач поки немає. Вони з'являться при спрацюванні автоматизацій.
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {jobs.map((job) => (
-                    <div
-                      key={job.id}
-                      className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50 text-sm"
-                    >
-                      <Badge
-                        variant={
-                          job.status === 'completed'
-                            ? 'success'
-                            : job.status === 'failed'
-                              ? 'danger'
-                              : job.status === 'processing'
-                                ? 'info'
-                                : 'secondary'
-                        }
-                      >
-                        {job.status}
-                      </Badge>
-                      <span className="font-medium">{job.type}</span>
-                      <span className="text-foreground-muted text-xs">
-                        {job.attempts}/{job.maxAttempts} спроб
-                      </span>
-                      {job.lastError && (
-                        <span className="text-danger text-xs truncate flex-1" title={job.lastError}>
-                          {job.lastError.slice(0, 120)}
-                        </span>
-                      )}
-                      <span className="ml-auto flex items-center gap-2">
-                        <span className="text-foreground-muted text-xs">
-                          {new Date(job.createdAt).toLocaleString('uk', {
-                            day: '2-digit',
-                            month: 'short',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </span>
-                        {job.type === 'export' && job.status === 'completed' && (
-                          <a
-                            href={`/api/queue/jobs/${job.id}/download`}
-                            className="text-xs font-medium text-primary hover:underline"
-                          >
-                            Скачати
-                          </a>
-                        )}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <div>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <h3 className="font-semibold text-sm">Останні задачі</h3>
+              <Tabs value={statusFilter} onValueChange={setStatusFilter}>
+                <TabsList className="h-8">
+                  <TabsTrigger value="all" className="h-6 px-2.5 text-xs">
+                    Усі
+                    <span className="ml-1.5 font-mono text-[11px] text-foreground-muted">
+                      {jobs.length}
+                    </span>
+                  </TabsTrigger>
+                  <TabsTrigger value="pending" className="h-6 px-2.5 text-xs">
+                    Очікують
+                    <span className="ml-1.5 font-mono text-[11px] text-foreground-muted">
+                      {stats.pending}
+                    </span>
+                  </TabsTrigger>
+                  <TabsTrigger value="processing" className="h-6 px-2.5 text-xs">
+                    Обробляються
+                    <span className="ml-1.5 font-mono text-[11px] text-foreground-muted">
+                      {stats.processing}
+                    </span>
+                  </TabsTrigger>
+                  <TabsTrigger value="failed" className="h-6 px-2.5 text-xs">
+                    Помилки
+                    <span className="ml-1.5 font-mono text-[11px] text-foreground-muted">
+                      {stats.failed}
+                    </span>
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+            <Table
+              columns={jobColumns}
+              data={visibleJobs}
+              pageSize={20}
+              emptyMessage="Задач цього статусу поки немає"
+            />
+          </div>
 
-          {/* Інформація */}
-          <Card>
-            <CardContent className="p-4">
-              <h3 className="font-semibold mb-3">Про чергу</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          {/* Информация */}
+          <Card className="shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold">Про чергу</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-foreground-muted mb-1">Движок</p>
-                  <p className="font-medium">Postgres + зовнішній планувальник</p>
+                  <p className="text-xs font-medium text-foreground-muted mb-1">Движок</p>
+                  <p className="font-mono text-sm font-medium">Postgres + зовнішній планувальник</p>
                 </div>
                 <div>
-                  <p className="text-foreground-muted mb-1">Retry стратегія</p>
-                  <p className="font-medium">Exponential Backoff (1s → 16s)</p>
+                  <p className="text-xs font-medium text-foreground-muted mb-1">Retry стратегія</p>
+                  <p className="font-mono text-sm font-medium">Exponential Backoff (1s → 16s)</p>
                 </div>
                 <div>
-                  <p className="text-foreground-muted mb-1">Макс. спроб</p>
-                  <p className="font-medium">3</p>
+                  <p className="text-xs font-medium text-foreground-muted mb-1">Макс. спроб</p>
+                  <p className="font-mono text-sm font-medium">3</p>
                 </div>
                 <div>
-                  <p className="text-foreground-muted mb-1">Таймаут задачі</p>
-                  <p className="font-medium">30 секунд</p>
+                  <p className="text-xs font-medium text-foreground-muted mb-1">Таймаут задачі</p>
+                  <p className="font-mono text-sm font-medium">30 секунд</p>
                 </div>
               </div>
             </CardContent>

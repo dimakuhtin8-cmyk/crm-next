@@ -22,7 +22,7 @@ import {
 import { useState, useEffect } from 'react';
 
 import { DataError } from '@/components/data-error';
-import { Card, CardContent, Button, Badge } from '@/components/ui';
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Skeleton } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
 interface CacheStats {
@@ -81,11 +81,11 @@ export default function CacheMonitorPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <h1 className="text-2xl font-bold">Моніторинг кешу</h1>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-32 bg-muted rounded-2xl animate-pulse" />
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Skeleton key={i} className="h-24 rounded-xl" />
           ))}
         </div>
       </div>
@@ -93,8 +93,8 @@ export default function CacheMonitorPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Моніторинг кешу</h1>
           <p className="text-foreground-muted text-sm mt-1">
@@ -102,12 +102,12 @@ export default function CacheMonitorPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={fetchStats} disabled={loading}>
-            <RefreshCw className={cn('h-4 w-4 mr-2', loading && 'animate-spin')} />
+          <Button variant="outline" size="sm" onClick={fetchStats} disabled={loading}>
+            <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
             Оновити
           </Button>
-          <Button variant="outline" onClick={handleClear} disabled={clearing}>
-            <Trash2 className="h-4 w-4 mr-2" />
+          <Button variant="destructive" size="sm" onClick={handleClear} disabled={clearing}>
+            <Trash2 className="h-4 w-4" />
             Очистити кеш
           </Button>
         </div>
@@ -117,68 +117,10 @@ export default function CacheMonitorPage() {
 
       {stats && (
         <>
-          {/* Статистика */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-success/10">
-                    <TrendingUp className="h-5 w-5 text-success" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-foreground-muted">Влучання</p>
-                    <p className="text-2xl font-bold">{stats.hits}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-danger/10">
-                    <TrendingDown className="h-5 w-5 text-danger" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-foreground-muted">Промахи</p>
-                    <p className="text-2xl font-bold">{stats.misses}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-primary/10">
-                    <Database className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-foreground-muted">Записів</p>
-                    <p className="text-2xl font-bold">{stats.size}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-warning/10">
-                    <BarChart3 className="h-5 w-5 text-warning" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-foreground-muted">Set/Remove</p>
-                    <p className="text-2xl font-bold">
-                      {stats.sets}/{stats.deletes}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
+          {/* KPI: Hit Rate → ключі → влучання → промахи → set/remove */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <Card className="shadow-sm">
+              <CardContent className="p-3">
                 <div className="flex items-center gap-3">
                   <div
                     className={cn(
@@ -201,9 +143,67 @@ export default function CacheMonitorPage() {
                       )}
                     />
                   </div>
-                  <div>
-                    <p className="text-xs text-foreground-muted">Hit Rate</p>
-                    <p className="text-2xl font-bold">{stats.hitRate}%</p>
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-foreground-muted">Hit Rate</p>
+                    <p className="font-mono text-2xl font-bold">{stats.hitRate}%</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-sm">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-primary/10">
+                    <Database className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-foreground-muted">Ключів</p>
+                    <p className="font-mono text-2xl font-bold">{stats.size}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-sm">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-success/10">
+                    <TrendingUp className="h-5 w-5 text-success" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-foreground-muted">Влучання</p>
+                    <p className="font-mono text-2xl font-bold">{stats.hits}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-sm">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-danger/10">
+                    <TrendingDown className="h-5 w-5 text-danger" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-foreground-muted">Промахи</p>
+                    <p className="font-mono text-2xl font-bold">{stats.misses}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-sm">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-warning/10">
+                    <BarChart3 className="h-5 w-5 text-warning" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-foreground-muted">Set/Remove</p>
+                    <p className="font-mono text-2xl font-bold">
+                      {stats.sets}/{stats.deletes}
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -211,18 +211,19 @@ export default function CacheMonitorPage() {
           </div>
 
           {/* Hit Rate Bar */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">Hit Rate</span>
-                <Badge
-                  variant={
-                    stats.hitRate >= 80 ? 'success' : stats.hitRate >= 50 ? 'warning' : 'danger'
-                  }
-                >
-                  {stats.hitRate}%
-                </Badge>
-              </div>
+          <Card className="shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-medium">Hit Rate</CardTitle>
+              <Badge
+                variant={
+                  stats.hitRate >= 80 ? 'success' : stats.hitRate >= 50 ? 'warning' : 'danger'
+                }
+                className="font-mono"
+              >
+                {stats.hitRate}%
+              </Badge>
+            </CardHeader>
+            <CardContent className="pt-0">
               <div className="h-3 bg-secondary rounded-full overflow-hidden">
                 <div
                   className={cn(
@@ -236,7 +237,7 @@ export default function CacheMonitorPage() {
                   style={{ width: `${stats.hitRate}%` }}
                 />
               </div>
-              <div className="flex justify-between mt-2 text-xs text-foreground-muted">
+              <div className="flex justify-between mt-2 font-mono text-xs text-foreground-muted">
                 <span>0%</span>
                 <span>50%</span>
                 <span>100%</span>
@@ -244,26 +245,30 @@ export default function CacheMonitorPage() {
             </CardContent>
           </Card>
 
-          {/* Інформація */}
-          <Card>
-            <CardContent className="p-4">
-              <h3 className="font-semibold mb-3">Про кеш</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          {/* Информация */}
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-sm font-semibold">Про кеш</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-foreground-muted mb-1">Тип кешу</p>
-                  <p className="font-medium">In-Memory (LRU)</p>
+                  <p className="text-xs font-medium text-foreground-muted mb-1">Тип кешу</p>
+                  <p className="font-mono text-sm font-medium">In-Memory (LRU)</p>
                 </div>
                 <div>
-                  <p className="text-foreground-muted mb-1">Максимум записів</p>
-                  <p className="font-medium">10,000</p>
+                  <p className="text-xs font-medium text-foreground-muted mb-1">Максимум записів</p>
+                  <p className="font-mono text-sm font-medium">10,000</p>
                 </div>
                 <div>
-                  <p className="text-foreground-muted mb-1">Очищення</p>
-                  <p className="font-medium">Кожні 5 хвилин (auto)</p>
+                  <p className="text-xs font-medium text-foreground-muted mb-1">Очищення</p>
+                  <p className="font-mono text-sm font-medium">Кожні 5 хвилин (auto)</p>
                 </div>
                 <div>
-                  <p className="text-foreground-muted mb-1">Стратегія</p>
-                  <p className="font-medium">Cache-Aside + Stale-While-Revalidate</p>
+                  <p className="text-xs font-medium text-foreground-muted mb-1">Стратегія</p>
+                  <p className="font-mono text-sm font-medium">
+                    Cache-Aside + Stale-While-Revalidate
+                  </p>
                 </div>
               </div>
             </CardContent>

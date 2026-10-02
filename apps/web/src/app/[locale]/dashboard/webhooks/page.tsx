@@ -9,20 +9,31 @@
 
 'use client';
 
-import { Webhook, Plus, Trash2, ExternalLink } from 'lucide-react';
+import { Webhook, Plus } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 
 import { QuickCreatePopover, QuickWebhookForm } from '@/components/quick-create';
-import { Card, CardContent, Button, Badge } from '@/components/ui';
-import { cn } from '@/lib/utils';
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  Input,
+  Skeleton,
+  Switch,
+  Table,
+} from '@/components/ui';
 
-interface WebhookItem {
+type WebhookRow = {
   id: string;
   url: string;
   events: string[];
   active: boolean;
   createdAt: string;
-}
+};
 
 interface WebhookEvent {
   event: string;
@@ -30,9 +41,10 @@ interface WebhookEvent {
 }
 
 export default function WebhooksPage() {
-  const [webhooks, setWebhooks] = useState<WebhookItem[]>([]);
+  const [webhooks, setWebhooks] = useState<WebhookRow[]>([]);
   const [events, setEvents] = useState<WebhookEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Quick-create popover
   const [quickOpen, setQuickOpen] = useState(false);
@@ -64,28 +76,96 @@ export default function WebhooksPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <h1 className="text-2xl font-bold">Вебхуки</h1>
-        <div className="space-y-4">
+        <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-24 bg-muted rounded-2xl animate-pulse" />
+            <Skeleton key={i} className="h-20 rounded-xl" />
           ))}
         </div>
       </div>
     );
   }
 
+  const visibleWebhooks = searchQuery.trim()
+    ? webhooks.filter((w) => w.url.toLowerCase().includes(searchQuery.trim().toLowerCase()))
+    : webhooks;
+
+  const webhookColumns = [
+    {
+      key: 'method',
+      header: 'Метод',
+      className: 'p-2 w-[90px]',
+      render: () => (
+        <Badge variant="success" className="font-mono">
+          POST
+        </Badge>
+      ),
+    },
+    {
+      key: 'url',
+      header: 'Endpoint URL',
+      className: 'p-2',
+      render: (webhook: WebhookRow) => (
+        <span className="block truncate font-mono text-xs" title={webhook.url}>
+          {webhook.url}
+        </span>
+      ),
+    },
+    {
+      key: 'events',
+      header: 'Події',
+      className: 'p-2 w-[110px] font-mono text-xs text-foreground-muted',
+      render: (webhook: WebhookRow) => (
+        <span title={webhook.events.join(', ')}>{webhook.events.length} подій</span>
+      ),
+    },
+    {
+      key: 'createdAt',
+      header: 'Створено',
+      className: 'p-2 w-[120px] text-xs text-foreground-muted',
+      render: (webhook: WebhookRow) =>
+        new Date(webhook.createdAt).toLocaleDateString('uk-UA', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        }),
+    },
+    {
+      key: 'active',
+      header: 'Статус',
+      className: 'p-2 w-[90px]',
+      render: (webhook: WebhookRow) => (
+        <Switch
+          checked={webhook.active}
+          disabled
+          aria-label="Статус вебхука"
+          title="Перемикання недоступне: API не має endpoint для зміни статусу"
+        />
+      ),
+    },
+  ];
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Вебхуки</h1>
           <p className="text-foreground-muted text-sm mt-1">Інтеграції з зовнішніми сервісами</p>
         </div>
-        <Button ref={quickBtnRef} onClick={() => setQuickOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Створити вебхук
-        </Button>
+        <div className="flex items-center gap-2">
+          <Input
+            type="search"
+            placeholder="Пошук за URL…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-8 w-56 text-xs"
+          />
+          <Button ref={quickBtnRef} size="sm" onClick={() => setQuickOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Створити вебхук
+          </Button>
+        </div>
         <QuickCreatePopover
           anchorEl={quickBtnRef.current}
           open={quickOpen}
@@ -98,79 +178,45 @@ export default function WebhooksPage() {
 
       {/* Список вебхуків */}
       {webhooks.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Webhook className="h-12 w-12 mx-auto text-foreground-muted mb-4" />
-            <h3 className="text-lg font-semibold mb-1">Вебхуків поки немає</h3>
-            <p className="text-sm text-foreground-muted mb-4">
-              Створіть вебхук для інтеграції з зовнішніми сервісами
-            </p>
-            <Button onClick={() => setQuickOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Створити вебхук
-            </Button>
+        <Card className="shadow-sm">
+          <CardContent className="p-4">
+            <EmptyState
+              icon={<Webhook className="h-12 w-12" />}
+              title="Вебхуків поки немає"
+              description="Створіть вебхук для інтеграції з зовнішніми сервісами"
+              action={
+                <Button size="sm" onClick={() => setQuickOpen(true)}>
+                  <Plus className="h-4 w-4" />
+                  Створити вебхук
+                </Button>
+              }
+            />
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-3">
-          {webhooks.map((webhook) => (
-            <Card key={webhook.id}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={cn(
-                        'p-2 rounded-xl',
-                        webhook.active ? 'bg-success/10' : 'bg-secondary',
-                      )}
-                    >
-                      <Webhook
-                        className={cn(
-                          'h-5 w-5',
-                          webhook.active ? 'text-success' : 'text-foreground-muted',
-                        )}
-                      />
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm truncate max-w-md">{webhook.url}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant={webhook.active ? 'success' : 'secondary'}>
-                          {webhook.active ? 'Активний' : 'Неактивний'}
-                        </Badge>
-                        <span className="text-xs text-foreground-muted">
-                          {webhook.events.length} подій
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm">
-                      <ExternalLink className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <Table
+          columns={webhookColumns}
+          data={visibleWebhooks}
+          pageSize={20}
+          emptyMessage="Вебхуків за цим запитом не знайдено"
+        />
       )}
 
       {/* Доступні події */}
-      <Card>
-        <CardContent className="p-4">
-          <h3 className="font-semibold mb-3">Доступні події</h3>
+      <Card className="shadow-sm">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold">Доступні події</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {events.map((evt) => (
               <div
                 key={evt.event}
-                className="flex items-center gap-2 p-2 rounded-lg bg-secondary/50"
+                className="flex items-center gap-2 rounded-lg bg-secondary/50 p-2"
               >
-                <code className="text-xs font-mono text-primary">{evt.event}</code>
+                <code className="truncate text-xs font-mono text-primary">{evt.event}</code>
                 <span className="text-sm text-foreground-muted">—</span>
-                <span className="text-sm">{evt.description}</span>
+                <span className="truncate text-sm">{evt.description}</span>
               </div>
             ))}
           </div>

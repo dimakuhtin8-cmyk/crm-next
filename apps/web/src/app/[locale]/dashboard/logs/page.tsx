@@ -17,21 +17,29 @@ import {
   AlertCircle,
   CheckCircle,
   Trash2,
-  Filter,
   Download,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
-import { QuickSelect } from '@/components/quick-create';
-import { Card, CardContent, Button, Badge } from '@/components/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  EmptyState,
+  Input,
+  Select,
+  Skeleton,
+  Table,
+} from '@/components/ui';
 
-interface LogEntry {
+type LogEntry = {
   id: string;
   level: 'info' | 'warn' | 'error';
   message: string;
   context?: Record<string, unknown>;
   timestamp: string;
-}
+};
 
 interface LogStats {
   total: number;
@@ -156,25 +164,26 @@ export default function LogsPage() {
     return true;
   });
 
-  const getLevelIcon = (level: string) => {
+  const levelBadge = (level: string) => {
     switch (level) {
       case 'error':
-        return <AlertCircle className="h-4 w-4 text-danger" />;
+        return (
+          <Badge variant="danger" className="font-mono">
+            ERROR
+          </Badge>
+        );
       case 'warn':
-        return <AlertTriangle className="h-4 w-4 text-warning" />;
+        return (
+          <Badge variant="warning" className="font-mono">
+            WARN
+          </Badge>
+        );
       default:
-        return <CheckCircle className="h-4 w-4 text-success" />;
-    }
-  };
-
-  const getLevelBadge = (level: string) => {
-    switch (level) {
-      case 'error':
-        return <Badge variant="danger">Помилка</Badge>;
-      case 'warn':
-        return <Badge variant="warning">Попередження</Badge>;
-      default:
-        return <Badge variant="success">Інфо</Badge>;
+        return (
+          <Badge variant="info" className="font-mono">
+            INFO
+          </Badge>
+        );
     }
   };
 
@@ -207,79 +216,113 @@ export default function LogsPage() {
     URL.revokeObjectURL(url);
   };
 
+  const logColumns = [
+    {
+      key: 'timestamp',
+      header: 'Час',
+      className: 'p-2 w-[95px]',
+      render: (log: LogEntry) => (
+        <span className="font-mono text-xs text-foreground-muted">{formatTime(log.timestamp)}</span>
+      ),
+    },
+    {
+      key: 'level',
+      header: 'Рівень',
+      className: 'p-2 w-[95px]',
+      render: (log: LogEntry) => levelBadge(log.level),
+    },
+    {
+      key: 'message',
+      header: 'Повідомлення',
+      className: 'p-2',
+      render: (log: LogEntry) => (
+        <div className="min-w-0">
+          <p className="truncate font-mono text-xs text-foreground" title={log.message}>
+            {log.message}
+          </p>
+          {log.context && (
+            <pre className="mt-1 max-h-12 overflow-auto whitespace-pre-wrap break-all rounded bg-secondary/50 p-1.5 font-mono text-[11px] text-foreground-muted">
+              {JSON.stringify(log.context, null, 2)}
+            </pre>
+          )}
+        </div>
+      ),
+    },
+  ];
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Системні логи</h1>
           <p className="text-foreground-muted text-sm mt-1">Моніторинг подій та помилок системи</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleExport}>
-            <Download className="h-4 w-4 mr-2" />
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <Download className="h-4 w-4" />
             Експорт
           </Button>
-          <Button variant="outline" onClick={handleClear}>
-            <Trash2 className="h-4 w-4 mr-2" />
+          <Button variant="outline" size="sm" onClick={handleClear}>
+            <Trash2 className="h-4 w-4" />
             Очистити
           </Button>
-          <Button variant="outline" onClick={fetchLogs}>
-            <RefreshCw className="h-4 w-4 mr-2" />
+          <Button variant="outline" size="sm" onClick={fetchLogs}>
+            <RefreshCw className="h-4 w-4" />
             Оновити
           </Button>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Card className="shadow-sm">
+          <CardContent className="p-3">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-info/10">
                 <Activity className="h-5 w-5 text-info" />
               </div>
-              <div>
-                <p className="text-xs text-foreground-muted">Всього</p>
-                <p className="text-lg font-bold">{stats.total}</p>
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-foreground-muted">Всього</p>
+                <p className="font-mono text-2xl font-bold">{stats.total}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
+        <Card className="shadow-sm">
+          <CardContent className="p-3">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-success/10">
                 <CheckCircle className="h-5 w-5 text-success" />
               </div>
-              <div>
-                <p className="text-xs text-foreground-muted">Інфо</p>
-                <p className="text-lg font-bold">{stats.info}</p>
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-foreground-muted">Інфо</p>
+                <p className="font-mono text-2xl font-bold">{stats.info}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
+        <Card className="shadow-sm">
+          <CardContent className="p-3">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-warning/10">
                 <AlertTriangle className="h-5 w-5 text-warning" />
               </div>
-              <div>
-                <p className="text-xs text-foreground-muted">Попередження</p>
-                <p className="text-lg font-bold">{stats.warnings}</p>
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-foreground-muted">Попередження</p>
+                <p className="font-mono text-2xl font-bold">{stats.warnings}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
+        <Card className="shadow-sm">
+          <CardContent className="p-3">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-danger/10">
                 <AlertCircle className="h-5 w-5 text-danger" />
               </div>
-              <div>
-                <p className="text-xs text-foreground-muted">Помилки</p>
-                <p className="text-lg font-bold">{stats.errors}</p>
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-foreground-muted">Помилки</p>
+                <p className="font-mono text-2xl font-bold">{stats.errors}</p>
               </div>
             </div>
           </CardContent>
@@ -287,30 +330,30 @@ export default function LogsPage() {
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center gap-4">
-            <Filter className="h-5 w-5 text-foreground-muted" />
-            <input
-              type="text"
+      <Card className="shadow-sm">
+        <CardContent className="p-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <Input
+              type="search"
               placeholder="Пошук у логах..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="h-8 w-full min-w-[200px] flex-1 text-xs"
             />
-            <div className="w-44">
-              <QuickSelect
-                value={levelFilter}
-                onChange={setLevelFilter}
-                options={[
-                  { id: 'all', name: 'Всі рівні' },
-                  { id: 'error', name: 'Помилки' },
-                  { id: 'warn', name: 'Попередження' },
-                  { id: 'info', name: 'Інфо' },
-                ]}
-              />
-            </div>
-            <span className="text-sm text-foreground-muted">Знайдено: {filteredLogs.length}</span>
+            <Select
+              value={levelFilter}
+              onValueChange={setLevelFilter}
+              aria-label="Фільтр за рівнем"
+              className="h-8 w-48 text-xs"
+            >
+              <option value="all">Всі рівні</option>
+              <option value="error">Помилки (ERROR)</option>
+              <option value="warn">Попередження (WARN)</option>
+              <option value="info">Інфо (INFO)</option>
+            </Select>
+            <span className="font-mono text-xs text-foreground-muted">
+              Знайдено: {filteredLogs.length}
+            </span>
           </div>
         </CardContent>
       </Card>
@@ -319,42 +362,21 @@ export default function LogsPage() {
       {loading ? (
         <div className="space-y-2">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-16 bg-muted rounded-lg animate-pulse" />
+            <Skeleton key={i} className="h-16 rounded-lg" />
           ))}
         </div>
       ) : filteredLogs.length === 0 ? (
-        <Card>
-          <CardContent className="p-5 text-center">
-            <Activity className="h-12 w-12 text-foreground-muted mx-auto mb-4" />
-            <p className="text-foreground-muted">Немає логів</p>
+        <Card className="shadow-sm">
+          <CardContent className="p-4">
+            <EmptyState
+              icon={<Activity className="h-12 w-12" />}
+              title="Немає логів"
+              description="Змініть фільтри або зачекайте на нові події"
+            />
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-2">
-          {filteredLogs.map((log) => (
-            <Card key={log.id}>
-              <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  <div className="mt-1">{getLevelIcon(log.level)}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      {getLevelBadge(log.level)}
-                      <span className="text-xs text-foreground-muted">
-                        {formatTime(log.timestamp)}
-                      </span>
-                    </div>
-                    <p className="text-sm">{log.message}</p>
-                    {log.context && (
-                      <pre className="mt-2 text-xs text-foreground-muted bg-secondary/50 rounded-lg p-2 overflow-x-auto">
-                        {JSON.stringify(log.context, null, 2)}
-                      </pre>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <Table columns={logColumns} data={filteredLogs} pageSize={50} />
       )}
     </div>
   );
