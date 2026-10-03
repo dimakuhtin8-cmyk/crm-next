@@ -58,9 +58,9 @@ export function AutomationPreview() {
                       initial={{ x: '-50%', y: 0, opacity: 0 }}
                       animate={{ x: '-50%', y: [0, 14], opacity: [0, 1, 1, 0] }}
                       transition={{
-                        duration: 1.6,
+                        duration: 2.24,
                         repeat: Infinity,
-                        delay: index * 0.55,
+                        delay: index * 0.77,
                         ease: 'linear',
                       }}
                     />

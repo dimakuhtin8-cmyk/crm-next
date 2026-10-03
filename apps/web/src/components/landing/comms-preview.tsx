@@ -64,11 +64,11 @@ export function CommsPreview() {
               {item.unread > 0 && (
                 <motion.span
                   className="mt-1 inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground"
-                  animate={{ scale: [1, 1.3, 1] }}
+                  animate={{ scale: [1, 1.18, 1] }}
                   transition={{
-                    duration: 0.55,
+                    duration: 0.7,
                     repeat: Infinity,
-                    repeatDelay: 2.95,
+                    repeatDelay: 4.2,
                     ease: 'easeOut',
                   }}
                 >

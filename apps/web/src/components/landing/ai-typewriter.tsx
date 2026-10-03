@@ -26,7 +26,7 @@ const DEMOS = [
 ];
 
 const STREAM_MS = 70;
-const THINK_MS = 1100;
+const THINK_MS = 1500;
 const HOLD_MS = 3000;
 
 type Phase = 'typing' | 'thinking' | 'answer';
@@ -137,9 +137,9 @@ export function AiTypewriter() {
                       className="h-1.5 w-1.5 rounded-full bg-foreground"
                       animate={{ y: [0, -4, 0], opacity: [0.45, 1, 0.45] }}
                       transition={{
-                        duration: 0.9,
+                        duration: 1.26,
                         repeat: Infinity,
-                        delay: i * 0.12,
+                        delay: i * 0.17,
                         ease: 'easeInOut',
                       }}
                     />

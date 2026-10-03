@@ -41,7 +41,7 @@ export function HeroKanban() {
   const [step, setStep] = useState(0);
 
   useEffect(() => {
-    const timer = setInterval(() => setStep((s) => (s + 1) % COLUMNS.length), 3500);
+    const timer = setInterval(() => setStep((s) => (s + 1) % COLUMNS.length), 4900);
     return () => clearInterval(timer);
   }, []);
 

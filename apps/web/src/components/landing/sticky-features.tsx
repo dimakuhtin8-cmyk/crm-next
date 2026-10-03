@@ -3,19 +3,25 @@
 /**
  * «Можливості»: sticky-навігація ліворуч (активна печатка синхронізується
  * IntersectionObserver, Framer Motion — плавний індикатор) і п'ять томів
- * праворуч, розділених бамбуковими rib-лініями. Akari world: плоский папір,
+ * праворуч, що розкриваються каскадом по скролу. Akari world: плоский папір,
  * печатка-статус, чорнило ручки. Жодних вкладених карток.
+ * Motion: одна пружина 320/30 на всі layout-переїзди, цикли на спільному
+ * каденсі, входи — expo-out із видимого стану.
  */
 
-import { motion, MotionConfig } from 'framer-motion';
+import { motion, MotionConfig, useReducedMotion } from 'framer-motion';
 import { Check } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { AutomationPreview } from '@/components/landing/automation-preview';
 import { BazaPreview } from '@/components/landing/baza-preview';
 import { CommsPreview } from '@/components/landing/comms-preview';
 import { RolesPreview } from '@/components/landing/roles-preview';
 import { SettingsPreview } from '@/components/landing/settings-preview';
+
+const MOVE_SPRING = { type: 'spring', stiffness: 320, damping: 30 } as const;
+const EXPO_OUT: [number, number, number, number] = [0.16, 1, 0.3, 1];
+const HEARTBEAT_MS = 4900;
 
 const features = [
   { id: 'baza', label: 'База і воронка' },
@@ -49,12 +55,36 @@ const BAZA_CHECKLIST = [
   'Канбан воронки з drag-and-drop',
 ];
 
+/** Том розділу: розкривається clip-розгорткою по входу у вʼюпорт, один раз. */
+function Volume({ id, index, children }: { id: string; index: number; children: ReactNode }) {
+  const reduce = useReducedMotion();
+  if (reduce) {
+    return (
+      <div id={id} className="scroll-mt-28 border-t-2 border-border-hover pt-10">
+        {children}
+      </div>
+    );
+  }
+  return (
+    <motion.div
+      id={id}
+      initial={{ clipPath: 'inset(0 0 100% 0)', opacity: 0.35 }}
+      whileInView={{ clipPath: 'inset(0 0 0% 0)', opacity: 1 }}
+      viewport={{ once: true, margin: '-64px' }}
+      transition={{ duration: 0.8, delay: Math.min(index * 0.07, 0.35), ease: EXPO_OUT }}
+      className="scroll-mt-28 border-t-2 border-border-hover pt-10"
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 /** Міні-канбан «База»: картка-печатка переїжджає між етапами (layoutId). */
 function KanbanPreview() {
   const [step, setStep] = useState(0);
 
   useEffect(() => {
-    const timer = setInterval(() => setStep((s) => (s + 1) % 2), 3500);
+    const timer = setInterval(() => setStep((s) => (s + 1) % 2), HEARTBEAT_MS);
     return () => clearInterval(timer);
   }, []);
 
@@ -70,6 +100,7 @@ function KanbanPreview() {
         {step === 0 && (
           <motion.div
             layoutId="moving-card"
+            transition={MOVE_SPRING}
             className="rounded-lg border-2 border-primary bg-primary-light p-3 text-xs font-bold text-primary shadow-sm"
           >
             LTD Instagram — 82k
@@ -84,6 +115,7 @@ function KanbanPreview() {
         {step === 1 && (
           <motion.div
             layoutId="moving-card"
+            transition={MOVE_SPRING}
             className="rounded-lg border-2 border-success bg-success-light p-3 text-xs font-bold text-success shadow-sm"
           >
             LTD Instagram — 82k
@@ -164,7 +196,7 @@ export function StickyFeatures() {
                   <motion.span
                     layoutId="active-feature-tab"
                     className="absolute inset-0 rounded-lg bg-primary shadow-sm"
-                    transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                    transition={MOVE_SPRING}
                   />
                 )}
                 <span className="relative">{feature.label}</span>
@@ -174,7 +206,7 @@ export function StickyFeatures() {
 
           {/* Пʼять томів, розділених rib-лініями */}
           <div className="space-y-14 lg:col-span-8">
-            <div id="section-baza" className="scroll-mt-28 border-t-2 border-border-hover pt-10">
+            <Volume id="section-baza" index={0}>
               <h4 className="mb-2 text-2xl font-bold">База клієнтів і воронка без втрат</h4>
               <p className="mb-6 text-foreground-secondary">
                 Угоди рухаються етапами, прострочене підсвічується автоматично.
@@ -193,9 +225,9 @@ export function StickyFeatures() {
                   ))}
                 </ul>
               </div>
-            </div>
+            </Volume>
 
-            <div id="section-chat" className="scroll-mt-28 border-t-2 border-border-hover pt-10">
+            <Volume id="section-chat" index={1}>
               <h4 className="mb-2 text-2xl font-bold">Уся комунікація — в CRM</h4>
               <p className="mb-6 text-foreground-secondary">
                 Telegram, WhatsApp та Email в єдиній вхідній скриньці (БЕЗ телефонії).
@@ -213,33 +245,33 @@ export function StickyFeatures() {
                   </div>
                 ))}
               </div>
-            </div>
+            </Volume>
 
-            <div id="section-auto" className="scroll-mt-28 border-t-2 border-border-hover pt-10">
+            <Volume id="section-auto" index={2}>
               <h4 className="mb-2 text-2xl font-bold">Автоматизація рутини</h4>
               <p className="mb-6 text-foreground-secondary">
                 Правила самі розподіляють лідів та рухають угоди.
               </p>
               <AutomationPreview />
-            </div>
+            </Volume>
 
-            <div id="section-audit" className="scroll-mt-28 border-t-2 border-border-hover pt-10">
+            <Volume id="section-audit" index={3}>
               <h4 className="mb-2 text-2xl font-bold">Аналітика й контроль доступу</h4>
               <p className="mb-6 text-foreground-secondary">
                 Видно джерела лідів і завантаженість команди, а доступ — за ролями: кожна дія з
                 даними потрапляє в журнал аудиту.
               </p>
               <RolesPreview />
-            </div>
+            </Volume>
 
-            <div id="section-ai" className="scroll-mt-28 border-t-2 border-border-hover pt-10">
+            <Volume id="section-ai" index={4}>
               <h4 className="mb-2 text-2xl font-bold">AI та розширені налаштування</h4>
               <p className="mb-6 text-foreground-secondary">
                 Підключайте власні AI-ключі, налаштовуйте вебхуки та інтеграції, стежте за
                 використанням AI у журналі.
               </p>
               <SettingsPreview />
-            </div>
+            </Volume>
           </div>
         </div>
       </div>
