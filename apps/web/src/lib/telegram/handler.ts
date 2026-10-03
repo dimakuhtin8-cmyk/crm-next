@@ -2,6 +2,8 @@ import { sendMessage, answerCallbackQuery, editMessageText } from './bot';
 
 import type { TelegramMessage, TelegramCallbackQuery } from './bot';
 
+import { normalizeTelegramMessage, persistInboundMessage } from '@/lib/channels';
+
 export async function handleTelegramUpdate(
   tenantId: string,
   update: { message?: TelegramMessage; callback_query?: TelegramCallbackQuery },
@@ -43,6 +45,16 @@ async function handleMessage(tenantId: string, msg: TelegramMessage) {
       unread: true,
     },
   });
+
+  // Persist inbound text to the omnichannel Chat (Повідомлення)
+  try {
+    const inbound = normalizeTelegramMessage(msg);
+    if (inbound) {
+      await persistInboundMessage(tenantId, 'TELEGRAM', inbound);
+    }
+  } catch (err) {
+    console.error('[telegram] failed to persist inbound message:', err);
+  }
 
   // Handle commands
   if (text.startsWith('/')) {

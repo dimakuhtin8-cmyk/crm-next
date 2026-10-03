@@ -4,6 +4,8 @@ import { sendTextMessage, markAsRead } from './client';
 
 import type { WhatsAppWebhookBody, WhatsAppMessage } from './client';
 
+import { normalizeWhatsAppMessage, persistInboundMessage } from '@/lib/channels';
+
 export async function handleWhatsAppWebhook(body: WhatsAppWebhookBody) {
   if (body.object !== 'whatsapp_business_account') return;
 
@@ -74,6 +76,16 @@ async function handleIncomingMessage(
     await markAsRead(phoneNumberId, accessToken, msg.id);
   } catch {
     // best-effort: непрочитанное у провайдера не блокирует обработку
+  }
+
+  // Persist inbound message to the omnichannel Chat (Повідомлення)
+  try {
+    const inbound = normalizeWhatsAppMessage(msg, contacts);
+    if (inbound) {
+      await persistInboundMessage(tenantId, 'WHATSAPP', inbound);
+    }
+  } catch (err) {
+    console.error('[whatsapp] failed to persist inbound message:', err);
   }
 
   // Handle text messages
@@ -280,4 +292,23 @@ async function handleStatusUpdate(
 ) {
   // Log delivery status for debugging
   console.log(`WhatsApp message ${status.id}: ${status.status} to ${status.recipient_id}`);
+
+  // Reflect provider delivery status on the outbound omnichannel message (best-effort)
+  try {
+    const statusMap: Record<string, 'DELIVERED' | 'READ' | 'FAILED'> = {
+      sent: 'DELIVERED',
+      delivered: 'DELIVERED',
+      read: 'READ',
+      failed: 'FAILED',
+    };
+    const next = statusMap[status.status];
+    if (!next) return;
+
+    await prisma.chatMessage.updateMany({
+      where: { externalMessageId: status.id, chat: { tenantId } },
+      data: { status: next },
+    });
+  } catch (err) {
+    console.error('[whatsapp] failed to update chat message status:', err);
+  }
 }

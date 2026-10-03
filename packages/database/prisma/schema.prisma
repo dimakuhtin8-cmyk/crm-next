@@ -132,6 +132,7 @@ model Tenant {
   tasks          Task[]
   telegramChats  TelegramChat[]
   whatsappChats  WhatsAppChat[]
+  chats          Chat[]
   automationRules AutomationRule[]
   automationLogs  AutomationLog[]
   aiUsageLogs     AiUsageLog[]
@@ -181,6 +182,64 @@ model WhatsAppChat {
   @@unique([tenantId, phoneNumber])
   @@index([tenantId])
   @@index([contactId])
+}
+
+// ===== Omnichannel Chat (Повідомлення) =====
+
+enum ChatChannel {
+  TELEGRAM
+  WHATSAPP
+  EMAIL
+  SMS
+}
+
+enum ChatSenderType {
+  CUSTOMER
+  USER
+  AI_AGENT
+}
+
+enum ChatMessageStatus {
+  DELIVERED
+  READ
+  FAILED
+}
+
+model Chat {
+  id             String      @id @default(cuid())
+  tenantId       String
+  contactId      String? // Linked CRM contact (SetNull при видаленні контакту)
+  channel        ChatChannel
+  externalChatId String // ID чату в зовнішній системі (telegram chat id, WhatsApp wa_id тощо)
+  unreadCount    Int         @default(0)
+  lastMessageAt  DateTime    @default(now())
+  createdAt      DateTime    @default(now())
+
+  tenant   Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contact  Contact?       @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  messages ChatMessage[]
+
+  @@unique([tenantId, channel, externalChatId])
+  @@index([externalChatId])
+  @@index([tenantId, lastMessageAt])
+  @@index([contactId])
+}
+
+model ChatMessage {
+  id                String            @id @default(cuid())
+  chatId            String
+  senderType        ChatSenderType
+  content           String            @db.Text
+  mediaUrl          String?
+  status            ChatMessageStatus @default(DELIVERED)
+  externalMessageId String? // ID повідомлення в зовнішній системі (дедуплікація ретраїв вебхуків)
+  createdAt         DateTime          @default(now())
+
+  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@unique([chatId, externalMessageId])
+  @@index([chatId, createdAt])
+  @@index([externalMessageId])
 }
 
 model TenantMember {
@@ -238,6 +297,7 @@ model Contact {
   deals    Deal[]
   telegramChats TelegramChat[]
   whatsappChats WhatsAppChat[]
+  chats         Chat[]
 
   @@index([tenantId])
   @@index([tenantId, email])

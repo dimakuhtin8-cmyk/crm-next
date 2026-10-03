@@ -15,8 +15,8 @@ import { getTenantDbClient, type DatabaseType } from '@crm-next/database/tenant-
 import type { NextRequest } from 'next/server';
 
 import { extractUser } from '@/lib/auth-utils';
-import { getUserRole } from '@/lib/rbac';
 import { decrypt, isEncrypted } from '@/lib/encryption';
+import { getUserRole } from '@/lib/rbac';
 
 type PrismaClient = typeof prisma;
 
@@ -29,7 +29,7 @@ export function tenantScopeError(): Error {
   return Object.assign(new Error('Record not found in tenant scope'), { code: 'P2025' });
 }
 
-type OwnedModel = 'contact' | 'task' | 'tag' | 'pipeline' | 'deal';
+type OwnedModel = 'contact' | 'task' | 'tag' | 'pipeline' | 'deal' | 'chat';
 
 /**
  * Verify that a record with the given id belongs to the tenant.
@@ -41,9 +41,11 @@ async function assertOwned(
   id: string,
   tenantId: string,
 ): Promise<void> {
-  const found = await (db[model] as {
-    findFirst: (args: unknown) => Promise<{ id: string } | null>;
-  }).findFirst({ where: { id, tenantId }, select: { id: true } });
+  const found = await (
+    db[model] as {
+      findFirst: (args: unknown) => Promise<{ id: string } | null>;
+    }
+  ).findFirst({ where: { id, tenantId }, select: { id: true } });
   if (!found) throw tenantScopeError();
 }
 
@@ -87,7 +89,7 @@ async function getDbForTenant(tenantId: string): Promise<PrismaClient> {
 
     return getTenantDbClient(
       { databaseUrl, databaseType: tenant.databaseType as DatabaseType },
-      prisma
+      prisma,
     );
   } catch {
     return prisma;
@@ -111,7 +113,13 @@ export function createTenantQuery(tenantId: string, db: PrismaClient = prisma) {
 
     // Contact queries
     contact: {
-      findMany: (args?: { where?: Record<string, unknown>; orderBy?: Record<string, string>; skip?: number; take?: number; include?: Record<string, unknown> }) =>
+      findMany: (args?: {
+        where?: Record<string, unknown>;
+        orderBy?: Record<string, string>;
+        skip?: number;
+        take?: number;
+        include?: Record<string, unknown>;
+      }) =>
         db.contact.findMany({
           ...args,
           where: { ...args?.where, tenantId } as never,
@@ -121,7 +129,11 @@ export function createTenantQuery(tenantId: string, db: PrismaClient = prisma) {
           ...args,
           where: { ...args?.where, tenantId } as never,
         }),
-      findUnique: (args: { where: { id: string }; select?: Record<string, unknown>; include?: Record<string, unknown> }) =>
+      findUnique: (args: {
+        where: { id: string };
+        select?: Record<string, unknown>;
+        include?: Record<string, unknown>;
+      }) =>
         db.contact.findFirst({
           ...args,
           where: { id: args.where.id, tenantId },
@@ -148,7 +160,13 @@ export function createTenantQuery(tenantId: string, db: PrismaClient = prisma) {
 
     // Task queries
     task: {
-      findMany: (args?: { where?: Record<string, unknown>; orderBy?: Record<string, string>; skip?: number; take?: number; include?: Record<string, unknown> }) =>
+      findMany: (args?: {
+        where?: Record<string, unknown>;
+        orderBy?: Record<string, string>;
+        skip?: number;
+        take?: number;
+        include?: Record<string, unknown>;
+      }) =>
         db.task.findMany({
           ...args,
           where: { ...args?.where, tenantId } as never,
@@ -158,7 +176,11 @@ export function createTenantQuery(tenantId: string, db: PrismaClient = prisma) {
           ...args,
           where: { ...args?.where, tenantId } as never,
         }),
-      findUnique: (args: { where: { id: string }; select?: Record<string, unknown>; include?: Record<string, unknown> }) =>
+      findUnique: (args: {
+        where: { id: string };
+        select?: Record<string, unknown>;
+        include?: Record<string, unknown>;
+      }) =>
         db.task.findFirst({
           ...args,
           where: { id: args.where.id, tenantId },
@@ -185,7 +207,10 @@ export function createTenantQuery(tenantId: string, db: PrismaClient = prisma) {
 
     // TaskComment queries (no tenantId in schema — ownership verified via parent task)
     taskComment: {
-      findMany: async (args?: { where?: Record<string, unknown>; orderBy?: Record<string, string> }) => {
+      findMany: async (args?: {
+        where?: Record<string, unknown>;
+        orderBy?: Record<string, string>;
+      }) => {
         const taskId = args?.where?.taskId as string | undefined;
         if (!taskId) throw tenantScopeError();
         await assertOwned(db, 'task', taskId, tenantId);
@@ -305,7 +330,12 @@ export function createTenantQuery(tenantId: string, db: PrismaClient = prisma) {
 
     // Activity queries
     activity: {
-      findMany: (args?: { where?: Record<string, unknown>; orderBy?: Record<string, string>; skip?: number; take?: number }) =>
+      findMany: (args?: {
+        where?: Record<string, unknown>;
+        orderBy?: Record<string, string>;
+        skip?: number;
+        take?: number;
+      }) =>
         db.activity.findMany({
           ...args,
           where: { ...args?.where, tenantId } as never,
@@ -322,9 +352,74 @@ export function createTenantQuery(tenantId: string, db: PrismaClient = prisma) {
         }),
     },
 
+    // Chat queries (Omnichannel «Повідомлення»)
+    chat: {
+      findMany: (args?: {
+        where?: Record<string, unknown>;
+        orderBy?: Record<string, string>;
+        skip?: number;
+        take?: number;
+        include?: Record<string, unknown>;
+      }) =>
+        db.chat.findMany({
+          ...args,
+          where: { ...args?.where, tenantId } as never,
+        }),
+      findFirst: (args?: { where?: Record<string, unknown>; include?: Record<string, unknown> }) =>
+        db.chat.findFirst({
+          ...args,
+          where: { ...args?.where, tenantId } as never,
+        }),
+      findUnique: (args: { where: { id: string }; include?: Record<string, unknown> }) =>
+        db.chat.findFirst({
+          ...args,
+          where: { id: args.where.id, tenantId },
+        } as never),
+      update: async (args: { where: { id: string }; data: Record<string, unknown> }) => {
+        await assertOwned(db, 'chat', args.where.id, tenantId);
+        return db.chat.update(args as never);
+      },
+      count: (args?: { where?: Record<string, unknown> }) =>
+        db.chat.count({
+          ...args,
+          where: { ...args?.where, tenantId } as never,
+        }),
+    },
+
+    // ChatMessage queries (no tenantId in schema — ownership verified via parent chat)
+    chatMessage: {
+      findMany: async (args?: {
+        where?: Record<string, unknown>;
+        orderBy?: Record<string, string>;
+        skip?: number;
+        take?: number;
+      }) => {
+        const chatId = args?.where?.chatId as string | undefined;
+        if (!chatId) throw tenantScopeError();
+        await assertOwned(db, 'chat', chatId, tenantId);
+        return db.chatMessage.findMany({ ...args } as never);
+      },
+      count: async (args?: { where?: Record<string, unknown> }) => {
+        const chatId = args?.where?.chatId as string | undefined;
+        if (!chatId) throw tenantScopeError();
+        await assertOwned(db, 'chat', chatId, tenantId);
+        return db.chatMessage.count({ ...args } as never);
+      },
+      create: async (args: { data: Record<string, unknown> }) => {
+        const chatId = args.data.chatId as string | undefined;
+        if (!chatId) throw tenantScopeError();
+        await assertOwned(db, 'chat', chatId, tenantId);
+        return db.chatMessage.create({ ...args } as never);
+      },
+    },
+
     // Pipeline queries
     pipeline: {
-      findMany: (args?: { where?: Record<string, unknown>; include?: Record<string, unknown>; orderBy?: Record<string, string> }) =>
+      findMany: (args?: {
+        where?: Record<string, unknown>;
+        include?: Record<string, unknown>;
+        orderBy?: Record<string, string>;
+      }) =>
         db.pipeline.findMany({
           ...args,
           where: { ...args?.where, tenantId } as never,
@@ -334,7 +429,11 @@ export function createTenantQuery(tenantId: string, db: PrismaClient = prisma) {
           ...args,
           where: { ...args?.where, tenantId } as never,
         }),
-      findUnique: (args: { where: { id: string }; select?: Record<string, unknown>; include?: Record<string, unknown> }) =>
+      findUnique: (args: {
+        where: { id: string };
+        select?: Record<string, unknown>;
+        include?: Record<string, unknown>;
+      }) =>
         db.pipeline.findFirst({
           ...args,
           where: { id: args.where.id, tenantId },
@@ -356,7 +455,10 @@ export function createTenantQuery(tenantId: string, db: PrismaClient = prisma) {
 
     // PipelineStage queries (no tenantId in schema — ownership verified via parent pipeline)
     pipelineStage: {
-      findMany: async (args?: { where?: Record<string, unknown>; orderBy?: Record<string, string> }) => {
+      findMany: async (args?: {
+        where?: Record<string, unknown>;
+        orderBy?: Record<string, string>;
+      }) => {
         const pipelineId = args?.where?.pipelineId as string | undefined;
         if (!pipelineId) throw tenantScopeError();
         await assertOwned(db, 'pipeline', pipelineId, tenantId);
@@ -403,7 +505,13 @@ export function createTenantQuery(tenantId: string, db: PrismaClient = prisma) {
 
     // Deal queries
     deal: {
-      findMany: (args?: { where?: Record<string, unknown>; orderBy?: Record<string, string>; skip?: number; take?: number; include?: Record<string, unknown> }) =>
+      findMany: (args?: {
+        where?: Record<string, unknown>;
+        orderBy?: Record<string, string>;
+        skip?: number;
+        take?: number;
+        include?: Record<string, unknown>;
+      }) =>
         db.deal.findMany({
           ...args,
           where: { ...args?.where, tenantId } as never,
@@ -413,7 +521,11 @@ export function createTenantQuery(tenantId: string, db: PrismaClient = prisma) {
           ...args,
           where: { ...args?.where, tenantId } as never,
         }),
-      findUnique: (args: { where: { id: string }; select?: Record<string, unknown>; include?: Record<string, unknown> }) =>
+      findUnique: (args: {
+        where: { id: string };
+        select?: Record<string, unknown>;
+        include?: Record<string, unknown>;
+      }) =>
         db.deal.findFirst({
           ...args,
           where: { id: args.where.id, tenantId },
@@ -436,7 +548,12 @@ export function createTenantQuery(tenantId: string, db: PrismaClient = prisma) {
           ...args,
           where: { ...args?.where, tenantId } as never,
         }),
-      groupBy: (args: { by: string[]; where?: Record<string, unknown>; _sum?: Record<string, boolean>; _count?: Record<string, boolean> }) =>
+      groupBy: (args: {
+        by: string[];
+        where?: Record<string, unknown>;
+        _sum?: Record<string, boolean>;
+        _count?: Record<string, boolean>;
+      }) =>
         db.deal.groupBy({
           ...args,
           where: { ...args.where, tenantId } as never,
