@@ -12,8 +12,10 @@ import {
   generateRecommendations,
   smartSearch,
   checkAi,
+  AiApiError,
 } from '@/lib/ai/gemini';
 import { getProviderKeyRaw } from '@/lib/ai/keys';
+import { getProvider } from '@/lib/ai/providers';
 import { checkUsageLimit, logAiRequest, incrementUsage } from '@/lib/ai/usage';
 import { withAuth } from '@/lib/auth-guard';
 import { extractUserId } from '@/lib/auth-utils';
@@ -74,6 +76,8 @@ async function POSTHandler(request: NextRequest) {
     let result: string | object;
     let sources: Array<{ id: string; type: string; name: string }> = [];
     let activeSessionId: string | undefined;
+    // П3: tool-call trace for the AI log (name/rows/truncated only, no PII).
+    const toolCallLogs: Array<{ tool: string; rows: number; truncated: boolean }> = [];
     const startTime = Date.now();
 
     try {
@@ -326,7 +330,7 @@ async function POSTHandler(request: NextRequest) {
           ]
             .filter(Boolean)
             .join('\n\n');
-          const genResult = await generate({
+          const genOpts = {
             prompt: data.prompt,
             system: groundedSystem,
             temperature: data.temperature,
@@ -335,8 +339,45 @@ async function POSTHandler(request: NextRequest) {
             tenantApiKey: aiSettings.apiKey,
             tenantAiProvider: aiSettings.provider,
             tenantAiModel: requestedModel || aiSettings.model,
-          });
-          result = genResult.response;
+          };
+          // П3: tools only for provider/model pairs with verified support;
+          // otherwise a silent fallback to the snapshot mode (П1), no error.
+          const effectiveModel =
+            requestedModel ||
+            aiSettings.model ||
+            getProvider(aiSettings.provider)?.models[0]?.id ||
+            '';
+          const { supportsTools } = await import('@/lib/ai/tools');
+          if (supportsTools(aiSettings.provider, effectiveModel)) {
+            const { generateWithTools, isToolFormatError } = await import('@/lib/ai/gemini');
+            const { executeCrmTool, CRM_TOOLS, TOOL_CONTEXT_BUDGET_CHARS } =
+              await import('@/lib/ai/tools');
+            const execCtx = {
+              tq,
+              role: chatRole || 'member',
+              userId: chatUserId || '',
+              sources: grounding.sources,
+              budget: { used: 0, limit: TOOL_CONTEXT_BUDGET_CHARS },
+            };
+            try {
+              const gen = await generateWithTools({
+                ...genOpts,
+                tools: CRM_TOOLS,
+                executeTool: async (name: string, args: Record<string, unknown>) => {
+                  const r = await executeCrmTool(name, args, execCtx);
+                  toolCallLogs.push({ tool: name, rows: r.rows, truncated: r.truncated });
+                  return r.content;
+                },
+              });
+              result = gen.response;
+            } catch (toolErr) {
+              // Tools-format 400 → тихий відкат на «знімок + пошук», без помилки.
+              if (!isToolFormatError(toolErr)) throw toolErr;
+              result = (await generate(genOpts)).response;
+            }
+          } else {
+            result = (await generate(genOpts)).response;
+          }
           sources = grounding.sources;
           activeSessionId = session?.id;
           if (session) {
@@ -344,7 +385,7 @@ async function POSTHandler(request: NextRequest) {
               data: {
                 sessionId: session.id,
                 role: 'assistant',
-                content: genResult.response,
+                content: result as string,
                 groundedOn: JSON.stringify(sources),
               },
             });
@@ -364,7 +405,7 @@ async function POSTHandler(request: NextRequest) {
           return NextResponse.json({ error: 'Невідома дія' }, { status: 400 });
       }
 
-      // Log successful AI request
+      // Log successful AI request (with tool-call trace if any — no PII)
       const durationMs = Date.now() - startTime;
       await logAiRequest({
         tenantId: tq.tenantId,
@@ -373,6 +414,7 @@ async function POSTHandler(request: NextRequest) {
         status: 'success',
         durationMs,
         promptPreview: data?.prompt || data?.query || undefined,
+        ...(toolCallLogs.length > 0 ? { metadata: { toolCalls: toolCallLogs } } : {}),
       });
       await incrementUsage(tq.tenantId, aiSettings.provider);
 
@@ -396,9 +438,52 @@ async function POSTHandler(request: NextRequest) {
     }
   } catch (error) {
     console.error('AI error:', error);
-    const message = error instanceof Error ? error.message : 'Помилка AI';
-    return NextResponse.json({ error: message }, { status: 500 });
+    const mapped = mapProviderError(error);
+    return NextResponse.json({ error: mapped.message }, { status: mapped.status });
   }
+}
+
+/**
+ * П4: provider errors → distinct, human-readable messages instead of a
+ * generic «Помилка генерації». Non-provider errors keep their own message.
+ */
+function mapProviderError(error: unknown): { message: string; status: number } {
+  if (error instanceof AiApiError) {
+    const s = error.httpStatus;
+    if (s === 401 || s === 403) {
+      return {
+        message: 'Невірний API-ключ AI-провайдера — оновіть його в Налаштуваннях → AI-провайдери.',
+        status: 502,
+      };
+    }
+    if (s === 404) {
+      return {
+        message: 'Модель не знайдена у AI-провайдера — оберіть іншу модель у вибраній моделі чату.',
+        status: 502,
+      };
+    }
+    if (s === 429) {
+      return {
+        message: 'Перевищено ліміт запитів AI-провайдера — спробуйте за кілька хвилин.',
+        status: 429,
+      };
+    }
+    if (s === 400) {
+      return {
+        message: 'AI-провайдер відхилив запит — спробуйте змінити модель або перезапитайте.',
+        status: 502,
+      };
+    }
+    return {
+      message: `AI-провайдер зараз недоступний (помилка ${s}) — спробуйте пізніше.`,
+      status: 502,
+    };
+  }
+  const message = error instanceof Error ? error.message : 'Помилка AI';
+  if (/timeout|timed out|abort/i.test(message)) {
+    return { message: 'AI-провайдер не відповів вчасно — спробуйте ще раз.', status: 504 };
+  }
+  return { message, status: 500 };
 }
 
 async function GETHandler(request: NextRequest) {

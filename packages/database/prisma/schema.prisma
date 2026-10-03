@@ -526,6 +526,7 @@ model AiUsageLog {
   errorMessage String? // Error message if status != "success"
   tokensIn    Int?     // Input tokens (if available)
   tokensOut   Int?     // Output tokens (if available)
+  metadata    Json?    // Tool-call trace (name/rows/truncated only, no PII)
   createdAt   DateTime @default(now())
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)

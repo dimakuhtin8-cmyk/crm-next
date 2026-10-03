@@ -11,6 +11,7 @@ import {
   Trash2,
   MessageSquare,
 } from 'lucide-react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 
@@ -30,6 +31,15 @@ import {
   Textarea,
 } from '@/components/ui';
 import { AI_PROVIDERS, getProvider } from '@/lib/ai/providers';
+import { useLocalePath } from '@/lib/use-locale-path';
+
+/** Стартові підказки — питання, що працюють на реальних даних (знімок CRM). */
+const STARTER_QUESTIONS = [
+  'Як справи з продажами?',
+  'Які угоди під ризиком?',
+  'Кому подзвонити сьогодні?',
+  'Підсумок за тиждень',
+];
 
 interface ChatMessage {
   id: string;
@@ -39,7 +49,7 @@ interface ChatMessage {
   sources?: Array<{ id: string; type: string; name: string }>;
 }
 
-const THINKING_STEPS = ['Шукаю дані в CRM…', 'Аналізую…', 'Формулюю відповідь…'];
+const THINKING_STEPS = ['Шукаю дані в CRM…', 'Аналізую дані CRM…', 'Формулюю відповідь…'];
 
 /** Живой статус "думаю": ротация этапов + пульсация, чтобы не выглядело зависшим. */
 function ThinkingStatus() {
@@ -85,6 +95,7 @@ function renderRichText(text: string) {
 
 export default function CopilotPage() {
   const [aiStatus, setAiStatus] = useState<'checking' | 'ready' | 'no-key'>('checking');
+  const lp = useLocalePath();
   const [selectedProvider, setSelectedProvider] = useState('gemini');
   const [quickKey, setQuickKey] = useState('');
   const [quickModel, setQuickModel] = useState('');
@@ -468,6 +479,15 @@ export default function CopilotPage() {
                 Отримати API-ключ {currentProvider.name}
               </a>
             )}
+
+            <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
+              <Link
+                href={lp('/dashboard/settings/ai-keys')}
+                className="inline-flex items-center gap-1.5 text-sm text-foreground-muted hover:text-foreground font-medium transition-colors"
+              >
+                Усі налаштування AI-провайдерів →
+              </Link>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -478,81 +498,81 @@ export default function CopilotPage() {
         </div>
       )}
 
-      {/* === CONTENT ROW: sessions + chat === */}
-      <div className="flex-1 min-h-0 flex gap-4">
-        {/* Sessions aside */}
-        {aiStatus === 'ready' && (
-          <aside
-            className="hidden md:flex w-72 shrink-0 flex-col rounded-2xl border border-border bg-card overflow-hidden shadow-sm"
-            data-tour="copilot-sessions"
-          >
-            <div className="shrink-0 p-3 border-b border-border">
-              <Button onClick={newSession} className="w-full" variant="outline">
-                <Plus className="w-4 h-4 mr-2" />
-                Нова розмова
-              </Button>
-            </div>
-            <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1">
-              {sessions.length === 0 && (
-                <p className="px-3 py-6 text-center text-xs text-foreground-muted">
-                  Поки що немає розмов
-                </p>
-              )}
-              {sessions.map((s) => (
-                <div
-                  key={s.id}
-                  className={`group flex items-center gap-1 rounded-xl px-2 py-2 cursor-pointer transition-colors ${
-                    activeSessionId === s.id ? 'bg-primary/10' : 'hover:bg-accent'
-                  }`}
-                  onClick={() => openSession(s.id)}
-                >
-                  <MessageSquare className="w-4 h-4 shrink-0 text-foreground-muted" />
-                  <div className="flex-1 min-w-0">
-                    <p className="truncate text-sm font-medium">{s.title || 'Нова розмова'}</p>
-                    <p className="text-[11px] text-foreground-muted">
-                      {new Date(s.updatedAt).toLocaleDateString('uk-UA', {
-                        day: 'numeric',
-                        month: 'short',
-                      })}
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    title="Видалити"
-                    aria-label="Видалити розмову"
-                    className="h-7 w-7 shrink-0 text-foreground-muted opacity-0 transition-all hover:bg-danger/10 hover:text-danger focus-visible:opacity-100 group-hover:opacity-100"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteSession(s.id);
-                    }}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </aside>
-        )}
-
-        {/* === CHAT PANEL (Claude-style, full-page) === */}
-        <Card className="flex-1 min-h-0 flex flex-col overflow-hidden shadow-sm">
-          <CardContent className="flex-1 min-h-0 flex flex-col p-0">
-            {/* Chat messages area */}
-            <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-6">
-              {messages.length === 0 && (
-                <div className="flex flex-col items-center justify-center h-full text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center mb-4">
-                    <Bot className="w-8 h-8 text-indigo-500" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-1">Як я можу допомогти?</h3>
-                  <p className="text-sm text-foreground-muted max-w-sm">
-                    Задайте питання про ваші контакти, угоди або завдання. Я проаналізую дані та
-                    допоможу.
+      {/* === CONTENT ROW: sessions + chat (лише з підключеним AI) === */}
+      {aiStatus === 'ready' && (
+        <div className="flex-1 min-h-0 flex gap-4">
+          {/* Sessions aside */}
+          {aiStatus === 'ready' && (
+            <aside
+              className="hidden md:flex w-72 shrink-0 flex-col rounded-2xl border border-border bg-card overflow-hidden shadow-sm"
+              data-tour="copilot-sessions"
+            >
+              <div className="shrink-0 p-3 border-b border-border">
+                <Button onClick={newSession} className="w-full" variant="outline">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Нова розмова
+                </Button>
+              </div>
+              <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1">
+                {sessions.length === 0 && (
+                  <p className="px-3 py-6 text-center text-xs text-foreground-muted">
+                    Поки що немає розмов
                   </p>
-                  <div className="flex flex-wrap gap-2 mt-4 justify-center">
-                    {['Покажи топ угод', 'Згенеруй КП', 'План на сьогодні', 'Аналіз контактів'].map(
-                      (q) => (
+                )}
+                {sessions.map((s) => (
+                  <div
+                    key={s.id}
+                    className={`group flex items-center gap-1 rounded-xl px-2 py-2 cursor-pointer transition-colors ${
+                      activeSessionId === s.id ? 'bg-primary/10' : 'hover:bg-accent'
+                    }`}
+                    onClick={() => openSession(s.id)}
+                  >
+                    <MessageSquare className="w-4 h-4 shrink-0 text-foreground-muted" />
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate text-sm font-medium">{s.title || 'Нова розмова'}</p>
+                      <p className="text-[11px] text-foreground-muted">
+                        {new Date(s.updatedAt).toLocaleDateString('uk-UA', {
+                          day: 'numeric',
+                          month: 'short',
+                        })}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Видалити"
+                      aria-label="Видалити розмову"
+                      className="h-7 w-7 shrink-0 text-foreground-muted opacity-0 transition-all hover:bg-danger/10 hover:text-danger focus-visible:opacity-100 group-hover:opacity-100"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteSession(s.id);
+                      }}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </aside>
+          )}
+
+          {/* === CHAT PANEL (Claude-style, full-page) === */}
+          <Card className="flex-1 min-h-0 flex flex-col overflow-hidden shadow-sm">
+            <CardContent className="flex-1 min-h-0 flex flex-col p-0">
+              {/* Chat messages area */}
+              <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-6">
+                {messages.length === 0 && (
+                  <div className="flex flex-col items-center justify-center h-full text-center">
+                    <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center mb-4">
+                      <Bot className="w-8 h-8 text-indigo-500" />
+                    </div>
+                    <h3 className="text-lg font-semibold mb-1">Як я можу допомогти?</h3>
+                    <p className="text-sm text-foreground-muted max-w-sm">
+                      Задайте питання про ваші контакти, угоди або завдання. Я проаналізую дані та
+                      допоможу.
+                    </p>
+                    <div className="flex flex-wrap gap-2 mt-4 justify-center">
+                      {STARTER_QUESTIONS.map((q) => (
                         <Button
                           key={q}
                           variant="outline"
@@ -565,19 +585,59 @@ export default function CopilotPage() {
                         >
                           {q}
                         </Button>
-                      ),
-                    )}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div className={`max-w-[80%] ${msg.role === 'user' ? 'order-1' : 'order-1'}`}>
-                    {msg.role === 'assistant' && (
+                {messages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div className={`max-w-[80%] ${msg.role === 'user' ? 'order-1' : 'order-1'}`}>
+                      {msg.role === 'assistant' && (
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <div className="w-6 h-6 rounded-lg bg-indigo-500/10 flex items-center justify-center">
+                            <Bot className="w-3.5 h-3.5 text-indigo-500" />
+                          </div>
+                          <Badge className="border-transparent bg-indigo-500/10 text-indigo-500 shadow-sm shadow-indigo-500/20 hover:bg-indigo-500/10">
+                            AI Co-Pilot
+                          </Badge>
+                        </div>
+                      )}
+                      <div
+                        className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                          msg.role === 'user'
+                            ? 'bg-primary text-primary-foreground rounded-br-md'
+                            : 'bg-accent/60 text-foreground rounded-bl-md'
+                        }`}
+                      >
+                        <div className="whitespace-pre-wrap">
+                          {msg.role === 'assistant' ? renderRichText(msg.content) : msg.content}
+                        </div>
+                        {msg.role === 'assistant' && msg.sources && msg.sources.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1.5 border-t border-border/50 pt-2">
+                            <span className="text-[11px] text-foreground-muted">На основі:</span>
+                            {msg.sources.map((s) => (
+                              <span
+                                key={`${s.type}-${s.id}`}
+                                className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
+                                title={`${s.type === 'contact' ? 'Контакт' : 'Угода'}: ${s.name}`}
+                              >
+                                {s.type === 'contact' ? '👤' : '💼'} {s.name}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {chatLoading && (
+                  <div className="flex justify-start">
+                    <div className="max-w-[80%]">
                       <div className="flex items-center gap-2 mb-1.5">
                         <div className="w-6 h-6 rounded-lg bg-indigo-500/10 flex items-center justify-center">
                           <Bot className="w-3.5 h-3.5 text-indigo-500" />
@@ -586,186 +646,146 @@ export default function CopilotPage() {
                           AI Co-Pilot
                         </Badge>
                       </div>
-                    )}
-                    <div
-                      className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                        msg.role === 'user'
-                          ? 'bg-primary text-primary-foreground rounded-br-md'
-                          : 'bg-accent/60 text-foreground rounded-bl-md'
-                      }`}
+                      <div className="bg-accent/60 rounded-2xl rounded-bl-md px-4 py-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex items-center gap-1.5">
+                            <div
+                              className="w-2 h-2 bg-indigo-500/70 rounded-full animate-bounce"
+                              style={{ animationDelay: '0ms' }}
+                            />
+                            <div
+                              className="w-2 h-2 bg-indigo-500/70 rounded-full animate-bounce"
+                              style={{ animationDelay: '150ms' }}
+                            />
+                            <div
+                              className="w-2 h-2 bg-indigo-500/70 rounded-full animate-bounce"
+                              style={{ animationDelay: '300ms' }}
+                            />
+                          </div>
+                          <ThinkingStatus />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Input area */}
+              <div className="shrink-0 border-t border-border p-4">
+                <div className="relative">
+                  <div
+                    className="flex items-end gap-2 bg-accent/40 rounded-2xl border border-border focus-within:border-indigo-500/50 focus-within:ring-1 focus-within:ring-indigo-500/20 transition-all px-4 py-3"
+                    data-tour="copilot-input"
+                  >
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Прикріпити файл"
+                      className="h-8 w-8 shrink-0 rounded-lg text-foreground-muted hover:text-foreground"
                     >
-                      <div className="whitespace-pre-wrap">
-                        {msg.role === 'assistant' ? renderRichText(msg.content) : msg.content}
-                      </div>
-                      {msg.role === 'assistant' && msg.sources && msg.sources.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-1.5 border-t border-border/50 pt-2">
-                          <span className="text-[11px] text-foreground-muted">На основі:</span>
-                          {msg.sources.map((s) => (
-                            <span
-                              key={`${s.type}-${s.id}`}
-                              className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
-                              title={`${s.type === 'contact' ? 'Контакт' : 'Угода'}: ${s.name}`}
-                            >
-                              {s.type === 'contact' ? '👤' : '💼'} {s.name}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                      <Paperclip className="w-5 h-5" />
+                    </Button>
+                    <Textarea
+                      ref={inputRef}
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      disabled={chatLoading}
+                      placeholder={
+                        chatLoading ? 'AI відповідає — зачекайте…' : 'Напишіть повідомлення...'
+                      }
+                      rows={1}
+                      className="min-h-[24px] max-h-[120px] flex-1 border-0 bg-transparent px-0 py-0 leading-relaxed placeholder:text-foreground-muted/60 shadow-none focus-visible:ring-0 resize-none"
+                      style={{ height: 'auto' }}
+                      onInput={(e) => {
+                        const target = e.target as HTMLTextAreaElement;
+                        target.style.height = 'auto';
+                        target.style.height = Math.min(target.scrollHeight, 120) + 'px';
+                      }}
+                    />
+                    <Button
+                      size="icon"
+                      aria-label="Надіслати"
+                      onClick={sendMessage}
+                      disabled={!inputValue.trim() || chatLoading}
+                      className="h-8 w-8 shrink-0 rounded-lg bg-indigo-500 text-white shadow-md shadow-indigo-500/30 hover:bg-indigo-600 disabled:opacity-30"
+                    >
+                      <Send className="w-4 h-4" />
+                    </Button>
                   </div>
-                </div>
-              ))}
 
-              {chatLoading && (
-                <div className="flex justify-start">
-                  <div className="max-w-[80%]">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <div className="w-6 h-6 rounded-lg bg-indigo-500/10 flex items-center justify-center">
-                        <Bot className="w-3.5 h-3.5 text-indigo-500" />
-                      </div>
-                      <Badge className="border-transparent bg-indigo-500/10 text-indigo-500 shadow-sm shadow-indigo-500/20 hover:bg-indigo-500/10">
-                        AI Co-Pilot
-                      </Badge>
-                    </div>
-                    <div className="bg-accent/60 rounded-2xl rounded-bl-md px-4 py-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex items-center gap-1.5">
-                          <div
-                            className="w-2 h-2 bg-indigo-500/70 rounded-full animate-bounce"
-                            style={{ animationDelay: '0ms' }}
-                          />
-                          <div
-                            className="w-2 h-2 bg-indigo-500/70 rounded-full animate-bounce"
-                            style={{ animationDelay: '150ms' }}
-                          />
-                          <div
-                            className="w-2 h-2 bg-indigo-500/70 rounded-full animate-bounce"
-                            style={{ animationDelay: '300ms' }}
-                          />
-                        </div>
-                        <ThinkingStatus />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+                  {/* Bottom bar: model picker + disclaimer */}
+                  <div className="flex items-center justify-between mt-2 px-1">
+                    <p className="text-[11px] text-foreground-muted/60">
+                      AI може помилятися. Перевіряйте важливу інформацію.
+                    </p>
 
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Input area */}
-            <div className="shrink-0 border-t border-border p-4">
-              <div className="relative">
-                <div
-                  className="flex items-end gap-2 bg-accent/40 rounded-2xl border border-border focus-within:border-indigo-500/50 focus-within:ring-1 focus-within:ring-indigo-500/20 transition-all px-4 py-3"
-                  data-tour="copilot-input"
-                >
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Прикріпити файл"
-                    className="h-8 w-8 shrink-0 rounded-lg text-foreground-muted hover:text-foreground"
-                  >
-                    <Paperclip className="w-5 h-5" />
-                  </Button>
-                  <Textarea
-                    ref={inputRef}
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    disabled={chatLoading}
-                    placeholder={
-                      chatLoading ? 'AI відповідає — зачекайте…' : 'Напишіть повідомлення...'
-                    }
-                    rows={1}
-                    className="min-h-[24px] max-h-[120px] flex-1 border-0 bg-transparent px-0 py-0 leading-relaxed placeholder:text-foreground-muted/60 shadow-none focus-visible:ring-0 resize-none"
-                    style={{ height: 'auto' }}
-                    onInput={(e) => {
-                      const target = e.target as HTMLTextAreaElement;
-                      target.style.height = 'auto';
-                      target.style.height = Math.min(target.scrollHeight, 120) + 'px';
-                    }}
-                  />
-                  <Button
-                    size="icon"
-                    aria-label="Надіслати"
-                    onClick={sendMessage}
-                    disabled={!inputValue.trim() || chatLoading}
-                    className="h-8 w-8 shrink-0 rounded-lg bg-indigo-500 text-white shadow-md shadow-indigo-500/30 hover:bg-indigo-600 disabled:opacity-30"
-                  >
-                    <Send className="w-4 h-4" />
-                  </Button>
-                </div>
-
-                {/* Bottom bar: model picker + disclaimer */}
-                <div className="flex items-center justify-between mt-2 px-1">
-                  <p className="text-[11px] text-foreground-muted/60">
-                    AI може помилятися. Перевіряйте важливу інформацію.
-                  </p>
-
-                  {/* Model picker */}
-                  <div className="relative" data-tour="copilot-model">
-                    <DropdownMenu open={showModelPicker} onOpenChange={setShowModelPicker}>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 gap-1.5 px-2 text-xs text-foreground-muted hover:text-foreground"
+                    {/* Model picker */}
+                    <div className="relative" data-tour="copilot-model">
+                      <DropdownMenu open={showModelPicker} onOpenChange={setShowModelPicker}>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 gap-1.5 px-2 text-xs text-foreground-muted hover:text-foreground"
+                          >
+                            <span className="font-medium">{currentModelName}</span>
+                            <ChevronDown className="w-3 h-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="end"
+                          side="top"
+                          className="max-h-[400px] w-80 overflow-y-auto p-2"
                         >
-                          <span className="font-medium">{currentModelName}</span>
-                          <ChevronDown className="w-3 h-3" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent
-                        align="end"
-                        side="top"
-                        className="max-h-[400px] w-80 overflow-y-auto p-2"
-                      >
-                        {AI_PROVIDERS.filter((p) => p.id !== 'custom').map((p) => {
-                          const models =
-                            dynamicModels[p.id] && dynamicModels[p.id].length > 0
-                              ? dynamicModels[p.id].map((m) => ({
-                                  id: m.id,
-                                  name: m.name,
-                                  description: '',
-                                }))
-                              : p.models;
-                          return (
-                            <div key={p.id}>
-                              <DropdownMenuLabel className="px-3 text-xs font-semibold uppercase tracking-wider text-foreground-muted">
-                                {p.name}
-                              </DropdownMenuLabel>
-                              {models.map((m) => (
-                                <DropdownMenuItem
-                                  key={m.id}
-                                  onClick={() => {
-                                    setSelectedChatModel(m.id);
-                                    setShowModelPicker(false);
-                                  }}
-                                  className={`flex-col items-start gap-0.5 px-3 py-2 ${
-                                    selectedChatModel === m.id
-                                      ? 'bg-indigo-500/10 text-indigo-500 focus:bg-indigo-500/10'
-                                      : ''
-                                  }`}
-                                >
-                                  <span className="font-medium">{m.name}</span>
-                                  <span className="text-xs text-foreground-muted mt-0.5">
-                                    {m.description}
-                                  </span>
-                                </DropdownMenuItem>
-                              ))}
-                            </div>
-                          );
-                        })}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                          {AI_PROVIDERS.filter((p) => p.id !== 'custom').map((p) => {
+                            const models =
+                              dynamicModels[p.id] && dynamicModels[p.id].length > 0
+                                ? dynamicModels[p.id].map((m) => ({
+                                    id: m.id,
+                                    name: m.name,
+                                    description: '',
+                                  }))
+                                : p.models;
+                            return (
+                              <div key={p.id}>
+                                <DropdownMenuLabel className="px-3 text-xs font-semibold uppercase tracking-wider text-foreground-muted">
+                                  {p.name}
+                                </DropdownMenuLabel>
+                                {models.map((m) => (
+                                  <DropdownMenuItem
+                                    key={m.id}
+                                    onClick={() => {
+                                      setSelectedChatModel(m.id);
+                                      setShowModelPicker(false);
+                                    }}
+                                    className={`flex-col items-start gap-0.5 px-3 py-2 ${
+                                      selectedChatModel === m.id
+                                        ? 'bg-indigo-500/10 text-indigo-500 focus:bg-indigo-500/10'
+                                        : ''
+                                    }`}
+                                  >
+                                    <span className="font-medium">{m.name}</span>
+                                    <span className="text-xs text-foreground-muted mt-0.5">
+                                      {m.description}
+                                    </span>
+                                  </DropdownMenuItem>
+                                ))}
+                              </div>
+                            );
+                          })}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

@@ -239,13 +239,15 @@ describe('П4.2: IDOR — чужой тенант и чужой владелец
     );
     expect(r.status).toBe(200);
     expect(capturedSystem).not.toContain('чужой@example.com');
-    // и честная инструкция вместо выдумки:
-    expect(capturedSystem).toContain('немає');
+    // Чужого контакта в контексті немає (ні імені, ні пошти), але знімок CRM
+    // присутній — відмова через NO_DATA більше не генерується.
+    expect(capturedSystem).not.toContain('Чужий');
+    expect(capturedSystem).toContain('Знімок CRM');
   });
 });
 
-describe('П4.3: пустой контекст — явная инструкция не выдумывать', () => {
-  it('сообщение без сущностей → system с "даних немає"', async () => {
+describe('П4.3: пустий контекст — знімок + інструкція, без відмови', () => {
+  it('сообщение без сущностей → system содержит знімок и НЕ содержит инструкцию отказа', async () => {
     mockLLM();
     const r = await aiPOST(
       authed(`${BASE}/api/ai?tenantId=${tenantA}`, tokenOwnerA, {
@@ -254,7 +256,14 @@ describe('П4.3: пустой контекст — явная инструкци
       }),
     );
     expect(r.status).toBe(200);
-    expect(capturedSystem).toContain('Даних по цьому запиту в CRM немає');
+    // Регресія П2: старий NO_DATA_INSTRUCTION ("Даних по цьому запиту в CRM немає.
+    // Повідом користувачу, що не маєш цих даних") має бути видалено.
+    expect(capturedSystem).not.toContain('Даних по цьому запиту в CRM немає');
+    expect(capturedSystem).not.toContain('не маєш цих даних');
+    expect(capturedSystem).not.toContain('ТІЛЬКИ на основі даних нижче');
+    // П1: знімок CRM завжди в system.
+    expect(capturedSystem).toContain('Знімок CRM');
+    expect(capturedSystem).toContain('Контакти: всього');
     const body = await r.json();
     expect(body.sources).toEqual([]);
   });

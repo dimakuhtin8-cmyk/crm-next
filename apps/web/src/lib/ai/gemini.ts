@@ -7,6 +7,56 @@ export interface GenerateResult {
   model: string;
 }
 
+/** Provider HTTP error with status + body (for error mapping and tool-fallback). */
+export class AiApiError extends Error {
+  constructor(
+    message: string,
+    readonly httpStatus: number,
+    readonly body: string,
+  ) {
+    super(message);
+    this.name = 'AiApiError';
+  }
+}
+
+/** A provider-neutral tool definition (OpenAI/Anthropic/Gemini wire formats). */
+export interface AiToolSpec {
+  name: string;
+  description: string;
+  parameters: Record<string, unknown>;
+}
+
+export interface GenerateWithToolsOptions extends GenerateOptions {
+  tools: AiToolSpec[];
+  /** Executes ONE tool call and returns its text content for the model. */
+  executeTool: (name: string, args: Record<string, unknown>) => Promise<string>;
+}
+
+export interface GenerateWithToolsResult {
+  response: string;
+  model: string;
+  /** Tool rounds actually executed (0..MAX_TOOL_ITERATIONS). */
+  iterations: number;
+}
+
+/** П3.2: max tool rounds per answer; the final turn runs WITHOUT tools. */
+export const MAX_TOOL_ITERATIONS = 4;
+
+const TOOL_LIMIT_NOTE =
+  'Ліміт викликів інструментів вичерпано — відповідай за вже отриманими даними та знімком CRM.';
+
+/**
+ * A 400 that mentions tool/function/schema = provider rejected the tools
+ * payload → caller silently falls back to the snapshot mode (П1), no user error.
+ */
+export function isToolFormatError(error: unknown): boolean {
+  return (
+    error instanceof AiApiError &&
+    error.httpStatus === 400 &&
+    /tool|function|schema/i.test(error.body)
+  );
+}
+
 export interface ChatHistoryItem {
   role: 'user' | 'assistant';
   content: string;
@@ -117,9 +167,9 @@ async function callGemini(
   });
 
   if (!res.ok) {
-    const err = await res.text();
+    const err = await res.text().catch(() => '');
     console.error('Gemini error:', err);
-    throw new Error(`Gemini API помилка: ${res.status}`);
+    throw new AiApiError(`Gemini API помилка: ${res.status}`, res.status, err);
   }
 
   const data = await res.json();
@@ -173,9 +223,9 @@ async function callOpenAiCompatible(
   });
 
   if (!res.ok) {
-    const err = await res.text();
+    const err = await res.text().catch(() => '');
     console.error('AI API error:', err);
-    throw new Error(`AI API помилка: ${res.status}`);
+    throw new AiApiError(`AI API помилка: ${res.status}`, res.status, err);
   }
 
   const data = await res.json();
@@ -211,9 +261,9 @@ async function callAnthropic(
   });
 
   if (!res.ok) {
-    const err = await res.text();
+    const err = await res.text().catch(() => '');
     console.error('Anthropic error:', err);
-    throw new Error(`Anthropic API помилка: ${res.status}`);
+    throw new AiApiError(`Anthropic API помилка: ${res.status}`, res.status, err);
   }
 
   const data = await res.json();
@@ -230,6 +280,312 @@ export async function generate(options: GenerateOptions): Promise<GenerateResult
   );
   const response = await callAi(options.prompt, options.system, config, options.history);
   return { response, model: config?.model || 'unknown' };
+}
+
+// ---------------------------------------------------------------------------
+// П3: function-calling loop (read-only tools).
+// Wire formats (verified against docs, see tools.ts registry comments):
+//   gemini    — v1beta generateContent: tools[].functionDeclarations,
+//               parts[].functionCall / parts[].functionResponse.
+//   openai    — chat completions: tools[].function (JSON Schema),
+//               message.tool_calls → role:'tool' messages.
+//   anthropic — messages: tools[].input_schema, content[].tool_use →
+//               role:'user' content[].tool_result.
+// Bounded: ≤ MAX_TOOL_ITERATIONS tool rounds, then ONE final turn without
+// tools to force a text answer. Unknown/unsupported providers never reach
+// this function — the caller falls back to plain generate() (П1 mode).
+// ---------------------------------------------------------------------------
+
+async function postJson(
+  url: string,
+  headers: Record<string, string>,
+  body: unknown,
+  label: string,
+) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...headers },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    console.error(`${label} error:`, errText.slice(0, 500));
+    throw new AiApiError(`${label} API помилка: ${res.status}`, res.status, errText);
+  }
+  return res.json();
+}
+
+function buildGeminiContents(options: GenerateWithToolsOptions): Array<Record<string, unknown>> {
+  const contents: Array<Record<string, unknown>> = [];
+  if (options.system) {
+    contents.push({ role: 'user', parts: [{ text: options.system }] });
+    contents.push({ role: 'model', parts: [{ text: 'Зрозуміло.' }] });
+  }
+  for (const h of tailHistory(options.history)) {
+    contents.push({
+      role: h.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: h.content }],
+    });
+  }
+  contents.push({ role: 'user', parts: [{ text: options.prompt }] });
+  return contents;
+}
+
+async function geminiToolLoop(
+  options: GenerateWithToolsOptions,
+  config: AiConfig,
+): Promise<GenerateWithToolsResult> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${config.model}:generateContent?key=${config.apiKey}`;
+  const contents = buildGeminiContents(options);
+  let iterations = 0;
+
+  for (let turn = 0; turn <= MAX_TOOL_ITERATIONS; turn++) {
+    const withTools = turn < MAX_TOOL_ITERATIONS && iterations < MAX_TOOL_ITERATIONS;
+    const body: Record<string, unknown> = {
+      contents,
+      generationConfig: {
+        temperature: options.temperature ?? 0.7,
+        maxOutputTokens: options.maxTokens || 4096,
+      },
+    };
+    if (withTools) {
+      body.tools = [
+        {
+          functionDeclarations: options.tools.map((t) => ({
+            name: t.name,
+            description: t.description,
+            parameters: t.parameters,
+          })),
+        },
+      ];
+      body.toolConfig = { functionCallingConfig: { mode: 'AUTO' } };
+    }
+
+    const data = await postJson(url, {}, body, 'Gemini');
+    const parts = (data?.candidates?.[0]?.content?.parts || []) as Array<{
+      text?: string;
+      functionCall?: { name: string; args?: Record<string, unknown> };
+    }>;
+    const calls = parts.filter((p) => p.functionCall);
+    const text = parts
+      .map((p) => (typeof p.text === 'string' ? p.text : ''))
+      .filter(Boolean)
+      .join('\n');
+
+    if (calls.length > 0 && withTools) {
+      contents.push({
+        role: 'model',
+        parts: calls.map((p) => ({ functionCall: p.functionCall })),
+      });
+      const budget = MAX_TOOL_ITERATIONS - iterations;
+      let executed = 0;
+      for (const p of calls) {
+        const fn = String(p.functionCall?.name || 'unknown');
+        let result: string;
+        if (executed >= budget) {
+          result = TOOL_LIMIT_NOTE;
+        } else {
+          result = await options.executeTool(
+            fn,
+            (p.functionCall?.args || {}) as Record<string, unknown>,
+          );
+          iterations++;
+          executed++;
+        }
+        contents.push({
+          role: 'user',
+          parts: [{ functionResponse: { name: fn, response: { name: fn, content: result } } }],
+        });
+      }
+      continue;
+    }
+
+    if (!text) {
+      // Defensive: model returned a tool call on the final (tools-less) turn.
+      if (calls.length > 0) return { response: TOOL_LIMIT_NOTE, model: config.model, iterations };
+      throw new Error('Gemini не повернув текст');
+    }
+    return { response: text, model: config.model, iterations };
+  }
+  throw new Error('Ліміт ітерацій tool-циклу вичерпано');
+}
+
+async function openAiToolLoop(
+  options: GenerateWithToolsOptions,
+  config: AiConfig,
+): Promise<GenerateWithToolsResult> {
+  const endpoint = PROVIDER_ENDPOINTS[config.provider.id] || PROVIDER_ENDPOINTS.custom;
+  const messages: Array<Record<string, unknown>> = [];
+  if (options.system) messages.push({ role: 'system', content: options.system });
+  for (const h of tailHistory(options.history)) {
+    messages.push({ role: h.role, content: h.content });
+  }
+  messages.push({ role: 'user', content: options.prompt });
+  let iterations = 0;
+
+  for (let turn = 0; turn <= MAX_TOOL_ITERATIONS; turn++) {
+    const withTools = turn < MAX_TOOL_ITERATIONS && iterations < MAX_TOOL_ITERATIONS;
+    const body: Record<string, unknown> = {
+      model: config.model,
+      messages,
+      temperature: options.temperature ?? 0.7,
+      max_tokens: options.maxTokens || 4096,
+    };
+    if (withTools) {
+      body.tools = options.tools.map((t) => ({
+        type: 'function',
+        function: { name: t.name, description: t.description, parameters: t.parameters },
+      }));
+      body.tool_choice = 'auto';
+    }
+
+    const data = await postJson(endpoint, { Authorization: `Bearer ${config.apiKey}` }, body, 'AI');
+    const message = data?.choices?.[0]?.message;
+    const toolCalls: Array<{
+      id: string;
+      function?: { name?: string; arguments?: string };
+    }> = Array.isArray(message?.tool_calls) ? message.tool_calls : [];
+
+    if (toolCalls.length > 0 && withTools) {
+      messages.push({
+        role: 'assistant',
+        content: message?.content ?? null,
+        tool_calls: toolCalls,
+      });
+      const budget = MAX_TOOL_ITERATIONS - iterations;
+      let executed = 0;
+      for (const tc of toolCalls) {
+        const fn = String(tc.function?.name || 'unknown');
+        let args: Record<string, unknown> = {};
+        try {
+          args = JSON.parse(String(tc.function?.arguments || '{}'));
+        } catch {
+          args = {};
+        }
+        let result: string;
+        if (executed >= budget) {
+          result = TOOL_LIMIT_NOTE;
+        } else {
+          result = await options.executeTool(fn, args);
+          iterations++;
+          executed++;
+        }
+        messages.push({ role: 'tool', tool_call_id: tc.id, content: result });
+      }
+      continue;
+    }
+
+    if (toolCalls.length > 0) {
+      // Defensive: tool call arrived on the final (tools-less) turn.
+      return { response: TOOL_LIMIT_NOTE, model: config.model, iterations };
+    }
+    const text = message?.content;
+    if (typeof text !== 'string' || !text) throw new Error('AI не повернув текст');
+    return { response: text, model: config.model, iterations };
+  }
+  throw new Error('Ліміт ітерацій tool-циклу вичерпано');
+}
+
+async function anthropicToolLoop(
+  options: GenerateWithToolsOptions,
+  config: AiConfig,
+): Promise<GenerateWithToolsResult> {
+  const messages: Array<Record<string, unknown>> = [];
+  for (const h of tailHistory(options.history)) {
+    messages.push({ role: h.role, content: h.content });
+  }
+  messages.push({ role: 'user', content: options.prompt });
+  let iterations = 0;
+
+  for (let turn = 0; turn <= MAX_TOOL_ITERATIONS; turn++) {
+    const withTools = turn < MAX_TOOL_ITERATIONS && iterations < MAX_TOOL_ITERATIONS;
+    const body: Record<string, unknown> = {
+      model: config.model,
+      max_tokens: options.maxTokens || 4096,
+      system: options.system || 'You are a helpful assistant.',
+      messages,
+    };
+    if (withTools) {
+      body.tools = options.tools.map((t) => ({
+        name: t.name,
+        description: t.description,
+        input_schema: t.parameters,
+      }));
+    }
+
+    const data = await postJson(
+      'https://api.anthropic.com/v1/messages',
+      {
+        'x-api-key': config.apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body,
+      'Anthropic',
+    );
+    const content: Array<{
+      type?: string;
+      text?: string;
+      id?: string;
+      name?: string;
+      input?: Record<string, unknown>;
+    }> = Array.isArray(data?.content) ? data.content : [];
+    const toolUses = content.filter((b) => b.type === 'tool_use');
+
+    if (toolUses.length > 0 && withTools) {
+      messages.push({ role: 'assistant', content });
+      const budget = MAX_TOOL_ITERATIONS - iterations;
+      let executed = 0;
+      const results: Array<Record<string, unknown>> = [];
+      for (const tu of toolUses) {
+        let result: string;
+        if (executed >= budget) {
+          result = TOOL_LIMIT_NOTE;
+        } else {
+          result = await options.executeTool(
+            String(tu.name),
+            (tu.input || {}) as Record<string, unknown>,
+          );
+          iterations++;
+          executed++;
+        }
+        results.push({ type: 'tool_result', tool_use_id: tu.id, content: result });
+      }
+      messages.push({ role: 'user', content: results });
+      continue;
+    }
+
+    if (toolUses.length > 0) {
+      // Defensive: tool call arrived on the final (tools-less) turn.
+      return { response: TOOL_LIMIT_NOTE, model: config.model, iterations };
+    }
+    const text = content
+      .filter((b) => b.type === 'text')
+      .map((b) => b.text || '')
+      .join('\n');
+    if (!text) throw new Error('Anthropic не повернув текст');
+    return { response: text, model: config.model, iterations };
+  }
+  throw new Error('Ліміт ітерацій tool-циклу вичерпано');
+}
+
+/**
+ * Tool-enabled generation. Callers must pre-check supportsTools(provider, model);
+ * on a provider-side tools-format 400 (isToolFormatError) they fall back to
+ * plain generate() — the user never sees an error because of tools.
+ */
+export async function generateWithTools(
+  options: GenerateWithToolsOptions,
+): Promise<GenerateWithToolsResult> {
+  const config = resolveConfig(
+    options.tenantApiKey,
+    options.tenantAiProvider,
+    options.tenantAiModel,
+  );
+  if (!config) throw new Error('AI не налаштовано. Оберіть провайдера та додайте API-ключ.');
+
+  if (config.provider.id === 'gemini') return geminiToolLoop(options, config);
+  if (config.provider.id === 'anthropic') return anthropicToolLoop(options, config);
+  return openAiToolLoop(options, config);
 }
 
 export async function generateKP(

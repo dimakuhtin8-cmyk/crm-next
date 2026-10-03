@@ -8,6 +8,7 @@
  */
 
 import { prisma } from '@crm-next/database';
+
 import { cache } from '@/lib/cache';
 
 const USAGE_CACHE_TTL = 60_000; // 1 minute
@@ -86,10 +87,7 @@ async function getTodayCounter(tenantId: string, provider: string): Promise<numb
 /**
  * Check if a request is allowed under the tenant's limits
  */
-export async function checkUsageLimit(
-  tenantId: string,
-  provider: string
-): Promise<UsageStatus> {
+export async function checkUsageLimit(tenantId: string, provider: string): Promise<UsageStatus> {
   const [current, limit] = await Promise.all([
     getTodayCounter(tenantId, provider),
     getTenantLimit(tenantId),
@@ -122,7 +120,7 @@ export async function incrementUsage(
   tenantId: string,
   provider: string,
   tokensIn: number = 0,
-  tokensOut: number = 0
+  tokensOut: number = 0,
 ): Promise<void> {
   const date = getToday();
 
@@ -154,6 +152,8 @@ export async function logAiRequest(data: {
   errorMessage?: string;
   tokensIn?: number;
   tokensOut?: number;
+  /** Tool-call trace: { toolCalls: [{ tool, rows, truncated }] } — no PII content. */
+  metadata?: Record<string, unknown>;
 }): Promise<void> {
   try {
     await prisma.aiUsageLog.create({
@@ -167,6 +167,7 @@ export async function logAiRequest(data: {
         errorMessage: data.errorMessage || null,
         tokensIn: data.tokensIn || null,
         tokensOut: data.tokensOut || null,
+        metadata: (data.metadata as never) ?? undefined,
       },
     });
   } catch (err) {
@@ -254,7 +255,7 @@ export async function getAiLogs(
     status?: string;
     from?: string;
     to?: string;
-  } = {}
+  } = {},
 ): Promise<{
   logs: Array<{
     id: string;
