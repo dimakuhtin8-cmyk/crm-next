@@ -15,7 +15,7 @@ import {
   Line,
 } from 'recharts';
 
-const COLORS = ['#8b5cf6', '#4f46e5', '#059669', '#d97706', '#0f172a', '#64748b'];
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#f87171', '#0f172a', '#64748b'];
 
 interface ChartProps {
   data: Array<{ name: string; count?: number; value?: number; revenue?: number }>;

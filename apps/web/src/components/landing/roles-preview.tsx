@@ -13,7 +13,7 @@ const ROLES = [
   },
   {
     name: 'Admin',
-    tone: 'bg-primary-light text-primary',
+    tone: 'bg-primary-light text-[#93C5FD]',
     permissions: 'Налаштування, інтеграції, ролі',
   },
   {
@@ -38,13 +38,13 @@ export function RolesPreview() {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       {/* Ролі */}
-      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+      <div className="rounded-2xl border border-border bg-background p-4 shadow-sm sm:p-5">
         <p className="text-sm font-bold">Ролі команди</p>
         <ul className="mt-3 space-y-2.5">
           {ROLES.map((role) => (
             <li
               key={role.name}
-              className="rounded-xl border border-border bg-background px-3.5 py-3 transition-colors hover:border-border-hover hover:shadow-sm"
+              className="rounded-xl border border-border bg-card px-3.5 py-3 transition-colors hover:border-border-hover hover:shadow-sm"
             >
               <div className="flex items-center gap-2">
                 <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${role.tone}`}>
@@ -60,12 +60,12 @@ export function RolesPreview() {
       </div>
 
       {/* Журнал аудиту */}
-      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+      <div className="rounded-2xl border border-border bg-background p-4 shadow-sm sm:p-5">
         <div className="flex items-center gap-2">
           <History className="h-4 w-4 text-primary" aria-hidden="true" />
           <p className="text-sm font-bold">Журнал аудиту</p>
         </div>
-        <ul className="mt-3 divide-y divide-border overflow-hidden rounded-xl border border-border bg-background">
+        <ul className="mt-3 divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
           {AUDIT.map((entry) => (
             <li
               key={entry.time + entry.text}

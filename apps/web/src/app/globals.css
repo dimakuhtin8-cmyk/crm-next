@@ -17,11 +17,11 @@
     --foreground-muted: #64748b;
     --foreground-inverse: #f8fafc;
 
-    /* Primary — indigo (indigo-600/700) */
-    --primary: #4f46e5;
-    --primary-hover: #4338ca;
-    --primary-pressed: #3730a3;
-    --primary-light: rgba(79, 70, 229, 0.12);
+    /* Primary — electric blue (blue-600/700) */
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --primary-pressed: #1e40af;
+    --primary-light: rgba(37, 99, 235, 0.12);
     --primary-foreground: #ffffff;
 
     /* Secondary — slate */
@@ -56,7 +56,7 @@
     --danger-light: rgba(220, 38, 38, 0.1);
     --danger-foreground: #ffffff;
 
-    /* Semantic: Info — sky (відрізняється від indigo primary) */
+    /* Semantic: Info — sky (відрізняється від primary) */
     --info: #0284c7;
     --info-hover: #0369a1;
     --info-light: rgba(2, 132, 199, 0.1);
@@ -65,9 +65,9 @@
     /* Borders — slate */
     --border: #e2e8f0;
     --border-hover: #cbd5e1;
-    --border-focus: #6366f1;
+    --border-focus: #3b82f6;
     --input: #cbd5e1;
-    --ring: #6366f1;
+    --ring: #3b82f6;
 
     /* Inverse surfaces — always dark panels (landing hero, sidebar) */
     --inverse: #0f172a;
@@ -82,7 +82,7 @@
     --shadow-md: 0 6px 16px -4px rgba(15, 23, 42, 0.1), 0 2px 6px -2px rgba(15, 23, 42, 0.05);
     --shadow-lg: 0 12px 24px -6px rgba(15, 23, 42, 0.12), 0 4px 8px -4px rgba(15, 23, 42, 0.06);
     --shadow-xl: 0 20px 40px -8px rgba(15, 23, 42, 0.14), 0 8px 16px -4px rgba(15, 23, 42, 0.07);
-    --glow-primary: 0 0 24px rgba(79, 70, 229, 0.25);
+    --glow-primary: 0 0 24px rgba(37, 99, 235, 0.25);
     --glow-success: 0 0 20px rgba(5, 150, 105, 0.25);
     --glow-danger: 0 0 20px rgba(220, 38, 38, 0.25);
 
@@ -150,11 +150,11 @@
     --foreground-muted: #71717a;
     --foreground-inverse: #09090b;
 
-    /* Primary (Dark) — indigo, lifted for contrast */
-    --primary: #6366f1;
-    --primary-hover: #818cf8;
-    --primary-pressed: #4f46e5;
-    --primary-light: rgba(99, 102, 241, 0.22);
+    /* Primary (Dark) — electric blue, lifted for contrast */
+    --primary: #3b82f6;
+    --primary-hover: #60a5fa;
+    --primary-pressed: #2563eb;
+    --primary-light: rgba(59, 130, 246, 0.22);
     --primary-foreground: #ffffff;
 
     /* Secondary (Dark) */
@@ -198,9 +198,9 @@
     /* Borders (Dark) — zinc */
     --border: #27272a;
     --border-hover: #3f3f46;
-    --border-focus: #818cf8;
+    --border-focus: #60a5fa;
     --input: #3f3f46;
-    --ring: #818cf8;
+    --ring: #60a5fa;
 
     /* Inverse surfaces (Dark) — stay dark on dark page */
     --inverse: #18181b;
@@ -215,9 +215,88 @@
     --shadow-md: 0 6px 16px -4px rgba(0, 0, 0, 0.45), 0 2px 6px -2px rgba(0, 0, 0, 0.35);
     --shadow-lg: 0 12px 24px -6px rgba(0, 0, 0, 0.5), 0 4px 8px -4px rgba(0, 0, 0, 0.35);
     --shadow-xl: 0 20px 40px -8px rgba(0, 0, 0, 0.55), 0 8px 16px -4px rgba(0, 0, 0, 0.4);
-    --glow-primary: 0 0 30px rgba(99, 102, 241, 0.35);
+    --glow-primary: 0 0 30px rgba(59, 130, 246, 0.35);
     --glow-success: 0 0 24px rgba(52, 211, 153, 0.3);
     --glow-danger: 0 0 24px rgba(248, 113, 113, 0.3);
+  }
+}
+
+/**
+ * Landing premium dark theme (Linear/Vercel style): #0B0C10 / #13151D / #222634
+ * з електричним синім #2563EB та емеральдом #10B981. Клас вішається на <main>
+ * лендінгу — переохоплює токени глобальної теми лише в межах сторінки.
+ */
+.landing-dark {
+  /* Surfaces */
+  --background: #0b0c10;
+  --background-secondary: #0f1016;
+  --background-tertiary: #13151d;
+  --card: #13151d;
+  --card-hover: #171a24;
+
+  /* Text */
+  --foreground: #f8fafc;
+  --foreground-secondary: #94a3b8;
+  --foreground-muted: #64748b;
+  --foreground-inverse: #f8fafc;
+
+  /* Primary — electric blue */
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-pressed: #1e40af;
+  --primary-light: rgba(37, 99, 235, 0.16);
+  --primary-foreground: #ffffff;
+
+  /* Secondary / muted / accent */
+  --secondary: #1c2030;
+  --secondary-hover: #242839;
+  --secondary-foreground: #f8fafc;
+  --muted: #13151d;
+  --muted-foreground: #94a3b8;
+  --accent: #171a24;
+  --accent-hover: #1e2231;
+  --accent-foreground: #f8fafc;
+
+  /* Semantic on dark */
+  --success: #10b981;
+  --success-hover: #34d399;
+  --success-light: rgba(16, 185, 129, 0.14);
+  --success-foreground: #062e23;
+  --warning: #fbbf24;
+  --warning-hover: #fcd34d;
+  --warning-light: rgba(251, 191, 36, 0.14);
+  --warning-foreground: #3b2a05;
+  --danger: #f87171;
+  --danger-hover: #fca5a5;
+  --danger-light: rgba(248, 113, 113, 0.14);
+  --danger-foreground: #3d0a0a;
+  --info: #3b82f6;
+  --info-hover: #60a5fa;
+  --info-light: rgba(59, 130, 246, 0.16);
+  --info-foreground: #ffffff;
+
+  /* Borders */
+  --border: #222634;
+  --border-hover: #2e3346;
+  --border-focus: #3b82f6;
+  --input: #2e3346;
+  --ring: #3b82f6;
+
+  /* Inverse panels (header) — same as page bg, розділення робить рамка */
+  --inverse: #0b0c10;
+  --inverse-foreground: #f8fafc;
+  --inverse-muted: #94a3b8;
+  --inverse-accent: #10b981;
+
+  /* Glows */
+  --glow-primary: 0 0 24px rgba(37, 99, 235, 0.35);
+  --glow-success: 0 0 24px rgba(16, 185, 129, 0.3);
+  --glow-danger: 0 0 24px rgba(248, 113, 113, 0.3);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
   }
 }
 

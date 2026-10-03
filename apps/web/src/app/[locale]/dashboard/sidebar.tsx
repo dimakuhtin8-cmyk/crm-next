@@ -195,7 +195,7 @@ export function Sidebar({ collapsed = false, onToggle, onMobileClose }: SidebarP
       <div className="flex h-16 items-center gap-3 border-b border-inverse-foreground/10 px-5">
         <Link
           href="/dashboard"
-          className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-primary shadow-[0_8px_20px_-8px_rgba(79,70,229,0.7)]"
+          className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-primary shadow-[0_8px_20px_-8px_rgba(37,99,235,0.7)]"
         >
           <Zap className="h-5 w-5 text-primary-foreground" strokeWidth={2.5} />
         </Link>
@@ -334,7 +334,7 @@ export function Sidebar({ collapsed = false, onToggle, onMobileClose }: SidebarP
                       className={cn(
                         'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
                         isActive
-                          ? 'bg-primary font-semibold text-primary-foreground shadow-[0_8px_20px_-10px_rgba(79,70,229,0.8)]'
+                          ? 'bg-primary font-semibold text-primary-foreground shadow-[0_8px_20px_-10px_rgba(37,99,235,0.8)]'
                           : 'text-inverse-foreground/65 hover:bg-inverse-foreground/10 hover:text-inverse-foreground',
                         item.accent &&
                           !isActive &&

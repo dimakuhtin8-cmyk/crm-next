@@ -384,8 +384,8 @@ export default function CopilotPage() {
         <Card className="shrink-0 border-primary/30 bg-gradient-to-br from-primary/5 to-background overflow-hidden shadow-sm">
           <CardContent className="p-5">
             <div className="flex items-center gap-3 mb-2">
-              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-indigo-500/10">
-                <Bot className="w-5 h-5 text-indigo-500" />
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary-light">
+                <Bot className="w-5 h-5 text-primary" />
               </div>
               <h3 className="font-semibold text-lg">Підключіть AI</h3>
             </div>
@@ -453,7 +453,7 @@ export default function CopilotPage() {
               <Button
                 onClick={handleQuickSetup}
                 disabled={savingKey || !quickKey.trim()}
-                className="bg-indigo-500 px-6 text-white shadow-lg shadow-indigo-500/25 hover:bg-indigo-600"
+                className="bg-primary px-6 text-white shadow-lg shadow-blue-500/25 hover:bg-primary-hover"
               >
                 {savingKey ? (
                   <span className="flex items-center gap-2">
@@ -563,8 +563,8 @@ export default function CopilotPage() {
               <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-6">
                 {messages.length === 0 && (
                   <div className="flex flex-col items-center justify-center h-full text-center">
-                    <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center mb-4">
-                      <Bot className="w-8 h-8 text-indigo-500" />
+                    <div className="w-16 h-16 rounded-2xl bg-primary-light flex items-center justify-center mb-4">
+                      <Bot className="w-8 h-8 text-primary" />
                     </div>
                     <h3 className="text-lg font-semibold mb-1">Як я можу допомогти?</h3>
                     <p className="text-sm text-foreground-muted max-w-sm">
@@ -598,10 +598,10 @@ export default function CopilotPage() {
                     <div className={`max-w-[80%] ${msg.role === 'user' ? 'order-1' : 'order-1'}`}>
                       {msg.role === 'assistant' && (
                         <div className="flex items-center gap-2 mb-1.5">
-                          <div className="w-6 h-6 rounded-lg bg-indigo-500/10 flex items-center justify-center">
-                            <Bot className="w-3.5 h-3.5 text-indigo-500" />
+                          <div className="w-6 h-6 rounded-lg bg-primary-light flex items-center justify-center">
+                            <Bot className="w-3.5 h-3.5 text-primary" />
                           </div>
-                          <Badge className="border-transparent bg-indigo-500/10 text-indigo-500 shadow-sm shadow-indigo-500/20 hover:bg-indigo-500/10">
+                          <Badge className="border-transparent bg-primary-light text-primary shadow-sm shadow-blue-500/20 hover:bg-primary-light">
                             AI Co-Pilot
                           </Badge>
                         </div>
@@ -639,10 +639,10 @@ export default function CopilotPage() {
                   <div className="flex justify-start">
                     <div className="max-w-[80%]">
                       <div className="flex items-center gap-2 mb-1.5">
-                        <div className="w-6 h-6 rounded-lg bg-indigo-500/10 flex items-center justify-center">
-                          <Bot className="w-3.5 h-3.5 text-indigo-500" />
+                        <div className="w-6 h-6 rounded-lg bg-primary-light flex items-center justify-center">
+                          <Bot className="w-3.5 h-3.5 text-primary" />
                         </div>
-                        <Badge className="border-transparent bg-indigo-500/10 text-indigo-500 shadow-sm shadow-indigo-500/20 hover:bg-indigo-500/10">
+                        <Badge className="border-transparent bg-primary-light text-primary shadow-sm shadow-blue-500/20 hover:bg-primary-light">
                           AI Co-Pilot
                         </Badge>
                       </div>
@@ -650,15 +650,15 @@ export default function CopilotPage() {
                         <div className="flex items-center gap-2.5">
                           <div className="flex items-center gap-1.5">
                             <div
-                              className="w-2 h-2 bg-indigo-500/70 rounded-full animate-bounce"
+                              className="w-2 h-2 bg-[#2563eb]/70 rounded-full animate-bounce"
                               style={{ animationDelay: '0ms' }}
                             />
                             <div
-                              className="w-2 h-2 bg-indigo-500/70 rounded-full animate-bounce"
+                              className="w-2 h-2 bg-[#2563eb]/70 rounded-full animate-bounce"
                               style={{ animationDelay: '150ms' }}
                             />
                             <div
-                              className="w-2 h-2 bg-indigo-500/70 rounded-full animate-bounce"
+                              className="w-2 h-2 bg-[#2563eb]/70 rounded-full animate-bounce"
                               style={{ animationDelay: '300ms' }}
                             />
                           </div>
@@ -676,7 +676,7 @@ export default function CopilotPage() {
               <div className="shrink-0 border-t border-border p-4">
                 <div className="relative">
                   <div
-                    className="flex items-end gap-2 bg-accent/40 rounded-2xl border border-border focus-within:border-indigo-500/50 focus-within:ring-1 focus-within:ring-indigo-500/20 transition-all px-4 py-3"
+                    className="flex items-end gap-2 bg-accent/40 rounded-2xl border border-border focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all px-4 py-3"
                     data-tour="copilot-input"
                   >
                     <Button
@@ -710,7 +710,7 @@ export default function CopilotPage() {
                       aria-label="Надіслати"
                       onClick={sendMessage}
                       disabled={!inputValue.trim() || chatLoading}
-                      className="h-8 w-8 shrink-0 rounded-lg bg-indigo-500 text-white shadow-md shadow-indigo-500/30 hover:bg-indigo-600 disabled:opacity-30"
+                      className="h-8 w-8 shrink-0 rounded-lg bg-primary text-white shadow-md shadow-blue-500/30 hover:bg-primary-hover disabled:opacity-30"
                     >
                       <Send className="w-4 h-4" />
                     </Button>
@@ -763,7 +763,7 @@ export default function CopilotPage() {
                                     }}
                                     className={`flex-col items-start gap-0.5 px-3 py-2 ${
                                       selectedChatModel === m.id
-                                        ? 'bg-indigo-500/10 text-indigo-500 focus:bg-indigo-500/10'
+                                        ? 'bg-primary-light text-primary focus:bg-primary-light'
                                         : ''
                                     }`}
                                   >

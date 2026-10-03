@@ -38,7 +38,7 @@ const ROWS = [
 
 export function DevConsole() {
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-inverse shadow-lg">
+    <div className="overflow-hidden rounded-2xl border border-border bg-background shadow-lg">
       <div className="flex items-center gap-3 border-b border-white/10 px-5 py-3.5">
         <span className="flex gap-1.5" aria-hidden="true">
           <span className="h-2.5 w-2.5 rounded-full bg-white/20" />

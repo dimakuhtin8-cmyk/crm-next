@@ -13,13 +13,9 @@ import {
 import Link from 'next/link';
 
 import { AiTypewriter } from '@/components/landing/ai-typewriter';
-import { AutomationPreview } from '@/components/landing/automation-preview';
-import { BazaPreview } from '@/components/landing/baza-preview';
-import { CommsPreview } from '@/components/landing/comms-preview';
 import { DevConsole } from '@/components/landing/dev-console';
 import { HeroKanban } from '@/components/landing/hero-kanban';
-import { RolesPreview } from '@/components/landing/roles-preview';
-import { SettingsPreview } from '@/components/landing/settings-preview';
+import { StickyFeatures } from '@/components/landing/sticky-features';
 import {
   Accordion,
   AccordionContent,
@@ -31,28 +27,10 @@ import { siteOwnerLine, SITE_OWNER } from '@/lib/legal/company';
 const NAV_ITEMS: [string, string][] = [
   ['#mozlyvosti', 'Можливості'],
   ['#ai-copilot', 'AI Co-Pilot'],
-  ['#kanaly', 'Канали'],
-  ['#avtomatyzatsiya', 'Автоматизація'],
+  ['#section-chat', 'Канали'],
+  ['#section-auto', 'Автоматизація'],
   ['#admin', 'Адміністрування'],
   ['#faq', 'FAQ'],
-];
-
-const CHANNEL_NOTES = [
-  {
-    name: 'Telegram',
-    text: 'Листування, нотатки й нагадування залишаються в картці клієнта.',
-    tone: 'bg-info-light text-info',
-  },
-  {
-    name: 'WhatsApp',
-    text: 'Повідомлення клієнтів прив’язуються до контактів та угод.',
-    tone: 'bg-success-light text-success',
-  },
-  {
-    name: 'Email',
-    text: 'Листи й заявки прив’язуються до контактів та угод.',
-    tone: 'bg-primary-light text-primary',
-  },
 ];
 
 const AUDIENCE = [
@@ -107,8 +85,9 @@ const FAQ_ITEMS = [
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   return (
-    <main className="min-h-screen bg-background text-foreground antialiased">
+    <main className="landing-dark min-h-screen bg-background text-foreground antialiased">
       <style>{`
+        html:has(.landing-dark), html:has(.landing-dark) body { background-color: #0b0c10; }
         ::selection { background: var(--primary); color: var(--primary-foreground); }
         :focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; border-radius: 8px; }
         @keyframes landing-rise {
@@ -121,9 +100,9 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         }
       `}</style>
 
-      {/* Header — coal */}
+      {/* Header — темна смуга, межа #222634 */}
       <header className="sticky top-0 z-50 border-b border-border bg-inverse text-inverse-foreground">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
           <Link
             href={`/${locale}`}
             className="flex items-center gap-2"
@@ -161,7 +140,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             </Link>
             <Link
               href={`/${locale}/auth/register`}
-              className="inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-5 text-sm font-bold text-primary-foreground shadow-[0_10px_24px_-12px_rgba(79,70,229,0.7)] transition-colors hover:bg-primary-hover"
+              className="inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-5 text-sm font-bold text-primary-foreground shadow-[0_10px_24px_-12px_rgba(37,99,235,0.7)] transition-colors hover:bg-primary-hover"
             >
               Спробувати безкоштовно
             </Link>
@@ -191,8 +170,12 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       </header>
 
       {/* Hero */}
-      <section className="border-b border-border">
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:py-20">
+      <section className="relative overflow-hidden border-b border-border">
+        <div
+          className="pointer-events-none absolute -right-32 -top-28 h-80 w-80 rounded-full bg-[#2563EB]/15 blur-3xl"
+          aria-hidden="true"
+        />
+        <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:py-20">
           <div>
             <h1 className="text-balance text-4xl font-bold leading-[1.05] tracking-[-0.03em] sm:text-5xl lg:text-6xl">
               CRM-система для всієї команди
@@ -204,13 +187,13 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href={`/${locale}/auth/register`}
-                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-7 text-sm font-bold text-primary-foreground shadow-[0_18px_36px_-18px_rgba(79,70,229,0.6)] transition-colors hover:bg-primary-hover"
+                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-7 text-sm font-bold text-primary-foreground shadow-[0_18px_36px_-18px_rgba(37,99,235,0.6)] transition-colors hover:bg-primary-hover"
               >
                 Спробувати безкоштовно
               </Link>
               <Link
                 href="#mozlyvosti"
-                className="inline-flex min-h-12 items-center justify-center rounded-xl border border-foreground bg-transparent px-7 text-sm font-bold transition-colors hover:bg-secondary"
+                className="inline-flex min-h-12 items-center justify-center rounded-xl border border-border bg-transparent px-7 text-sm font-bold transition-colors hover:bg-secondary"
               >
                 Дивитися можливості
               </Link>
@@ -227,7 +210,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
       {/* Facts strip — only verifiable product facts, no invented metrics */}
       <section className="border-b border-border bg-background-secondary">
-        <div className="mx-auto grid max-w-6xl gap-4 px-4 py-10 sm:grid-cols-3 sm:px-6">
+        <div className="mx-auto grid max-w-7xl gap-4 px-4 py-10 sm:grid-cols-3 sm:px-6">
           {[
             ['4', 'ролі доступу: від глядача до власника'],
             ['3', 'канали: Telegram, WhatsApp, Email'],
@@ -244,129 +227,14 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         </div>
       </section>
 
-      {/* Capabilities — sticky split */}
-      <section id="mozlyvosti" className="border-b border-border">
-        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[280px_1fr] lg:py-20">
-          <div className="lg:sticky lg:top-24 lg:self-start">
-            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Можливості</h2>
-            <p className="mt-3 text-sm leading-6 text-foreground-secondary">
-              П’ять опор щоденної роботи відділу продажу.
-            </p>
-            <nav className="mt-6 space-y-1 text-sm font-semibold" aria-label="Можливості">
-              {[
-                ['#baza', 'База і воронка'],
-                ['#kanaly', 'Комунікація'],
-                ['#avtomatyzatsiya', 'Автоматизація'],
-                ['#analityka', 'Аналітика і доступ'],
-                ['#ai-nastroiki', 'AI & Розширенні налаштування'],
-              ].map(([href, label]) => (
-                <Link
-                  key={href}
-                  href={href}
-                  className="block rounded-lg px-3 py-2.5 hover:bg-secondary"
-                >
-                  {label}
-                </Link>
-              ))}
-            </nav>
-          </div>
-
-          <div className="space-y-14">
-            <div id="baza">
-              <h3 className="text-xl font-bold tracking-tight">
-                База клієнтів і воронка без втрат
-              </h3>
-              <p className="mt-3 max-w-[68ch] text-sm leading-7 text-foreground-secondary sm:text-base">
-                Кожен контакт має картку з історією, завданнями й документами. Угоди рухаються
-                етапами, прострочене підсвічується.
-              </p>
-              <div className="mt-5">
-                <BazaPreview />
-              </div>
-              <ul className="mt-4 divide-y divide-border rounded-2xl border border-border bg-card shadow-sm">
-                {[
-                  'Імпорт бази та дедублікація контактів',
-                  'Картка клієнта: комунікація, файли, завдання',
-                  'Канбан воронки з drag-and-drop',
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-3 px-4 py-3.5 text-sm font-medium">
-                    <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                      <Check className="h-4 w-4" aria-hidden="true" />
-                    </span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div id="kanaly">
-              <h3 className="text-xl font-bold tracking-tight">Уся комунікація — в CRM</h3>
-              <p className="mt-3 max-w-[68ch] text-sm leading-7 text-foreground-secondary sm:text-base">
-                Менеджер не перемикається між застосунками: контекст клієнта завжди поруч. Три
-                канали — Telegram, WhatsApp та Email — в одній вхідній стрічці.
-              </p>
-              <div className="mt-5">
-                <CommsPreview />
-              </div>
-              <ul className="mt-4 grid gap-3 sm:grid-cols-3">
-                {CHANNEL_NOTES.map((channel) => (
-                  <li
-                    key={channel.name}
-                    className="rounded-2xl border border-border bg-card px-4 py-3.5 shadow-sm"
-                  >
-                    <span
-                      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${channel.tone}`}
-                    >
-                      {channel.name}
-                    </span>
-                    <p className="mt-2 text-xs leading-5 text-foreground-secondary">
-                      {channel.text}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div id="avtomatyzatsiya">
-              <h3 className="text-xl font-bold tracking-tight">Автоматизація рутини</h3>
-              <p className="mt-3 max-w-[68ch] text-sm leading-7 text-foreground-secondary sm:text-base">
-                Правила самі розподіляють лідів, створюють завдання й рухають угоди.
-              </p>
-              <div className="mt-5">
-                <AutomationPreview />
-              </div>
-            </div>
-
-            <div id="analityka">
-              <h3 className="text-xl font-bold tracking-tight">Аналітика й контроль доступу</h3>
-              <p className="mt-3 max-w-[68ch] text-sm leading-7 text-foreground-secondary sm:text-base">
-                Видно джерела лідів, завантаженість команди й вузькі місця воронки. Доступ — за
-                ролями, кожна дія з даними — у журналі аудиту.
-              </p>
-              <div className="mt-5">
-                <RolesPreview />
-              </div>
-            </div>
-
-            <div id="ai-nastroiki">
-              <h3 className="text-xl font-bold tracking-tight">AI та розширені налаштування</h3>
-              <p className="mt-3 max-w-[68ch] text-sm leading-7 text-foreground-secondary sm:text-base">
-                Підключайте власні AI-ключі, налаштовуйте вебхуки та інтеграції, стежте за
-                використанням AI у журналі.
-              </p>
-              <div className="mt-5">
-                <SettingsPreview />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Capabilities: sticky nav (IntersectionObserver) + framer cards */}
+      <StickyFeatures />
 
       {/* AI Co-Pilot showcase */}
       <section id="ai-copilot" className="border-b border-border">
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:py-20">
+        <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:py-20">
           <div>
-            <p className="text-sm font-bold uppercase tracking-wider text-primary">AI Co-Pilot</p>
+            <p className="text-sm font-bold uppercase tracking-wider text-[#93C5FD]">AI Co-Pilot</p>
             <h2 className="mt-3 max-w-[20ch] text-2xl font-bold tracking-tight sm:text-3xl">
               Питання до CRM — відповідь за секунди
             </h2>
@@ -395,10 +263,10 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
       {/* Admin / DevConsole showcase */}
       <section id="admin" className="border-b border-border bg-background-secondary">
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:py-20">
+        <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:py-20">
           <DevConsole />
           <div>
-            <p className="text-sm font-bold uppercase tracking-wider text-primary">
+            <p className="text-sm font-bold uppercase tracking-wider text-[#93C5FD]">
               Адміністрування
             </p>
             <h2 className="mt-3 max-w-[22ch] text-2xl font-bold tracking-tight sm:text-3xl">
@@ -428,7 +296,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
       {/* Audience */}
       <section id="dlya-kogo" className="border-b border-border">
-        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:py-20">
+        <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:py-20">
           <h2 className="max-w-[22ch] text-2xl font-bold tracking-tight sm:text-3xl">
             Для яких команд підходить CRM-Next
           </h2>
@@ -454,7 +322,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
       {/* Security */}
       <section id="bezpeka" className="border-b border-border">
-        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:py-20">
+        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:py-20">
           <div>
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
               Безпека і порядок у даних
@@ -520,9 +388,13 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
       {/* Final CTA */}
       <section className="bg-background">
-        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:py-20">
-          <div className="rounded-2xl bg-inverse px-6 py-12 text-center text-inverse-foreground sm:px-12">
-            <h2 className="mx-auto max-w-[20ch] text-balance text-3xl font-bold tracking-tight sm:text-4xl">
+        <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:py-20">
+          <div className="relative overflow-hidden rounded-2xl border border-border bg-card px-6 py-12 text-center text-foreground shadow-xl sm:px-12">
+            <div
+              className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#2563EB]/15 blur-3xl"
+              aria-hidden="true"
+            />
+            <h2 className="relative mx-auto max-w-[20ch] text-balance text-3xl font-bold tracking-tight sm:text-4xl">
               Наведіть лад у продажах цього тижня
             </h2>
             <p className="mx-auto mt-4 max-w-[60ch] text-sm leading-7 text-inverse-muted sm:text-base">
@@ -531,7 +403,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <Link
                 href={`/${locale}/auth/register`}
-                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-7 text-sm font-bold text-primary-foreground shadow-[0_18px_36px_-18px_rgba(79,70,229,0.7)] transition-colors hover:bg-primary-hover"
+                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-7 text-sm font-bold text-primary-foreground shadow-[0_18px_36px_-18px_rgba(37,99,235,0.7)] transition-colors hover:bg-primary-hover"
               >
                 Спробувати безкоштовно
               </Link>

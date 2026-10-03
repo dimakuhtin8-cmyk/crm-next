@@ -16,13 +16,13 @@ const ROWS = [
     icon: Webhook,
     label: 'Вебхуки',
     value: 'https://api…/hooks/crm',
-    badge: { text: '2 активні', tone: 'bg-primary-light text-primary' },
+    badge: { text: '2 активні', tone: 'bg-primary-light text-[#93C5FD]' },
   },
 ] as const;
 
 export function SettingsPreview() {
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+    <div className="rounded-2xl border border-border bg-background p-4 shadow-sm sm:p-5">
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm font-bold">Налаштування</p>
         <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold text-foreground-secondary">
@@ -30,7 +30,7 @@ export function SettingsPreview() {
         </span>
       </div>
 
-      <ul className="mt-3 divide-y divide-border overflow-hidden rounded-xl border border-border bg-background">
+      <ul className="mt-3 divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
         {ROWS.map((row) => {
           const Icon = row.icon;
           return (
@@ -54,7 +54,7 @@ export function SettingsPreview() {
           );
         })}
         <li className="flex items-center gap-3 px-3.5 py-3 transition-colors hover:bg-secondary">
-          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-light text-primary text-sm font-bold">
+          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-light text-[#93C5FD] text-sm font-bold">
             AI
           </span>
           <div className="min-w-0 flex-1">
@@ -63,7 +63,7 @@ export function SettingsPreview() {
               Використання за тенантом · витрати й ліміти
             </p>
           </div>
-          <span className="shrink-0 text-xs font-bold text-primary">Відкрити →</span>
+          <span className="shrink-0 text-xs font-bold text-[#93C5FD]">Відкрити →</span>
         </li>
       </ul>
 

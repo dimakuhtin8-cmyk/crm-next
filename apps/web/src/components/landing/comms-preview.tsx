@@ -29,7 +29,7 @@ const INBOX = [
 
 export function CommsPreview() {
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-border bg-background shadow-sm">
       <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
         <p className="text-sm font-bold">Вхідні · усі канали</p>
         <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold text-foreground-secondary">
@@ -77,7 +77,7 @@ export function CommsPreview() {
           <div className="max-w-[85%] rounded-2xl rounded-tl-sm bg-secondary px-3.5 py-2 text-sm">
             Дякую! Погодимо умови до п&apos;ятниці
           </div>
-          <div className="mt-auto flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-xs text-foreground-muted">
+          <div className="mt-auto flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs text-foreground-muted">
             Написати повідомлення…
             <span
               className="ml-auto inline-block h-3.5 w-0.5 animate-pulse bg-primary"

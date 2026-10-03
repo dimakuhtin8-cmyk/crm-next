@@ -94,7 +94,7 @@ export async function POST(request: Request) {
         const pipeline = await prisma.pipeline.create({
           data: { tenantId, name: 'Основна воронка', isDefault: true },
         });
-        const colors = ['#4F46E5', '#929789', '#C6A27F', '#7B5337', '#30304A'];
+        const colors = ['#2563EB', '#929789', '#C6A27F', '#7B5337', '#30304A'];
         for (let i = 0; i < pipelineStages.length; i++) {
           await prisma.pipelineStage.create({
             data: {

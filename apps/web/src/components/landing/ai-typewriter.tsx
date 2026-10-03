@@ -88,7 +88,7 @@ export function AiTypewriter() {
           <Sparkles className="h-4 w-4 text-primary" aria-hidden="true" />
           AI Co-Pilot
         </span>
-        <span className="rounded-full bg-primary-light px-3 py-1 text-xs font-semibold text-primary">
+        <span className="rounded-full bg-primary-light px-3 py-1 text-xs font-semibold text-[#93C5FD]">
           запит природною мовою
         </span>
       </div>
