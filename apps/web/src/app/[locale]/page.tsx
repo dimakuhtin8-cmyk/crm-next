@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { siteOwnerLine, SITE_OWNER } from '@/lib/legal/company';
+
 const stages = [
   { name: 'Нові звернення', count: 48, amount: '₴1,2 млн', width: '92%', bar: 'bg-foreground' },
   { name: 'Кваліфікація', count: 31, amount: '₴860 тис.', width: '68%', bar: 'bg-foreground' },
@@ -477,9 +479,41 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
               </Link>
             </div>
           </div>
-          <footer className="flex flex-col gap-3 pt-10 text-sm text-foreground-secondary sm:flex-row sm:items-center sm:justify-between">
-            <p className="font-bold text-foreground">CRM-Next</p>
-            <p>База клієнтів · Воронка · Автоматизація · Аналітика</p>
+          <footer className="flex flex-col gap-4 pt-10 text-sm text-foreground-secondary">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p className="font-bold text-foreground">CRM-Next</p>
+              <p>База клієнтів · Воронка · Автоматизація · Аналітика</p>
+            </div>
+            <nav className="flex flex-wrap gap-x-5 gap-y-2" aria-label="Правова документація">
+              <Link
+                href={`/${locale}/legal/oferta`}
+                className="underline-offset-4 hover:text-foreground hover:underline"
+              >
+                Публічна оферта
+              </Link>
+              <Link
+                href={`/${locale}/legal/privacy`}
+                className="underline-offset-4 hover:text-foreground hover:underline"
+              >
+                Політика конфіденційності
+              </Link>
+              <Link
+                href={`/${locale}/legal/dpa`}
+                className="underline-offset-4 hover:text-foreground hover:underline"
+              >
+                Договір обробки даних (DPA)
+              </Link>
+            </nav>
+            <p className="text-xs leading-5">
+              Власник сайту та адміністратор персональних даних — {siteOwnerLine} · Email для
+              зв&apos;язку:{' '}
+              <a
+                href={`mailto:${SITE_OWNER.email}`}
+                className="underline-offset-4 hover:text-foreground hover:underline"
+              >
+                {SITE_OWNER.email}
+              </a>
+            </p>
           </footer>
         </div>
       </section>

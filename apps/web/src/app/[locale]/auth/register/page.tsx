@@ -193,6 +193,23 @@ export default function RegisterPage() {
           >
             {isLoading ? 'Реєстрація...' : 'Зареєструватися'}
           </button>
+          <p className="text-center text-xs leading-5 text-muted-foreground">
+            Реєструючись, ви погоджуєтесь із{' '}
+            <Link
+              href={lp('/legal/oferta')}
+              className="text-primary underline-offset-4 hover:text-primary-hover hover:underline"
+            >
+              Умовами використання
+            </Link>{' '}
+            та{' '}
+            <Link
+              href={lp('/legal/privacy')}
+              className="text-primary underline-offset-4 hover:text-primary-hover hover:underline"
+            >
+              Політикою конфіденційності
+            </Link>
+            .
+          </p>
         </form>
 
         <div className="relative">
