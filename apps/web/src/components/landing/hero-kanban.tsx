@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, MotionConfig } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 /**
  * Hero: анімований міні-канбан воронки — активна картка рухається етапами
@@ -39,15 +39,26 @@ const MOVING_CARD = { title: 'ТОВ «Орбіта»', sum: '₴140 тис.' };
 
 export function HeroKanban() {
   const [step, setStep] = useState(0);
+  const pausedRef = useRef(false);
 
   useEffect(() => {
-    const timer = setInterval(() => setStep((s) => (s + 1) % COLUMNS.length), 4900);
+    const timer = setInterval(() => {
+      if (!pausedRef.current) setStep((s) => (s + 1) % COLUMNS.length);
+    }, 4900);
     return () => clearInterval(timer);
   }, []);
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="landing-rise overflow-hidden rounded-2xl border border-border bg-card shadow-lg">
+      <div
+        className="landing-rise overflow-hidden rounded-2xl border border-border bg-card shadow-lg"
+        onMouseEnter={() => {
+          pausedRef.current = true;
+        }}
+        onMouseLeave={() => {
+          pausedRef.current = false;
+        }}
+      >
         <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
           <p className="text-sm font-bold">Воронка продажу</p>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-foreground-secondary">
@@ -59,9 +70,9 @@ export function HeroKanban() {
           </span>
         </div>
 
-        <div className="grid grid-cols-3 px-5 py-4">
+        <div className="flex snap-x gap-3 overflow-x-auto px-5 py-4 sm:grid sm:grid-cols-3 sm:gap-0 sm:overflow-visible">
           {COLUMNS.map((column, index) => (
-            <div key={column.name} className="pe-3">
+            <div key={column.name} className="min-w-[220px] snap-start pe-3 sm:min-w-0">
               <div className="flex items-baseline justify-between gap-2 text-xs font-bold">
                 <span className="truncate">{column.name}</span>
                 <span className="tabular-nums text-foreground-muted">{column.count}</span>
@@ -103,7 +114,7 @@ export function HeroKanban() {
 
         <div className="flex items-center justify-between border-t border-border px-5 py-4 text-sm">
           <span className="font-semibold">Прогноз закриття</span>
-          <span className="font-bold tabular-nums">₴730 тис.</span>
+          <span className="font-bold tabular-nums">₴585 тис.</span>
         </div>
       </div>
     </MotionConfig>

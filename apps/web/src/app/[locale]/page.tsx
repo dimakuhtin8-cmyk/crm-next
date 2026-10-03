@@ -28,7 +28,7 @@ import { siteOwnerLine, SITE_OWNER } from '@/lib/legal/company';
 const NAV_ITEMS: [string, string][] = [
   ['#mozlyvosti', 'Можливості'],
   ['#ai-copilot', 'AI Co-Pilot'],
-  ['#section-chat', 'Канали'],
+  ['#section-chat', 'Комунікація'],
   ['#section-auto', 'Автоматизація'],
   ['#admin', 'Адміністрування'],
   ['#faq', 'FAQ'],
@@ -132,16 +132,16 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             ))}
           </nav>
 
-          <div className="hidden items-center gap-3 md:flex">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href={`/${locale}/auth/login`}
-              className="text-sm font-semibold text-inverse-foreground underline-offset-4 hover:underline"
+              className="hidden text-sm font-semibold text-inverse-foreground underline-offset-4 hover:underline sm:inline"
             >
               Увійти
             </Link>
             <Link
               href={`/${locale}/auth/register`}
-              className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[#2A2723] px-5 text-sm font-bold text-[#F6F1E7] shadow-[0_10px_24px_-12px_rgba(74,60,40,0.45)] transition-colors hover:bg-[#3A352F]"
+              className="inline-flex min-h-11 items-center justify-center rounded-lg bg-inverse px-5 text-sm font-bold text-inverse-foreground shadow-[0_10px_24px_-12px_rgba(74,60,40,0.45)] transition-colors hover:bg-[#3A352F]"
             >
               Спробувати безкоштовно
             </Link>
@@ -175,7 +175,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:py-20">
           <div>
             <h1 className="text-balance text-4xl font-bold leading-[1.05] tracking-[-0.03em] sm:text-5xl lg:text-6xl">
-              CRM-система для всієї команди
+              Жодна угода не губиться
             </h1>
             <p className="mt-5 max-w-[62ch] text-base leading-7 text-foreground-secondary sm:text-lg sm:leading-8">
               База клієнтів, воронка продажу, автоматизація, завдання й аналітика — в одному вікні.
@@ -184,7 +184,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href={`/${locale}/auth/register`}
-                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#2A2723] px-7 text-sm font-bold text-[#F6F1E7] shadow-[0_18px_36px_-18px_rgba(74,60,40,0.5)] transition-colors hover:bg-[#3A352F]"
+                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-inverse px-7 text-sm font-bold text-inverse-foreground shadow-[0_18px_36px_-18px_rgba(74,60,40,0.5)] transition-colors hover:bg-[#3A352F]"
               >
                 Спробувати безкоштовно
               </Link>
@@ -204,11 +204,11 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           {/* Паперовий місяць: жива воронка всередині освітленого обʼєму */}
           <div className="relative px-4 py-8 sm:px-8">
             <div
-              className="pointer-events-none absolute left-1/2 top-1/2 h-[112%] w-[104%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#FFFDF7] shadow-lg"
+              className="pointer-events-none absolute left-1/2 top-1/2 h-[104%] w-full sm:h-[112%] sm:w-[104%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#FFFDF7] shadow-lg"
               aria-hidden="true"
             />
             <div
-              className="pointer-events-none absolute left-1/2 top-1/2 h-[126%] w-[114%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#C9B992]"
+              className="pointer-events-none absolute left-1/2 top-1/2 h-[112%] w-full sm:h-[126%] sm:w-[114%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#C9B992]"
               aria-hidden="true"
             />
             <div className="relative">
@@ -238,7 +238,9 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       </section>
 
       {/* Capabilities: sticky nav (IntersectionObserver) + framer cards */}
-      <StickyFeatures />
+      <div id="mozlyvosti" className="scroll-mt-28">
+        <StickyFeatures />
+      </div>
 
       {/* AI Co-Pilot showcase */}
       <section id="ai-copilot" className="border-b border-border">
@@ -405,7 +407,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <Link
                 href={`/${locale}/auth/register`}
-                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#2A2723] px-7 text-sm font-bold text-[#F6F1E7] shadow-[0_18px_36px_-18px_rgba(74,60,40,0.5)] transition-colors hover:bg-[#3A352F]"
+                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-inverse px-7 text-sm font-bold text-inverse-foreground shadow-[0_18px_36px_-18px_rgba(74,60,40,0.5)] transition-colors hover:bg-[#3A352F]"
               >
                 Спробувати безкоштовно
               </Link>
@@ -417,44 +419,47 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
               </Link>
             </div>
           </div>
-          <footer className="flex flex-col gap-4 pt-10 text-sm text-foreground-secondary">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <p className="font-bold text-foreground">CRM-Next</p>
-              <p>База клієнтів · Воронка · Автоматизація · Аналітика</p>
-            </div>
-            <nav className="flex flex-wrap gap-x-5 gap-y-2" aria-label="Правова документація">
-              <Link
-                href={`/${locale}/legal/oferta`}
-                className="underline-offset-4 hover:text-foreground hover:underline"
-              >
-                Публічна оферта
-              </Link>
-              <Link
-                href={`/${locale}/legal/privacy`}
-                className="underline-offset-4 hover:text-foreground hover:underline"
-              >
-                Політика конфіденційності
-              </Link>
-              <Link
-                href={`/${locale}/legal/dpa`}
-                className="underline-offset-4 hover:text-foreground hover:underline"
-              >
-                Договір обробки даних (DPA)
-              </Link>
-            </nav>
-            <p className="text-xs leading-5">
-              Власник сайту та адміністратор персональних даних — {siteOwnerLine} · Email для
-              зв&apos;язку:{' '}
-              <a
-                href={`mailto:${SITE_OWNER.email}`}
-                className="underline-offset-4 hover:text-foreground hover:underline"
-              >
-                {SITE_OWNER.email}
-              </a>
-            </p>
-          </footer>
         </div>
       </section>
+
+      <footer className="border-t-2 border-border-hover bg-background">
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-10 text-sm text-foreground-secondary sm:px-6">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="font-bold text-foreground">CRM-Next</p>
+            <p>База клієнтів · Воронка · Автоматизація · Аналітика</p>
+          </div>
+          <nav className="flex flex-wrap gap-x-5 gap-y-2" aria-label="Правова документація">
+            <Link
+              href={`/${locale}/legal/oferta`}
+              className="underline-offset-4 hover:text-foreground hover:underline"
+            >
+              Публічна оферта
+            </Link>
+            <Link
+              href={`/${locale}/legal/privacy`}
+              className="underline-offset-4 hover:text-foreground hover:underline"
+            >
+              Політика конфіденційності
+            </Link>
+            <Link
+              href={`/${locale}/legal/dpa`}
+              className="underline-offset-4 hover:text-foreground hover:underline"
+            >
+              Договір обробки даних (DPA)
+            </Link>
+          </nav>
+          <p className="text-xs leading-5">
+            Власник сайту та адміністратор персональних даних — {siteOwnerLine} · Email для
+            зв&apos;язку:{' '}
+            <a
+              href={`mailto:${SITE_OWNER.email}`}
+              className="underline-offset-4 hover:text-foreground hover:underline"
+            >
+              {SITE_OWNER.email}
+            </a>
+          </p>
+        </div>
+      </footer>
     </main>
   );
 }

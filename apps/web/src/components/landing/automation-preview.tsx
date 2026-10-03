@@ -7,6 +7,7 @@
 
 import { motion, MotionConfig } from 'framer-motion';
 import { Bell, ClipboardList, Flag, Timer } from 'lucide-react';
+import { useState } from 'react';
 
 const NODES = [
   { icon: Timer, label: 'Умова: угода 3 дні без активності', meta: 'перевірка щоранку' },
@@ -20,9 +21,14 @@ const NODES = [
 ];
 
 export function AutomationPreview() {
+  const [paused, setPaused] = useState(false);
   return (
     <MotionConfig reducedMotion="user">
-      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+      <div
+        className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5"
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+      >
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm font-bold">Правило: угоди під ризиком</p>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-success-light px-2.5 py-1 text-xs font-semibold text-success">
@@ -56,7 +62,11 @@ export function AutomationPreview() {
                     <motion.span
                       className="absolute left-1/2 top-0 h-1.5 w-1.5 rounded-full bg-primary"
                       initial={{ x: '-50%', y: 0, opacity: 0 }}
-                      animate={{ x: '-50%', y: [0, 14], opacity: [0, 1, 1, 0] }}
+                      animate={
+                        paused
+                          ? { x: '-50%', y: 0, opacity: 0.35 }
+                          : { x: '-50%', y: [0, 14], opacity: [0, 1, 1, 0] }
+                      }
                       transition={{
                         duration: 2.24,
                         repeat: Infinity,

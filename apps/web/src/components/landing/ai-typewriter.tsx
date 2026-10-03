@@ -2,12 +2,13 @@
 
 import { motion, MotionConfig } from 'framer-motion';
 import { Search, Sparkles } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 /**
  * «AI Co-Pilot»: анімований рядок пошуку — запит друкується, думка збирається
  * з трьох чорнильних крапок («Аналізую дані CRM…»), відповідь стрімиться
- * послівно з кареткою, як жива. При prefers-reduced-motion — статичний приклад.
+ * послівно з кареткою, як жива. Хінти внизу — кнопки: клік перезапускає демо
+ * з вибраного запиту. При prefers-reduced-motion — статичний приклад.
  */
 
 const DEMOS = [
@@ -25,6 +26,12 @@ const DEMOS = [
   },
 ];
 
+const HINTS = [
+  { label: 'Які угоди під ризиком?', demo: 0 },
+  { label: 'Кому подзвонити сьогодні?', demo: 1 },
+  { label: 'Підсумок за тиждень', demo: 2 },
+];
+
 const STREAM_MS = 70;
 const THINK_MS = 1500;
 const HOLD_MS = 3000;
@@ -36,6 +43,8 @@ export function AiTypewriter() {
   const [phase, setPhase] = useState<Phase>('typing');
   const [typed, setTyped] = useState('');
   const [streamed, setStreamed] = useState(0);
+  const [cycle, setCycle] = useState({ index: 0, nonce: 0 });
+  const pausedRef = useRef(false);
 
   const words = DEMOS[demo].a.split(' ');
   const streaming = phase === 'answer' && streamed < words.length;
@@ -45,8 +54,9 @@ export function AiTypewriter() {
       typeof window.matchMedia === 'function' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduced) {
-      setTyped(DEMOS[0].q);
-      setStreamed(DEMOS[0].a.split(' ').length);
+      setTyped(DEMOS[cycle.index].q);
+      setDemo(cycle.index);
+      setStreamed(DEMOS[cycle.index].a.split(' ').length);
       setPhase('answer');
       return;
     }
@@ -55,7 +65,12 @@ export function AiTypewriter() {
     const timers: ReturnType<typeof setTimeout>[] = [];
     const later = (fn: () => void, ms: number) => {
       const timer = setTimeout(() => {
-        if (!cancelled) fn();
+        if (cancelled) return;
+        if (pausedRef.current) {
+          later(fn, 300);
+          return;
+        }
+        fn();
       }, ms);
       timers.push(timer);
     };
@@ -94,17 +109,25 @@ export function AiTypewriter() {
       typeChar();
     };
 
-    runTyping(0);
+    runTyping(cycle.index);
 
     return () => {
       cancelled = true;
       timers.forEach(clearTimeout);
     };
-  }, []);
+  }, [cycle]);
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-lg">
+      <div
+        className="overflow-hidden rounded-2xl border border-border bg-card shadow-lg"
+        onMouseEnter={() => {
+          pausedRef.current = true;
+        }}
+        onMouseLeave={() => {
+          pausedRef.current = false;
+        }}
+      >
         <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
           <span className="inline-flex items-center gap-2 text-sm font-bold">
             <Sparkles className="h-4 w-4 text-primary" aria-hidden="true" />
@@ -180,16 +203,21 @@ export function AiTypewriter() {
         </div>
 
         <div className="flex flex-wrap gap-2 border-t border-border px-5 py-3.5">
-          {['Які угоди під ризиком?', 'Кому подзвонити сьогодні?', 'Підсумок за тиждень'].map(
-            (hint) => (
-              <span
-                key={hint}
-                className="rounded-full border border-border bg-background px-3 py-1 text-xs font-medium text-foreground-secondary"
-              >
-                {hint}
-              </span>
-            ),
-          )}
+          {HINTS.map((hint) => (
+            <button
+              key={hint.label}
+              type="button"
+              onClick={() => setCycle((c) => ({ index: hint.demo, nonce: c.nonce + 1 }))}
+              aria-label={`Показати приклад: ${hint.label}`}
+              className={`inline-flex min-h-[44px] items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                demo === hint.demo
+                  ? 'border-primary bg-primary-light text-primary'
+                  : 'border-border bg-background text-foreground-secondary hover:border-border-hover hover:text-foreground'
+              }`}
+            >
+              {hint.label}
+            </button>
+          ))}
         </div>
       </div>
     </MotionConfig>

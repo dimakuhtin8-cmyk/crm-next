@@ -6,6 +6,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { useState } from 'react';
 
 const INBOX = [
   {
@@ -32,8 +33,13 @@ const INBOX = [
 ];
 
 export function CommsPreview() {
+  const [paused, setPaused] = useState(false);
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+    <div
+      className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
       <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
         <p className="text-sm font-bold">Вхідні · усі канали</p>
         <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold text-foreground-secondary">
@@ -64,7 +70,7 @@ export function CommsPreview() {
               {item.unread > 0 && (
                 <motion.span
                   className="mt-1 inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground"
-                  animate={{ scale: [1, 1.18, 1] }}
+                  animate={paused ? { scale: 1 } : { scale: [1, 1.18, 1] }}
                   transition={{
                     duration: 0.7,
                     repeat: Infinity,

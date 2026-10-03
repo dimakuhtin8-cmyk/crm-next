@@ -82,15 +82,26 @@ function Volume({ id, index, children }: { id: string; index: number; children: 
 /** Міні-канбан «База»: картка-печатка переїжджає між етапами (layoutId). */
 function KanbanPreview() {
   const [step, setStep] = useState(0);
+  const pausedRef = useRef(false);
 
   useEffect(() => {
-    const timer = setInterval(() => setStep((s) => (s + 1) % 2), HEARTBEAT_MS);
+    const timer = setInterval(() => {
+      if (!pausedRef.current) setStep((s) => (s + 1) % 2);
+    }, HEARTBEAT_MS);
     return () => clearInterval(timer);
   }, []);
 
   return (
-    <div className="grid grid-cols-3 gap-3 rounded-xl border border-border bg-background-secondary p-4">
-      <div className="space-y-2">
+    <div
+      className="flex snap-x gap-3 overflow-x-auto rounded-xl border border-border bg-background-secondary p-4 sm:grid sm:grid-cols-3"
+      onMouseEnter={() => {
+        pausedRef.current = true;
+      }}
+      onMouseLeave={() => {
+        pausedRef.current = false;
+      }}
+    >
+      <div className="min-w-[200px] snap-start space-y-2 sm:min-w-0">
         <span className="text-xs font-semibold uppercase tracking-wider text-foreground-secondary">
           Нові (2)
         </span>
@@ -108,7 +119,7 @@ function KanbanPreview() {
         )}
       </div>
 
-      <div className="space-y-2">
+      <div className="min-w-[200px] snap-start space-y-2 sm:min-w-0">
         <span className="text-xs font-semibold uppercase tracking-wider text-foreground-secondary">
           Кваліфікація
         </span>
@@ -126,7 +137,7 @@ function KanbanPreview() {
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="min-w-[200px] snap-start space-y-2 sm:min-w-0">
         <span className="text-xs font-semibold uppercase tracking-wider text-foreground-secondary">
           Угода
         </span>
@@ -176,17 +187,16 @@ export function StickyFeatures() {
   return (
     <MotionConfig reducedMotion="user">
       <div ref={rootRef} className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:py-20">
-        <h2 className="sr-only">Можливості</h2>
         <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-12 lg:gap-12">
           {/* Sticky-навігація: плоский папір, активна — печатка */}
-          <div className="z-10 space-y-1 rounded-xl border border-border bg-background-secondary p-3 lg:sticky lg:top-28 lg:col-span-4">
-            <h3 className="px-4 pb-2 pt-2 text-xl font-bold">Можливості</h3>
+          <div className="z-10 flex gap-2 overflow-x-auto rounded-xl border border-border bg-background-secondary p-3 lg:sticky lg:top-28 lg:col-span-4 lg:block lg:space-y-1 lg:overflow-visible">
+            <h3 className="hidden px-4 pb-2 pt-2 text-xl font-bold lg:block">Можливості</h3>
             {features.map((feature) => (
               <button
                 key={feature.id}
                 type="button"
                 onClick={() => handleNav(feature.id)}
-                className={`relative w-full rounded-lg px-4 py-3 text-left text-sm font-medium transition-colors duration-200 ${
+                className={`relative w-auto shrink-0 whitespace-nowrap rounded-lg px-4 py-3 text-left text-sm font-medium transition-colors duration-200 lg:w-full lg:whitespace-normal ${
                   activeTab === feature.id
                     ? 'text-primary-foreground'
                     : 'text-foreground-secondary hover:bg-secondary hover:text-foreground'
@@ -207,7 +217,7 @@ export function StickyFeatures() {
           {/* Пʼять томів, розділених rib-лініями */}
           <div className="space-y-14 lg:col-span-8">
             <Volume id="section-baza" index={0}>
-              <h4 className="mb-2 text-2xl font-bold">База клієнтів і воронка без втрат</h4>
+              <h3 className="mb-2 text-2xl font-bold">База клієнтів і воронка без втрат</h3>
               <p className="mb-6 text-foreground-secondary">
                 Угоди рухаються етапами, прострочене підсвічується автоматично.
               </p>
@@ -228,9 +238,9 @@ export function StickyFeatures() {
             </Volume>
 
             <Volume id="section-chat" index={1}>
-              <h4 className="mb-2 text-2xl font-bold">Уся комунікація — в CRM</h4>
+              <h3 className="mb-2 text-2xl font-bold">Уся комунікація — в CRM</h3>
               <p className="mb-6 text-foreground-secondary">
-                Telegram, WhatsApp та Email в єдиній вхідній скриньці (БЕЗ телефонії).
+                Telegram, WhatsApp та Email в єдиній вхідній скриньці (без телефонії).
               </p>
               <CommsPreview />
               <div className="mt-6 divide-y divide-border border-y border-border">
@@ -248,7 +258,7 @@ export function StickyFeatures() {
             </Volume>
 
             <Volume id="section-auto" index={2}>
-              <h4 className="mb-2 text-2xl font-bold">Автоматизація рутини</h4>
+              <h3 className="mb-2 text-2xl font-bold">Автоматизація рутини</h3>
               <p className="mb-6 text-foreground-secondary">
                 Правила самі розподіляють лідів та рухають угоди.
               </p>
@@ -256,7 +266,7 @@ export function StickyFeatures() {
             </Volume>
 
             <Volume id="section-audit" index={3}>
-              <h4 className="mb-2 text-2xl font-bold">Аналітика й контроль доступу</h4>
+              <h3 className="mb-2 text-2xl font-bold">Аналітика й контроль доступу</h3>
               <p className="mb-6 text-foreground-secondary">
                 Видно джерела лідів і завантаженість команди, а доступ — за ролями: кожна дія з
                 даними потрапляє в журнал аудиту.
@@ -265,7 +275,7 @@ export function StickyFeatures() {
             </Volume>
 
             <Volume id="section-ai" index={4}>
-              <h4 className="mb-2 text-2xl font-bold">AI та розширені налаштування</h4>
+              <h3 className="mb-2 text-2xl font-bold">AI та розширені налаштування</h3>
               <p className="mb-6 text-foreground-secondary">
                 Підключайте власні AI-ключі, налаштовуйте вебхуки та інтеграції, стежте за
                 використанням AI у журналі.
