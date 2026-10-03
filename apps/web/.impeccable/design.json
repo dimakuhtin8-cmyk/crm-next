@@ -1,0 +1,207 @@
+{
+  "components": [
+    {
+      "css": ".ds-btn-trial{display:inline-flex;align-items:center;justify-content:center;min-height:48px;background:#2A2723;color:#F6F1E7;font-weight:700;font-size:14px;line-height:1;font-family:\"Golos Text\",ui-sans-serif,system-ui,sans-serif;padding:16px 28px;border:none;border-radius:12px;cursor:pointer;box-shadow:0 8px 16px rgba(74,60,40,.12),0 20px 40px -12px rgba(74,60,40,.3);transition:background .2s ease}.ds-btn-trial:hover{background:#3A352F}.ds-btn-trial:focus-visible{outline:2px solid #BC3A29;outline-offset:3px}",
+      "description": "Trial call-to-action. Ink fill, ivory label, warm offset shadow.",
+      "html": "<a class=\"ds-btn-trial\" href=\"#trial\">Спробувати безкоштовно</a>",
+      "kind": "button",
+      "name": "Trial Button",
+      "refersTo": "button-trial"
+    },
+    {
+      "css": ".ds-btn-ghost{display:inline-flex;align-items:center;justify-content:center;min-height:48px;background:transparent;color:#2A2723;font-weight:700;font-size:14px;line-height:1;font-family:\"Golos Text\",ui-sans-serif,system-ui,sans-serif;padding:16px 28px;border:1px solid rgba(42,39,35,.3);border-radius:12px;cursor:pointer;transition:background .2s ease}.ds-btn-ghost:hover{background:#E9DFC9}.ds-btn-ghost:focus-visible{outline:2px solid #BC3A29;outline-offset:3px}",
+      "description": "Secondary action. Transparent, ink label, bamboo hairline.",
+      "html": "<a class=\"ds-btn-ghost\" href=\"#mozlyvosti\">Дивитися можливості</a>",
+      "kind": "button",
+      "name": "Ghost Button",
+      "refersTo": "button-ghost"
+    },
+    {
+      "css": ".ds-nav-pill{position:relative;display:block;background:#BC3A29;color:#fff;font-weight:500;font-size:14px;line-height:1.4;font-family:\"Golos Text\",ui-sans-serif,system-ui,sans-serif;padding:12px 16px;border:none;border-radius:8px;box-shadow:0 1px 2px rgba(74,60,40,.2)}",
+      "description": "Active section mark in the sticky rail. Travels with a spring.",
+      "html": "<span class=\"ds-nav-pill\">Автоматизація</span>",
+      "kind": "nav",
+      "name": "Nav Pill",
+      "refersTo": "nav-pill"
+    },
+    {
+      "css": ".ds-chip-tone{display:inline-flex;align-items:center;background:rgba(188,58,41,.12);color:#BC3A29;font-weight:700;font-size:12px;line-height:1.4;font-family:\"Golos Text\",ui-sans-serif,system-ui,sans-serif;padding:4px 10px;border:none;border-radius:9999px}",
+      "description": "Status tone chip. Wash background, dark tone label.",
+      "html": "<span class=\"ds-chip-tone\">Кваліфікація</span>",
+      "kind": "chip",
+      "name": "Tone Chip",
+      "refersTo": "chip-tone"
+    },
+    {
+      "css": ".ds-demo-tray{background:#FFFDF7;color:#2A2723;border:1px solid #DCD2BE;border-radius:12px;padding:16px 20px;box-shadow:0 1px 2px rgba(74,60,40,.1),0 2px 4px rgba(74,60,40,.08)}.ds-demo-tray h4{font-family:Manrope,ui-sans-serif,system-ui,sans-serif;font-weight:700;margin:0 0 8px}",
+      "description": "One lit tray per live demo. Never nested.",
+      "html": "<div class=\"ds-demo-tray\"><h4>Воронка продажу</h4><p>Жива сітка угод всередині.</p></div>",
+      "kind": "card",
+      "name": "Demo Tray",
+      "refersTo": "card-tray"
+    },
+    {
+      "css": ".ds-ink-console{background:#2A2723;color:#F6F1E7;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:1.7;border:1px solid #DCD2BE;border-radius:16px;padding:16px 20px}.ds-ink-console .ds-row{display:flex;gap:12px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06)}.ds-ink-console .ds-ok{color:#7BD8A8;font-weight:700}",
+      "description": "Recessed terminal volume. Ink panel, ivory mono rows.",
+      "html": "<div class=\"ds-ink-console\"><div class=\"ds-row\"><span>api gateway</span><span class=\"ds-ok\">OK</span></div></div>",
+      "kind": "custom",
+      "name": "Ink Console",
+      "refersTo": "ink-console"
+    }
+  ],
+  "extensions": {
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "container", "value": "80rem (max-w-7xl)" }
+    ],
+    "colorMeta": {
+      "bamboo": {
+        "canonical": "#DCD2BE",
+        "displayName": "Bamboo",
+        "role": "neutral",
+        "tonalRamp": ["#C9B992", "#DCD2BE", "#E7DAC0"]
+      },
+      "charcoal-ink": {
+        "canonical": "#2A2723",
+        "displayName": "Charcoal Ink",
+        "role": "neutral",
+        "tonalRamp": ["#2A2723", "#4A443C", "#6E6459", "#8A7F70", "#B9AE9C"]
+      },
+      "flat-ash": {
+        "canonical": "#EFE7D5",
+        "displayName": "Flat Ash",
+        "role": "neutral",
+        "tonalRamp": ["#E9DFC9", "#EFE7D5", "#F6F1E7", "#FFFDF7"]
+      },
+      "leaf-green": {
+        "canonical": "#1E7F4F",
+        "displayName": "Leaf Green",
+        "role": "neutral",
+        "tonalRamp": ["#1E7F4F", "#3D9B6B", "#A9D3BC"]
+      },
+      "lit-volume": {
+        "canonical": "#FFFDF7",
+        "displayName": "Lit Volume",
+        "role": "neutral",
+        "tonalRamp": ["#F6F1E7", "#FFFDF7"]
+      },
+      "vermilion-stamp": {
+        "canonical": "#BC3A29",
+        "displayName": "Vermilion Stamp",
+        "role": "primary",
+        "tonalRamp": ["#8E2B1F", "#A53224", "#BC3A29", "#D4695A", "#E8AFA4"]
+      },
+      "washi-ivory": {
+        "canonical": "#F6F1E7",
+        "displayName": "Washi Ivory",
+        "role": "neutral",
+        "tonalRamp": ["#EFE7D5", "#F6F1E7", "#FFFDF7"]
+      }
+    },
+    "motion": [
+      {
+        "name": "nav-pill-spring",
+        "purpose": "Active stamp travels between rail items.",
+        "value": "spring stiffness 350, damping 30"
+      },
+      {
+        "name": "kanban-move",
+        "purpose": "Deal card glides between funnel stages every 3.5s.",
+        "value": "spring stiffness 320, damping 30"
+      },
+      {
+        "name": "entrance",
+        "purpose": "Entrances ease out of a visible resting state, never from hidden.",
+        "value": "easeOut, 0.28-0.7s"
+      },
+      {
+        "name": "reduced-motion",
+        "purpose": "All loops and layout moves collapse under prefers-reduced-motion.",
+        "value": "MotionConfig reducedMotion=user; smooth scroll gated by media query"
+      }
+    ],
+    "shadows": [
+      {
+        "name": "resting-tray",
+        "purpose": "Demo trays and lit volumes at rest.",
+        "value": "0 1px 2px rgba(74,60,40,0.1), 0 2px 4px rgba(74,60,40,0.08)"
+      },
+      {
+        "name": "lifted-action",
+        "purpose": "Trial buttons, hero moon, moving deal card.",
+        "value": "0 8px 16px rgba(74,60,40,0.12), 0 20px 40px -12px rgba(74,60,40,0.3)"
+      },
+      {
+        "name": "stamp-press",
+        "purpose": "Active nav pill, shallow like ink pressed into paper.",
+        "value": "0 1px 2px rgba(74,60,40,0.2)"
+      }
+    ],
+    "typographyMeta": {
+      "body": {
+        "displayName": "Body",
+        "purpose": "Descriptions and meta lines; max ~68ch."
+      },
+      "display": {
+        "displayName": "Display",
+        "purpose": "Hero and section headlines only."
+      }
+    }
+  },
+  "generatedAt": "2026-10-03",
+  "narrative": {
+    "dos": [
+      "Do keep vermilion rare — status, active states, and seals total well under a tenth of any viewport.",
+      "Do separate volumes with 2px rib rules and generous air above them.",
+      "Do write headings that survive alone, balanced, at most ~20 words, no eyebrow above.",
+      "Do use tabular figures for every sum, count, and timestamp.",
+      "Do theme browser surfaces from the palette (vermilion selection and focus ring, ivory page wash behind the app root).",
+      "Do animate the mechanism per demo volume with spring/ease-out from a visible resting state, gated on prefers-reduced-motion."
+    ],
+    "donts": [
+      "Don't add neon, glow, glass blur, or gradient text — the brief bans all four and no surface earns them back.",
+      "Don't nest cards or trays; one tray per demo, hairlines inside.",
+      "Don't use monospace or uppercase tracking as decoration — data only.",
+      "Don't invent testimonials, client logos, metrics, or capabilities the product does not have (no telephony, ever).",
+      "Don't pick a new display face without full Cyrillic and a reason no humanist sans could satisfy."
+    ],
+    "keyCharacteristics": [
+      "Warm paper ground, ink text, one stamp color with a job.",
+      "Rib rules separate volumes; trays never nest.",
+      "Humanist sans display with full Cyrillic; tabular figures for data.",
+      "Motion demonstrates the mechanism (moves, arrivals, stamps), never decorates."
+    ],
+    "northStar": "The Lit Paper Room",
+    "overview": "A sales office in daylight: warm washi paper, bamboo rib lines banding the page into calm segments, charcoal ink for every word, and a single vermilion stamp that marks only status — the active tab, the moving deal, the trial mindset. Nothing glows, nothing floats in glass, no gradient pretends to be light; light itself is a flat paper volume with the live funnel glowing inside it. Density is embraced where managers read (tables, logs, kanban cells) and quiet is spent between volumes. The page Persuades by demonstration: five live tabs prove the mechanism instead of claiming it.",
+    "rules": [
+      {
+        "body": "Vermilion marks status and action-readiness only. It never fills illustrations, gradients, or decorative shapes; rarity is what makes the pill, the moving card, and the seals read as one language.",
+        "name": "The Stamp Has One Job Rule",
+        "section": "colors"
+      },
+      {
+        "body": "Lit Volume (#FFFDF7) is reserved for surfaces that are 'on' — the hero moon, active demo trays. Unlit content stays flat ash. A lit surface with nothing alive inside is a defect.",
+        "name": "The Lit Means Alive Rule",
+        "section": "colors"
+      },
+      {
+        "body": "No eyebrow label above a heading, ever. The heading carries its own weight; delete the label.",
+        "name": "The Heading Speaks Rule",
+        "section": "typography"
+      },
+      {
+        "body": "Monospace appears only for code, keys, hashes, times, and measured figures — never as a technical costume.",
+        "name": "The Mono Is Data Rule",
+        "section": "typography"
+      },
+      {
+        "body": "A shadow without offset is decoration. If a surface needs presence without lift, use a darker flat tone instead.",
+        "name": "The Offset Carries It Rule",
+        "section": "elevation"
+      }
+    ]
+  },
+  "schemaVersion": 2,
+  "title": "Design System: CRM-Next Landing"
+}

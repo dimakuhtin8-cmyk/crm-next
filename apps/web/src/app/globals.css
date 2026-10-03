@@ -222,76 +222,100 @@
 }
 
 /**
- * Landing premium dark theme (Linear/Vercel style): #0B0C10 / #13151D / #222634
- * з електричним синім #2563EB та емеральдом #10B981. Клас вішається на <main>
- * лендінгу — переохоплює токени глобальної теми лише в межах сторінки.
+ * Landing Akari world (locked direction): тепле washi-папір, бамбукові rib-лінії,
+ * вугільне чорнило, одна кіноварна печатка-статус. Світла сцена: офіс вдень.
+ * Клас вішається на <main> лендінгу — переохоплює токени лише в межах сторінки.
  */
-.landing-dark {
-  /* Surfaces */
-  --background: #0b0c10;
-  --background-secondary: #0f1016;
-  --background-tertiary: #13151d;
-  --card: #13151d;
-  --card-hover: #171a24;
+.landing-akari {
+  /* Surfaces — paper (lit volume / flat unlit) */
+  --background: #f6f1e7;
+  --background-secondary: #efe7d5;
+  --background-tertiary: #e9dfc9;
+  --card: #fffdf7;
+  --card-hover: #fff9ee;
 
-  /* Text */
-  --foreground: #f8fafc;
-  --foreground-secondary: #94a3b8;
-  --foreground-muted: #64748b;
-  --foreground-inverse: #f8fafc;
+  /* Text — ink */
+  --foreground: #2a2723;
+  --foreground-secondary: #6e6459;
+  --foreground-muted: #756a5d;
+  --foreground-inverse: #2a2723;
 
-  /* Primary — electric blue */
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  --primary-pressed: #1e40af;
-  --primary-light: rgba(37, 99, 235, 0.16);
+  /* Primary — vermilion stamp (white text 5.6:1) */
+  --primary: #bc3a29;
+  --primary-hover: #a53224;
+  --primary-pressed: #8e2b1f;
+  --primary-light: rgba(188, 58, 41, 0.12);
   --primary-foreground: #ffffff;
 
   /* Secondary / muted / accent */
-  --secondary: #1c2030;
-  --secondary-hover: #242839;
-  --secondary-foreground: #f8fafc;
-  --muted: #13151d;
-  --muted-foreground: #94a3b8;
-  --accent: #171a24;
-  --accent-hover: #1e2231;
-  --accent-foreground: #f8fafc;
+  --secondary: #e9dfc9;
+  --secondary-hover: #dfd3b8;
+  --secondary-foreground: #2a2723;
+  --muted: #efe7d5;
+  --muted-foreground: #6e6459;
+  --accent: #f1e9d7;
+  --accent-hover: #e7dac0;
+  --accent-foreground: #2a2723;
 
-  /* Semantic on dark */
-  --success: #10b981;
-  --success-hover: #34d399;
-  --success-light: rgba(16, 185, 129, 0.14);
-  --success-foreground: #062e23;
-  --warning: #fbbf24;
-  --warning-hover: #fcd34d;
-  --warning-light: rgba(251, 191, 36, 0.14);
-  --warning-foreground: #3b2a05;
-  --danger: #f87171;
-  --danger-hover: #fca5a5;
-  --danger-light: rgba(248, 113, 113, 0.14);
-  --danger-foreground: #3d0a0a;
-  --info: #3b82f6;
-  --info-hover: #60a5fa;
-  --info-light: rgba(59, 130, 246, 0.16);
+  /* Semantic on paper */
+  --success: #1e7f4f;
+  --success-hover: #23925b;
+  --success-light: rgba(30, 127, 79, 0.12);
+  --success-foreground: #ffffff;
+  --warning: #8a5e0b;
+  --warning-hover: #75500a;
+  --warning-light: rgba(138, 94, 11, 0.14);
+  --warning-foreground: #ffffff;
+  --danger: #a4262c;
+  --danger-hover: #8c2026;
+  --danger-light: rgba(164, 38, 44, 0.12);
+  --danger-foreground: #ffffff;
+  --info: #2f6b5e;
+  --info-hover: #28594f;
+  --info-light: rgba(47, 107, 94, 0.12);
   --info-foreground: #ffffff;
 
-  /* Borders */
-  --border: #222634;
-  --border-hover: #2e3346;
-  --border-focus: #3b82f6;
-  --input: #2e3346;
-  --ring: #3b82f6;
+  /* Borders — bamboo ribs */
+  --border: #dcd2be;
+  --border-hover: #c9b992;
+  --border-focus: #bc3a29;
+  --input: #c9b992;
+  --ring: #bc3a29;
 
-  /* Inverse panels (header) — same as page bg, розділення робить рамка */
-  --inverse: #0b0c10;
-  --inverse-foreground: #f8fafc;
-  --inverse-muted: #94a3b8;
-  --inverse-accent: #10b981;
+  /* Inverse panels — ink bar on paper */
+  --inverse: #2a2723;
+  --inverse-foreground: #f6f1e7;
+  --inverse-muted: #b9ae9c;
+  --inverse-accent: #e2725b;
 
-  /* Glows */
-  --glow-primary: 0 0 24px rgba(37, 99, 235, 0.35);
-  --glow-success: 0 0 24px rgba(16, 185, 129, 0.3);
-  --glow-danger: 0 0 24px rgba(248, 113, 113, 0.3);
+  /* Shadows — warm, always with offset */
+  --shadow-xs: 0 1px 2px rgba(74, 60, 40, 0.08);
+  --shadow-sm: 0 1px 2px rgba(74, 60, 40, 0.1), 0 2px 4px rgba(74, 60, 40, 0.08);
+  --shadow: 0 2px 4px rgba(74, 60, 40, 0.1), 0 8px 16px -8px rgba(74, 60, 40, 0.25);
+  --shadow-md: 0 4px 8px rgba(74, 60, 40, 0.1), 0 12px 24px -8px rgba(74, 60, 40, 0.28);
+  --shadow-lg: 0 8px 16px rgba(74, 60, 40, 0.12), 0 20px 40px -12px rgba(74, 60, 40, 0.3);
+  --shadow-xl: 0 12px 24px rgba(74, 60, 40, 0.14), 0 28px 56px -12px rgba(74, 60, 40, 0.32);
+
+  /* Type voices */
+  font-family: var(--font-golos), ui-sans-serif, system-ui, sans-serif;
+}
+
+.landing-akari h1,
+.landing-akari h2,
+.landing-akari h3,
+.landing-akari h4 {
+  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.landing-akari ::selection {
+  background: #bc3a29;
+  color: #fffdf7;
+}
+
+.landing-akari :focus-visible {
+  outline-color: #bc3a29;
 }
 
 @media (prefers-reduced-motion: no-preference) {

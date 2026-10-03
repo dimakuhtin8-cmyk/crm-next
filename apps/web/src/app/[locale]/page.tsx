@@ -15,6 +15,7 @@ import Link from 'next/link';
 import { AiTypewriter } from '@/components/landing/ai-typewriter';
 import { DevConsole } from '@/components/landing/dev-console';
 import { HeroKanban } from '@/components/landing/hero-kanban';
+import { SectionLink } from '@/components/landing/section-link';
 import { StickyFeatures } from '@/components/landing/sticky-features';
 import {
   Accordion,
@@ -85,9 +86,9 @@ const FAQ_ITEMS = [
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   return (
-    <main className="landing-dark min-h-screen bg-background text-foreground antialiased">
+    <main className="landing-akari min-h-screen bg-background text-foreground antialiased">
       <style>{`
-        html:has(.landing-dark), html:has(.landing-dark) body { background-color: #0b0c10; }
+        html:has(.landing-akari), html:has(.landing-akari) body { background-color: #f6f1e7; }
         ::selection { background: var(--primary); color: var(--primary-foreground); }
         :focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; border-radius: 8px; }
         @keyframes landing-rise {
@@ -100,7 +101,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         }
       `}</style>
 
-      {/* Header — темна смуга, межа #222634 */}
+      {/* Header — ink-смуга на папері, якірні лінки через SectionLink */}
       <header className="sticky top-0 z-50 border-b border-border bg-inverse text-inverse-foreground">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
           <Link
@@ -121,13 +122,13 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             aria-label="Розділи"
           >
             {NAV_ITEMS.map(([href, label]) => (
-              <Link
+              <SectionLink
                 key={href}
                 className="transition-colors hover:text-inverse-foreground"
                 href={href}
               >
                 {label}
-              </Link>
+              </SectionLink>
             ))}
           </nav>
 
@@ -140,7 +141,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             </Link>
             <Link
               href={`/${locale}/auth/register`}
-              className="inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-5 text-sm font-bold text-primary-foreground shadow-[0_10px_24px_-12px_rgba(37,99,235,0.7)] transition-colors hover:bg-primary-hover"
+              className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[#2A2723] px-5 text-sm font-bold text-[#F6F1E7] shadow-[0_10px_24px_-12px_rgba(74,60,40,0.45)] transition-colors hover:bg-[#3A352F]"
             >
               Спробувати безкоштовно
             </Link>
@@ -156,13 +157,13 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                 [`/${locale}/auth/login`, 'Увійти'],
                 [`/${locale}/auth/register`, 'Спробувати безкоштовно'],
               ].map(([href, label]) => (
-                <Link
+                <SectionLink
                   key={href + label}
                   href={href}
                   className="block rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-secondary"
                 >
                   {label}
-                </Link>
+                </SectionLink>
               ))}
             </div>
           </details>
@@ -171,10 +172,6 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-border">
-        <div
-          className="pointer-events-none absolute -right-32 -top-28 h-80 w-80 rounded-full bg-[#2563EB]/15 blur-3xl"
-          aria-hidden="true"
-        />
         <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:py-20">
           <div>
             <h1 className="text-balance text-4xl font-bold leading-[1.05] tracking-[-0.03em] sm:text-5xl lg:text-6xl">
@@ -187,16 +184,16 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href={`/${locale}/auth/register`}
-                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-7 text-sm font-bold text-primary-foreground shadow-[0_18px_36px_-18px_rgba(37,99,235,0.6)] transition-colors hover:bg-primary-hover"
+                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#2A2723] px-7 text-sm font-bold text-[#F6F1E7] shadow-[0_18px_36px_-18px_rgba(74,60,40,0.5)] transition-colors hover:bg-[#3A352F]"
               >
                 Спробувати безкоштовно
               </Link>
-              <Link
+              <SectionLink
                 href="#mozlyvosti"
                 className="inline-flex min-h-12 items-center justify-center rounded-xl border border-border bg-transparent px-7 text-sm font-bold transition-colors hover:bg-secondary"
               >
                 Дивитися можливості
-              </Link>
+              </SectionLink>
             </div>
             <p className="mt-5 text-sm font-medium text-foreground-secondary">
               Воронка, завдання, комунікація та контроль команди — без хаосу в таблицях. Без картки
@@ -204,7 +201,20 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             </p>
           </div>
 
-          <HeroKanban />
+          {/* Паперовий місяць: жива воронка всередині освітленого обʼєму */}
+          <div className="relative px-4 py-8 sm:px-8">
+            <div
+              className="pointer-events-none absolute left-1/2 top-1/2 h-[112%] w-[104%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#FFFDF7] shadow-lg"
+              aria-hidden="true"
+            />
+            <div
+              className="pointer-events-none absolute left-1/2 top-1/2 h-[126%] w-[114%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#C9B992]"
+              aria-hidden="true"
+            />
+            <div className="relative">
+              <HeroKanban />
+            </div>
+          </div>
         </div>
       </section>
 
@@ -234,8 +244,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       <section id="ai-copilot" className="border-b border-border">
         <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:py-20">
           <div>
-            <p className="text-sm font-bold uppercase tracking-wider text-[#93C5FD]">AI Co-Pilot</p>
-            <h2 className="mt-3 max-w-[20ch] text-2xl font-bold tracking-tight sm:text-3xl">
+            <h2 className="max-w-[20ch] text-2xl font-bold tracking-tight sm:text-3xl">
               Питання до CRM — відповідь за секунди
             </h2>
             <p className="mt-4 max-w-[62ch] text-sm leading-7 text-foreground-secondary sm:text-base">
@@ -266,10 +275,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:py-20">
           <DevConsole />
           <div>
-            <p className="text-sm font-bold uppercase tracking-wider text-[#93C5FD]">
-              Адміністрування
-            </p>
-            <h2 className="mt-3 max-w-[22ch] text-2xl font-bold tracking-tight sm:text-3xl">
+            <h2 className="max-w-[22ch] text-2xl font-bold tracking-tight sm:text-3xl">
               Прозорий стан системи — як у консолі розробника
             </h2>
             <p className="mt-4 max-w-[62ch] text-sm leading-7 text-foreground-secondary sm:text-base">
@@ -389,27 +395,23 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       {/* Final CTA */}
       <section className="bg-background">
         <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:py-20">
-          <div className="relative overflow-hidden rounded-2xl border border-border bg-card px-6 py-12 text-center text-foreground shadow-xl sm:px-12">
-            <div
-              className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#2563EB]/15 blur-3xl"
-              aria-hidden="true"
-            />
+          <div className="relative overflow-hidden rounded-2xl border border-border bg-card px-6 py-12 text-center shadow-xl sm:px-12">
             <h2 className="relative mx-auto max-w-[20ch] text-balance text-3xl font-bold tracking-tight sm:text-4xl">
               Наведіть лад у продажах цього тижня
             </h2>
-            <p className="mx-auto mt-4 max-w-[60ch] text-sm leading-7 text-inverse-muted sm:text-base">
+            <p className="mx-auto mt-4 max-w-[60ch] text-sm leading-7 text-foreground-secondary sm:text-base">
               Почніть з бази й воронки, далі підключіть автоматизацію та AI-підказки.
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <Link
                 href={`/${locale}/auth/register`}
-                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-7 text-sm font-bold text-primary-foreground shadow-[0_18px_36px_-18px_rgba(37,99,235,0.7)] transition-colors hover:bg-primary-hover"
+                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#2A2723] px-7 text-sm font-bold text-[#F6F1E7] shadow-[0_18px_36px_-18px_rgba(74,60,40,0.5)] transition-colors hover:bg-[#3A352F]"
               >
                 Спробувати безкоштовно
               </Link>
               <Link
                 href={`/${locale}/auth/login`}
-                className="inline-flex min-h-12 items-center justify-center rounded-xl border border-white/25 px-7 text-sm font-bold text-inverse-foreground transition-colors hover:bg-white/10"
+                className="inline-flex min-h-12 items-center justify-center rounded-xl border border-foreground/30 px-7 text-sm font-bold transition-colors hover:bg-secondary"
               >
                 Увійти
               </Link>

@@ -44,7 +44,7 @@ export function CookieBanner() {
       role="region"
       aria-label="Файли cookie"
       data-testid="cookie-banner"
-      className="landing-dark fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card p-4 shadow-lg"
+      className="landing-akari fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card p-4 shadow-lg"
     >
       <div className="mx-auto flex max-w-5xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm leading-6 text-foreground-secondary">
@@ -52,7 +52,7 @@ export function CookieBanner() {
           коректно.{' '}
           <Link
             href={`/${locale}/legal/privacy#cookie`}
-            className="text-[#93C5FD] underline-offset-4 hover:underline"
+            className="text-primary underline-offset-4 hover:underline"
           >
             Докладніше про cookie
           </Link>

@@ -4,12 +4,12 @@
 
 export function BazaPreview() {
   return (
-    <div className="rounded-2xl border border-border bg-background p-4 shadow-sm">
+    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
       <p className="text-xs font-bold uppercase tracking-wide text-foreground-muted">
         Картка клієнта
       </p>
       <div className="mt-3 flex items-center gap-3">
-        <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-light text-sm font-bold text-[#93C5FD]">
+        <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-light text-sm font-bold text-primary">
           МК
         </span>
         <div className="min-w-0">
@@ -21,7 +21,7 @@ export function BazaPreview() {
         <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold">
           Instagram
         </span>
-        <span className="rounded-full bg-primary-light px-2.5 py-1 text-xs font-semibold text-[#93C5FD]">
+        <span className="rounded-full bg-primary-light px-2.5 py-1 text-xs font-semibold text-primary">
           Кваліфікація
         </span>
       </div>

@@ -1,15 +1,15 @@
 'use client';
 
 /**
- * «Можливості»: sticky-навігація ліворуч (активна вкладка синхронізується
- * IntersectionObserver під час скролу, Framer Motion — плавний індикатор)
- * і п'ять карток-секцій праворуч. Тема: #0B0C10 / #13151D / #222634,
- * акцент #2563EB, індикатори #10B981.
+ * «Можливості»: sticky-навігація ліворуч (активна печатка синхронізується
+ * IntersectionObserver, Framer Motion — плавний індикатор) і п'ять томів
+ * праворуч, розділених бамбуковими rib-лініями. Akari world: плоский папір,
+ * печатка-статус, чорнило ручки. Жодних вкладених карток.
  */
 
 import { motion, MotionConfig } from 'framer-motion';
 import { Check } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { AutomationPreview } from '@/components/landing/automation-preview';
 import { BazaPreview } from '@/components/landing/baza-preview';
@@ -39,7 +39,7 @@ const CHANNEL_NOTES = [
   {
     name: 'Email',
     text: 'Листи й заявки прив’язуються до контактів та угод.',
-    tone: 'bg-primary-light text-[#93C5FD]',
+    tone: 'bg-primary-light text-primary',
   },
 ];
 
@@ -49,7 +49,7 @@ const BAZA_CHECKLIST = [
   'Канбан воронки з drag-and-drop',
 ];
 
-/** Міні-канбан «База»: картка переїжджає між етапами (Framer Motion layoutId). */
+/** Міні-канбан «База»: картка-печатка переїжджає між етапами (layoutId). */
 function KanbanPreview() {
   const [step, setStep] = useState(0);
 
@@ -59,18 +59,18 @@ function KanbanPreview() {
   }, []);
 
   return (
-    <div className="grid grid-cols-3 gap-3 rounded-xl border border-[#222634] bg-[#0B0C10] p-4">
+    <div className="grid grid-cols-3 gap-3 rounded-xl border border-border bg-background-secondary p-4">
       <div className="space-y-2">
-        <span className="text-xs font-semibold uppercase tracking-wider text-[#94A3B8]">
+        <span className="text-xs font-semibold uppercase tracking-wider text-foreground-secondary">
           Нові (2)
         </span>
-        <div className="rounded-lg border border-[#222634] bg-[#13151D] p-3 text-xs text-white">
+        <div className="rounded-lg border border-border bg-card p-3 text-xs text-foreground">
           ТОВ «Альфа» — 140k
         </div>
         {step === 0 && (
           <motion.div
             layoutId="moving-card"
-            className="rounded-lg border border-[#2563EB] bg-[#2563EB]/20 p-3 text-xs font-medium text-white shadow-md"
+            className="rounded-lg border-2 border-primary bg-primary-light p-3 text-xs font-bold text-primary shadow-sm"
           >
             LTD Instagram — 82k
           </motion.div>
@@ -78,25 +78,27 @@ function KanbanPreview() {
       </div>
 
       <div className="space-y-2">
-        <span className="text-xs font-semibold uppercase tracking-wider text-[#94A3B8]">
+        <span className="text-xs font-semibold uppercase tracking-wider text-foreground-secondary">
           Кваліфікація
         </span>
         {step === 1 && (
           <motion.div
             layoutId="moving-card"
-            className="rounded-lg border border-[#10B981] bg-[#10B981]/20 p-3 text-xs font-medium text-white shadow-md"
+            className="rounded-lg border-2 border-success bg-success-light p-3 text-xs font-bold text-success shadow-sm"
           >
             LTD Instagram — 82k
           </motion.div>
         )}
-        <div className="rounded-lg border border-[#222634] bg-[#13151D] p-3 text-xs text-white">
+        <div className="rounded-lg border border-border bg-card p-3 text-xs text-foreground">
           ФОП «Колос» — 89k
         </div>
       </div>
 
       <div className="space-y-2">
-        <span className="text-xs font-semibold uppercase tracking-wider text-[#94A3B8]">Угода</span>
-        <div className="rounded-lg border border-[#222634] bg-[#13151D] p-3 text-xs text-white">
+        <span className="text-xs font-semibold uppercase tracking-wider text-foreground-secondary">
+          Угода
+        </span>
+        <div className="rounded-lg border border-border bg-card p-3 text-xs text-foreground">
           ТОВ «Вектор» — 520k
         </div>
       </div>
@@ -106,8 +108,12 @@ function KanbanPreview() {
 
 export function StickyFeatures() {
   const [activeTab, setActiveTab] = useState('baza');
+  // Скоуп піддерева: у видачі Next лежить прихований prerender-дублікат
+  // (div#S:0), тому document.getElementById брав би невидимі копії.
+  const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const scope = rootRef.current ?? document;
     const observer = new IntersectionObserver(
       (entries) => {
         const visible = entries
@@ -121,7 +127,7 @@ export function StickyFeatures() {
     );
 
     features.forEach((feature) => {
-      const element = document.getElementById(`section-${feature.id}`);
+      const element = scope.querySelector(`#section-${feature.id}`);
       if (element) observer.observe(element);
     });
 
@@ -130,32 +136,34 @@ export function StickyFeatures() {
 
   const handleNav = (id: string) => {
     setActiveTab(id);
-    document.getElementById(`section-${id}`)?.scrollIntoView({ behavior: 'smooth' });
+    rootRef.current
+      ?.querySelector(`#section-${id}`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="mx-auto max-w-7xl bg-[#0B0C10] px-4 py-14 sm:px-6 lg:py-20">
+      <div ref={rootRef} className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:py-20">
         <h2 className="sr-only">Можливості</h2>
-        <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-12">
-          {/* Sticky Left Navigation */}
-          <div className="z-10 space-y-3 rounded-xl border border-[#222634] bg-[#0B0C10]/80 p-4 backdrop-blur-md lg:sticky lg:top-28 lg:col-span-4">
-            <h3 className="mb-4 text-xl font-bold text-white">Можливості</h3>
+        <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-12 lg:gap-12">
+          {/* Sticky-навігація: плоский папір, активна — печатка */}
+          <div className="z-10 space-y-1 rounded-xl border border-border bg-background-secondary p-3 lg:sticky lg:top-28 lg:col-span-4">
+            <h3 className="px-4 pb-2 pt-2 text-xl font-bold">Можливості</h3>
             {features.map((feature) => (
               <button
                 key={feature.id}
                 type="button"
                 onClick={() => handleNav(feature.id)}
-                className={`relative w-full rounded-lg px-4 py-3 text-left text-sm font-medium transition-all duration-200 ${
+                className={`relative w-full rounded-lg px-4 py-3 text-left text-sm font-medium transition-colors duration-200 ${
                   activeTab === feature.id
-                    ? 'text-white'
-                    : 'text-[#94A3B8] hover:bg-[#13151D] hover:text-white'
+                    ? 'text-primary-foreground'
+                    : 'text-foreground-secondary hover:bg-secondary hover:text-foreground'
                 }`}
               >
                 {activeTab === feature.id && (
                   <motion.span
                     layoutId="active-feature-tab"
-                    className="absolute inset-0 rounded-lg bg-[#2563EB] shadow-lg shadow-blue-500/20"
+                    className="absolute inset-0 rounded-lg bg-primary shadow-sm"
                     transition={{ type: 'spring', stiffness: 350, damping: 30 }}
                   />
                 )}
@@ -164,35 +172,20 @@ export function StickyFeatures() {
             ))}
           </div>
 
-          {/* Right Scrollable Content */}
-          <div className="space-y-16 lg:col-span-8">
-            {/* Card 1: База */}
-            <div
-              id="section-baza"
-              className="group relative scroll-mt-28 overflow-hidden rounded-2xl border border-[#222634] bg-[#13151D] p-8 shadow-2xl"
-            >
-              <div
-                className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-[#2563EB]/10 blur-3xl transition-all group-hover:bg-[#2563EB]/20"
-                aria-hidden="true"
-              />
-              <h4 className="relative mb-2 text-2xl font-bold text-white">
-                База клієнтів і воронка без втрат
-              </h4>
-              <p className="relative mb-6 text-[#94A3B8]">
+          {/* Пʼять томів, розділених rib-лініями */}
+          <div className="space-y-14 lg:col-span-8">
+            <div id="section-baza" className="scroll-mt-28 border-t-2 border-border-hover pt-10">
+              <h4 className="mb-2 text-2xl font-bold">База клієнтів і воронка без втрат</h4>
+              <p className="mb-6 text-foreground-secondary">
                 Угоди рухаються етапами, прострочене підсвічується автоматично.
               </p>
-              <div className="relative">
-                <KanbanPreview />
-              </div>
-              <div className="relative mt-4 grid gap-4 sm:grid-cols-2">
+              <KanbanPreview />
+              <div className="mt-6 grid gap-6 sm:grid-cols-2">
                 <BazaPreview />
-                <ul className="divide-y divide-[#222634] rounded-2xl border border-[#222634] bg-[#0B0C10] px-1">
+                <ul className="divide-y divide-border border-y border-border">
                   {BAZA_CHECKLIST.map((item) => (
-                    <li
-                      key={item}
-                      className="flex items-start gap-3 px-3 py-3.5 text-sm font-medium text-white"
-                    >
-                      <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#2563EB] text-white">
+                    <li key={item} className="flex items-start gap-3 py-3.5 text-sm font-medium">
+                      <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                         <Check className="h-4 w-4" aria-hidden="true" />
                       </span>
                       {item}
@@ -202,65 +195,46 @@ export function StickyFeatures() {
               </div>
             </div>
 
-            {/* Card 2: Комунікація */}
-            <div
-              id="section-chat"
-              className="scroll-mt-28 overflow-hidden rounded-2xl border border-[#222634] bg-[#13151D] p-8 shadow-2xl"
-            >
-              <h4 className="mb-2 text-2xl font-bold text-white">Уся комунікація — в CRM</h4>
-              <p className="mb-6 text-[#94A3B8]">
+            <div id="section-chat" className="scroll-mt-28 border-t-2 border-border-hover pt-10">
+              <h4 className="mb-2 text-2xl font-bold">Уся комунікація — в CRM</h4>
+              <p className="mb-6 text-foreground-secondary">
                 Telegram, WhatsApp та Email в єдиній вхідній скриньці (БЕЗ телефонії).
               </p>
               <CommsPreview />
-              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <div className="mt-6 divide-y divide-border border-y border-border">
                 {CHANNEL_NOTES.map((channel) => (
-                  <div
-                    key={channel.name}
-                    className="rounded-xl border border-[#222634] bg-[#0B0C10] px-4 py-3"
-                  >
+                  <div key={channel.name} className="flex items-start gap-3 py-3">
                     <span
-                      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${channel.tone}`}
+                      className={`mt-0.5 inline-flex shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${channel.tone}`}
                     >
                       {channel.name}
                     </span>
-                    <p className="mt-2 text-xs leading-5 text-[#94A3B8]">{channel.text}</p>
+                    <p className="text-sm leading-6 text-foreground-secondary">{channel.text}</p>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Card 3: Автоматизація */}
-            <div
-              id="section-auto"
-              className="scroll-mt-28 overflow-hidden rounded-2xl border border-[#222634] bg-[#13151D] p-8 shadow-2xl"
-            >
-              <h4 className="mb-2 text-2xl font-bold text-white">Автоматизація рутини</h4>
-              <p className="mb-6 text-[#94A3B8]">
+            <div id="section-auto" className="scroll-mt-28 border-t-2 border-border-hover pt-10">
+              <h4 className="mb-2 text-2xl font-bold">Автоматизація рутини</h4>
+              <p className="mb-6 text-foreground-secondary">
                 Правила самі розподіляють лідів та рухають угоди.
               </p>
               <AutomationPreview />
             </div>
 
-            {/* Card 4: Аналітика і доступ */}
-            <div
-              id="section-audit"
-              className="scroll-mt-28 overflow-hidden rounded-2xl border border-[#222634] bg-[#13151D] p-8 shadow-2xl"
-            >
-              <h4 className="mb-2 text-2xl font-bold text-white">Аналітика й контроль доступу</h4>
-              <p className="mb-6 text-[#94A3B8]">
+            <div id="section-audit" className="scroll-mt-28 border-t-2 border-border-hover pt-10">
+              <h4 className="mb-2 text-2xl font-bold">Аналітика й контроль доступу</h4>
+              <p className="mb-6 text-foreground-secondary">
                 Видно джерела лідів і завантаженість команди, а доступ — за ролями: кожна дія з
                 даними потрапляє в журнал аудиту.
               </p>
               <RolesPreview />
             </div>
 
-            {/* Card 5: AI & Налаштування */}
-            <div
-              id="section-ai"
-              className="scroll-mt-28 overflow-hidden rounded-2xl border border-[#222634] bg-[#13151D] p-8 shadow-2xl"
-            >
-              <h4 className="mb-2 text-2xl font-bold text-white">AI та розширені налаштування</h4>
-              <p className="mb-6 text-[#94A3B8]">
+            <div id="section-ai" className="scroll-mt-28 border-t-2 border-border-hover pt-10">
+              <h4 className="mb-2 text-2xl font-bold">AI та розширені налаштування</h4>
+              <p className="mb-6 text-foreground-secondary">
                 Підключайте власні AI-ключі, налаштовуйте вебхуки та інтеграції, стежте за
                 використанням AI у журналі.
               </p>

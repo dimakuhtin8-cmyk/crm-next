@@ -22,7 +22,7 @@ const NODES = [
 export function AutomationPreview() {
   return (
     <MotionConfig reducedMotion="user">
-      <div className="rounded-2xl border border-border bg-background p-4 shadow-sm sm:p-5">
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm font-bold">Правило: угоди під ризиком</p>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-success-light px-2.5 py-1 text-xs font-semibold text-success">
@@ -36,9 +36,9 @@ export function AutomationPreview() {
             const Icon = node.icon;
             return (
               <li key={node.label}>
-                <div className="flex items-start gap-3 rounded-xl border border-border bg-card px-3.5 py-3 transition-colors hover:border-border-hover">
+                <div className="flex items-start gap-3 rounded-xl border border-border bg-background-secondary px-3.5 py-3 transition-colors hover:border-border-hover">
                   <span
-                    className="inline-flex h-8 w-8 shrink-0 animate-pulse-subtle items-center justify-center rounded-lg bg-primary-light text-[#93C5FD]"
+                    className="inline-flex h-8 w-8 shrink-0 animate-pulse-subtle items-center justify-center rounded-lg bg-primary-light text-primary"
                     style={{ animationDelay: `${index * 0.4}s` }}
                   >
                     <Icon className="h-4 w-4" aria-hidden="true" />
