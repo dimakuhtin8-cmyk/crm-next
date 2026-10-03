@@ -174,7 +174,7 @@ function Overlay({
             }}
           />
           <div
-            className="absolute rounded-xl border-2 border-primary shadow-[0_0_0_4px_rgba(199,54,81,0.25)] transition-all duration-200 pointer-events-none"
+            className="absolute rounded-xl border-2 border-primary shadow-[0_0_0_4px_rgba(79,70,229,0.25)] transition-all duration-200 pointer-events-none"
             style={{
               left: rect.left - 6,
               top: rect.top - 6,

@@ -1,0 +1,98 @@
+/**
+ * «Аналітика і доступ»: картка з ролями ( Owner / Admin / Member / Viewer ),
+ * бейджами дозволів та інтерактивним журналом аудиту.
+ */
+
+import { History } from 'lucide-react';
+
+const ROLES = [
+  {
+    name: 'Owner',
+    tone: 'bg-primary text-primary-foreground',
+    permissions: 'Повний доступ, білінг і команда',
+  },
+  {
+    name: 'Admin',
+    tone: 'bg-primary-light text-primary',
+    permissions: 'Налаштування, інтеграції, ролі',
+  },
+  {
+    name: 'Member',
+    tone: 'bg-secondary text-foreground',
+    permissions: 'Свої та непризначені завдання',
+  },
+  {
+    name: 'Viewer',
+    tone: 'border border-border text-foreground-secondary',
+    permissions: 'Лише читання, без експорту',
+  },
+];
+
+const AUDIT = [
+  { time: '10:42', text: 'Олена змінила етап угоди «Альфа»', status: 'записано', ok: true },
+  { time: '10:38', text: 'viewer: експорт контактів', status: 'відмовлено', ok: false },
+  { time: '09:15', text: 'Власник додав інтеграцію Telegram', status: 'записано', ok: true },
+];
+
+export function RolesPreview() {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      {/* Ролі */}
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+        <p className="text-sm font-bold">Ролі команди</p>
+        <ul className="mt-3 space-y-2.5">
+          {ROLES.map((role) => (
+            <li
+              key={role.name}
+              className="rounded-xl border border-border bg-background px-3.5 py-3 transition-colors hover:border-border-hover hover:shadow-sm"
+            >
+              <div className="flex items-center gap-2">
+                <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${role.tone}`}>
+                  {role.name}
+                </span>
+              </div>
+              <p className="mt-1.5 text-xs leading-5 text-foreground-secondary">
+                {role.permissions}
+              </p>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Журнал аудиту */}
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+        <div className="flex items-center gap-2">
+          <History className="h-4 w-4 text-primary" aria-hidden="true" />
+          <p className="text-sm font-bold">Журнал аудиту</p>
+        </div>
+        <ul className="mt-3 divide-y divide-border overflow-hidden rounded-xl border border-border bg-background">
+          {AUDIT.map((entry) => (
+            <li
+              key={entry.time + entry.text}
+              className="flex items-start gap-3 px-3.5 py-3 transition-colors hover:bg-secondary"
+            >
+              <span className="shrink-0 pt-0.5 text-[11px] font-bold tabular-nums text-foreground-muted">
+                {entry.time}
+              </span>
+              <span className="min-w-0 flex-1 text-xs leading-5">{entry.text}</span>
+              <span
+                className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                  entry.ok ? 'bg-success-light text-success' : 'bg-danger-light text-danger'
+                }`}
+              >
+                {entry.status}
+              </span>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-3 flex items-center gap-2 text-xs text-foreground-secondary">
+          <span
+            className="h-1.5 w-1.5 animate-pulse-subtle rounded-full bg-primary"
+            aria-hidden="true"
+          />
+          Кожна дія з даними фіксується з часом і автором
+        </p>
+      </div>
+    </div>
+  );
+}

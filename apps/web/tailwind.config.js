@@ -185,6 +185,14 @@ export default {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-2px)' },
         },
+        'accordion-down': {
+          from: { height: '0' },
+          to: { height: 'var(--radix-accordion-content-height)' },
+        },
+        'accordion-up': {
+          from: { height: 'var(--radix-accordion-content-height)' },
+          to: { height: '0' },
+        },
       },
       animation: {
         'fade-in': 'fade-in 200ms ease-out',
@@ -199,6 +207,8 @@ export default {
         'glow-pulse': 'glow-pulse 2s ease-in-out infinite',
         'shimmer': 'shimmer 1.5s ease-in-out infinite',
         'bounce-subtle': 'bounce-subtle 1s ease-in-out infinite',
+        'accordion-down': 'accordion-down 200ms ease-out',
+        'accordion-up': 'accordion-up 200ms ease-out',
       },
     },
   },

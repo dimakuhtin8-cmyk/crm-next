@@ -15,7 +15,7 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 30,
     borderBottomWidth: 2,
-    borderBottomColor: '#c73651',
+    borderBottomColor: '#4f46e5',
     paddingBottom: 20,
   },
   title: { fontSize: 24, fontWeight: 'bold', color: '#0f172a', marginBottom: 8 },
@@ -24,7 +24,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#c73651',
+    color: '#4f46e5',
     marginBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
@@ -48,10 +48,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: '#f9fafb',
     borderTopWidth: 2,
-    borderTopColor: '#c73651',
+    borderTopColor: '#4f46e5',
   },
   totalLabel: { fontSize: 12, fontWeight: 'bold', color: '#0f172a', flex: 1 },
-  totalValue: { fontSize: 12, fontWeight: 'bold', color: '#c73651' },
+  totalValue: { fontSize: 12, fontWeight: 'bold', color: '#4f46e5' },
   footer: {
     position: 'absolute',
     bottom: 30,

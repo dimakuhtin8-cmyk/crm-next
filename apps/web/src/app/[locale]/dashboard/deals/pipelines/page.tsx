@@ -19,7 +19,7 @@ interface Pipeline {
 }
 
 const stageColors = [
-  '#c73651',
+  '#4f46e5',
   '#4f46e5',
   '#059669',
   '#d97706',
