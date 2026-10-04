@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
 import { useState, useCallback, useEffect } from 'react';
 
 import {
@@ -29,6 +29,17 @@ export default function LoginPage() {
   const [mode, setMode] = useState<'password' | 'magic-link'>('password');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const { status } = useSession();
+  const callbackUrl = searchParams.get('callbackUrl');
+
+  useEffect(() => {
+    if (status !== 'authenticated') return;
+    const target =
+      callbackUrl && callbackUrl.startsWith('/') && !callbackUrl.startsWith('//')
+        ? callbackUrl
+        : '/dashboard';
+    router.replace(target);
+  }, [status, router, callbackUrl]);
 
   useEffect(() => {
     const oauthError = searchParams.get('error');
@@ -126,6 +137,14 @@ export default function LoginPage() {
     },
     [router],
   );
+
+  if (status === 'loading' || status === 'authenticated') {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center p-4">
+        <p className="text-sm text-muted-foreground">Зачекайте...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-4">

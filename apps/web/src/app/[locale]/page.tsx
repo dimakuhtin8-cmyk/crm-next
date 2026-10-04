@@ -15,6 +15,7 @@ import Link from 'next/link';
 import { AiTypewriter } from '@/components/landing/ai-typewriter';
 import { DealJourney } from '@/components/landing/deal-journey';
 import { DevConsole } from '@/components/landing/dev-console';
+import { HeaderDesktopAuth, HeaderMobileAuth } from '@/components/landing/header-auth';
 import { MobileCtaBar } from '@/components/landing/mobile-cta-bar';
 import { SectionLink } from '@/components/landing/section-link';
 import { SplitHeadline } from '@/components/landing/split-headline';
@@ -134,39 +135,23 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             ))}
           </nav>
 
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Link
-              href={`/${locale}/auth/login`}
-              className="hidden text-sm font-semibold text-inverse-foreground underline-offset-4 hover:underline sm:inline"
-            >
-              Увійти
-            </Link>
-            <Link
-              href={`/${locale}/auth/register`}
-              className="inline-flex min-h-11 items-center justify-center rounded-lg bg-inverse px-5 text-sm font-bold text-inverse-foreground shadow-[0_10px_24px_-12px_rgba(74,60,40,0.45)] transition-colors hover:bg-[#3A352F]"
-            >
-              Спробувати безкоштовно
-            </Link>
-          </div>
+          <HeaderDesktopAuth locale={locale} />
 
           <details className="relative lg:hidden">
             <summary className="inline-flex min-h-11 cursor-pointer list-none items-center rounded-lg border border-white/15 px-4 text-sm font-semibold [&::-webkit-details-marker]:hidden">
               Меню
             </summary>
             <div className="absolute right-0 mt-2 w-64 rounded-xl border border-border bg-card p-2 text-foreground shadow-xl">
-              {[
-                ...NAV_ITEMS,
-                [`/${locale}/auth/login`, 'Увійти'],
-                [`/${locale}/auth/register`, 'Спробувати безкоштовно'],
-              ].map(([href, label]) => (
+              {NAV_ITEMS.map(([href, label]) => (
                 <SectionLink
-                  key={href + label}
+                  key={href}
                   href={href}
                   className="block rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-secondary"
                 >
                   {label}
                 </SectionLink>
               ))}
+              <HeaderMobileAuth locale={locale} />
             </div>
           </details>
         </div>
