@@ -92,60 +92,71 @@ function KanbanPreview() {
   }, []);
 
   return (
-    <div
-      className="flex snap-x gap-3 overflow-x-auto rounded-xl border border-border bg-background-secondary p-4 sm:grid sm:grid-cols-3"
-      onMouseEnter={() => {
-        pausedRef.current = true;
-      }}
-      onMouseLeave={() => {
-        pausedRef.current = false;
-      }}
-    >
-      <div className="min-w-[200px] snap-start space-y-2 sm:min-w-0">
-        <span className="text-xs font-semibold uppercase tracking-wider text-foreground-secondary">
-          Нові (2)
-        </span>
-        <div className="rounded-lg border border-border bg-card p-3 text-xs text-foreground">
-          ТОВ «Альфа» — 140k
+    <>
+      <div
+        className="flex snap-x gap-3 overflow-x-auto rounded-xl border border-border bg-background-secondary p-4 sm:grid sm:grid-cols-3"
+        onMouseEnter={() => {
+          pausedRef.current = true;
+        }}
+        onMouseLeave={() => {
+          pausedRef.current = false;
+        }}
+      >
+        <div className="min-w-[200px] snap-start space-y-2 sm:min-w-0">
+          <span className="text-xs font-semibold uppercase tracking-wider text-foreground-secondary">
+            Нові (2)
+          </span>
+          <div className="rounded-lg border border-border bg-card p-3 text-xs text-foreground">
+            ТОВ «Альфа» — 140k
+          </div>
+          {step === 0 && (
+            <motion.div
+              layoutId="moving-card"
+              transition={MOVE_SPRING}
+              className="rounded-lg border-2 border-primary bg-primary-light p-3 text-xs font-bold text-primary shadow-sm"
+            >
+              LTD Instagram — 82k
+            </motion.div>
+          )}
         </div>
-        {step === 0 && (
-          <motion.div
-            layoutId="moving-card"
-            transition={MOVE_SPRING}
-            className="rounded-lg border-2 border-primary bg-primary-light p-3 text-xs font-bold text-primary shadow-sm"
-          >
-            LTD Instagram — 82k
-          </motion.div>
-        )}
-      </div>
 
-      <div className="min-w-[200px] snap-start space-y-2 sm:min-w-0">
-        <span className="text-xs font-semibold uppercase tracking-wider text-foreground-secondary">
-          Кваліфікація
-        </span>
-        {step === 1 && (
-          <motion.div
-            layoutId="moving-card"
-            transition={MOVE_SPRING}
-            className="rounded-lg border-2 border-success bg-success-light p-3 text-xs font-bold text-success shadow-sm"
-          >
-            LTD Instagram — 82k
-          </motion.div>
-        )}
-        <div className="rounded-lg border border-border bg-card p-3 text-xs text-foreground">
-          ФОП «Колос» — 89k
+        <div className="min-w-[200px] snap-start space-y-2 sm:min-w-0">
+          <span className="text-xs font-semibold uppercase tracking-wider text-foreground-secondary">
+            Кваліфікація
+          </span>
+          {step === 1 && (
+            <motion.div
+              layoutId="moving-card"
+              transition={MOVE_SPRING}
+              className="rounded-lg border-2 border-success bg-success-light p-3 text-xs font-bold text-success shadow-sm"
+            >
+              LTD Instagram — 82k
+            </motion.div>
+          )}
+          <div className="rounded-lg border border-border bg-card p-3 text-xs text-foreground">
+            ФОП «Колос» — 89k
+          </div>
         </div>
-      </div>
 
-      <div className="min-w-[200px] snap-start space-y-2 sm:min-w-0">
-        <span className="text-xs font-semibold uppercase tracking-wider text-foreground-secondary">
-          Угода
-        </span>
-        <div className="rounded-lg border border-border bg-card p-3 text-xs text-foreground">
-          ТОВ «Вектор» — 520k
+        <div className="min-w-[200px] snap-start space-y-2 sm:min-w-0">
+          <span className="text-xs font-semibold uppercase tracking-wider text-foreground-secondary">
+            Угода
+          </span>
+          <div className="rounded-lg border border-border bg-card p-3 text-xs text-foreground">
+            ТОВ «Вектор» — 520k
+          </div>
         </div>
       </div>
-    </div>
+      <motion.p
+        key={step}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3, ease: 'easeOut' }}
+        className="mt-3 text-xs text-foreground-secondary"
+      >
+        {step === 0 ? 'LTD Instagram — новий лід у воронці' : 'LTD Instagram — лід у кваліфікації'}
+      </motion.p>
+    </>
   );
 }
 

@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 /**
  * Hero: анімований міні-канбан воронки — активна картка рухається етапами
  * «Нові звернення → Кваліфікація → Угода» (Framer Motion layoutId).
+ * Кожен другий візит в «Угоду» — штамп прострочки (подія, не статистика).
  */
 
 const COLUMNS = [
@@ -37,6 +38,7 @@ const COLUMNS = [
 ];
 
 const MOVING_CARD = { title: 'ТОВ «Орбіта»', sum: '₴140 тис.' };
+const STALE_TEXT = 'прострочено · 3 дні без активності';
 
 const FORECAST_SUM = 585;
 
@@ -75,6 +77,7 @@ function ForecastCount() {
 
 export function HeroKanban() {
   const [step, setStep] = useState(0);
+  const [stale, setStale] = useState(false);
   const pausedRef = useRef(false);
 
   useEffect(() => {
@@ -83,6 +86,10 @@ export function HeroKanban() {
     }, 4900);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (step === 2) setStale((v) => !v);
+  }, [step]);
 
   return (
     <MotionConfig reducedMotion="user">
@@ -120,15 +127,21 @@ export function HeroKanban() {
                     transition={{ type: 'spring', stiffness: 320, damping: 30 }}
                     className={`rounded-lg border px-3 py-2.5 shadow-lg ${
                       index === 2
-                        ? 'border-success bg-success-light'
+                        ? stale
+                          ? 'border-danger bg-danger-light'
+                          : 'border-success bg-success-light'
                         : 'border-primary bg-primary-light'
                     }`}
                   >
                     <p className="truncate text-xs font-bold text-foreground">
                       {MOVING_CARD.title}
                     </p>
-                    <p className="mt-0.5 text-[11px] tabular-nums text-foreground-secondary">
-                      {MOVING_CARD.sum}
+                    <p
+                      className={`mt-0.5 text-[11px] tabular-nums ${
+                        index === 2 && stale ? 'font-bold text-danger' : 'text-foreground-secondary'
+                      }`}
+                    >
+                      {index === 2 && stale ? STALE_TEXT : MOVING_CARD.sum}
                     </p>
                   </motion.div>
                 )}

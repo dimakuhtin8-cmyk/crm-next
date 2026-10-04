@@ -1,17 +1,17 @@
-/**
- * «Комунікація»: split-view всіх каналів CRM — лише Telegram, WhatsApp і Email
- * (телефонії немає). Ліворуч — вхідні по каналах, праворуч — листування.
- */
-
 'use client';
 
+/**
+ * «Комунікація»: split-view всіх каналів CRM — лише Telegram, WhatsApp і Email
+ * (телефонії немає). Подія циклу: нове повідомлення прилітає — бейдж росте,
+ * сніпет оновлюється, бульбашка дописується в листування.
+ */
+
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const INBOX = [
   {
     name: 'Telegram',
-    snippet: 'Добрий день, надішліть будь ласка КП',
     time: '10:42',
     unread: 2,
     tone: 'bg-info-light text-info',
@@ -32,8 +32,32 @@ const INBOX = [
   },
 ];
 
+const TELEGRAM_SNIPPETS = [
+  'Добрий день, надішліть будь ласка КП',
+  'КП отримали, готуємо відповідь',
+  'Домовились, чекаємо рахунок',
+];
+
+const INCOMING = [
+  'КП отримали, готуємо відповідь',
+  'Домовились, чекаємо рахунок',
+  'Надішліть, будь ласка, рахунок',
+];
+
 export function CommsPreview() {
   const [paused, setPaused] = useState(false);
+  const [arrival, setArrival] = useState(0);
+
+  useEffect(() => {
+    if (paused) return;
+    const timer = setInterval(() => setArrival((a) => a + 1), 4900);
+    return () => clearInterval(timer);
+  }, [paused]);
+
+  const telegramUnread = 2 + (arrival % 3);
+  const telegramSnippet = TELEGRAM_SNIPPETS[arrival % TELEGRAM_SNIPPETS.length];
+  const incoming = arrival > 0 ? INCOMING[(arrival - 1) % INCOMING.length] : null;
+
   return (
     <div
       className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
@@ -50,39 +74,52 @@ export function CommsPreview() {
       <div className="grid sm:grid-cols-2">
         {/* Список каналів */}
         <ul className="divide-y divide-border border-b border-border sm:border-b-0 sm:border-r">
-          {INBOX.map((item) => (
-            <li
-              key={item.name}
-              className="flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-secondary"
-            >
-              <span
-                className={`mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${item.tone}`}
+          {INBOX.map((item) => {
+            const isTelegram = item.name === 'Telegram';
+            const unread = isTelegram ? telegramUnread : item.unread;
+            const snippet = isTelegram ? telegramSnippet : item.snippet;
+            return (
+              <li
+                key={item.name}
+                className="flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-secondary"
               >
-                {item.name.charAt(0)}
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-baseline justify-between gap-2">
-                  <p className="truncate text-sm font-semibold">{item.name}</p>
-                  <span className="shrink-0 text-[11px] text-foreground-muted">{item.time}</span>
-                </div>
-                <p className="truncate text-xs text-foreground-secondary">{item.snippet}</p>
-              </div>
-              {item.unread > 0 && (
-                <motion.span
-                  className="mt-1 inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground"
-                  animate={paused ? { scale: 1 } : { scale: [1, 1.18, 1] }}
-                  transition={{
-                    duration: 0.7,
-                    repeat: Infinity,
-                    repeatDelay: 4.2,
-                    ease: 'easeOut',
-                  }}
+                <span
+                  className={`mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${item.tone}`}
                 >
-                  {item.unread}
-                </motion.span>
-              )}
-            </li>
-          ))}
+                  {item.name.charAt(0)}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="truncate text-sm font-semibold">{item.name}</p>
+                    <span className="shrink-0 text-[11px] text-foreground-muted">{item.time}</span>
+                  </div>
+                  <motion.p
+                    key={snippet}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3, ease: 'easeOut' }}
+                    className="truncate text-xs text-foreground-secondary"
+                  >
+                    {snippet}
+                  </motion.p>
+                </div>
+                {unread > 0 && (
+                  <motion.span
+                    className="mt-1 inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground"
+                    animate={paused ? { scale: 1 } : { scale: [1, 1.18, 1] }}
+                    transition={{
+                      duration: 0.7,
+                      repeat: Infinity,
+                      repeatDelay: 4.2,
+                      ease: 'easeOut',
+                    }}
+                  >
+                    {unread}
+                  </motion.span>
+                )}
+              </li>
+            );
+          })}
         </ul>
 
         {/* Листування */}
@@ -94,8 +131,19 @@ export function CommsPreview() {
             Вже надсилаю — перевірте пошту 📎
           </div>
           <div className="max-w-[85%] rounded-2xl rounded-tl-sm bg-secondary px-3.5 py-2 text-sm">
-            Дякую! Погодимо умови до п&apos;ятниці
+            Дякую! Погодимо умови до пʼятниці
           </div>
+          {incoming && (
+            <motion.div
+              key={arrival}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, ease: 'easeOut' }}
+              className="max-w-[85%] rounded-2xl rounded-tl-sm bg-secondary px-3.5 py-2 text-sm"
+            >
+              {incoming}
+            </motion.div>
+          )}
           <div className="mt-auto flex items-center gap-2 rounded-lg border border-border bg-background-secondary px-3 py-2 text-xs text-foreground-muted">
             Написати повідомлення…
             <span

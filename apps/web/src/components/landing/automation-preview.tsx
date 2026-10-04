@@ -67,10 +67,17 @@ export function AutomationPreview() {
     <div ref={rootRef} className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm font-bold">Правило: угоди під ризиком</p>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-success-light px-2.5 py-1 text-xs font-semibold text-success">
-          <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden="true" />
-          увімкнено
-        </span>
+        {active === NODES.length - 1 ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-light px-2.5 py-1 text-xs font-semibold text-primary">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden="true" />
+            спрацювало щойно
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-success-light px-2.5 py-1 text-xs font-semibold text-success">
+            <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden="true" />
+            увімкнено
+          </span>
+        )}
       </div>
 
       <ol className="mt-4">
@@ -120,7 +127,7 @@ export function AutomationPreview() {
       </ol>
 
       <p className="mt-4 border-t border-border pt-3 font-mono text-xs text-foreground-secondary">
-        Правило виконано 12 разів за тиждень · журнал у розділі «Автоматизація»
+        Останнє спрацювання: щойно · журнал у розділі «Автоматизація»
       </p>
     </div>
   );

@@ -1,9 +1,14 @@
+'use client';
+
 /**
  * «Аналітика і доступ»: картка з ролями ( Owner / Admin / Member / Viewer ),
- * бейджами дозволів та інтерактивним журналом аудиту.
+ * бейджами дозволів та живим журналом аудиту — новий запис дописується
+ * кожен цикл (подія, не статистика).
  */
 
+import { motion } from 'framer-motion';
 import { History } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 const ROLES = [
   {
@@ -34,9 +39,33 @@ const AUDIT = [
   { time: '09:15', text: 'Власник додав інтеграцію Telegram', status: 'записано', ok: true },
 ];
 
+const ARRIVAL_POOL = [
+  { time: 'щойно', text: 'Марія закрила задачу «Надіслати КП»', status: 'записано', ok: true },
+  { time: 'щойно', text: 'Ігор додав нотатку до «Ліга»', status: 'записано', ok: true },
+  { time: 'щойно', text: 'Олена змінила відповідального «Вектор»', status: 'записано', ok: true },
+];
+
 export function RolesPreview() {
+  const [paused, setPaused] = useState(false);
+  const [extra, setExtra] = useState<typeof AUDIT>([]);
+  const arrivalRef = useRef(0);
+
+  useEffect(() => {
+    if (paused) return;
+    const timer = setInterval(() => {
+      const index = arrivalRef.current;
+      arrivalRef.current += 1;
+      setExtra((prev) => [...prev, ARRIVAL_POOL[index % ARRIVAL_POOL.length]].slice(-2));
+    }, 4900);
+    return () => clearInterval(timer);
+  }, [paused]);
+
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div
+      className="grid gap-4 sm:grid-cols-2"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
       {/* Ролі */}
       <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
         <p className="text-sm font-bold">Ролі команди</p>
@@ -83,6 +112,23 @@ export function RolesPreview() {
                 {entry.status}
               </span>
             </li>
+          ))}
+          {extra.map((entry, i) => (
+            <motion.li
+              key={`${entry.text}-${i}`}
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+              className="flex items-start gap-3 bg-primary-light/40 px-3.5 py-3 transition-colors hover:bg-secondary"
+            >
+              <span className="shrink-0 pt-0.5 text-[11px] font-bold tabular-nums text-primary">
+                {entry.time}
+              </span>
+              <span className="min-w-0 flex-1 text-xs leading-5">{entry.text}</span>
+              <span className="shrink-0 rounded-full bg-success-light px-2 py-0.5 text-[11px] font-bold text-success">
+                {entry.status}
+              </span>
+            </motion.li>
           ))}
         </ul>
         <p className="mt-3 flex items-center gap-2 text-xs text-foreground-secondary">
