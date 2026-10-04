@@ -1,9 +1,10 @@
 import { prisma } from '@crm-next/database';
-import { compare } from 'bcryptjs';
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import Google from 'next-auth/providers/google';
 import { z } from 'zod';
+
+import { authorizeCredentials } from './credentials';
 
 import type { NextAuthConfig } from 'next-auth';
 
@@ -45,18 +46,7 @@ const config: NextAuthConfig = {
 
         const { email, password } = parsed.data;
 
-        const user = await prisma.user.findUnique({ where: { email } });
-        if (!user || !user.password) return null;
-
-        const valid = await compare(password, user.password);
-        if (!valid) return null;
-
-        return {
-          id: user.id,
-          email: user.email ?? '',
-          name: user.name ?? null,
-          image: user.image ?? null,
-        };
+        return authorizeCredentials(email, password);
       },
     }),
   ],

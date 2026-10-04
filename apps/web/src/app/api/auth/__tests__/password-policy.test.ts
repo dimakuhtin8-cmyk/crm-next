@@ -6,8 +6,8 @@ import { hash } from 'bcryptjs';
 import { NextRequest } from 'next/server';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
-import { POST as credentialsPOST } from '@/app/api/auth/callback/credentials/route';
 import { POST as registerPOST } from '@/app/api/auth/register/route';
+import { authorizeCredentials } from '@/auth/credentials';
 
 function post(url: string, body: unknown): NextRequest {
   return new NextRequest(new URL(url), {
@@ -58,13 +58,12 @@ describe('П1.2: политика пароля', () => {
     await prisma.user.create({
       data: { email: 'legacy-pass@test.com', name: 'Legacy', password: await hash('123456', 12) },
     });
-    const r = await credentialsPOST(
-      post(`${BASE}/api/auth/callback/credentials`, {
-        email: 'legacy-pass@test.com',
-        password: '123456',
-      }),
-    );
-    expect(r.status).toBe(200);
-    expect((await r.json()).success).toBe(true);
+    // Тот же код, что выполняет Credentials-провайдер Auth.js:
+    // authorizeCredentials напрямую, без перехваченного callback-роута.
+    const user = await authorizeCredentials('legacy-pass@test.com', '123456');
+    expect(user).not.toBeNull();
+    expect(user?.email).toBe('legacy-pass@test.com');
+    const wrong = await authorizeCredentials('legacy-pass@test.com', 'wrong-pass');
+    expect(wrong).toBeNull();
   });
 });
