@@ -13,8 +13,8 @@ import {
 import Link from 'next/link';
 
 import { AiTypewriter } from '@/components/landing/ai-typewriter';
+import { DealJourney } from '@/components/landing/deal-journey';
 import { DevConsole } from '@/components/landing/dev-console';
-import { HeroKanban } from '@/components/landing/hero-kanban';
 import { MobileCtaBar } from '@/components/landing/mobile-cta-bar';
 import { SectionLink } from '@/components/landing/section-link';
 import { SplitHeadline } from '@/components/landing/split-headline';
@@ -232,7 +232,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
               aria-hidden="true"
             />
             <div className="relative">
-              <HeroKanban />
+              <DealJourney />
             </div>
           </div>
         </div>

@@ -13,16 +13,16 @@ import { motion, MotionConfig, useReducedMotion } from 'framer-motion';
 import { Check } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 
-import { AutomationPreview } from '@/components/landing/automation-preview';
 import { BazaPreview } from '@/components/landing/baza-preview';
 import { CommsPreview } from '@/components/landing/comms-preview';
+import { MergeDemo } from '@/components/landing/merge-demo';
 import { RolesPreview } from '@/components/landing/roles-preview';
+import { RuleBuilder } from '@/components/landing/rule-builder';
 import { SectionLink } from '@/components/landing/section-link';
 import { SettingsPreview } from '@/components/landing/settings-preview';
 
 const MOVE_SPRING = { type: 'spring', stiffness: 320, damping: 30 } as const;
 const EXPO_OUT: [number, number, number, number] = [0.16, 1, 0.3, 1];
-const HEARTBEAT_MS = 4900;
 
 const features = [
   { id: 'baza', label: 'База і воронка' },
@@ -77,102 +77,6 @@ function Volume({ id, index, children }: { id: string; index: number; children: 
     >
       {children}
     </motion.div>
-  );
-}
-
-const KANBAN_COLS = [
-  {
-    label: 'Нові (2)',
-    static: 'ТОВ «Альфа» — 140k',
-    moverStep: 0,
-    moverFirst: false,
-    moverTone: 'border-primary bg-primary-light text-primary',
-  },
-  {
-    label: 'Кваліфікація',
-    static: 'ФОП «Колос» — 89k',
-    moverStep: 1,
-    moverFirst: true,
-    moverTone: 'border-success bg-success-light text-success',
-  },
-  {
-    label: 'Угода',
-    static: 'ТОВ «Вектор» — 520k',
-    moverStep: -1,
-    moverFirst: false,
-    moverTone: '',
-  },
-];
-
-/** Міні-канбан «База»: картка-печатка переїжджає між етапами (layoutId). */
-function KanbanPreview() {
-  const [step, setStep] = useState(0);
-  const pausedRef = useRef(false);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      if (!pausedRef.current) setStep((s) => (s + 1) % 2);
-    }, HEARTBEAT_MS);
-    return () => clearInterval(timer);
-  }, []);
-
-  return (
-    <>
-      <div
-        className="flex snap-x gap-3 overflow-x-auto rounded-xl border border-border bg-background-secondary p-4 sm:grid sm:grid-cols-3"
-        onMouseEnter={() => {
-          pausedRef.current = true;
-        }}
-        onMouseLeave={() => {
-          pausedRef.current = false;
-        }}
-      >
-        {KANBAN_COLS.map((col, index) => (
-          <motion.div
-            key={col.label}
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-48px' }}
-            transition={{ duration: 0.5, delay: index * 0.08, ease: [0.16, 1, 0.3, 1] }}
-            className="min-w-[200px] snap-start space-y-2 sm:min-w-0"
-          >
-            <span className="text-xs font-semibold uppercase tracking-wider text-foreground-secondary">
-              {col.label}
-            </span>
-            {col.moverFirst && step === col.moverStep && (
-              <motion.div
-                layoutId="moving-card"
-                transition={MOVE_SPRING}
-                className={`rounded-lg border-2 p-3 text-xs font-bold shadow-sm ${col.moverTone}`}
-              >
-                LTD Instagram — 82k
-              </motion.div>
-            )}
-            <div className="rounded-lg border border-border bg-card p-3 text-xs text-foreground">
-              {col.static}
-            </div>
-            {!col.moverFirst && step === col.moverStep && (
-              <motion.div
-                layoutId="moving-card"
-                transition={MOVE_SPRING}
-                className={`rounded-lg border-2 p-3 text-xs font-bold shadow-sm ${col.moverTone}`}
-              >
-                LTD Instagram — 82k
-              </motion.div>
-            )}
-          </motion.div>
-        ))}
-      </div>
-      <motion.p
-        key={step}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3, ease: 'easeOut' }}
-        className="mt-3 text-xs text-foreground-secondary"
-      >
-        {step === 0 ? 'LTD Instagram — новий лід у воронці' : 'LTD Instagram — лід у кваліфікації'}
-      </motion.p>
-    </>
   );
 }
 
@@ -254,7 +158,7 @@ export function StickyFeatures() {
               <p className="mb-6 text-foreground-secondary">
                 Угоди рухаються етапами, прострочене підсвічується автоматично.
               </p>
-              <KanbanPreview />
+              <MergeDemo />
               <div className="mt-6 grid gap-6 sm:grid-cols-2">
                 <BazaPreview />
                 <ul className="divide-y divide-border border-y border-border">
@@ -295,7 +199,7 @@ export function StickyFeatures() {
               <p className="mb-6 text-foreground-secondary">
                 Правила самі розподіляють лідів та рухають угоди.
               </p>
-              <AutomationPreview />
+              <RuleBuilder />
             </Volume>
 
             <Volume id="section-audit" index={3}>
