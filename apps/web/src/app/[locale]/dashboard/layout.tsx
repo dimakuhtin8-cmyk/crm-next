@@ -15,7 +15,7 @@ import { TourProvider } from '@/components/tour/tour-provider';
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { resolvedTheme } = useTheme();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -52,7 +52,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         `}
           >
             <Sidebar
-              collapsed={sidebarCollapsed}
+              collapsed={mobileMenuOpen ? false : sidebarCollapsed}
               onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
               onMobileClose={() => setMobileMenuOpen(false)}
             />

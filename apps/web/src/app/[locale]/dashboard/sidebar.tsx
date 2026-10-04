@@ -12,11 +12,8 @@ import {
   FileText,
   Bot,
   Settings,
-  Search,
   ChevronDown,
   Plus,
-  LogOut,
-  ChevronLeft,
   Database,
   Activity,
   Webhook,
@@ -26,13 +23,10 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { signOut, useSession } from 'next-auth/react';
 import { useState, useEffect, useRef } from 'react';
 
 import { useNotifications } from '@/components/notifications-provider';
 import { useTeam } from '@/components/owner-picker';
-import { Avatar } from '@/components/ui';
-import { currentLocaleFromPath } from '@/lib/use-locale-path';
 import { cn } from '@/lib/utils';
 
 interface Tenant {
@@ -48,17 +42,37 @@ interface SidebarProps {
   onMobileClose?: () => void;
 }
 
-export function Sidebar({ collapsed = false, onToggle, onMobileClose }: SidebarProps) {
+export function Sidebar({ collapsed = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
-  const { data: session } = useSession();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [currentTenant, setCurrentTenant] = useState<Tenant | null>(null);
   const [tenantOpen, setTenantOpen] = useState(false);
-  const [search, setSearch] = useState('');
   const [unreadMessages, setUnreadMessages] = useState(0);
   // In-app системні сповіщення (автоматизації, інтеграції) — окремий лічильник.
   const { unreadCount: unreadApp } = useNotifications();
   const tenantRef = useRef<HTMLDivElement>(null);
+  const [hovered, setHovered] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const expanded = !collapsed || hovered;
+
+  const openRail = () => {
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+    setHovered(true);
+  };
+  const scheduleClose = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => setHovered(false), 200);
+  };
+
+  useEffect(
+    () => () => {
+      if (closeTimer.current) clearTimeout(closeTimer.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     fetch('/api/tenants')
@@ -174,21 +188,20 @@ export function Sidebar({ collapsed = false, onToggle, onMobileClose }: SidebarP
 
   const filteredGroups = navigationGroups
     .filter((group) => !group.adminOnly || isAdmin)
-    .map((group) => ({
-      ...group,
-      items: group.items.filter(
-        (item) => !search || item.name.toLowerCase().includes(search.toLowerCase()),
-      ),
-    }))
     .filter((group) => group.items.length > 0);
-
-  const user = session?.user;
 
   return (
     <aside
+      onMouseEnter={openRail}
+      onMouseLeave={scheduleClose}
+      onFocus={openRail}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) scheduleClose();
+      }}
       className={cn(
         'flex h-full flex-col border-r border-black/40 bg-inverse text-inverse-foreground transition-all duration-300 ease-out',
-        collapsed ? 'w-[72px]' : 'w-[260px]',
+        collapsed && !hovered ? 'w-[72px]' : 'w-[260px]',
+        collapsed && hovered && 'lg:absolute lg:inset-y-0 lg:left-0 lg:z-50 lg:shadow-2xl',
       )}
     >
       {/* Logo */}
@@ -199,7 +212,7 @@ export function Sidebar({ collapsed = false, onToggle, onMobileClose }: SidebarP
         >
           <Zap className="h-5 w-5 text-primary-foreground" strokeWidth={2.5} />
         </Link>
-        {!collapsed && (
+        {expanded && (
           <div className="flex-1 min-w-0">
             <span className="text-lg font-bold tracking-tight text-inverse-foreground">
               CRM-Next
@@ -209,7 +222,7 @@ export function Sidebar({ collapsed = false, onToggle, onMobileClose }: SidebarP
       </div>
 
       {/* Tenant switcher */}
-      {!collapsed && currentTenant && (
+      {expanded && currentTenant && (
         <div className="relative border-b border-inverse-foreground/10 px-4 py-3" ref={tenantRef}>
           <button
             onClick={() => setTenantOpen(!tenantOpen)}
@@ -281,27 +294,11 @@ export function Sidebar({ collapsed = false, onToggle, onMobileClose }: SidebarP
         </div>
       )}
 
-      {/* Search */}
-      {!collapsed && (
-        <div className="px-4 pt-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-inverse-foreground/40" />
-            <input
-              type="search"
-              placeholder="Пошук..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="h-9 w-full rounded-xl border border-inverse-foreground/10 bg-inverse-foreground/5 pl-10 pr-4 text-sm text-inverse-foreground transition-all duration-200 placeholder:text-inverse-foreground/40 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
-        </div>
-      )}
-
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6" data-tour="nav">
         {filteredGroups.map((group) => (
           <div key={group.label}>
-            {!collapsed &&
+            {expanded &&
               (group.adminOnly ? (
                 <button
                   onClick={() => setAdminOpen(!adminOpen)}
@@ -318,7 +315,7 @@ export function Sidebar({ collapsed = false, onToggle, onMobileClose }: SidebarP
                   {group.label}
                 </h3>
               ))}
-            {(!group.adminOnly || adminOpen || collapsed) && (
+            {(!group.adminOnly || adminOpen || !expanded) && (
               <div className="space-y-0.5">
                 {group.items.map((item) => {
                   const isActive =
@@ -339,9 +336,9 @@ export function Sidebar({ collapsed = false, onToggle, onMobileClose }: SidebarP
                         item.accent &&
                           !isActive &&
                           'text-inverse-accent/80 hover:text-inverse-accent',
-                        collapsed && 'justify-center px-2',
+                        !expanded && 'justify-center px-2',
                       )}
-                      title={collapsed ? item.name : undefined}
+                      title={!expanded ? item.name : undefined}
                     >
                       <item.icon
                         className={cn(
@@ -354,7 +351,7 @@ export function Sidebar({ collapsed = false, onToggle, onMobileClose }: SidebarP
                             'text-inverse-accent/70 group-hover:text-inverse-accent',
                         )}
                       />
-                      {!collapsed && (
+                      {expanded && (
                         <>
                           <span className="flex-1">{item.name}</span>
                           {'badge' in item && item.badge && (
@@ -364,7 +361,7 @@ export function Sidebar({ collapsed = false, onToggle, onMobileClose }: SidebarP
                           )}
                         </>
                       )}
-                      {isActive && !collapsed && (
+                      {isActive && expanded && (
                         <div className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />
                       )}
                     </Link>
@@ -386,49 +383,13 @@ export function Sidebar({ collapsed = false, onToggle, onMobileClose }: SidebarP
             pathname.startsWith('/dashboard/settings')
               ? 'bg-primary font-semibold text-primary-foreground'
               : 'text-inverse-foreground/65 hover:bg-inverse-foreground/10 hover:text-inverse-foreground',
-            collapsed && 'justify-center px-2',
+            !expanded && 'justify-center px-2',
           )}
           title={collapsed ? 'Налаштування' : undefined}
         >
           <Settings className="h-5 w-5 flex-shrink-0" />
-          {!collapsed && <span>Налаштування</span>}
+          {expanded && <span>Налаштування</span>}
         </Link>
-
-        <button
-          onClick={onToggle}
-          className={cn(
-            'hidden lg:flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-inverse-foreground/65 transition-all duration-200 hover:bg-inverse-foreground/10 hover:text-inverse-foreground',
-            collapsed && 'justify-center px-2',
-          )}
-          title={collapsed ? 'Розгорнути' : 'Згорнути'}
-        >
-          <ChevronLeft
-            className={cn(
-              'h-5 w-5 flex-shrink-0 transition-transform duration-300',
-              collapsed && 'rotate-180',
-            )}
-          />
-          {!collapsed && <span>Згорнути</span>}
-        </button>
-
-        {!collapsed && user && (
-          <div className="flex items-center gap-2.5 rounded-xl bg-inverse-foreground/5 px-3 py-2.5 mt-2">
-            <Avatar name={user.name || user.email || '?'} size="sm" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate text-inverse-foreground">
-                {user.name || 'User'}
-              </p>
-              <p className="text-xs text-inverse-foreground/50 truncate">{user.email}</p>
-            </div>
-            <button
-              onClick={() => signOut({ callbackUrl: `/${currentLocaleFromPath()}/auth/login` })}
-              className="rounded-lg p-1.5 text-inverse-foreground/50 transition-all duration-200 hover:bg-danger/20 hover:text-danger"
-              title="Вийти"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
-          </div>
-        )}
       </div>
     </aside>
   );
