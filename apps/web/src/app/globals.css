@@ -301,11 +301,16 @@
 }
 
 .landing-akari h1,
-.landing-akari h2,
-.landing-akari h3,
-.landing-akari h4 {
+.landing-akari h2 {
   font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
   letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.landing-akari h3,
+.landing-akari h4 {
+  font-family: var(--font-golos), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 700;
   text-wrap: balance;
 }
 

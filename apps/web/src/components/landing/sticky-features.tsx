@@ -17,6 +17,7 @@ import { AutomationPreview } from '@/components/landing/automation-preview';
 import { BazaPreview } from '@/components/landing/baza-preview';
 import { CommsPreview } from '@/components/landing/comms-preview';
 import { RolesPreview } from '@/components/landing/roles-preview';
+import { SectionLink } from '@/components/landing/section-link';
 import { SettingsPreview } from '@/components/landing/settings-preview';
 
 const MOVE_SPRING = { type: 'spring', stiffness: 320, damping: 30 } as const;
@@ -79,6 +80,30 @@ function Volume({ id, index, children }: { id: string; index: number; children: 
   );
 }
 
+const KANBAN_COLS = [
+  {
+    label: 'Нові (2)',
+    static: 'ТОВ «Альфа» — 140k',
+    moverStep: 0,
+    moverFirst: false,
+    moverTone: 'border-primary bg-primary-light text-primary',
+  },
+  {
+    label: 'Кваліфікація',
+    static: 'ФОП «Колос» — 89k',
+    moverStep: 1,
+    moverFirst: true,
+    moverTone: 'border-success bg-success-light text-success',
+  },
+  {
+    label: 'Угода',
+    static: 'ТОВ «Вектор» — 520k',
+    moverStep: -1,
+    moverFirst: false,
+    moverTone: '',
+  },
+];
+
 /** Міні-канбан «База»: картка-печатка переїжджає між етапами (layoutId). */
 function KanbanPreview() {
   const [step, setStep] = useState(0);
@@ -102,50 +127,41 @@ function KanbanPreview() {
           pausedRef.current = false;
         }}
       >
-        <div className="min-w-[200px] snap-start space-y-2 sm:min-w-0">
-          <span className="text-xs font-semibold uppercase tracking-wider text-foreground-secondary">
-            Нові (2)
-          </span>
-          <div className="rounded-lg border border-border bg-card p-3 text-xs text-foreground">
-            ТОВ «Альфа» — 140k
-          </div>
-          {step === 0 && (
-            <motion.div
-              layoutId="moving-card"
-              transition={MOVE_SPRING}
-              className="rounded-lg border-2 border-primary bg-primary-light p-3 text-xs font-bold text-primary shadow-sm"
-            >
-              LTD Instagram — 82k
-            </motion.div>
-          )}
-        </div>
-
-        <div className="min-w-[200px] snap-start space-y-2 sm:min-w-0">
-          <span className="text-xs font-semibold uppercase tracking-wider text-foreground-secondary">
-            Кваліфікація
-          </span>
-          {step === 1 && (
-            <motion.div
-              layoutId="moving-card"
-              transition={MOVE_SPRING}
-              className="rounded-lg border-2 border-success bg-success-light p-3 text-xs font-bold text-success shadow-sm"
-            >
-              LTD Instagram — 82k
-            </motion.div>
-          )}
-          <div className="rounded-lg border border-border bg-card p-3 text-xs text-foreground">
-            ФОП «Колос» — 89k
-          </div>
-        </div>
-
-        <div className="min-w-[200px] snap-start space-y-2 sm:min-w-0">
-          <span className="text-xs font-semibold uppercase tracking-wider text-foreground-secondary">
-            Угода
-          </span>
-          <div className="rounded-lg border border-border bg-card p-3 text-xs text-foreground">
-            ТОВ «Вектор» — 520k
-          </div>
-        </div>
+        {KANBAN_COLS.map((col, index) => (
+          <motion.div
+            key={col.label}
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-48px' }}
+            transition={{ duration: 0.5, delay: index * 0.08, ease: [0.16, 1, 0.3, 1] }}
+            className="min-w-[200px] snap-start space-y-2 sm:min-w-0"
+          >
+            <span className="text-xs font-semibold uppercase tracking-wider text-foreground-secondary">
+              {col.label}
+            </span>
+            {col.moverFirst && step === col.moverStep && (
+              <motion.div
+                layoutId="moving-card"
+                transition={MOVE_SPRING}
+                className={`rounded-lg border-2 p-3 text-xs font-bold shadow-sm ${col.moverTone}`}
+              >
+                LTD Instagram — 82k
+              </motion.div>
+            )}
+            <div className="rounded-lg border border-border bg-card p-3 text-xs text-foreground">
+              {col.static}
+            </div>
+            {!col.moverFirst && step === col.moverStep && (
+              <motion.div
+                layoutId="moving-card"
+                transition={MOVE_SPRING}
+                className={`rounded-lg border-2 p-3 text-xs font-bold shadow-sm ${col.moverTone}`}
+              >
+                LTD Instagram — 82k
+              </motion.div>
+            )}
+          </motion.div>
+        ))}
       </div>
       <motion.p
         key={step}
@@ -223,12 +239,18 @@ export function StickyFeatures() {
                 <span className="relative">{feature.label}</span>
               </button>
             ))}
+            <SectionLink
+              href="#trial"
+              className="mt-2 inline-flex min-h-12 items-center justify-center rounded-xl bg-inverse px-7 text-sm font-bold text-inverse-foreground transition-colors hover:bg-[#3A352F]"
+            >
+              Спробувати безкоштовно
+            </SectionLink>
           </div>
 
           {/* Пʼять томів, розділених rib-лініями */}
           <div className="space-y-14 lg:col-span-8">
             <Volume id="section-baza" index={0}>
-              <h3 className="mb-2 text-2xl font-bold">База клієнтів і воронка без втрат</h3>
+              <h3 className="mb-2 text-2xl font-bold">Кожна угода на своєму місці</h3>
               <p className="mb-6 text-foreground-secondary">
                 Угоди рухаються етапами, прострочене підсвічується автоматично.
               </p>
@@ -249,7 +271,7 @@ export function StickyFeatures() {
             </Volume>
 
             <Volume id="section-chat" index={1}>
-              <h3 className="mb-2 text-2xl font-bold">Уся комунікація — в CRM</h3>
+              <h3 className="mb-2 text-2xl font-bold">Листування, яке не губиться</h3>
               <p className="mb-6 text-foreground-secondary">
                 Telegram, WhatsApp та Email в єдиній вхідній скриньці (без телефонії).
               </p>
@@ -269,7 +291,7 @@ export function StickyFeatures() {
             </Volume>
 
             <Volume id="section-auto" index={2}>
-              <h3 className="mb-2 text-2xl font-bold">Автоматизація рутини</h3>
+              <h3 className="mb-2 text-2xl font-bold">Правила працюють, поки ви продаєте</h3>
               <p className="mb-6 text-foreground-secondary">
                 Правила самі розподіляють лідів та рухають угоди.
               </p>
@@ -277,7 +299,7 @@ export function StickyFeatures() {
             </Volume>
 
             <Volume id="section-audit" index={3}>
-              <h3 className="mb-2 text-2xl font-bold">Аналітика й контроль доступу</h3>
+              <h3 className="mb-2 text-2xl font-bold">Контроль без мікроменеджменту</h3>
               <p className="mb-6 text-foreground-secondary">
                 Видно джерела лідів і завантаженість команди, а доступ — за ролями: кожна дія з
                 даними потрапляє в журнал аудиту.
@@ -286,7 +308,7 @@ export function StickyFeatures() {
             </Volume>
 
             <Volume id="section-ai" index={4}>
-              <h3 className="mb-2 text-2xl font-bold">AI та розширені налаштування</h3>
+              <h3 className="mb-2 text-2xl font-bold">Відповіді з ваших даних, а не з повітря</h3>
               <p className="mb-6 text-foreground-secondary">
                 Підключайте власні AI-ключі, налаштовуйте вебхуки та інтеграції, стежте за
                 використанням AI у журналі.

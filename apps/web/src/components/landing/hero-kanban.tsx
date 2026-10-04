@@ -115,7 +115,14 @@ export function HeroKanban() {
 
         <div className="flex snap-x gap-3 overflow-x-auto px-5 py-4 sm:grid sm:grid-cols-3 sm:gap-0 sm:overflow-visible">
           {COLUMNS.map((column, index) => (
-            <div key={column.name} className="min-w-[220px] snap-start pe-3 sm:min-w-0">
+            <motion.div
+              key={column.name}
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-48px' }}
+              transition={{ duration: 0.5, delay: index * 0.08, ease: [0.16, 1, 0.3, 1] }}
+              className="min-w-[220px] snap-start pe-3 sm:min-w-0"
+            >
               <div className="flex items-baseline justify-between gap-2 text-xs font-bold">
                 <span className="truncate">{column.name}</span>
                 <span className="tabular-nums text-foreground-muted">{column.count}</span>
@@ -157,7 +164,7 @@ export function HeroKanban() {
                   </div>
                 ))}
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
 

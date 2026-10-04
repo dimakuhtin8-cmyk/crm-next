@@ -2,7 +2,7 @@
 
 import { motion, MotionConfig } from 'framer-motion';
 import gsap from 'gsap';
-import { Search, Sparkles } from 'lucide-react';
+import { Check, Search, Sparkles } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 /**
@@ -34,6 +34,8 @@ const HINTS = [
   { label: 'Підсумок за тиждень', demo: 2 },
 ];
 
+const THINK_LABELS = ['Аналізую дані CRM…', 'Шукаю в угодах…', 'Звіряю задачі…'];
+
 const TYPE_MS = 0.055;
 const THINK_S = 1.5;
 const STREAM_S = 0.07;
@@ -46,6 +48,7 @@ export function AiTypewriter() {
   const [phase, setPhase] = useState<Phase>('typing');
   const [typed, setTyped] = useState('');
   const [streamed, setStreamed] = useState(0);
+  const [thinkIdx, setThinkIdx] = useState(0);
   const [cycle, setCycle] = useState({ index: 0, nonce: 0 });
   const scopeRef = useRef<HTMLDivElement>(null);
 
@@ -113,6 +116,12 @@ export function AiTypewriter() {
     return () => ctx.revert();
   }, [cycle]);
 
+  useEffect(() => {
+    if (phase !== 'thinking') return;
+    const timer = setInterval(() => setThinkIdx((i) => (i + 1) % THINK_LABELS.length), 550);
+    return () => clearInterval(timer);
+  }, [phase]);
+
   return (
     <MotionConfig reducedMotion="user">
       <div
@@ -159,8 +168,20 @@ export function AiTypewriter() {
                     />
                   ))}
                 </span>
-                Аналізую дані CRM…
+                {THINK_LABELS[thinkIdx]}
               </p>
+            )}
+            {phase === 'answer' && !streaming && (
+              <motion.p
+                key="done"
+                initial={{ opacity: 0, scale: 0.92 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
+                className="mb-2 inline-flex items-center gap-1.5 text-xs font-bold text-success"
+              >
+                <Check className="h-4 w-4" aria-hidden="true" />
+                Готово
+              </motion.p>
             )}
             {phase === 'answer' && (
               <div className="rounded-xl bg-primary-light px-4 py-3">

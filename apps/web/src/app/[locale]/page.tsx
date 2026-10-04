@@ -17,6 +17,7 @@ import { DevConsole } from '@/components/landing/dev-console';
 import { HeroKanban } from '@/components/landing/hero-kanban';
 import { MobileCtaBar } from '@/components/landing/mobile-cta-bar';
 import { SectionLink } from '@/components/landing/section-link';
+import { SplitHeadline } from '@/components/landing/split-headline';
 import { StickyFeatures } from '@/components/landing/sticky-features';
 import {
   Accordion,
@@ -175,9 +176,10 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       <section className="relative overflow-hidden border-b border-border">
         <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:py-20">
           <div>
-            <h1 className="text-balance text-4xl font-bold leading-[1.05] tracking-[-0.03em] sm:text-5xl lg:text-6xl">
-              Жодна угода не губиться
-            </h1>
+            <SplitHeadline
+              text="Жодна угода не губиться"
+              className="text-4xl font-bold leading-[1.05] tracking-[-0.03em] sm:text-5xl lg:text-6xl"
+            />
             <p className="mt-5 max-w-[62ch] text-base leading-7 text-foreground-secondary sm:text-lg sm:leading-8">
               База клієнтів, воронка продажу, автоматизація, завдання й аналітика — в одному вікні.
               Інтерфейс українською.
@@ -207,6 +209,16 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                 </li>
               ))}
             </ul>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {['4 ролі доступу', '3 канали', 'AI на ваших даних'].map((chip) => (
+                <span
+                  key={chip}
+                  className="rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold text-foreground-secondary"
+                >
+                  {chip}
+                </span>
+              ))}
+            </div>
           </div>
 
           {/* Паперовий місяць: жива воронка всередині освітленого обʼєму */}
@@ -246,6 +258,47 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       </section>
 
       {/* Capabilities: sticky nav (IntersectionObserver) + framer cards */}
+      {/* Funnel: хаос → порядок → контроль */}
+      <section className="border-b border-border">
+        <div className="mx-auto grid max-w-7xl gap-4 px-4 py-14 sm:grid-cols-3 sm:px-6">
+          {[
+            {
+              step: 'Крок 1',
+              title: 'Хаос',
+              text: 'Угоди губляться в таблицях і месенджерах.',
+              link: '#section-baza',
+              cta: 'Дивитися воронку',
+            },
+            {
+              step: 'Крок 2',
+              title: 'Порядок',
+              text: 'База, воронка й автоматизація в одному вікні.',
+              link: '#section-auto',
+              cta: 'Дивитися автоматизацію',
+            },
+            {
+              step: 'Крок 3',
+              title: 'Контроль',
+              text: 'Ролі, аудит і відповіді AI з ваших даних.',
+              link: '#section-audit',
+              cta: 'Дивитися контроль',
+            },
+          ].map((s) => (
+            <div key={s.step} className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+              <p className="text-xs font-bold text-foreground-muted">{s.step}</p>
+              <h2 className="mt-2 text-xl font-bold">{s.title}</h2>
+              <p className="mt-2 text-sm leading-6 text-foreground-secondary">{s.text}</p>
+              <SectionLink
+                href={s.link}
+                className="mt-3 inline-block text-sm font-bold text-primary underline-offset-4 hover:underline"
+              >
+                {s.cta} →
+              </SectionLink>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <div id="mozlyvosti" className="scroll-mt-28">
         <StickyFeatures />
       </div>
@@ -403,7 +456,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       </section>
 
       {/* Final CTA */}
-      <section className="bg-background">
+      <section id="trial" className="scroll-mt-28 bg-background">
         <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:py-20">
           <div className="relative overflow-hidden rounded-2xl border border-border bg-card px-6 py-12 text-center shadow-xl sm:px-12">
             <h2 className="relative mx-auto max-w-[20ch] text-balance text-3xl font-bold tracking-tight sm:text-4xl">

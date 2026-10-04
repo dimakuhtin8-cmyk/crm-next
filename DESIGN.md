@@ -20,7 +20,7 @@ colors:
   lamp-glow: '#E2725B'
 typography:
   display:
-    fontFamily: 'Manrope, ui-sans-serif, system-ui, sans-serif'
+    fontFamily: 'Unbounded, ui-sans-serif, system-ui, sans-serif'
     fontSize: 'clamp(2.25rem, 5vw, 3.75rem)'
     fontWeight: 700
     lineHeight: 1.05
@@ -144,7 +144,7 @@ A lit surface with nothing alive inside is a defect.
 
 ## Typography
 
-**Display Font:** Manrope (with ui-sans-serif fallback)
+**Display Font:** Unbounded (with ui-sans-serif fallback)
 **Body Font:** Golos Text (with ui-sans-serif fallback)
 **Label/Mono Font:** system mono stack for keys, hashes, and measured values only
 
