@@ -40,9 +40,10 @@ interface SidebarProps {
   collapsed?: boolean;
   onToggle?: () => void;
   onMobileClose?: () => void;
+  onExpandChange?: (expanded: boolean) => void;
 }
 
-export function Sidebar({ collapsed = false, onMobileClose }: SidebarProps) {
+export function Sidebar({ collapsed = false, onMobileClose, onExpandChange }: SidebarProps) {
   const pathname = usePathname();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [currentTenant, setCurrentTenant] = useState<Tenant | null>(null);
@@ -61,10 +62,14 @@ export function Sidebar({ collapsed = false, onMobileClose }: SidebarProps) {
       closeTimer.current = null;
     }
     setHovered(true);
+    onExpandChange?.(true);
   };
   const scheduleClose = () => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
-    closeTimer.current = setTimeout(() => setHovered(false), 200);
+    closeTimer.current = setTimeout(() => {
+      setHovered(false);
+      onExpandChange?.(false);
+    }, 200);
   };
 
   useEffect(
@@ -201,7 +206,6 @@ export function Sidebar({ collapsed = false, onMobileClose }: SidebarProps) {
       className={cn(
         'flex h-full flex-col border-r border-black/40 bg-inverse text-inverse-foreground transition-all duration-300 ease-out',
         collapsed && !hovered ? 'w-[72px]' : 'w-[260px]',
-        collapsed && hovered && 'lg:absolute lg:inset-y-0 lg:left-0 lg:z-50 lg:shadow-2xl',
       )}
     >
       {/* Logo */}

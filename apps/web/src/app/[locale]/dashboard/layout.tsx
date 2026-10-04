@@ -16,6 +16,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const { resolvedTheme } = useTheme();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [railHover, setRailHover] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -48,13 +49,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           fixed inset-y-0 left-0 z-50 transform transition-all duration-300 ease-out
           lg:relative lg:translate-x-0
           ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
-          ${sidebarCollapsed ? 'lg:w-[72px]' : 'lg:w-[260px]'}
+          ${!sidebarCollapsed || railHover ? 'lg:w-[260px]' : 'lg:w-[72px]'}
         `}
           >
             <Sidebar
               collapsed={mobileMenuOpen ? false : sidebarCollapsed}
               onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
               onMobileClose={() => setMobileMenuOpen(false)}
+              onExpandChange={setRailHover}
             />
           </div>
 
