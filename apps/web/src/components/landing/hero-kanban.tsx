@@ -1,6 +1,7 @@
 'use client';
 
-import { motion, MotionConfig } from 'framer-motion';
+import { motion, MotionConfig, useInView } from 'framer-motion';
+import gsap from 'gsap';
 import { useEffect, useRef, useState } from 'react';
 
 /**
@@ -36,6 +37,41 @@ const COLUMNS = [
 ];
 
 const MOVING_CARD = { title: 'ТОВ «Орбіта»', sum: '₴140 тис.' };
+
+const FORECAST_SUM = 585;
+
+/** Прогноз закриття: count-up 0 → сума при першому вході у вʼюпорт. */
+function ForecastCount() {
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true, margin: '-48px' });
+  const [text, setText] = useState(`₴${FORECAST_SUM} тис.`);
+
+  useEffect(() => {
+    if (!inView) return;
+    if (
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) {
+      return;
+    }
+    const counter = { value: 0 };
+    const tween = gsap.to(counter, {
+      value: FORECAST_SUM,
+      duration: 1.6,
+      ease: 'power2.out',
+      onUpdate: () => setText(`₴${Math.round(counter.value)} тис.`),
+    });
+    return () => {
+      tween.kill();
+    };
+  }, [inView]);
+
+  return (
+    <span ref={ref} className="font-bold tabular-nums">
+      {text}
+    </span>
+  );
+}
 
 export function HeroKanban() {
   const [step, setStep] = useState(0);
@@ -114,7 +150,7 @@ export function HeroKanban() {
 
         <div className="flex items-center justify-between border-t border-border px-5 py-4 text-sm">
           <span className="font-semibold">Прогноз закриття</span>
-          <span className="font-bold tabular-nums">₴585 тис.</span>
+          <ForecastCount />
         </div>
       </div>
     </MotionConfig>

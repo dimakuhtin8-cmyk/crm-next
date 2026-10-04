@@ -1,14 +1,16 @@
 'use client';
 
 import { motion, MotionConfig } from 'framer-motion';
+import gsap from 'gsap';
 import { Search, Sparkles } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 /**
- * «AI Co-Pilot»: анімований рядок пошуку — запит друкується, думка збирається
- * з трьох чорнильних крапок («Аналізую дані CRM…»), відповідь стрімиться
- * послівно з кареткою, як жива. Хінти внизу — кнопки: клік перезапускає демо
- * з вибраного запиту. При prefers-reduced-motion — статичний приклад.
+ * «AI Co-Pilot»: демо-цикл одним GSAP-timeline — запит друкується, думка
+ * збирається з трьох чорнильних крапок («Аналізую дані CRM…»), відповідь
+ * стрімиться послівно з кареткою. Timeline дає паузу/продовження з коробки.
+ * Хінти — кнопки: клік перезапускає демо з вибраного запиту.
+ * При prefers-reduced-motion — статичний приклад.
  */
 
 const DEMOS = [
@@ -17,7 +19,7 @@ const DEMOS = [
     a: '3 угоди без активності більше 5 днів: ТОВ «Орбіта», ФОП «Коло», «Гама». Раджу почати з «Орбіта» — ₴140 тис.',
   },
   {
-    q: 'Кому подзвонити сьогодні?',
+    q: 'Кому написати сьогодні?',
     a: '4 контакти з простроченими задачами: Марія Коваль, Ігор Савчук, «Ліга», Анна Петренко.',
   },
   {
@@ -28,13 +30,14 @@ const DEMOS = [
 
 const HINTS = [
   { label: 'Які угоди під ризиком?', demo: 0 },
-  { label: 'Кому подзвонити сьогодні?', demo: 1 },
+  { label: 'Кому написати сьогодні?', demo: 1 },
   { label: 'Підсумок за тиждень', demo: 2 },
 ];
 
-const STREAM_MS = 70;
-const THINK_MS = 1500;
-const HOLD_MS = 3000;
+const TYPE_MS = 0.055;
+const THINK_S = 1.5;
+const STREAM_S = 0.07;
+const HOLD_S = 3;
 
 type Phase = 'typing' | 'thinking' | 'answer';
 
@@ -44,7 +47,7 @@ export function AiTypewriter() {
   const [typed, setTyped] = useState('');
   const [streamed, setStreamed] = useState(0);
   const [cycle, setCycle] = useState({ index: 0, nonce: 0 });
-  const pausedRef = useRef(false);
+  const scopeRef = useRef<HTMLDivElement>(null);
 
   const words = DEMOS[demo].a.split(' ');
   const streaming = phase === 'answer' && streamed < words.length;
@@ -61,72 +64,60 @@ export function AiTypewriter() {
       return;
     }
 
-    let cancelled = false;
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    const later = (fn: () => void, ms: number) => {
-      const timer = setTimeout(() => {
-        if (cancelled) return;
-        if (pausedRef.current) {
-          later(fn, 300);
-          return;
+    const ctx = gsap.context(() => {
+      const build = (index: number) => {
+        const text = DEMOS[index].q;
+        const total = DEMOS[index].a.split(' ').length;
+        const tl = gsap.timeline({
+          defaults: { ease: 'none' },
+          onComplete: () => build((index + 1) % DEMOS.length),
+        });
+        tl.call(() => {
+          setDemo(index);
+          setPhase('typing');
+          setTyped('');
+        });
+        for (let c = 1; c <= text.length; c += 1) {
+          const n = c;
+          tl.call(() => setTyped(text.slice(0, n)), undefined, n * TYPE_MS);
         }
-        fn();
-      }, ms);
-      timers.push(timer);
-    };
-
-    const runAnswer = (index: number) => {
-      setStreamed(0);
-      setPhase('answer');
-      const total = DEMOS[index].a.split(' ').length;
-      for (let w = 1; w <= total; w += 1) {
-        later(() => setStreamed(w), w * STREAM_MS);
-      }
-      later(() => runTyping((index + 1) % DEMOS.length), total * STREAM_MS + HOLD_MS);
-    };
-
-    const runTyping = (index: number) => {
-      if (cancelled) return;
-      setDemo(index);
-      setPhase('typing');
-      setTyped('');
-      const text = DEMOS[index].q;
-      let char = 0;
-
-      const typeChar = () => {
-        if (cancelled) return;
-        char += 1;
-        setTyped(text.slice(0, char));
-        if (char < text.length) {
-          later(typeChar, 55);
-        } else {
-          later(() => {
-            setPhase('thinking');
-            later(() => runAnswer(index), THINK_MS);
-          }, 400);
+        tl.call(() => setPhase('thinking'), undefined, '+=0.4');
+        tl.call(
+          () => {
+            setStreamed(0);
+            setPhase('answer');
+          },
+          undefined,
+          `+=${THINK_S}`,
+        );
+        for (let w = 1; w <= total; w += 1) {
+          const n = w;
+          tl.call(() => setStreamed(n), undefined, `+=${STREAM_S}`);
         }
+        tl.to({}, { duration: HOLD_S });
+        return tl;
       };
-      typeChar();
-    };
 
-    runTyping(cycle.index);
+      const master = build(cycle.index);
+      const root = scopeRef.current;
+      const pause = () => master.pause();
+      const play = () => master.play();
+      root?.addEventListener('mouseenter', pause);
+      root?.addEventListener('mouseleave', play);
+      return () => {
+        root?.removeEventListener('mouseenter', pause);
+        root?.removeEventListener('mouseleave', play);
+      };
+    }, scopeRef);
 
-    return () => {
-      cancelled = true;
-      timers.forEach(clearTimeout);
-    };
+    return () => ctx.revert();
   }, [cycle]);
 
   return (
     <MotionConfig reducedMotion="user">
       <div
+        ref={scopeRef}
         className="overflow-hidden rounded-2xl border border-border bg-card shadow-lg"
-        onMouseEnter={() => {
-          pausedRef.current = true;
-        }}
-        onMouseLeave={() => {
-          pausedRef.current = false;
-        }}
       >
         <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
           <span className="inline-flex items-center gap-2 text-sm font-bold">
@@ -196,6 +187,11 @@ export function AiTypewriter() {
                       лише ваші дані
                     </span>
                   </motion.div>
+                )}
+                {!streaming && (
+                  <span className="sr-only" role="status">
+                    Відповідь готова
+                  </span>
                 )}
               </div>
             )}

@@ -5,31 +5,31 @@
 
 const ROWS = [
   {
-    name: 'api gateway',
+    name: 'API-шлюз',
     badge: 'OK',
     tone: 'bg-success text-success-foreground',
     meta: 'усі маршрути відповідають',
   },
   {
-    name: 'cache',
+    name: 'Кеш',
     badge: 'OK',
     tone: 'bg-success text-success-foreground',
     meta: 'стан чинний',
   },
   {
-    name: 'queues',
+    name: 'Фонові задачі',
     badge: '3 активні',
     tone: 'bg-info text-info-foreground',
     meta: 'завдання у виконанні',
   },
   {
-    name: 'webhooks',
+    name: 'Вебхуки',
     badge: '200 OK',
     tone: 'bg-success text-success-foreground',
     meta: 'доставлено щойно',
   },
   {
-    name: 'system logs',
+    name: 'Системний журнал',
     badge: 'INFO',
     tone: 'bg-secondary text-secondary-foreground',
     meta: 'критичних помилок немає',

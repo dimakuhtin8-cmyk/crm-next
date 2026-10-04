@@ -15,6 +15,7 @@ import Link from 'next/link';
 import { AiTypewriter } from '@/components/landing/ai-typewriter';
 import { DevConsole } from '@/components/landing/dev-console';
 import { HeroKanban } from '@/components/landing/hero-kanban';
+import { MobileCtaBar } from '@/components/landing/mobile-cta-bar';
 import { SectionLink } from '@/components/landing/section-link';
 import { StickyFeatures } from '@/components/landing/sticky-features';
 import {
@@ -196,9 +197,16 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
               </SectionLink>
             </div>
             <p className="mt-5 text-sm font-medium text-foreground-secondary">
-              Воронка, завдання, комунікація та контроль команди — без хаосу в таблицях. Без картки
-              · 14 днів пробного періоду.
+              Воронка, завдання, комунікація та контроль команди — без хаосу в таблицях.
             </p>
+            <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold">
+              {['Без картки', '14 днів пробного', 'Інтерфейс українською'].map((item) => (
+                <li key={item} className="inline-flex items-center gap-1.5">
+                  <Check className="h-4 w-4 text-success" aria-hidden="true" />
+                  {item}
+                </li>
+              ))}
+            </ul>
           </div>
 
           {/* Паперовий місяць: жива воронка всередині освітленого обʼєму */}
@@ -278,7 +286,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           <DevConsole />
           <div>
             <h2 className="max-w-[22ch] text-2xl font-bold tracking-tight sm:text-3xl">
-              Прозорий стан системи — як у консолі розробника
+              Прозорий стан системи — без дзвінків адміну
             </h2>
             <p className="mt-4 max-w-[62ch] text-sm leading-7 text-foreground-secondary sm:text-base">
               Кеш, черги завдань, вебхуки та системні журнали доступні адміністратору без звернення
@@ -418,6 +426,9 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                 Увійти
               </Link>
             </div>
+            <p className="mt-5 text-sm font-medium text-foreground-secondary">
+              Без картки · 14 днів пробного періоду
+            </p>
           </div>
         </div>
       </section>
@@ -460,6 +471,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           </p>
         </div>
       </footer>
+      <MobileCtaBar locale={locale} />
     </main>
   );
 }
