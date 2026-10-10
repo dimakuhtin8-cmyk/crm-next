@@ -34,13 +34,29 @@ export async function POST(request: NextRequest) {
     // Хэшируем пароль
     const passwordHash = await hash(password, 12);
 
-    // Создаем пользователя
+    // Создаем пользователя + персональный тенант (owner), иначе аккаунт
+    // останется без тенанта и все tenant-scoped запросы вернут 400.
+    const slug = email
+      .split('@')[0]
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '');
     const user = await prisma.user.create({
       data: {
         name,
         email,
         password: passwordHash,
         emailVerified: new Date(), // для email/password сразу верифицируем
+        tenantMembers: {
+          create: {
+            tenant: {
+              create: {
+                name: name || email.split('@')[0],
+                slug: `${slug}-${Date.now()}`,
+              },
+            },
+            role: 'owner',
+          },
+        },
       },
     });
 

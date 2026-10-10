@@ -10,6 +10,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+
 import { extractUser } from '@/lib/auth-utils';
 import { hasPermission, getUserRole, buildDataFilter, type TenantRole } from '@/lib/rbac';
 
@@ -41,10 +42,12 @@ export function withAuth(options: AuthGuardOptions = {}) {
         return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
       }
 
-      // 2. Получаем tenantId из URL или из JWT
-      const tenantId = context?.params?.id
-        || new URL(request.url).searchParams.get('tenantId')
-        || user.tenantId;
+      // 2. Resolve tenant: explicit ?tenantId= first (membership is verified
+      // below by the permission/role check itself), otherwise the tenant
+      // from the session JWT. Never trust route params here: on [id] routes
+      // params.id is the resource id (contact/deal/…), not the tenant —
+      // using it made every permission check fail with 403.
+      const tenantId = new URL(request.url).searchParams.get('tenantId') || user.tenantId || null;
 
       if (!tenantId) {
         return NextResponse.json({ error: 'Тенант не визначений' }, { status: 400 });
@@ -56,7 +59,7 @@ export function withAuth(options: AuthGuardOptions = {}) {
         if (!allowed) {
           return NextResponse.json(
             { error: 'Недостатньо прав', required: options.permission },
-            { status: 403 }
+            { status: 403 },
           );
         }
       }
@@ -71,7 +74,7 @@ export function withAuth(options: AuthGuardOptions = {}) {
         if ((ROLE_HIERARCHY[role] || 0) < (ROLE_HIERARCHY[options.minRole] || 0)) {
           return NextResponse.json(
             { error: 'Недостатньо прав', required: options.minRole },
-            { status: 403 }
+            { status: 403 },
           );
         }
       }

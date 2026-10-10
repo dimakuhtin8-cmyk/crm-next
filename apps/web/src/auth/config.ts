@@ -104,6 +104,7 @@ const config: NextAuthConfig = {
 
     async jwt({ token, user, account }) {
       if (user) {
+        if (!user.id) return token;
         token.id = user.id;
 
         // Fetch user's default tenant (first tenant they're a member of)
@@ -115,6 +116,24 @@ const config: NextAuthConfig = {
           if (membership) {
             token.tenantId = membership.tenant.id;
             token.tenantSlug = membership.tenant.slug;
+          } else if (account) {
+            // Sign-in without membership (accounts registered before tenant
+            // auto-provisioning): create a personal tenant like OAuth does.
+            const slugBase =
+              (user.email ?? '')
+                .split('@')[0]
+                .toLowerCase()
+                .replace(/[^a-z0-9]/g, '') || 'user';
+            const tenant = await prisma.tenant.create({
+              data: {
+                name: user.name || (user.email ?? '').split('@')[0] || 'My workspace',
+                slug: `${slugBase}-${Date.now()}`,
+                members: { create: { userId: user.id, role: 'owner' } },
+              },
+              select: { id: true, slug: true },
+            });
+            token.tenantId = tenant.id;
+            token.tenantSlug = tenant.slug;
           }
         } catch {
           // Tenant not found - user may not have a tenant yet
