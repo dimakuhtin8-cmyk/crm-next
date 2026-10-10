@@ -218,3 +218,41 @@ export async function refreshProviderModels(tenantId: string, provider: string):
     // best-effort: UI falls back to cache/static
   }
 }
+
+export interface EffectiveModel {
+  /** Model id to actually call (never undefined when a list exists). */
+  model: string | null;
+  /** Model id the tenant originally saved/requested. */
+  requested: string | null;
+  /** True when the saved model was missing and a fallback was picked. */
+  substituted: boolean;
+}
+
+/**
+ * Resolve the model to call: keep the saved model when the provider still
+ * lists it, otherwise fall back to the first live/allowlisted model.
+ * Provider model ids churn in weeks (renames, retirements) — without this,
+ * every saved-but-stale model ends in a provider 404 and a dead answer.
+ * Never throws: worst case returns the requested id untouched.
+ */
+export async function resolveEffectiveModel(
+  tenantId: string,
+  provider: string,
+  requestedModel: string | null,
+  staticModels: Array<{ id: string; name: string }> = [],
+): Promise<EffectiveModel> {
+  try {
+    const { models } = await getProviderModels(
+      tenantId,
+      provider,
+      staticModels.map((m) => ({ id: m.id, name: m.name })),
+    );
+    if (requestedModel && models.some((m) => m.id === requestedModel)) {
+      return { model: requestedModel, requested: requestedModel, substituted: false };
+    }
+    const fallback = models[0]?.id ?? staticModels[0]?.id ?? requestedModel;
+    return { model: fallback, requested: requestedModel, substituted: fallback !== requestedModel };
+  } catch {
+    return { model: requestedModel, requested: requestedModel, substituted: false };
+  }
+}
