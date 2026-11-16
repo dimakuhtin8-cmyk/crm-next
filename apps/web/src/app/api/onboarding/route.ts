@@ -48,7 +48,9 @@ export async function POST(request: Request) {
         const tenant = await prisma.tenant.create({
           data: {
             name: companyName || `${dbUser.name || dbUser.email || 'CRM'}`,
-            slug: `tenant-${dbUser.id.slice(0, 8)}`,
+            // cuid-префикс имеет разрешение ~36 мс: два онбординга в одном окне
+            // дают одинаковый slug → P2002. Добавляем ms + случайный суффикс.
+            slug: `tenant-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
             subscriptionStatus: 'trialing',
             trialEndsAt: getTrialEndsAt(),
           },

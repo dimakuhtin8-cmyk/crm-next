@@ -1,5 +1,6 @@
-import { defineConfig } from 'vitest/config';
 import path from 'path';
+
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
@@ -14,6 +15,10 @@ export default defineConfig({
     env: {
       ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
       DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/crm_test',
+      // Same test secret the suites sign their session JWTs with (see
+      // viewer-guard/idor/phase* tests). Without it verifySession() in
+      // auth-utils.ts fails and every auth-guard test gets 401 instead of 403.
+      NEXTAUTH_SECRET: '4p200FzdKSNdfxdHaoTOa9m6WoEzmwEbl0CqrcuPOgc=',
     },
   },
   resolve: {
