@@ -5,21 +5,21 @@
  * Чтение — любой участник тенанта, запись — settings:update (owner/admin).
  */
 
+import { prisma } from '@crm-next/database';
 import { NextResponse } from 'next/server';
-
-import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 
-import { getTenantQuery } from '@/lib/tenant-query';
-import { prisma } from '@crm-next/database';
-import { withAuth } from '@/lib/auth-guard';
+import type { NextRequest } from 'next/server';
 
-export interface ToastPrefs {
+import { withAuth } from '@/lib/auth-guard';
+import { getTenantQuery } from '@/lib/tenant-query';
+
+interface ToastPrefs {
   enabled: boolean;
   position: 'bottom-left' | 'bottom-right' | 'top-right';
 }
 
-export const DEFAULT_TOAST_PREFS: ToastPrefs = {
+const DEFAULT_TOAST_PREFS: ToastPrefs = {
   enabled: true,
   position: 'bottom-left',
 };
@@ -31,9 +31,10 @@ function readPrefs(raw: string | null): ToastPrefs {
     const position = parsed.toast?.position;
     return {
       enabled: parsed.toast?.enabled !== false,
-      position: position === 'bottom-right' || position === 'top-right' || position === 'bottom-left'
-        ? position
-        : 'bottom-left',
+      position:
+        position === 'bottom-right' || position === 'top-right' || position === 'bottom-left'
+          ? position
+          : 'bottom-left',
     };
   } catch {
     return { ...DEFAULT_TOAST_PREFS };
@@ -85,7 +86,9 @@ async function PATCHHandler(request: NextRequest) {
     let settings: Record<string, unknown> = {};
     try {
       settings = tenant?.settings ? JSON.parse(tenant.settings) : {};
-    } catch {}
+    } catch {
+      // Битий JSON налаштувань — починаємо з порожнього об'єкта
+    }
     settings.toast = next;
 
     await prisma.tenant.update({

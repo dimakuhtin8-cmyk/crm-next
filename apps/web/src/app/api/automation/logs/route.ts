@@ -12,7 +12,7 @@ import type { NextRequest } from 'next/server';
 import { withAuth } from '@/lib/auth-guard';
 import { getTenantQuery } from '@/lib/tenant-query';
 
-export async function GETHandler(request: NextRequest) {
+async function GETHandler(request: NextRequest) {
   try {
     const tq = await getTenantQuery(request);
     if (!tq) return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });

@@ -50,23 +50,6 @@ interface LogStats {
 
 // In-memory log store (same as logger)
 const logStore: LogEntry[] = [];
-let logId = 0;
-
-export function addLog(
-  level: LogEntry['level'],
-  message: string,
-  context?: Record<string, unknown>,
-) {
-  logStore.unshift({
-    id: String(++logId),
-    level,
-    message,
-    context,
-    timestamp: new Date().toISOString(),
-  });
-  // Keep last 1000 logs
-  if (logStore.length > 1000) logStore.length = 1000;
-}
 
 export default function LogsPage() {
   const [logs, setLogs] = useState<LogEntry[]>([]);

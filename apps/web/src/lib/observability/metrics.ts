@@ -1,6 +1,6 @@
 /**
  * Metrics Collection — сбор метрик производительности
- * 
+ *
  * Метрики:
  * - HTTP requests (count, latency, status codes)
  * - Database queries (count, latency)
@@ -8,13 +8,9 @@
  * - Cache (hit/miss rate)
  * - Queue (pending, processing, failed)
  * - System (memory, CPU, uptime)
- * 
+ *
  * Хранение: In-Memory (для dev) → Prometheus/DataDog (для prod)
  */
-
-import { createLogger } from '@/lib/logging/logger';
-
-const log = createLogger({ service: 'metrics' });
 
 // ============ Types ============
 
@@ -96,7 +92,7 @@ class MetricsStore {
     for (const [key, histogram] of this.histograms.entries()) {
       const [name, labelsStr] = this.parseKey(key);
       const buckets = this.calculateBuckets(histogram.values);
-      
+
       lines.push(`# TYPE ${name} histogram`);
       for (const bucket of buckets) {
         const le = bucket.le === Infinity ? '+Inf' : String(bucket.le);
@@ -161,6 +157,11 @@ class MetricsStore {
     this.gauges.clear();
   }
 
+  /** Аптайм процесса в секундах (публичный доступ для recordSystemMetrics). */
+  get uptimeSeconds(): number {
+    return Math.floor((Date.now() - this.startTime) / 1000);
+  }
+
   // ============ Helpers ============
 
   private getKey(name: string, labels?: Record<string, string>): string {
@@ -193,9 +194,9 @@ class MetricsStore {
 
   private calculateBuckets(values: number[]): HistogramBucket[] {
     const bucketEdges = [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, Infinity];
-    return bucketEdges.map(le => ({
+    return bucketEdges.map((le) => ({
       le,
-      count: values.filter(v => v <= le).length,
+      count: values.filter((v) => v <= le).length,
     }));
   }
 }
@@ -213,7 +214,7 @@ export function recordHTTPRequest(
   method: string,
   path: string,
   statusCode: number,
-  durationMs: number
+  durationMs: number,
 ): void {
   const labels = {
     method,
@@ -238,11 +239,7 @@ function normalizePath(path: string): string {
 
 // ============ Database Metrics ============
 
-export function recordDBQuery(
-  operation: string,
-  table: string,
-  durationMs: number
-): void {
+export function recordDBQuery(operation: string, table: string, durationMs: number): void {
   const labels = { operation, table };
   metrics.increment('db_queries_total', labels);
   metrics.observe('db_query_duration_ms', durationMs, labels);
@@ -255,12 +252,12 @@ export function recordAIRequest(
   model: string,
   durationMs: number,
   tokens?: number,
-  cost?: number
+  cost?: number,
 ): void {
   const labels = { provider, model };
   metrics.increment('ai_requests_total', labels);
   metrics.observe('ai_request_duration_ms', durationMs, labels);
-  
+
   if (tokens) {
     metrics.observe('ai_tokens_total', tokens, labels);
   }
@@ -282,5 +279,5 @@ export function recordSystemMetrics(): void {
   metrics.gauge('system_memory_heap_used_bytes', memUsage.heapUsed);
   metrics.gauge('system_memory_heap_total_bytes', memUsage.heapTotal);
   metrics.gauge('system_memory_rss_bytes', memUsage.rss);
-  metrics.gauge('system_uptime_seconds', Math.floor((Date.now() - metrics.startTime) / 1000));
+  metrics.gauge('system_uptime_seconds', metrics.uptimeSeconds);
 }

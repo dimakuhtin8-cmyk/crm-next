@@ -22,7 +22,7 @@ interface NotifFlags {
   dealUpdates: boolean;
 }
 
-export const DEFAULT_NOTIF_FLAGS: NotifFlags = {
+const DEFAULT_NOTIF_FLAGS: NotifFlags = {
   emailNotifications: true,
   telegramNotifications: false,
   taskReminders: true,
