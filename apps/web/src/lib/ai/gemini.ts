@@ -30,6 +30,12 @@ export interface GenerateWithToolsOptions extends GenerateOptions {
   tools: AiToolSpec[];
   /** Executes ONE tool call and returns its text content for the model. */
   executeTool: (name: string, args: Record<string, unknown>) => Promise<string>;
+  /**
+   * Вызывается после КАЖДОГО успешного запроса к провайдеру (tool-цикл может
+   * сделать до MAX_TOOL_ITERATIONS+1 запросов). Нужно для честного учёта
+   * дневного лимита: один ответ пользователю = несколько вызовов провайдера.
+   */
+  onProviderCall?: () => void;
 }
 
 export interface GenerateWithToolsResult {
@@ -41,6 +47,9 @@ export interface GenerateWithToolsResult {
 
 /** П3.2: max tool rounds per answer; the final turn runs WITHOUT tools. */
 export const MAX_TOOL_ITERATIONS = 4;
+
+/** Таймаут исходящего HTTP к LLM-провайдеру (иначе зависший провайдер вешает запрос). */
+export const AI_HTTP_TIMEOUT_MS = 30_000;
 
 const TOOL_LIMIT_NOTE =
   'Ліміт викликів інструментів вичерпано — відповідай за вже отриманими даними та знімком CRM.';
@@ -145,10 +154,6 @@ async function callGemini(
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
   const contents: Array<{ role: string; parts: Array<{ text: string }> }> = [];
 
-  if (system) {
-    contents.push({ role: 'user', parts: [{ text: system }] });
-    contents.push({ role: 'model', parts: [{ text: 'Зрозуміло.' }] });
-  }
   for (const h of tailHistory(history)) {
     contents.push({
       role: h.role === 'assistant' ? 'model' : 'user',
@@ -157,13 +162,20 @@ async function callGemini(
   }
   contents.push({ role: 'user', parts: [{ text: prompt }] });
 
+  const body: Record<string, unknown> = {
+    contents,
+    generationConfig: { temperature: 0.7, maxOutputTokens: 4096 },
+  };
+  if (system) {
+    // Системна інструкція — окремим полем, а не role:'user'.
+    body.systemInstruction = { parts: [{ text: system }] };
+  }
+
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents,
-      generationConfig: { temperature: 0.7, maxOutputTokens: 4096 },
-    }),
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(AI_HTTP_TIMEOUT_MS),
   });
 
   if (!res.ok) {
@@ -306,6 +318,7 @@ async function postJson(
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...headers },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(AI_HTTP_TIMEOUT_MS),
   });
   if (!res.ok) {
     const errText = await res.text().catch(() => '');
@@ -316,11 +329,9 @@ async function postJson(
 }
 
 function buildGeminiContents(options: GenerateWithToolsOptions): Array<Record<string, unknown>> {
+  // Системна інструкція йде окремим полем systemInstruction (а не role:'user'),
+  // щоб дані CRM та правила не змішувалися з роллю користувача.
   const contents: Array<Record<string, unknown>> = [];
-  if (options.system) {
-    contents.push({ role: 'user', parts: [{ text: options.system }] });
-    contents.push({ role: 'model', parts: [{ text: 'Зрозуміло.' }] });
-  }
   for (const h of tailHistory(options.history)) {
     contents.push({
       role: h.role === 'assistant' ? 'model' : 'user',
@@ -348,6 +359,9 @@ async function geminiToolLoop(
         maxOutputTokens: options.maxTokens || 4096,
       },
     };
+    if (options.system) {
+      body.systemInstruction = { parts: [{ text: options.system }] };
+    }
     if (withTools) {
       body.tools = [
         {
@@ -362,6 +376,7 @@ async function geminiToolLoop(
     }
 
     const data = await postJson(url, {}, body, 'Gemini');
+    options.onProviderCall?.();
     const parts = (data?.candidates?.[0]?.content?.parts || []) as Array<{
       text?: string;
       functionCall?: { name: string; args?: Record<string, unknown> };
@@ -440,6 +455,7 @@ async function openAiToolLoop(
     }
 
     const data = await postJson(endpoint, { Authorization: `Bearer ${config.apiKey}` }, body, 'AI');
+    options.onProviderCall?.();
     const message = data?.choices?.[0]?.message;
     const toolCalls: Array<{
       id: string;
@@ -522,6 +538,7 @@ async function anthropicToolLoop(
       body,
       'Anthropic',
     );
+    options.onProviderCall?.();
     const content: Array<{
       type?: string;
       text?: string;

@@ -277,7 +277,11 @@ async function getContact(args: Record<string, unknown>, ctx: ToolExecContext): 
     where: { id, ...ownerScope(ctx.role, ctx.userId) },
   });
   if (!contact) return err('Контакт не знайдено (або він недоступний вам у CRM).');
-  return { text: await describeContact(ctx.tq, contact, ctx.sources), rows: 1, truncated: false };
+  return {
+    text: await describeContact(ctx.tq, contact, ctx.sources, ctx.role, ctx.userId),
+    rows: 1,
+    truncated: false,
+  };
 }
 
 async function searchDeals(args: Record<string, unknown>, ctx: ToolExecContext): Promise<ToolBody> {
@@ -335,7 +339,11 @@ async function getDeal(args: Record<string, unknown>, ctx: ToolExecContext): Pro
     },
   });
   if (!deal) return err('Угоду не знайдено (або вона недоступна вам у CRM).');
-  return { text: await describeDeal(ctx.tq, deal, ctx.sources), rows: 1, truncated: false };
+  return {
+    text: await describeDeal(ctx.tq, deal, ctx.sources, ctx.role, ctx.userId),
+    rows: 1,
+    truncated: false,
+  };
 }
 
 async function listTasks(args: Record<string, unknown>, ctx: ToolExecContext): Promise<ToolBody> {
@@ -413,28 +421,49 @@ async function revenueStats(
   const span = days[period] || 30;
   const start = new Date(Date.now() - span * 86_400_000);
   // Same basis as analytics revenue (status won, updatedAt window).
-  const won = await ctx.tq.deal.findMany({
-    where: { ...ownerScope(ctx.role, ctx.userId), status: 'won', updatedAt: { gte: start } },
-    orderBy: { updatedAt: 'desc' },
-    take: MAX_TOOL_ROWS + 1,
-  });
-  const truncated = won.length > MAX_TOOL_ROWS;
-  const rows = won.slice(0, MAX_TOOL_ROWS);
-  const sums = sumByCurrency(rows);
+  const where = { ...ownerScope(ctx.role, ctx.userId), status: 'won', updatedAt: { gte: start } };
+  // Точні підсумки по валютах через groupBy — не «перші 20 угод», а всі за період.
+  const [grouped, top] = await Promise.all([
+    ctx.tq.deal.groupBy({
+      by: ['currency'],
+      where,
+      _sum: { value: true },
+      _count: { _all: true },
+    }) as unknown as Array<{
+      currency: string | null;
+      _sum: { value: number | null };
+      _count: { _all: number };
+    }>,
+    ctx.tq.deal.findMany({ where, orderBy: { updatedAt: 'desc' }, take: 3 }),
+  ]);
+
+  const sums = new Map<string, number>();
+  const counts = new Map<string, number>();
+  let total = 0;
+  for (const g of grouped) {
+    const cur = g.currency || 'UAH';
+    const n = g._count?._all || 0;
+    sums.set(cur, (sums.get(cur) || 0) + (g._sum?.value || 0));
+    counts.set(cur, (counts.get(cur) || 0) + n);
+    total += n;
+  }
   const avg = new Map<string, number>();
-  for (const [cur, total] of sums) avg.set(cur, rows.length ? total / rows.length : 0);
+  for (const [cur, sum] of sums) {
+    const n = counts.get(cur) || 0;
+    avg.set(cur, n ? sum / n : 0);
+  }
 
   const lines = [
-    `Виграних угод ${labels[period] || labels.month}: ${rows.length}` +
-      (truncated ? `+ (більше 20, показано перші 20)` : '') +
+    `Виграних угод ${labels[period] || labels.month}: ${total}` +
+      (total > MAX_TOOL_ROWS ? ` (більше ${MAX_TOOL_ROWS}; для прикладу — останні 3)` : '') +
       `. Сума: ${fmtSums(sums)}. Середній чек: ${fmtSums(avg)}.`,
   ];
-  for (const d of rows.slice(0, 3)) {
+  for (const d of top) {
     lines.push(
       `- «${field(d.title).slice(0, 80)}»${d.value != null ? `, ${d.value} ${d.currency || 'UAH'}` : ''}, ${shortDate(d.updatedAt)}`,
     );
   }
-  return { text: lines.join('\n'), rows: rows.length, truncated };
+  return { text: lines.join('\n'), rows: top.length, truncated: total > MAX_TOOL_ROWS };
 }
 
 async function recentActivities(

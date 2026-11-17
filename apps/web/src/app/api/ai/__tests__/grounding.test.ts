@@ -40,8 +40,14 @@ function mockLLM() {
       fetchCalls++;
       try {
         const body = JSON.parse(String((init as any)?.body || '{}'));
-        const parts = body?.contents?.[0]?.parts || [];
-        capturedSystem = parts.map((p: any) => p?.text || '').join('\n');
+        // Системна інструкція — окремим полем systemInstruction (gemini.ts).
+        const si = body?.systemInstruction?.parts || [];
+        if (si.length > 0) {
+          capturedSystem = si.map((p: any) => p?.text || '').join('\n');
+        } else {
+          const parts = body?.contents?.[0]?.parts || [];
+          capturedSystem = parts.map((p: any) => p?.text || '').join('\n');
+        }
       } catch {
         // парсинг тела запроса не критичен для теста
       }

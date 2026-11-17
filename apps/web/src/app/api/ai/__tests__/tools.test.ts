@@ -73,8 +73,12 @@ function mockLLM(responses?: Array<Record<string, unknown>>) {
   );
 }
 
-const systemOf = (body: Record<string, any>): string =>
-  (body?.contents?.[0]?.parts || []).map((p: any) => p?.text || '').join('\n');
+const systemOf = (body: Record<string, any>): string => {
+  // Системна інструкція йде окремим полем systemInstruction (gemini.ts).
+  const si = body?.systemInstruction?.parts || [];
+  if (si.length > 0) return si.map((p: any) => p?.text || '').join('\n');
+  return (body?.contents?.[0]?.parts || []).map((p: any) => p?.text || '').join('\n');
+};
 
 const toolResults = (body: Record<string, any>): Array<{ name: string; content: string }> => {
   const out: Array<{ name: string; content: string }> = [];

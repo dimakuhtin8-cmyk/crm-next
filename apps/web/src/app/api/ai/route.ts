@@ -85,8 +85,12 @@ async function POSTHandler(request: NextRequest) {
     // a live fallback once and replay the action with it.
     let modelOverride: string | null = null;
     let modelRequestedEcho: string | null = null;
+    // Сколько фактических запросов к LLM-провайдеру сделано за этот ответ
+    // (tool-цикл: до MAX_TOOL_ITERATIONS+1). Учитываем в дневном лимите.
+    let providerCalls = 0;
 
     for (let attempt = 0; ; attempt++) {
+      providerCalls = 0;
       try {
         switch (action) {
           case 'kp': {
@@ -291,6 +295,37 @@ async function POSTHandler(request: NextRequest) {
             break;
           }
           case 'custom': {
+            // Валидация входа: клиент не может запросить мегабайтный промпт
+            // или огромный maxOutputTokens (бюджет провайдера).
+            const prompt = typeof data.prompt === 'string' ? data.prompt : '';
+            if (!prompt.trim()) {
+              return NextResponse.json({ error: 'Вкажіть prompt' }, { status: 400 });
+            }
+            if (prompt.length > 8000) {
+              return NextResponse.json(
+                { error: 'Промпт занадто довгий (максимум 8000 символів)' },
+                { status: 400 },
+              );
+            }
+            const systemOverride =
+              typeof data.system === 'string' && data.system ? data.system : null;
+            if (systemOverride && systemOverride.length > 4000) {
+              return NextResponse.json(
+                { error: 'System-промпт занадто довгий (максимум 4000 символів)' },
+                { status: 400 },
+              );
+            }
+            const temperature =
+              typeof data.temperature === 'number' && data.temperature >= 0 && data.temperature <= 2
+                ? data.temperature
+                : undefined;
+            const maxTokens =
+              typeof data.maxTokens === 'number' &&
+              Number.isFinite(data.maxTokens) &&
+              data.maxTokens >= 1 &&
+              data.maxTokens <= 8192
+                ? Math.floor(data.maxTokens)
+                : undefined;
             // Model picker in chat UI wins if provided; otherwise tenant default.
             const requestedModel =
               typeof data.model === 'string' && data.model ? data.model : undefined;
@@ -326,32 +361,32 @@ async function POSTHandler(request: NextRequest) {
                 .filter((m) => m.role === 'user' || m.role === 'assistant')
                 .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
               await prisma.aiChatMessage.create({
-                data: { sessionId, role: 'user', content: data.prompt },
+                data: { sessionId, role: 'user', content: prompt },
               });
             }
 
             const grounding = await buildChatContextWithAggregates(tq, {
-              message: typeof data.prompt === 'string' ? data.prompt : '',
+              message: prompt,
               contactId: typeof data.contactId === 'string' ? data.contactId : null,
               dealId: typeof data.dealId === 'string' ? data.dealId : null,
               role: chatRole || 'member',
               userId: chatUserId || '',
             });
-            const groundedSystem = [
-              typeof data.system === 'string' && data.system ? data.system : null,
-              grounding.system,
-            ]
-              .filter(Boolean)
-              .join('\n\n');
+            // Спочатку — інструкції CRM і дані (grounding), системний промпт
+            // користувача додається ПІСЛЯ них, щоб не міг відключити anti-injection guard.
+            const groundedSystem = [grounding.system, systemOverride].filter(Boolean).join('\n\n');
             const genOpts = {
-              prompt: data.prompt,
+              prompt,
               system: groundedSystem,
-              temperature: data.temperature,
-              maxTokens: data.maxTokens,
+              temperature,
+              maxTokens,
               history,
               tenantApiKey: aiSettings.apiKey,
               tenantAiProvider: aiSettings.provider,
               tenantAiModel: modelOverride ?? requestedModel ?? aiSettings.model,
+              onProviderCall: () => {
+                providerCalls++;
+              },
             };
             // П3: tools only for provider/model pairs with verified support;
             // otherwise a silent fallback to the snapshot mode (П1), no error.
@@ -407,9 +442,7 @@ async function POSTHandler(request: NextRequest) {
                 where: { id: session.id },
                 data: {
                   updatedAt: new Date(),
-                  ...(session.title
-                    ? {}
-                    : { title: String(data.prompt || '').slice(0, 50) || 'Нова розмова' }),
+                  ...(session.title ? {} : { title: prompt.slice(0, 50) || 'Нова розмова' }),
                 },
               });
             }
@@ -436,7 +469,9 @@ async function POSTHandler(request: NextRequest) {
           promptPreview: data?.prompt || data?.query || undefined,
           ...(Object.keys(logMetadata).length > 0 ? { metadata: logMetadata } : {}),
         });
-        await incrementUsage(tq.tenantId, aiSettings.provider);
+        // Один пользовательский ответ может стоить несколько запросов к
+        // провайдеру (tool-цикл) — считаем их все, минимум 1.
+        await incrementUsage(tq.tenantId, aiSettings.provider, 0, 0, providerCalls || 1);
 
         return NextResponse.json({ result, sources, sessionId: activeSessionId });
       } catch (aiError) {

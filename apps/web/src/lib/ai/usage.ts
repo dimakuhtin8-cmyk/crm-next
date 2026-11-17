@@ -115,20 +115,25 @@ export async function checkUsageLimit(tenantId: string, provider: string): Promi
 
 /**
  * Increment usage counter (after successful request)
+ *
+ * @param count - сколько ЗАПРОСОВ к провайдеру было сделано (tool-цикл
+ *   делает до MAX_TOOL_ITERATIONS+1 запросов на один ответ пользователю).
  */
 export async function incrementUsage(
   tenantId: string,
   provider: string,
   tokensIn: number = 0,
   tokensOut: number = 0,
+  count: number = 1,
 ): Promise<void> {
   const date = getToday();
+  const requests = count > 0 ? Math.floor(count) : 1;
 
   await prisma.aiUsageCounter.upsert({
     where: { tenantId_provider_date: { tenantId, provider, date } },
-    create: { tenantId, provider, date, requests: 1, tokensIn, tokensOut },
+    create: { tenantId, provider, date, requests, tokensIn, tokensOut },
     update: {
-      requests: { increment: 1 },
+      requests: { increment: requests },
       tokensIn: { increment: tokensIn },
       tokensOut: { increment: tokensOut },
     },

@@ -81,6 +81,8 @@ export async function describeContact(
   tq: TenantQuery,
   contact: any,
   sources: GroundSource[],
+  role?: TenantRole,
+  userId?: string,
 ): Promise<string> {
   sources.push({
     id: contact.id,
@@ -134,7 +136,11 @@ export async function describeContact(
   }
 
   const tasks = await tq.task.findMany({
-    where: { contactId: contact.id },
+    where: {
+      contactId: contact.id,
+      // member не повинен бачити чужі задачі по «своєму» контакту
+      ...(role && userId ? taskScope(role, userId) : {}),
+    },
     orderBy: { createdAt: 'desc' },
     take: 5,
   });
@@ -149,6 +155,8 @@ export async function describeDeal(
   tq: TenantQuery,
   deal: any,
   sources: GroundSource[],
+  role?: TenantRole,
+  userId?: string,
 ): Promise<string> {
   sources.push({ id: deal.id, type: 'deal', name: deal.title || deal.id });
 
@@ -165,7 +173,11 @@ export async function describeDeal(
 
   if (deal.contactId) {
     const tasks = await tq.task.findMany({
-      where: { dealId: deal.id },
+      where: {
+        dealId: deal.id,
+        // member не повинен бачити чужі задачі по «своїй» угоді
+        ...(role && userId ? taskScope(role, userId) : {}),
+      },
       orderBy: { createdAt: 'desc' },
       take: 5,
     });
@@ -244,9 +256,15 @@ async function buildAggregateBlock(
   const lines: string[] = [];
 
   if (intent.deals) {
-    const [openCount, wonCount, openDeals] = await Promise.all([
+    const [openCount, wonCount, openByCurrency, openDeals] = await Promise.all([
       tq.deal.count({ where: { ...scope, status: 'open' } }),
       tq.deal.count({ where: { ...scope, status: 'won' } }),
+      // Сума ВСІХ відкритих угод (по валютах), а не лише топ-5 для списку.
+      tq.deal.groupBy({
+        by: ['currency'],
+        where: { ...scope, status: 'open' },
+        _sum: { value: true },
+      }) as unknown as Array<{ currency: string | null; _sum: { value: number | null } }>,
       tq.deal.findMany({
         where: { ...scope, status: 'open' },
         include: { stage: { select: { name: true } } },
@@ -254,11 +272,18 @@ async function buildAggregateBlock(
         take: 5,
       }),
     ]);
-    const openValue = openDeals.reduce((s: number, d: any) => s + (d.value || 0), 0);
-    lines.push(`Угоди: відкритих — ${openCount} на суму ${openValue} грн, виграних — ${wonCount}.`);
+    const sums = new Map<string, number>();
+    for (const g of openByCurrency) {
+      const cur = g.currency || 'UAH';
+      sums.set(cur, (sums.get(cur) || 0) + (g._sum?.value || 0));
+    }
+    lines.push(`Угоди: відкритих — ${openCount} на суму ${fmtSums(sums)}, виграних — ${wonCount}.`);
     for (const d of openDeals.slice(0, 5) as any[]) {
       sources.push({ id: d.id, type: 'deal', name: d.title });
-      lines.push(`- "${d.title}" — ${d.stage?.name || '—'}${d.value ? `, ${d.value} грн` : ''}`);
+      lines.push(
+        `- "${d.title}" — ${d.stage?.name || '—'}` +
+          (d.value ? `, ${d.value} ${d.currency || 'UAH'}` : ''),
+      );
     }
   }
 
@@ -362,6 +387,9 @@ function snapshotDate(d: Date): string {
  * П1: знімок CRM для system-промпту. Завжди вбудовується в контекст —
  * незалежно від ключових слів у запиті. Тільки агрегати + топ-5 + 5 активностей.
  */
+/** Максимум строк в снапшоте CRM — защита от безлимитной выборки на каждое сообщение. */
+const SNAPSHOT_ROWS = 500;
+
 export async function buildCrmSnapshot(
   tq: TenantQuery,
   opts: { role: TenantRole; userId: string },
@@ -398,9 +426,15 @@ export async function buildCrmSnapshot(
     tq.deal.findMany({
       where: { ...scope, status: 'open' },
       include: { stage: { select: { name: true } }, owner: { select: { name: true } } },
+      orderBy: { value: 'desc' },
+      take: SNAPSHOT_ROWS,
     }),
     tq.pipeline.findMany({ include: { stages: { orderBy: { order: 'asc' } } } }),
-    tq.task.findMany({ where: { ...tScope, status: { in: ['todo', 'in_progress'] } } }),
+    tq.task.findMany({
+      where: { ...tScope, status: { in: ['todo', 'in_progress'] } },
+      orderBy: { dueDate: 'asc' },
+      take: SNAPSHOT_ROWS,
+    }),
     tq.activity.findMany({ where: actWhere, orderBy: { date: 'desc' }, take: 5 }),
   ]);
 
@@ -485,7 +519,7 @@ export async function buildChatContext(
     });
     if (contact && !seenContacts.has(contact.id)) {
       seenContacts.add(contact.id);
-      blocks.push(await describeContact(tq, contact, sources));
+      blocks.push(await describeContact(tq, contact, sources, opts.role, opts.userId));
     }
   }
   if (opts.dealId) {
@@ -498,7 +532,7 @@ export async function buildChatContext(
     });
     if (deal && !seenDeals.has(deal.id)) {
       seenDeals.add(deal.id);
-      blocks.push(await describeDeal(tq, deal, sources));
+      blocks.push(await describeDeal(tq, deal, sources, opts.role, opts.userId));
     }
   }
 
@@ -523,7 +557,7 @@ export async function buildChatContext(
       if (!tokens.some((t) => haystack.includes(t))) continue;
       if (sources.filter((s) => s.type === 'contact').length >= 3) break;
       seenContacts.add(c.id);
-      blocks.push(await describeContact(tq, c, sources));
+      blocks.push(await describeContact(tq, c, sources, opts.role, opts.userId));
     }
 
     const deals = await tq.deal.findMany({
@@ -540,7 +574,7 @@ export async function buildChatContext(
       if (!tokens.some((t) => haystack.includes(t))) continue;
       if (sources.filter((s) => s.type === 'deal').length >= 3) break;
       seenDeals.add(d.id);
-      blocks.push(await describeDeal(tq, d, sources));
+      blocks.push(await describeDeal(tq, d, sources, opts.role, opts.userId));
     }
   }
 
