@@ -1,9 +1,12 @@
 import { Geist, Geist_Mono, Golos_Text, Unbounded } from 'next/font/google';
+import { headers } from 'next/headers';
 
 import './globals.css';
+
 import type { Metadata, Viewport } from 'next';
 
 import { ThemeProvider } from '@/components/theme-provider';
+import { defaultLocale, type Locale } from '@/i18n/config';
 
 const geist = Geist({
   subsets: ['latin'],
@@ -49,9 +52,19 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Локаль приходит из middleware next-intl (X-NEXT-INTL-LOCALE).
+  // Раньше lang был захардкожен как "uk" — a11y/SEO-проблема для /ru и /en.
+  let locale: Locale = defaultLocale;
+  try {
+    const headersList = await headers();
+    locale = (headersList.get('x-next-intl-locale') as Locale) || defaultLocale;
+  } catch {
+    // static rendering / отсутствие запроса — остаёмся на defaultLocale
+  }
+
   return (
-    <html lang="uk" className="dark" suppressHydrationWarning>
+    <html lang={locale} className="dark" suppressHydrationWarning>
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

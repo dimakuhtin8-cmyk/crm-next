@@ -20,6 +20,14 @@ export default defineConfig({
       // auth-utils.ts fails and every auth-guard test gets 401 instead of 403.
       NEXTAUTH_SECRET: '4p200FzdKSNdfxdHaoTOa9m6WoEzmwEbl0CqrcuPOgc=',
     },
+    // next-intl ships extensionless ESM imports (e.g. `next/server`) that Node
+    // can't resolve natively (Next has no `exports` map) — inline it so Vite
+    // resolves and transforms it.
+    server: {
+      deps: {
+        inline: ['next-intl'],
+      },
+    },
   },
   resolve: {
     alias: {
