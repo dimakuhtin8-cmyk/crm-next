@@ -142,6 +142,7 @@ export default async function PrivacyPage({ params }: { params: Promise<{ locale
         <li>Google — вхід через обліковий запис;</li>
         <li>Telegram — вхід та повідомлення бота;</li>
         <li>Resend — надсилання листів (підтвердження, відновлення пароля);</li>
+        <li>Stripe — обробка платежів (підписка, рахунки);</li>
         <li>AI-провайдери — генерація відповідей AI-асистента (див. розділ 5).</li>
       </DocUl>
       <DocP>
@@ -162,8 +163,8 @@ export default async function PrivacyPage({ params }: { params: Promise<{ locale
 
       <DocH2>8. Зберігання та видалення</DocH2>
       <DocP>
-        Дані зберігаються, поки обліковий запис активний. Ви можете видалити акаунт у налаштуваннях
-        або за запитом на{' '}
+        Дані зберігаються, поки обліковий запис активний. Ви можете надіслати запит на видалення
+        акаунта на{' '}
         <a
           href={`mailto:${SITE_OWNER.email}`}
           className="text-primary underline-offset-4 hover:underline"

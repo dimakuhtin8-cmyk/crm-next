@@ -16,6 +16,8 @@ export async function POST(request: NextRequest) {
         name: z.string().min(1).max(100).optional(),
         email: z.string().email(),
         password: passwordSchema,
+        // Фіксація згоди з офертою/політикою (з чекбокса у формі)
+        termsAccepted: z.boolean().optional(),
       })
       .safeParse(body);
 
@@ -33,7 +35,6 @@ export async function POST(request: NextRequest) {
 
     // Хэшируем пароль
     const passwordHash = await hash(password, 12);
-
     // Создаем пользователя + персональный тенант (owner), иначе аккаунт
     // останется без тенанта и все tenant-scoped запросы вернут 400.
     const slug = email
@@ -46,6 +47,7 @@ export async function POST(request: NextRequest) {
         email,
         password: passwordHash,
         emailVerified: new Date(), // для email/password сразу верифицируем
+        termsAcceptedAt: parsed.data.termsAccepted ? new Date() : null,
         tenantMembers: {
           create: {
             tenant: {

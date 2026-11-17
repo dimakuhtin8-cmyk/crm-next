@@ -19,6 +19,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,13 +37,18 @@ export default function RegisterPage() {
       return;
     }
 
+    if (!termsAccepted) {
+      setError('Підтвердіть згоду з умовами використання та політикою конфіденційності');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       const res = await fetch(lp('/api/auth/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, termsAccepted }),
       });
 
       const data = await res.json();
@@ -186,6 +192,32 @@ export default function RegisterPage() {
               className="mt-1 flex h-9 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
+          <label className="flex items-start gap-2 text-xs leading-5 text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={termsAccepted}
+              onChange={(e) => setTermsAccepted(e.target.checked)}
+              required
+              className="mt-0.5 h-4 w-4 rounded border-border"
+            />
+            <span>
+              Я погоджуюсь із{' '}
+              <Link
+                href={lp('/legal/oferta')}
+                className="text-primary underline-offset-4 hover:text-primary-hover hover:underline"
+              >
+                Умовами використання
+              </Link>{' '}
+              та{' '}
+              <Link
+                href={lp('/legal/privacy')}
+                className="text-primary underline-offset-4 hover:text-primary-hover hover:underline"
+              >
+                Політикою конфіденційності
+              </Link>
+              .
+            </span>
+          </label>
           <button
             type="submit"
             disabled={isLoading}

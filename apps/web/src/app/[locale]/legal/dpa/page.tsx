@@ -121,6 +121,7 @@ export default async function DpaPage({ params }: { params: Promise<{ locale: st
         <li>Google — OAuth-автентифікація;</li>
         <li>Telegram — автентифікація та доставка повідомлень;</li>
         <li>Resend — доставка службових електронних листів;</li>
+        <li>Stripe — обробка платежів та управління підпискою;</li>
         <li>
           AI-провайдери (Google, OpenAI, Anthropic, Mistral, DeepSeek, Groq, Together) — генерація
           відповідей AI-асистента виключно у межах запиту.

@@ -34,6 +34,8 @@ export async function POST(request: NextRequest) {
         name: z.string().min(1).max(100).optional(),
         email: z.string().email(),
         password: passwordSchema,
+        // Фіксація згоди з офертою/політикою (з чекбокса у формі)
+        termsAccepted: z.boolean().optional(),
       })
       .safeParse(body);
 
@@ -67,6 +69,7 @@ export async function POST(request: NextRequest) {
         email: sanitizedEmail,
         password: passwordHash,
         emailVerified: new Date(),
+        termsAcceptedAt: parsed.data.termsAccepted ? new Date() : null,
         hasOnboarded: true,
         tenantMembers: {
           create: {

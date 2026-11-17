@@ -17,6 +17,8 @@ model User {
   telegramId    String?   @unique
   role          String    @default("user")
   hasOnboarded  Boolean   @default(false)
+  // Дата прийняття оферти/політики (фіксується при реєстрації)
+  termsAcceptedAt DateTime?
   // 2FA TOTP: secret stored encrypted, enabled only after confirm
   twoFactorSecret  String?
   twoFactorEnabled Boolean  @default(false)
