@@ -63,6 +63,7 @@ let owner3MemberId = '';
 let owner3bMemberId = '';
 
 const WA_SECRET = 'whsec-phase2-test-789';
+const WA_PHONE_ID = '1000077777';
 
 beforeAll(async () => {
   await prisma.taskComment.deleteMany();
@@ -82,6 +83,7 @@ beforeAll(async () => {
       slug: 'phase2-tenant',
       plan: 'professional',
       whatsappWebhookSecret: WA_SECRET,
+      whatsappPhoneNumberId: WA_PHONE_ID,
     },
   });
   tenant2 = t2.id;
@@ -339,7 +341,25 @@ describe('ФАЗА 2.3: members — нет эскалации, последни�
 });
 
 describe('ФАЗА 2.4: WhatsApp webhook — подпись обязательна', () => {
-  const waBody = JSON.stringify({ object: 'whatsapp_business_account', entry: [] });
+  // Тело должно содержать phone_number_id тенанта: подпись проверяется
+  // только по секретам тенантов, указанных в теле (защита от подделки).
+  const waBody = JSON.stringify({
+    object: 'whatsapp_business_account',
+    entry: [
+      {
+        id: 'wamid.PHASE2',
+        changes: [
+          {
+            field: 'messages',
+            value: {
+              messaging_product: 'whatsapp',
+              metadata: { display_phone_number: '380670000000', phone_number_id: WA_PHONE_ID },
+            },
+          },
+        ],
+      },
+    ],
+  });
 
   it('без подписи → 403, с неверной подписью → 403', async () => {
     const noSig = await waWebhookPOST(
@@ -364,6 +384,32 @@ describe('ФАЗА 2.4: WhatsApp webhook — подпись обязательн
     });
     const r = await waWebhookPOST(req);
     expect(r.status).toBe(200);
+  });
+
+  it('подпись ЧУЖОГО тенанта не принимается для тенанта из тела → 403', async () => {
+    // Тенант B подписывает тело тенанта A: раньше принималось (подпись
+    // проверялась по секрету ЛЮБОГО тенанта), теперь — только по секретам
+    // тенантов, чей phone_number_id указан в теле.
+    const other = await prisma.tenant.create({
+      data: {
+        name: 'WA Other',
+        slug: 'phase2-wa-other',
+        whatsappWebhookSecret: 'whsec-phase2-other',
+        whatsappPhoneNumberId: '2000088888',
+      },
+    });
+    try {
+      const sig =
+        'sha256=' + createHmac('sha256', 'whsec-phase2-other').update(waBody).digest('hex');
+      const req = new NextRequest(new URL(`${BASE}/api/whatsapp/webhook`), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-hub-signature-256': sig },
+        body: waBody,
+      });
+      expect((await waWebhookPOST(req)).status).toBe(403);
+    } finally {
+      await prisma.tenant.delete({ where: { id: other.id } });
+    }
   });
 });
 

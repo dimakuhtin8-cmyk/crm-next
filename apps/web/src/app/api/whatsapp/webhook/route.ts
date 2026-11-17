@@ -4,7 +4,7 @@ import { prisma } from '@crm-next/database';
 import { NextResponse } from 'next/server';
 
 import type { WhatsAppWebhookBody } from '@/lib/whatsapp/client';
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 
 import { handleWhatsAppWebhook } from '@/lib/whatsapp/handler';
 
@@ -77,24 +77,44 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing signature' }, { status: 403 });
     }
 
-    const tenants = await prisma.tenant.findMany({
-      where: { whatsappWebhookSecret: { not: null } },
-      select: { whatsappWebhookSecret: true },
-    });
-
-    const verified = tenants.some(
-      (t) => t.whatsappWebhookSecret && verifySignature(rawBody, signature, t.whatsappWebhookSecret)
-    );
-
-    if (!verified) {
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 403 });
-    }
-
     let body: WhatsAppWebhookBody;
     try {
       body = JSON.parse(rawBody);
     } catch {
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+    }
+
+    // Тенант(и) определяем ИЗ ТЕЛА запроса (metadata.phone_number_id) и принимаем
+    // подпись только от этих тенантов. Раньше подпись проверялась по секрету
+    // ЛЮБОГО тенанта, а тенант выбирался из тела — тенант A, зная
+    // phone_number_id тенанта B, мог вписать B фейковое сообщение своим секретом.
+    const phoneNumberIds = new Set<string>();
+    for (const entry of body.entry ?? []) {
+      for (const change of entry.changes ?? []) {
+        const id = change?.value?.metadata?.phone_number_id;
+        if (typeof id === 'string' && id) phoneNumberIds.add(id);
+      }
+    }
+    if (phoneNumberIds.size === 0) {
+      // Не можемо визначити тенант — fail closed.
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 403 });
+    }
+
+    const tenants = await prisma.tenant.findMany({
+      where: {
+        whatsappPhoneNumberId: { in: [...phoneNumberIds] },
+        whatsappWebhookSecret: { not: null },
+      },
+      select: { whatsappWebhookSecret: true },
+    });
+
+    const verified = tenants.some(
+      (t) =>
+        t.whatsappWebhookSecret && verifySignature(rawBody, signature, t.whatsappWebhookSecret),
+    );
+
+    if (!verified) {
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 403 });
     }
 
     // Process asynchronously to respond quickly to WhatsApp

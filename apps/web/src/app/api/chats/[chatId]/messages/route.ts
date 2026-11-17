@@ -93,7 +93,7 @@ async function POSTHandler(request: NextRequest, { params }: Params) {
     }
 
     const content = parsed.data.content;
-    const sendResult = await sendMessageToChannel(chatId, content);
+    const sendResult = await sendMessageToChannel(chatId, content, tq.tenantId);
 
     const message = await tq.chatMessage.create({
       data: {
@@ -125,4 +125,4 @@ async function POSTHandler(request: NextRequest, { params }: Params) {
 }
 
 export const GET = withAuth({})(GETHandler);
-export const POST = withAuth({})(POSTHandler);
+export const POST = withAuth({ permission: 'message:create' })(POSTHandler);

@@ -44,10 +44,27 @@ async function GETHandler(request: NextRequest) {
     if (channel && CHANNELS.includes(channel)) {
       where.channel = channel;
     }
+    // OR-условия (search по контакту, dataFilter по ownerId) собираем в AND,
+    // чтобы не затирать друг друга одним ключом where.contact.
+    const andConditions: Record<string, unknown>[] = [];
     if (search) {
-      where.contact = {
-        OR: [{ firstName: { contains: search } }, { lastName: { contains: search } }],
-      };
+      andConditions.push({
+        contact: {
+          OR: [{ firstName: { contains: search } }, { lastName: { contains: search } }],
+        },
+      });
+    }
+    // RBAC data filter (инъектится withAuth, поле ownerId) — применяем к контакту чата
+    const dataFilterParam = searchParams.get('_dataFilter');
+    if (dataFilterParam) {
+      try {
+        andConditions.push({ contact: JSON.parse(dataFilterParam) });
+      } catch {
+        // некорректный фильтр игнорируем (не ломаем запрос)
+      }
+    }
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
     }
 
     const [chats, total] = await Promise.all([
@@ -103,4 +120,4 @@ async function GETHandler(request: NextRequest) {
   }
 }
 
-export const GET = withAuth({})(GETHandler);
+export const GET = withAuth({ dataFilter: true, dataField: 'ownerId' })(GETHandler);

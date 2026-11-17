@@ -240,7 +240,7 @@ describe('POST /api/chats/[chatId]/messages', () => {
     expect(body.message.externalMessageId).toBe('ext-123');
     expect(body.message.content).toBe('Вітаю!'); // trim
 
-    expect(sendMock).toHaveBeenCalledWith(waChatId, 'Вітаю!');
+    expect(sendMock).toHaveBeenCalledWith(waChatId, 'Вітаю!', tenantId);
 
     const chat = await prisma.chat.findUnique({ where: { id: waChatId } });
     expect(chat!.lastMessageAt.getTime()).toBeGreaterThanOrEqual(before);

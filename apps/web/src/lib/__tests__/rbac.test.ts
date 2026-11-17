@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+
 import {
   ROLE_HIERARCHY,
   ALL_PERMISSIONS,
@@ -7,7 +8,6 @@ import {
   canManageRole,
   getDataScope,
   buildDataFilter,
-  type TenantRole,
 } from '@/lib/rbac';
 
 describe('RBAC - Role Hierarchy', () => {
@@ -138,8 +138,9 @@ describe('RBAC - buildDataFilter', () => {
 });
 
 describe('RBAC - Permission Categories', () => {
-  it('should have 9 permission categories', () => {
-    expect(PERMISSION_CATEGORIES).toHaveLength(9);
+  it('should have 10 permission categories (включая Повідомлення)', () => {
+    expect(PERMISSION_CATEGORIES).toHaveLength(10);
+    expect(PERMISSION_CATEGORIES.map((c) => c.name)).toContain('Повідомлення');
   });
 
   it('each category should have permissions array', () => {

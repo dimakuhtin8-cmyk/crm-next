@@ -41,4 +41,4 @@ async function PATCHHandler(request: NextRequest, { params }: Params) {
   }
 }
 
-export const PATCH = withAuth({})(PATCHHandler);
+export const PATCH = withAuth({ permission: 'message:create' })(PATCHHandler);

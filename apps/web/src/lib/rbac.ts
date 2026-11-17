@@ -24,71 +24,166 @@ export const ROLE_HIERARCHY: Record<TenantRole, number> = {
 // Permission matrix
 const PERMISSIONS: Record<TenantRole, string[]> = {
   owner: [
-    'tenant:read', 'tenant:update', 'tenant:delete', 'tenant:billing',
-    'member:read', 'member:invite', 'member:update_role', 'member:remove',
-    'contact:create', 'contact:read', 'contact:update', 'contact:delete',
-    'deal:create', 'deal:read', 'deal:update', 'deal:delete',
-    'task:create', 'task:read', 'task:update', 'task:delete',
-    'activity:create', 'activity:read',
-    'pipeline:create', 'pipeline:read', 'pipeline:update', 'pipeline:delete',
-    'analytics:read', 'audit:read',
-    'settings:read', 'settings:update',
+    'tenant:read',
+    'tenant:update',
+    'tenant:delete',
+    'tenant:billing',
+    'member:read',
+    'member:invite',
+    'member:update_role',
+    'member:remove',
+    'contact:create',
+    'contact:read',
+    'contact:update',
+    'contact:delete',
+    'deal:create',
+    'deal:read',
+    'deal:update',
+    'deal:delete',
+    'task:create',
+    'task:read',
+    'task:update',
+    'task:delete',
+    'activity:create',
+    'activity:read',
+    'pipeline:create',
+    'pipeline:read',
+    'pipeline:update',
+    'pipeline:delete',
+    'analytics:read',
+    'audit:read',
+    'settings:read',
+    'settings:update',
+    'message:create',
     'ai:use',
   ],
   admin: [
     'tenant:read',
-    'member:read', 'member:invite', 'member:update_role', 'member:remove',
-    'contact:create', 'contact:read', 'contact:update', 'contact:delete',
-    'deal:create', 'deal:read', 'deal:update', 'deal:delete',
-    'task:create', 'task:read', 'task:update', 'task:delete',
-    'activity:create', 'activity:read',
-    'pipeline:create', 'pipeline:read', 'pipeline:update', 'pipeline:delete',
-    'analytics:read', 'audit:read',
-    'settings:read', 'settings:update',
+    'member:read',
+    'member:invite',
+    'member:update_role',
+    'member:remove',
+    'contact:create',
+    'contact:read',
+    'contact:update',
+    'contact:delete',
+    'deal:create',
+    'deal:read',
+    'deal:update',
+    'deal:delete',
+    'task:create',
+    'task:read',
+    'task:update',
+    'task:delete',
+    'activity:create',
+    'activity:read',
+    'pipeline:create',
+    'pipeline:read',
+    'pipeline:update',
+    'pipeline:delete',
+    'analytics:read',
+    'audit:read',
+    'settings:read',
+    'settings:update',
+    'message:create',
     'ai:use',
   ],
   member: [
-    'tenant:read', 'member:read',
-    'contact:create', 'contact:read', 'contact:update',
-    'deal:create', 'deal:read', 'deal:update',
-    'task:create', 'task:read', 'task:update',
-    'activity:create', 'activity:read',
+    'tenant:read',
+    'member:read',
+    'contact:create',
+    'contact:read',
+    'contact:update',
+    'deal:create',
+    'deal:read',
+    'deal:update',
+    'task:create',
+    'task:read',
+    'task:update',
+    'activity:create',
+    'activity:read',
     'pipeline:read',
     'analytics:read',
     'settings:read',
     'ai:use',
   ],
   viewer: [
-    'tenant:read', 'member:read',
-    'contact:read', 'deal:read', 'task:read',
-    'activity:read', 'pipeline:read',
-    'analytics:read', 'settings:read',
+    'tenant:read',
+    'member:read',
+    'contact:read',
+    'deal:read',
+    'task:read',
+    'activity:read',
+    'pipeline:read',
+    'analytics:read',
+    'settings:read',
   ],
 };
 
 export const ALL_PERMISSIONS = [
-  'tenant:read', 'tenant:update', 'tenant:delete', 'tenant:billing',
-  'member:read', 'member:invite', 'member:update_role', 'member:remove',
-  'contact:create', 'contact:read', 'contact:update', 'contact:delete',
-  'deal:create', 'deal:read', 'deal:update', 'deal:delete',
-  'task:create', 'task:read', 'task:update', 'task:delete',
-  'activity:create', 'activity:read',
-  'pipeline:create', 'pipeline:read', 'pipeline:update', 'pipeline:delete',
-  'analytics:read', 'audit:read',
-  'settings:read', 'settings:update',
+  'tenant:read',
+  'tenant:update',
+  'tenant:delete',
+  'tenant:billing',
+  'member:read',
+  'member:invite',
+  'member:update_role',
+  'member:remove',
+  'contact:create',
+  'contact:read',
+  'contact:update',
+  'contact:delete',
+  'deal:create',
+  'deal:read',
+  'deal:update',
+  'deal:delete',
+  'task:create',
+  'task:read',
+  'task:update',
+  'task:delete',
+  'activity:create',
+  'activity:read',
+  'pipeline:create',
+  'pipeline:read',
+  'pipeline:update',
+  'pipeline:delete',
+  'analytics:read',
+  'audit:read',
+  'settings:read',
+  'settings:update',
+  'message:create',
   'ai:use',
 ];
 
 export const PERMISSION_CATEGORIES = [
-  { name: 'Контакти', permissions: ['contact:create', 'contact:read', 'contact:update', 'contact:delete'] },
+  {
+    name: 'Контакти',
+    permissions: ['contact:create', 'contact:read', 'contact:update', 'contact:delete'],
+  },
   { name: 'Угоди', permissions: ['deal:create', 'deal:read', 'deal:update', 'deal:delete'] },
   { name: 'Задачі', permissions: ['task:create', 'task:read', 'task:update', 'task:delete'] },
   { name: 'Активність', permissions: ['activity:create', 'activity:read'] },
-  { name: 'Воронки', permissions: ['pipeline:create', 'pipeline:read', 'pipeline:update', 'pipeline:delete'] },
+  {
+    name: 'Воронки',
+    permissions: ['pipeline:create', 'pipeline:read', 'pipeline:update', 'pipeline:delete'],
+  },
   { name: 'Аналітика', permissions: ['analytics:read'] },
-  { name: 'Учасники', permissions: ['member:read', 'member:invite', 'member:update_role', 'member:remove'] },
-  { name: 'Налаштування', permissions: ['settings:read', 'settings:update', 'tenant:read', 'tenant:update', 'tenant:billing'] },
+  {
+    name: 'Учасники',
+    permissions: ['member:read', 'member:invite', 'member:update_role', 'member:remove'],
+  },
+  {
+    name: 'Налаштування',
+    permissions: [
+      'settings:read',
+      'settings:update',
+      'tenant:read',
+      'tenant:update',
+      'tenant:billing',
+    ],
+  },
   { name: 'Аудит', permissions: ['audit:read'] },
+  { name: 'Повідомлення', permissions: ['message:create'] },
 ];
 
 export async function getUserRole(userId: string, tenantId: string): Promise<TenantRole | null> {
@@ -103,13 +198,21 @@ export async function getUserRole(userId: string, tenantId: string): Promise<Ten
   }
 }
 
-export async function hasPermission(userId: string, tenantId: string, permission: string): Promise<boolean> {
+export async function hasPermission(
+  userId: string,
+  tenantId: string,
+  permission: string,
+): Promise<boolean> {
   const role = await getUserRole(userId, tenantId);
   if (!role) return false;
   return PERMISSIONS[role]?.includes(permission) ?? false;
 }
 
-export async function hasMinRole(userId: string, tenantId: string, minRole: TenantRole): Promise<boolean> {
+export async function hasMinRole(
+  userId: string,
+  tenantId: string,
+  minRole: TenantRole,
+): Promise<boolean> {
   const role = await getUserRole(userId, tenantId);
   if (!role) return false;
   return ROLE_HIERARCHY[role] >= ROLE_HIERARCHY[minRole];
@@ -125,7 +228,7 @@ export function canManageRole(actorRole: TenantRole, targetRole: TenantRole): bo
 
 export async function getTenantsWithPermission(
   userId: string,
-  permission: string
+  permission: string,
 ): Promise<Array<{ id: string; name: string; slug: string; role: TenantRole }>> {
   const memberships = await prisma.tenantMember.findMany({
     where: { userId },
@@ -154,7 +257,7 @@ export function getDataScope(role: TenantRole): 'all' | 'own' | 'none' {
 export function buildDataFilter(
   role: TenantRole,
   userId: string,
-  field: string = 'assigneeId'
+  field: string = 'assigneeId',
 ): Record<string, unknown> | undefined {
   if (role === 'owner' || role === 'admin' || role === 'viewer') return undefined;
   return { OR: [{ [field]: userId }, { [field]: null }] };

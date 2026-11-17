@@ -129,9 +129,11 @@ export async function persistInboundMessage(
 export async function sendMessageToChannel(
   chatId: string,
   content: string,
+  tenantId?: string,
 ): Promise<ChannelSendResult> {
-  const chat = await prisma.chat.findUnique({
-    where: { id: chatId },
+  // Захист в глибину: чат ищем строго в тенанте вызывающего (не только по id).
+  const chat = await prisma.chat.findFirst({
+    where: { id: chatId, ...(tenantId ? { tenantId } : {}) },
     include: { tenant: true },
   });
 
