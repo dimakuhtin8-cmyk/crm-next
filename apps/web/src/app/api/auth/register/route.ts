@@ -27,15 +27,20 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json();
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'Невірні дані' }, { status: 400 });
+    }
 
     const parsed = z
       .object({
         name: z.string().min(1).max(100).optional(),
         email: z.string().email(),
         password: passwordSchema,
-        // Фіксація згоди з офертою/політикою (з чекбокса у формі)
-        termsAccepted: z.boolean().optional(),
+        // Фіксація згоди з офертою/політикою (з чекбокса у формі) — обов'язково
+        termsAccepted: z.boolean(),
       })
       .safeParse(body);
 
@@ -43,7 +48,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Невірні дані' }, { status: 400 });
     }
 
-    const { name, email, password } = parsed.data;
+    const { name, email, password, termsAccepted } = parsed.data;
+
+    // Согласие обязательно: без него регистрация невозможна
+    if (!termsAccepted) {
+      return NextResponse.json(
+        { error: 'Підтвердіть згоду з умовами використання та політикою конфіденційності' },
+        { status: 400 },
+      );
+    }
 
     // Sanitize inputs
     const sanitizedName = name ? sanitizeName(name) : undefined;
@@ -69,7 +82,8 @@ export async function POST(request: NextRequest) {
         email: sanitizedEmail,
         password: passwordHash,
         emailVerified: new Date(),
-        termsAcceptedAt: parsed.data.termsAccepted ? new Date() : null,
+        // Согласие подтверждено выше — всегда фиксируем дату
+        termsAcceptedAt: new Date(),
         hasOnboarded: true,
         tenantMembers: {
           create: {

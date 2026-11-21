@@ -36,7 +36,7 @@ const nextConfig = {
             "img-src 'self' data: https: blob:",
             "font-src 'self' data:",
             "connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com https://www.googleapis.com",
-            "frame-src https://accounts.google.com",
+            'frame-src https://accounts.google.com https://oauth.telegram.org https://telegram.org',
           ].join('; '),
         },
         {

@@ -183,9 +183,12 @@ export async function sendMagicLink(email: string, locale = 'uk') {
 
   const link = `${process.env.NEXT_PUBLIC_APP_URL}/${locale}/auth/verify?token=${token}&email=${encodeURIComponent(email)}`;
 
+  // Ссылка входа НИКОГДА не возвращается в HTTP-ответ: иначе любой, кто знает
+  // email, мог бы получить доступ к чужому аккаунту. Пока SMTP не подключён —
+  // доставка только через логи сервера (Vercel → Logs).
   console.log(`[Magic Link] Email: ${email}\nLink: ${link}\nExpires: ${expires}`);
 
-  return { success: true as const, link };
+  return { success: true as const };
 }
 
 export async function verifyMagicLink(token: string, email: string) {

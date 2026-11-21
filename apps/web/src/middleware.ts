@@ -52,12 +52,17 @@ export function middleware(request: NextRequest) {
   // === REDIRECT: старый /dashboard без locale → /uk/dashboard ===
   if (pathname === '/dashboard' || pathname.startsWith('/dashboard/')) {
     const redirectUrl = new URL(`/uk${pathname}`, request.url);
+    // Сохраняем query (?error=..., ?callbackUrl=...) — иначе 301 его теряет
+    redirectUrl.search = request.nextUrl.search;
     return NextResponse.redirect(redirectUrl, 301);
   }
 
   // === REDIRECT: legacy /auth без locale → /uk/auth (legacy-страницы удалены) ===
   if (pathname === '/auth' || pathname.startsWith('/auth/')) {
     const redirectUrl = new URL(`/uk${pathname}`, request.url);
+    // Сохраняем query (?error=CredentialsSignin и т.п.) — иначе сообщение об
+    // ошибке входа пропадает после редиректа
+    redirectUrl.search = request.nextUrl.search;
     return NextResponse.redirect(redirectUrl, 301);
   }
 

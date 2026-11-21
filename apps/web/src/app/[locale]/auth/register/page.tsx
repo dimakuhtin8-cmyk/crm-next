@@ -9,6 +9,7 @@ import {
   TelegramLoginWidget,
   type TelegramAuthData,
 } from '@/components/auth/telegram-login-widget';
+import { friendlyAuthError } from '@/lib/auth-errors';
 import { useLocalePath } from '@/lib/use-locale-path';
 import { MIN_PASSWORD_LENGTH, PASSWORD_HINT } from '@/lib/validation/password';
 
@@ -62,9 +63,9 @@ export default function RegisterPage() {
         });
 
         if (result?.error) {
-          setError(result.error);
+          setError(friendlyAuthError(result.error));
         } else {
-          router.push('/dashboard');
+          router.push(lp('/dashboard'));
           router.refresh();
         }
       } else {
@@ -92,7 +93,7 @@ export default function RegisterPage() {
         const result = await res.json();
 
         if (result.success) {
-          router.push('/dashboard');
+          router.push(lp('/dashboard'));
           router.refresh();
         } else {
           setError(result.error || 'Помилка авторизації через Telegram');
@@ -255,7 +256,7 @@ export default function RegisterPage() {
 
         <button
           type="button"
-          onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
+          onClick={() => signIn('google', { callbackUrl: lp('/dashboard') })}
           disabled={isLoading}
           className="flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground hover:bg-secondary disabled:opacity-50"
         >

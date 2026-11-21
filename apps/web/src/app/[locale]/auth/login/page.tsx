@@ -9,14 +9,8 @@ import {
   TelegramLoginWidget,
   type TelegramAuthData,
 } from '@/components/auth/telegram-login-widget';
+import { friendlyAuthError } from '@/lib/auth-errors';
 import { useLocalePath, useLocale } from '@/lib/use-locale-path';
-
-const OAUTH_ERRORS: Record<string, string> = {
-  Configuration: 'Помилка конфігурації сервера. Зверніться до адміністратора.',
-  AccessDenied: 'Доступ відхилено.',
-  Verification: 'Посилання для верифікації вже використане або прострочене.',
-  Default: 'Помилка авторизації. Спробуйте ще раз.',
-};
 
 export default function LoginPage() {
   const router = useRouter();
@@ -37,14 +31,14 @@ export default function LoginPage() {
     const target =
       callbackUrl && callbackUrl.startsWith('/') && !callbackUrl.startsWith('//')
         ? callbackUrl
-        : '/dashboard';
+        : lp('/dashboard');
     router.replace(target);
   }, [status, router, callbackUrl]);
 
   useEffect(() => {
     const oauthError = searchParams.get('error');
     if (oauthError) {
-      setError(OAUTH_ERRORS[oauthError] || `Помилка: ${oauthError}`);
+      setError(friendlyAuthError(oauthError));
     }
   }, [searchParams]);
 
@@ -61,9 +55,9 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        setError(result.error);
+        setError(friendlyAuthError(result.error));
       } else {
-        router.push('/dashboard');
+        router.push(lp('/dashboard'));
         router.refresh();
       }
     } catch {
@@ -90,9 +84,6 @@ export default function LoginPage() {
 
       if (data.success) {
         setSuccess(`Посилання для входу надіслано на ${email}. Перевірте пошту.`);
-        if (data.link) {
-          console.log('Magic link:', data.link);
-        }
       } else {
         setError(data.error || 'Помилка надсилання посилання');
       }
@@ -106,7 +97,7 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     setError(null);
     setIsLoading(true);
-    await signIn('google', { callbackUrl: '/dashboard' });
+    await signIn('google', { callbackUrl: lp('/dashboard') });
   };
 
   const handleTelegramAuth = useCallback(
@@ -124,7 +115,7 @@ export default function LoginPage() {
         const result = await res.json();
 
         if (result.success) {
-          router.push('/dashboard');
+          router.push(lp('/dashboard'));
           router.refresh();
         } else {
           setError(result.error || 'Помилка авторизації через Telegram');

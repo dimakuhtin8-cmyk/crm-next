@@ -38,6 +38,7 @@ describe('П1.2: политика пароля', () => {
         name: 'Short',
         email: 'short-pass@test.com',
         password: '1234567',
+        termsAccepted: true,
       }),
     );
     expect(r.status).toBe(400);
@@ -49,9 +50,33 @@ describe('П1.2: политика пароля', () => {
         name: 'Ok',
         email: 'ok-pass@test.com',
         password: '12345678',
+        termsAccepted: true,
       }),
     );
     expect(r.status).toBe(200);
+  });
+
+  it('регистрация без согласия с офертой → 400', async () => {
+    const r = await registerPOST(
+      post(`${BASE}/api/auth/register`, {
+        name: 'NoTerms',
+        email: 'no-terms@test.com',
+        password: '12345678',
+        termsAccepted: false,
+      }),
+    );
+    expect(r.status).toBe(400);
+  });
+
+  it('регистрация без поля termsAccepted → 400', async () => {
+    const r = await registerPOST(
+      post(`${BASE}/api/auth/register`, {
+        name: 'NoField',
+        email: 'no-field@test.com',
+        password: '12345678',
+      }),
+    );
+    expect(r.status).toBe(400);
   });
 
   it('вход со старым 6-символьным паролем не блокируется', async () => {
