@@ -1,10 +1,12 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
 import { prisma } from '@crm-next/database';
-import { getTenantQuery } from '@/lib/tenant-query';
-import { getProvider } from '@/lib/ai/providers';
+import { NextResponse } from 'next/server';
+
+import type { NextRequest } from 'next/server';
+
 import { setProviderKey, getProviderKeyRaw } from '@/lib/ai/keys';
+import { getProvider } from '@/lib/ai/providers';
 import { withAuth } from '@/lib/auth-guard';
+import { getTenantQuery } from '@/lib/tenant-query';
 
 async function POSTHandler(request: NextRequest) {
   try {
@@ -24,7 +26,10 @@ async function POSTHandler(request: NextRequest) {
     if (!apiKey) {
       const existing = await getProviderKeyRaw(tq.tenantId, providerId);
       if (!existing) {
-        return NextResponse.json({ error: 'Для цього провайдера немає збереженого ключа' }, { status: 400 });
+        return NextResponse.json(
+          { error: 'Для цього провайдера немає збереженого ключа' },
+          { status: 400 },
+        );
       }
       await prisma.tenant.update({
         where: { id: tq.tenantId },
@@ -37,7 +42,7 @@ async function POSTHandler(request: NextRequest) {
     }
 
     if (typeof apiKey !== 'string') {
-      return NextResponse.json({ error: 'API-ключ обов\'язковий' }, { status: 400 });
+      return NextResponse.json({ error: "API-ключ обов'язковий" }, { status: 400 });
     }
 
     // Validate key prefix if provider has one (supports multiple, e.g. AIza + AQ. for Gemini)
@@ -46,9 +51,12 @@ async function POSTHandler(request: NextRequest) {
       ...(providerConfig.keyPrefixes || []),
     ].filter(Boolean);
     if (acceptedPrefixes.length > 0 && !acceptedPrefixes.some((p) => apiKey.startsWith(p))) {
-      return NextResponse.json({
-        error: `Невірний формат ключа. Ключ ${providerConfig.name} повинен починатися з "${acceptedPrefixes.join('" або "')}"`,
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: `Невірний формат ключа. Ключ ${providerConfig.name} повинен починатися з "${acceptedPrefixes.join('" або "')}"`,
+        },
+        { status: 400 },
+      );
     }
 
     // Save to per-provider store (AiProviderKey) + keep legacy tenant

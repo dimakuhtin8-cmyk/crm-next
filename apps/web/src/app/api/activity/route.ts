@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 
+import { withAuth } from '@/lib/auth-guard';
 import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
-import { z } from 'zod';
-import { withAuth } from '@/lib/auth-guard';
 
 /**
  * GET /api/activity — Activity timeline (all activities across contacts)
@@ -30,13 +30,28 @@ async function GETHandler(request: NextRequest) {
     if (contactId) where.contactId = contactId;
 
     const [activities, total] = await Promise.all([
-      (tq as unknown as { activity: { findMany: (args: { where: Record<string, unknown>; orderBy: Record<string, string>; skip: number; take: number }) => Promise<unknown[]> } }).activity.findMany({
+      (
+        tq as unknown as {
+          activity: {
+            findMany: (args: {
+              where: Record<string, unknown>;
+              orderBy: Record<string, string>;
+              skip: number;
+              take: number;
+            }) => Promise<unknown[]>;
+          };
+        }
+      ).activity.findMany({
         where,
         orderBy: { date: 'desc' },
         skip,
         take: limit,
       }),
-      (tq as unknown as { activity: { count: (args: { where: Record<string, unknown> }) => Promise<number> } }).activity.count({ where }),
+      (
+        tq as unknown as {
+          activity: { count: (args: { where: Record<string, unknown> }) => Promise<number> };
+        }
+      ).activity.count({ where }),
     ]);
 
     return NextResponse.json({ activities, total, page, limit });
@@ -73,7 +88,11 @@ async function POSTHandler(request: NextRequest) {
 
     const { type, title, body: activityBody, contactId, date } = parsed.data;
 
-    const activity = await (tq as unknown as { activity: { create: (args: { data: Record<string, unknown> }) => Promise<unknown> } }).activity.create({
+    const activity = await (
+      tq as unknown as {
+        activity: { create: (args: { data: Record<string, unknown> }) => Promise<unknown> };
+      }
+    ).activity.create({
       data: {
         type,
         title,

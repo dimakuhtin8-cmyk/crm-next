@@ -3,6 +3,7 @@
  */
 
 import { prisma } from '@crm-next/database';
+
 import { auth } from '@/auth/config';
 
 export interface Tenant {
@@ -51,10 +52,7 @@ export async function getTenantBySlug(slug: string): Promise<Tenant | null> {
 /**
  * Check if user is member of tenant
  */
-export async function isTenantMember(
-  userId: string,
-  tenantId: string
-): Promise<boolean> {
+export async function isTenantMember(userId: string, tenantId: string): Promise<boolean> {
   try {
     const membership = await prisma.tenantMember.findUnique({
       where: {

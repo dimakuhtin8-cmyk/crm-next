@@ -10,12 +10,13 @@
  * после подтверждения владением. Действующий код клиенту НЕ возвращается.
  */
 
+import { prisma } from '@crm-next/database';
 import { NextResponse } from 'next/server';
 
 import type { NextRequest } from 'next/server';
-import { prisma } from '@crm-next/database';
-import { encrypt, decrypt } from '@/lib/encryption';
+
 import { extractUser } from '@/lib/auth-utils';
+import { encrypt, decrypt } from '@/lib/encryption';
 import { generateTOTPSecret, verifyTOTP } from '@/lib/totp';
 
 export async function POST(request: NextRequest) {
@@ -45,7 +46,10 @@ export async function POST(request: NextRequest) {
         });
 
         const issuer = 'CRM-Next';
-        const dbUser = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+        const dbUser = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { email: true },
+        });
         const account = dbUser?.email || userId;
         const otpauthUrl =
           `otpauth://totp/${encodeURIComponent(issuer)}:${encodeURIComponent(account)}` +
@@ -54,7 +58,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
           secret: totpSecret,
           otpauthUrl,
-          message: 'Відскануйте QR-код або введіть секрет у додаток автентифікації, потім підтвердіть кодом',
+          message:
+            'Відскануйте QR-код або введіть секрет у додаток автентифікації, потім підтвердіть кодом',
         });
       }
 
@@ -75,7 +80,10 @@ export async function POST(request: NextRequest) {
 
         const isValid = verifyTOTP(decrypt(user.twoFactorSecret), token);
         if (!isValid) {
-          return NextResponse.json({ error: 'Невірний код. Перевірте час на пристрої' }, { status: 400 });
+          return NextResponse.json(
+            { error: 'Невірний код. Перевірте час на пристрої' },
+            { status: 400 },
+          );
         }
 
         await prisma.user.update({
@@ -97,7 +105,11 @@ export async function POST(request: NextRequest) {
         }
 
         // Token is MANDATORY — passwordless disable is not allowed.
-        if (!token || typeof token !== 'string' || !verifyTOTP(decrypt(user.twoFactorSecret), token)) {
+        if (
+          !token ||
+          typeof token !== 'string' ||
+          !verifyTOTP(decrypt(user.twoFactorSecret), token)
+        ) {
           return NextResponse.json({ error: 'Невірний код' }, { status: 400 });
         }
 

@@ -1,26 +1,24 @@
 /**
  * WhatsApp Webhook Receiver
- * 
+ *
  * POST /api/webhooks/whatsapp
  * GET /api/webhooks/whatsapp (verification)
- * 
+ *
  * Принимает обновления от WhatsApp Business API
  */
 
 import { NextResponse } from 'next/server';
-import { handleInboundWebhook } from '@/lib/webhooks';
+
 import { withErrorHandling } from '@/lib/errors';
+import { handleInboundWebhook } from '@/lib/webhooks';
 
 export const POST = withErrorHandling(async (request: Request) => {
   const result = await handleInboundWebhook('whatsapp', request);
-  
+
   if (!result.success) {
-    return NextResponse.json(
-      { error: result.error },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: result.error }, { status: 400 });
   }
-  
+
   return NextResponse.json({ ok: true });
 });
 

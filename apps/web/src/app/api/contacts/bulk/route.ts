@@ -1,15 +1,17 @@
 /**
  * Bulk Contacts API — массовые операции с контактами
- * 
+ *
  * POST /api/contacts/bulk — массовые действия
  */
 
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
 import { prisma } from '@crm-next/database';
-import { getTenantQuery } from '@/lib/tenant-query';
-import { withAuth } from '@/lib/auth-guard';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
+
+import type { NextRequest } from 'next/server';
+
+import { withAuth } from '@/lib/auth-guard';
+import { getTenantQuery } from '@/lib/tenant-query';
 
 const bulkActionSchema = z.object({
   action: z.enum(['delete', 'updateStatus', 'addTag', 'removeTag']),
@@ -40,7 +42,7 @@ async function POSTHandler(request: NextRequest) {
       return NextResponse.json({ error: 'Деякі контакти не знайдено' }, { status: 403 });
     }
 
-    const contactIds = (contacts as Array<{ id: string }>).map(c => c.id);
+    const contactIds = (contacts as Array<{ id: string }>).map((c) => c.id);
     let affected = 0;
 
     switch (action) {
@@ -73,13 +75,17 @@ async function POSTHandler(request: NextRequest) {
         }
         for (const id of contactIds) {
           // Skip if already has tag
-          const existing = await prisma.contactTag.findUnique({
-            where: { contactId_tagId: { contactId: id, tagId } },
-          }).catch(() => null);
+          const existing = await prisma.contactTag
+            .findUnique({
+              where: { contactId_tagId: { contactId: id, tagId } },
+            })
+            .catch(() => null);
           if (!existing) {
-            await prisma.contactTag.create({
-              data: { contactId: id, tagId },
-            }).catch(() => {});
+            await prisma.contactTag
+              .create({
+                data: { contactId: id, tagId },
+              })
+              .catch(() => {});
           }
           affected++;
         }
@@ -92,9 +98,11 @@ async function POSTHandler(request: NextRequest) {
           return NextResponse.json({ error: 'Вкажіть tagId' }, { status: 400 });
         }
         for (const id of contactIds) {
-          await prisma.contactTag.deleteMany({
-            where: { contactId: id, tagId },
-          }).catch(() => {});
+          await prisma.contactTag
+            .deleteMany({
+              where: { contactId: id, tagId },
+            })
+            .catch(() => {});
           affected++;
         }
         break;

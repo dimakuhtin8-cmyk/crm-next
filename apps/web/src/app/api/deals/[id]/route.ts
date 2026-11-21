@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 
+import { withAuth } from '@/lib/auth-guard';
 import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
-import { withAuth } from '@/lib/auth-guard';
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -60,12 +60,16 @@ const updateDealSchema = z.object({
   lossReason: z.string().max(500).optional().nullable(),
   notes: z.string().max(5000).optional().nullable(),
   ownerId: z.string().optional().nullable(),
-  products: z.array(z.object({
-    id: z.string().optional(),
-    name: z.string().min(1).max(200),
-    quantity: z.number().min(1).default(1),
-    price: z.number().min(0),
-  })).optional(),
+  products: z
+    .array(
+      z.object({
+        id: z.string().optional(),
+        name: z.string().min(1).max(200),
+        quantity: z.number().min(1).default(1),
+        price: z.number().min(0),
+      }),
+    )
+    .optional(),
 });
 
 async function PUTHandler(request: NextRequest, { params }: Params) {
@@ -82,7 +86,7 @@ async function PUTHandler(request: NextRequest, { params }: Params) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Невірні дані', details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -129,15 +133,21 @@ async function PUTHandler(request: NextRequest, { params }: Params) {
           products.map((p) =>
             tq.dealProduct.create({
               data: { dealId: id, name: p.name, quantity: p.quantity, price: p.price },
-            })
-          )
+            }),
+          ),
         );
       }
     }
 
-    const deal = await (tq.deal as unknown as {
-      update: (args: { where: { id: string }; data: Record<string, unknown>; include?: Record<string, unknown> }) => Promise<unknown>;
-    }).update({
+    const deal = await (
+      tq.deal as unknown as {
+        update: (args: {
+          where: { id: string };
+          data: Record<string, unknown>;
+          include?: Record<string, unknown>;
+        }) => Promise<unknown>;
+      }
+    ).update({
       where: { id },
       data: dealUpdateData,
       include: { products: true, stage: true, pipeline: true, contact: true },
@@ -145,8 +155,12 @@ async function PUTHandler(request: NextRequest, { params }: Params) {
 
     // deal_won / deal_lost triggers (fire-and-forget, must not fail the request)
     const updated = deal as unknown as {
-      id: string; title: string; value: number | null; stageId: string | null;
-      contactId: string | null; status: string;
+      id: string;
+      title: string;
+      value: number | null;
+      stageId: string | null;
+      contactId: string | null;
+      status: string;
     };
     if (dealUpdateData.status === 'won' || dealUpdateData.status === 'lost') {
       const trigger = dealUpdateData.status === 'won' ? 'deal_won' : 'deal_lost';
@@ -162,7 +176,7 @@ async function PUTHandler(request: NextRequest, { params }: Params) {
             previousStageId: null,
             contactId: updated.contactId,
             status: updated.status,
-          })
+          }),
         )
         .catch((err) => console.error('Automation error:', err));
     }

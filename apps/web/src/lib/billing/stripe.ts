@@ -10,8 +10,9 @@
  * - Webhook event verification
  */
 
-import Stripe from 'stripe';
 import { prisma } from '@crm-next/database';
+import Stripe from 'stripe';
+
 import log from '@/lib/logging/logger';
 
 // Lazy-initialized Stripe client (exported for webhook event retrieval)
@@ -36,7 +37,7 @@ export function getStripe(): Stripe {
 export async function getOrCreateCustomer(
   tenantId: string,
   tenantName: string,
-  tenantEmail: string
+  tenantEmail: string,
 ): Promise<Stripe.Customer> {
   const tenant = await prisma.tenant.findUnique({
     where: { id: tenantId },
@@ -63,7 +64,7 @@ export async function getOrCreateCustomer(
 async function createCustomer(
   tenantId: string,
   name: string,
-  email: string
+  email: string,
 ): Promise<Stripe.Customer> {
   const customer = await getStripe().customers.create({
     name,
@@ -96,7 +97,7 @@ export async function createCheckoutSession(params: {
   const customer = await getOrCreateCustomer(
     params.tenantId,
     params.tenantName,
-    params.tenantEmail
+    params.tenantEmail,
   );
 
   const session = await getStripe().checkout.sessions.create({
@@ -124,7 +125,10 @@ export async function createCheckoutSession(params: {
     cancel_url: params.cancelUrl,
   });
 
-  log.info({ tenantId: params.tenantId, sessionId: session.id, planId: params.planId }, 'Checkout session created');
+  log.info(
+    { tenantId: params.tenantId, sessionId: session.id, planId: params.planId },
+    'Checkout session created',
+  );
   return session;
 }
 
@@ -133,7 +137,7 @@ export async function createCheckoutSession(params: {
  */
 export async function createPortalSession(
   tenantId: string,
-  returnUrl: string
+  returnUrl: string,
 ): Promise<Stripe.BillingPortal.Session> {
   const tenant = await prisma.tenant.findUnique({
     where: { id: tenantId },
@@ -158,7 +162,7 @@ export async function createPortalSession(
  */
 export async function cancelSubscription(
   tenantId: string,
-  immediately: boolean = false
+  immediately: boolean = false,
 ): Promise<Stripe.Subscription> {
   const tenant = await prisma.tenant.findUnique({
     where: { id: tenantId },
@@ -172,23 +176,23 @@ export async function cancelSubscription(
   // NOTE (stripe v22): subscriptions.cancel() does NOT accept
   // cancel_at_period_end — end-of-period cancel goes via update().
   if (!immediately) {
-    const subscription = await getStripe().subscriptions.update(
-      tenant.subscriptionId,
-      { cancel_at_period_end: true }
-    );
+    const subscription = await getStripe().subscriptions.update(tenant.subscriptionId, {
+      cancel_at_period_end: true,
+    });
 
     await prisma.tenant.update({
       where: { id: tenantId },
       data: { subscriptionStatus: 'canceled' },
     });
 
-    log.info({ tenantId, subscriptionId: tenant.subscriptionId, immediately }, 'Subscription scheduled for cancelation');
+    log.info(
+      { tenantId, subscriptionId: tenant.subscriptionId, immediately },
+      'Subscription scheduled for cancelation',
+    );
     return subscription;
   }
 
-  const subscription = await getStripe().subscriptions.cancel(
-    tenant.subscriptionId
-  );
+  const subscription = await getStripe().subscriptions.cancel(tenant.subscriptionId);
 
   await prisma.tenant.update({
     where: { id: tenantId },
@@ -198,16 +202,17 @@ export async function cancelSubscription(
     },
   });
 
-  log.info({ tenantId, subscriptionId: tenant.subscriptionId, immediately }, 'Subscription canceled');
+  log.info(
+    { tenantId, subscriptionId: tenant.subscriptionId, immediately },
+    'Subscription canceled',
+  );
   return subscription;
 }
 
 /**
  * Retrieve subscription details
  */
-export async function getSubscription(
-  tenantId: string
-): Promise<Stripe.Subscription | null> {
+export async function getSubscription(tenantId: string): Promise<Stripe.Subscription | null> {
   const tenant = await prisma.tenant.findUnique({
     where: { id: tenantId },
     select: { subscriptionId: true },
@@ -216,10 +221,9 @@ export async function getSubscription(
   if (!tenant?.subscriptionId) return null;
 
   try {
-    const subscription = await getStripe().subscriptions.retrieve(
-      tenant.subscriptionId,
-      { expand: ['latest_invoice', 'default_payment_method'] }
-    );
+    const subscription = await getStripe().subscriptions.retrieve(tenant.subscriptionId, {
+      expand: ['latest_invoice', 'default_payment_method'],
+    });
     return subscription;
   } catch {
     return null;
@@ -231,7 +235,7 @@ export async function getSubscription(
  */
 export async function getPaymentHistory(
   tenantId: string,
-  limit: number = 20
+  limit: number = 20,
 ): Promise<Stripe.PaymentIntent[]> {
   const tenant = await prisma.tenant.findUnique({
     where: { id: tenantId },
@@ -254,9 +258,7 @@ export async function getPaymentHistory(
  * NOTE (stripe v22): invoices.retrieveUpcoming() was removed — replaced by
  * invoices.createPreview(), which returns a regular Invoice.
  */
-export async function getUpcomingInvoice(
-  tenantId: string
-): Promise<Stripe.Invoice | null> {
+export async function getUpcomingInvoice(tenantId: string): Promise<Stripe.Invoice | null> {
   const tenant = await prisma.tenant.findUnique({
     where: { id: tenantId },
     select: { stripeCustomerId: true, subscriptionId: true },
@@ -278,10 +280,7 @@ export async function getUpcomingInvoice(
 /**
  * Verify Stripe webhook signature
  */
-export function verifyWebhook(
-  payload: string | Buffer,
-  signature: string
-): Stripe.Event {
+export function verifyWebhook(payload: string | Buffer, signature: string): Stripe.Event {
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!secret) {
     throw new Error('STRIPE_WEBHOOK_SECRET не налаштовано');

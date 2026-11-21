@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 
-import { csrfProtection } from '@/lib/csrf';
-import { getTenantQuery } from '@/lib/tenant-query';
-import { decrypt, encrypt } from '@/lib/encryption';
-import { extractUserId } from '@/lib/auth-utils';
-import { getUserRole } from '@/lib/rbac';
 import { withAuth } from '@/lib/auth-guard';
+import { extractUserId } from '@/lib/auth-utils';
+import { csrfProtection } from '@/lib/csrf';
+import { decrypt, encrypt } from '@/lib/encryption';
+import { getUserRole } from '@/lib/rbac';
+import { getTenantQuery } from '@/lib/tenant-query';
 
 function safeDecrypt(value: string): string {
   try {
@@ -54,10 +54,7 @@ async function GETHandler(request: NextRequest, { params }: Params) {
     return NextResponse.json({ contact: decryptedContact });
   } catch (error) {
     console.error('Get contact error:', error);
-    return NextResponse.json(
-      { error: 'Помилка отримання контакту' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Помилка отримання контакту' }, { status: 500 });
   }
 }
 
@@ -94,7 +91,7 @@ async function PUTHandler(request: NextRequest, { params }: Params) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Невірні дані', details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -137,9 +134,7 @@ async function PUTHandler(request: NextRequest, { params }: Params) {
       });
 
       if (existingTags.length > 0) {
-        await Promise.all(
-          existingTags.map((et) => tq.contactTag.delete({ where: { id: et.id } }))
-        );
+        await Promise.all(existingTags.map((et) => tq.contactTag.delete({ where: { id: et.id } })));
       }
 
       if (tagIds.length > 0) {
@@ -147,15 +142,21 @@ async function PUTHandler(request: NextRequest, { params }: Params) {
           tagIds.map((tagId) =>
             tq.contactTag.create({
               data: { contactId: id, tagId },
-            })
-          )
+            }),
+          ),
         );
       }
     }
 
-    const contact = await (tq.contact as unknown as {
-      update: (args: { where: { id: string }; data: Record<string, unknown>; include?: Record<string, unknown> }) => Promise<unknown>;
-    }).update({
+    const contact = await (
+      tq.contact as unknown as {
+        update: (args: {
+          where: { id: string };
+          data: Record<string, unknown>;
+          include?: Record<string, unknown>;
+        }) => Promise<unknown>;
+      }
+    ).update({
       where: { id },
       data: updateData,
       include: { tags: { include: { tag: true } } },
@@ -164,10 +165,7 @@ async function PUTHandler(request: NextRequest, { params }: Params) {
     return NextResponse.json({ contact });
   } catch (error) {
     console.error('Update contact error:', error);
-    return NextResponse.json(
-      { error: 'Помилка оновлення контакту' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Помилка оновлення контакту' }, { status: 500 });
   }
 }
 
@@ -197,10 +195,7 @@ async function DELETEHandler(request: NextRequest, { params }: Params) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Delete contact error:', error);
-    return NextResponse.json(
-      { error: 'Помилка видалення контакту' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Помилка видалення контакту' }, { status: 500 });
   }
 }
 

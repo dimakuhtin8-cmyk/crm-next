@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 
+import { withAuth } from '@/lib/auth-guard';
+import { extractUserId } from '@/lib/auth-utils';
 import { csrfProtection } from '@/lib/csrf';
 import { decrypt } from '@/lib/encryption';
-import { extractUserId } from '@/lib/auth-utils';
 import { getUserRole } from '@/lib/rbac';
 import { getTenantQuery } from '@/lib/tenant-query';
-import { withAuth } from '@/lib/auth-guard';
 
 function safeDecrypt(value: string): string {
   try {
@@ -74,7 +74,9 @@ async function GETHandler(request: NextRequest) {
     if (dataFilterParam) {
       try {
         andConditions.push(JSON.parse(dataFilterParam));
-      } catch {}
+      } catch {
+        /* ignore */
+      }
     }
 
     if (andConditions.length > 0) {
@@ -102,10 +104,7 @@ async function GETHandler(request: NextRequest) {
     return NextResponse.json({ contacts: decryptedContacts, total, page, limit });
   } catch (error) {
     console.error('List contacts error:', error);
-    return NextResponse.json(
-      { error: 'Помилка отримання списку контактів' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Помилка отримання списку контактів' }, { status: 500 });
   }
 }
 
@@ -141,7 +140,7 @@ async function POSTHandler(request: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Невірні дані', details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -169,9 +168,14 @@ async function POSTHandler(request: NextRequest) {
       notes: contactData.notes ? encrypt(contactData.notes) : contactData.notes,
     };
 
-    const contact = await (tq.contact as unknown as {
-      create: (args: { data: Record<string, unknown>; include?: Record<string, unknown> }) => Promise<unknown>;
-    }).create({
+    const contact = await (
+      tq.contact as unknown as {
+        create: (args: {
+          data: Record<string, unknown>;
+          include?: Record<string, unknown>;
+        }) => Promise<unknown>;
+      }
+    ).create({
       data: {
         ...encryptedData,
         ownerId,
@@ -190,17 +194,18 @@ async function POSTHandler(request: NextRequest) {
       action: 'create',
       entity: 'contact',
       entityId: (contact as { id: string }).id,
-      newValues: { firstName: contactData.firstName, email: contactData.email, company: contactData.company },
+      newValues: {
+        firstName: contactData.firstName,
+        email: contactData.email,
+        company: contactData.company,
+      },
       ...meta,
     });
 
     return NextResponse.json({ contact }, { status: 201 });
   } catch (error) {
     console.error('Create contact error:', error);
-    return NextResponse.json(
-      { error: 'Помилка створення контакту' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Помилка створення контакту' }, { status: 500 });
   }
 }
 

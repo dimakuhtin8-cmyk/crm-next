@@ -4,18 +4,15 @@
  * NOTE: GET /api/deals отвечает через apiSuccess → тело лежит в data.data.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { prisma } from '@crm-next/database';
 import { SignJWT } from 'jose';
 import { NextRequest } from 'next/server';
-import { prisma } from '@crm-next/database';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
 const SECRET = new TextEncoder().encode('4p200FzdKSNdfxdHaoTOa9m6WoEzmwEbl0CqrcuPOgc=');
 
 async function createToken(payload: Record<string, unknown>): Promise<string> {
-  return new SignJWT(payload)
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .sign(SECRET);
+  return new SignJWT(payload).setProtectedHeader({ alg: 'HS256' }).setIssuedAt().sign(SECRET);
 }
 
 function makeRequest(url: string, token: string): NextRequest {
@@ -82,15 +79,33 @@ beforeAll(async () => {
   });
 
   await prisma.deal.create({
-    data: { tenantId, pipelineId: pipeline.id, stageId: stage.id, title: 'DEAL_A_OWN', ownerId: memberAId },
+    data: {
+      tenantId,
+      pipelineId: pipeline.id,
+      stageId: stage.id,
+      title: 'DEAL_A_OWN',
+      ownerId: memberAId,
+    },
   });
 
   await prisma.deal.create({
-    data: { tenantId, pipelineId: pipeline.id, stageId: stage.id, title: 'DEAL_B_OWN', ownerId: memberBId },
+    data: {
+      tenantId,
+      pipelineId: pipeline.id,
+      stageId: stage.id,
+      title: 'DEAL_B_OWN',
+      ownerId: memberBId,
+    },
   });
 
   await prisma.deal.create({
-    data: { tenantId, pipelineId: pipeline.id, stageId: stage.id, title: 'DEAL_UNASSIGNED', ownerId: null },
+    data: {
+      tenantId,
+      pipelineId: pipeline.id,
+      stageId: stage.id,
+      title: 'DEAL_UNASSIGNED',
+      ownerId: null,
+    },
   });
 });
 

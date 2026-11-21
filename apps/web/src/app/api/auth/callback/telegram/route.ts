@@ -1,9 +1,11 @@
+import crypto from 'crypto';
+
 import { prisma } from '@crm-next/database';
 import { SignJWT } from 'jose';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 
 import { csrfProtection } from '@/lib/csrf';
 
@@ -23,7 +25,6 @@ function verifyTelegramData(data: Record<string, string>): boolean {
   const dataCheckString = dataCheckArr.join('\n');
 
   // HMAC-SHA256
-  const crypto = require('crypto');
   const secret = crypto.createHmac('sha256', 'WebAppData').update(BOT_TOKEN).digest();
   const hmac = crypto.createHmac('sha256', secret).update(dataCheckString).digest('hex');
 
@@ -37,10 +38,10 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { id, first_name, last_name, username, photo_url, auth_date, hash } = body;
+    const { id, first_name, last_name, photo_url, auth_date, hash } = body;
 
     if (!id || !first_name || !hash) {
-      return NextResponse.json({ error: 'Відсутні обов\'язкові дані' }, { status: 400 });
+      return NextResponse.json({ error: "Відсутні обов'язкові дані" }, { status: 400 });
     }
 
     // Verify Telegram data
@@ -85,7 +86,12 @@ export async function POST(request: NextRequest) {
 
     // Create JWT session token
     const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET);
-    const token = await new SignJWT({ sub: user.id, name: user.name, email: user.email, image: user.image })
+    const token = await new SignJWT({
+      sub: user.id,
+      name: user.name,
+      email: user.email,
+      image: user.image,
+    })
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
       .setExpirationTime('30d')
@@ -107,9 +113,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Telegram auth error:', error);
-    return NextResponse.json(
-      { error: 'Помилка авторизації' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Помилка авторизації' }, { status: 500 });
   }
 }

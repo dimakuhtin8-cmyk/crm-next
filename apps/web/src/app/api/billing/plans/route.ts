@@ -3,6 +3,7 @@
  */
 
 import { NextResponse } from 'next/server';
+
 import { getAllPlans } from '@/lib/billing/plans';
 
 export async function GET() {

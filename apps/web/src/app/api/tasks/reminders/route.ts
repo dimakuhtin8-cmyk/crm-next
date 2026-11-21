@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 
-import { getTenantQuery } from '@/lib/tenant-query';
 import { withAuth } from '@/lib/auth-guard';
+import { getTenantQuery } from '@/lib/tenant-query';
 
 /**
  * GET /api/tasks/reminders — Get tasks with upcoming reminders
@@ -23,9 +23,7 @@ async function GETHandler(request: NextRequest) {
     const now = new Date();
     const futureLimit = new Date(now.getTime() + hours * 60 * 60 * 1000);
 
-    const where: Record<string, unknown>[] = [
-      { reminderAt: { gte: now, lte: futureLimit } },
-    ];
+    const where: Record<string, unknown>[] = [{ reminderAt: { gte: now, lte: futureLimit } }];
 
     if (includeOverdue) {
       where.push({ reminderAt: { lt: now } });
@@ -41,8 +39,12 @@ async function GETHandler(request: NextRequest) {
     } as never);
 
     // Categorize
-    const overdue = tasks.filter((t: { reminderAt: Date | string | null }) => t.reminderAt && new Date(t.reminderAt) < now);
-    const upcoming = tasks.filter((t: { reminderAt: Date | string | null }) => t.reminderAt && new Date(t.reminderAt) >= now);
+    const overdue = tasks.filter(
+      (t: { reminderAt: Date | string | null }) => t.reminderAt && new Date(t.reminderAt) < now,
+    );
+    const upcoming = tasks.filter(
+      (t: { reminderAt: Date | string | null }) => t.reminderAt && new Date(t.reminderAt) >= now,
+    );
 
     return NextResponse.json({ overdue, upcoming, total: tasks.length });
   } catch (error) {

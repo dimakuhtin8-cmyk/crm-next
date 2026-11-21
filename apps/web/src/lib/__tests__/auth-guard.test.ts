@@ -4,8 +4,9 @@
  * Verifies that withAuth({ permission: 'ai:use' }) returns 403 for viewers.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { buildDataFilter, getDataScope, ROLE_HIERARCHY, canManageRole, type TenantRole } from '@/lib/rbac';
+import { describe, it, expect, vi } from 'vitest';
+
+import { buildDataFilter, getDataScope, ROLE_HIERARCHY, canManageRole } from '@/lib/rbac';
 
 vi.mock('@crm-next/database', () => ({
   prisma: {
@@ -79,7 +80,7 @@ describe('Auth Guard - RBAC Integration', () => {
     };
 
     it('all mutating routes have required permissions defined', () => {
-      for (const [route, perms] of Object.entries(routePermissions)) {
+      for (const [, perms] of Object.entries(routePermissions)) {
         expect(perms.length).toBeGreaterThan(0);
         expect(perms[0]).toMatch(/^[a-z]+:[a-z_]+$/);
       }
@@ -87,7 +88,7 @@ describe('Auth Guard - RBAC Integration', () => {
 
     it('viewer has none of the mutating permissions', () => {
       const viewerPerms = ROLE_HIERARCHY['viewer'];
-      for (const [route, perms] of Object.entries(routePermissions)) {
+      for (const [,] of Object.entries(routePermissions)) {
         // viewer level (1) is less than all mutating permission requirements
         expect(viewerPerms).toBeLessThan(ROLE_HIERARCHY['owner']);
       }

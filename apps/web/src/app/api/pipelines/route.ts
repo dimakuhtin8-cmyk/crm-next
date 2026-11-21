@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 
+import { withAuth } from '@/lib/auth-guard';
 import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
-import { withAuth } from '@/lib/auth-guard';
 
 /**
  * GET /api/pipelines — List pipelines with stages
@@ -37,10 +37,15 @@ async function GETHandler(request: NextRequest) {
  */
 const createPipelineSchema = z.object({
   name: z.string().min(1).max(100),
-  stages: z.array(z.object({
-    name: z.string().min(1).max(100),
-    color: z.string().max(7).optional(),
-  })).min(1).max(20),
+  stages: z
+    .array(
+      z.object({
+        name: z.string().min(1).max(100),
+        color: z.string().max(7).optional(),
+      }),
+    )
+    .min(1)
+    .max(20),
 });
 
 async function POSTHandler(request: NextRequest) {
@@ -58,7 +63,7 @@ async function POSTHandler(request: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Невірні дані', details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 

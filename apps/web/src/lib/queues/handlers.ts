@@ -9,6 +9,8 @@
  */
 
 import { prisma } from '@crm-next/database';
+
+import { createLogger } from '@/lib/logging/logger';
 import {
   registerHandler,
   type EmailJobData,
@@ -17,9 +19,8 @@ import {
   type NotificationJobData,
   type SendMessageJobData,
 } from '@/lib/queues';
-import { createLogger } from '@/lib/logging/logger';
 
-const log = createLogger({ service: 'queue-handlers' });
+createLogger({ service: 'queue-handlers' });
 
 // ============ email (Resend) ============
 
@@ -62,7 +63,7 @@ async function handleEmail(job: { data: EmailJobData }) {
 async function handleAi(job: { data: AIJobData & { tenantId: string } }) {
   const { tenantId, action, entityType, entityId, prompt, model } = job.data;
   const { getProviderKey } = await import('@/lib/ai/keys');
-  const { scoreDeal, analyzeContact } = await import('@/lib/ai/gemini');
+  const { scoreDeal } = await import('@/lib/ai/gemini');
 
   const tenant = await prisma.tenant.findUnique({
     where: { id: tenantId },
@@ -93,9 +94,12 @@ async function handleAi(job: { data: AIJobData & { tenantId: string } }) {
       },
       apiKey,
       provider,
-      useModel
+      useModel,
     );
-    await prisma.deal.update({ where: { id: deal.id }, data: { aiScore: score, aiScoredAt: new Date() } });
+    await prisma.deal.update({
+      where: { id: deal.id },
+      data: { aiScore: score, aiScoredAt: new Date() },
+    });
     return { scored: true, score };
   }
 
@@ -122,7 +126,7 @@ async function handleAi(job: { data: AIJobData & { tenantId: string } }) {
       },
       apiKey,
       provider,
-      useModel
+      useModel,
     );
     await prisma.contact.update({
       where: { id: contact.id },
@@ -159,8 +163,13 @@ async function handleExport(job: { data: ExportJobData }) {
   if (entityType === 'contacts') {
     const list = await prisma.contact.findMany({ where: { tenantId, ...(filters || {}) } });
     rows = list.map((c) => ({
-      id: c.id, firstName: c.firstName, lastName: c.lastName, email: c.email,
-      company: c.company, position: c.position, status: c.status,
+      id: c.id,
+      firstName: c.firstName,
+      lastName: c.lastName,
+      email: c.email,
+      company: c.company,
+      position: c.position,
+      status: c.status,
     }));
   } else if (entityType === 'deals') {
     const list = await prisma.deal.findMany({
@@ -168,14 +177,21 @@ async function handleExport(job: { data: ExportJobData }) {
       include: { stage: { select: { name: true } } },
     });
     rows = list.map((d) => ({
-      id: d.id, title: d.title, value: d.value, currency: d.currency,
-      status: d.status, stage: (d.stage as { name: string } | null)?.name || '',
+      id: d.id,
+      title: d.title,
+      value: d.value,
+      currency: d.currency,
+      status: d.status,
+      stage: (d.stage as { name: string } | null)?.name || '',
       company: d.company,
     }));
   } else if (entityType === 'tasks') {
     const list = await prisma.task.findMany({ where: { tenantId, ...(filters || {}) } });
     rows = list.map((t) => ({
-      id: t.id, title: t.title, status: t.status, priority: t.priority,
+      id: t.id,
+      title: t.title,
+      status: t.status,
+      priority: t.priority,
       dueDate: t.dueDate?.toISOString() || '',
     }));
   } else {
@@ -241,7 +257,10 @@ async function handleSendMessage(job: { data: SendMessageJobData }) {
     if (!Number.isFinite(n)) throw new Error('Невірний chatId');
     targets = [n];
   } else {
-    const chats = await prisma.telegramChat.findMany({ where: { tenantId }, select: { telegramId: true } });
+    const chats = await prisma.telegramChat.findMany({
+      where: { tenantId },
+      select: { telegramId: true },
+    });
     targets = chats.map((c) => c.telegramId);
   }
   if (targets.length === 0) {
@@ -252,7 +271,10 @@ async function handleSendMessage(job: { data: SendMessageJobData }) {
   const errors: string[] = [];
   for (const id of targets) {
     try {
-      const res = (await sendMessage(tenant.telegramBotToken, id, text)) as { ok?: boolean; description?: string };
+      const res = (await sendMessage(tenant.telegramBotToken, id, text)) as {
+        ok?: boolean;
+        description?: string;
+      };
       if (res && res.ok === false) throw new Error(res.description || 'Telegram API error');
       sent++;
     } catch (e: any) {

@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 
+import { withAuth } from '@/lib/auth-guard';
 import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
-import { withAuth } from '@/lib/auth-guard';
 
 /**
  * GET /api/tags — List tags (tenant-scoped)
@@ -27,10 +27,7 @@ async function GETHandler(request: NextRequest) {
     return NextResponse.json({ tags });
   } catch (error) {
     console.error('List tags error:', error);
-    return NextResponse.json(
-      { error: 'Помилка отримання списку тегів' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Помилка отримання списку тегів' }, { status: 500 });
   }
 }
 
@@ -59,7 +56,7 @@ async function POSTHandler(request: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Невірні дані', details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -68,10 +65,7 @@ async function POSTHandler(request: NextRequest) {
     });
 
     if (existing) {
-      return NextResponse.json(
-        { error: 'Тег з такою назвою вже існує' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Тег з такою назвою вже існує' }, { status: 400 });
     }
 
     const tag = await tq.tag.create({
@@ -81,10 +75,7 @@ async function POSTHandler(request: NextRequest) {
     return NextResponse.json({ tag }, { status: 201 });
   } catch (error) {
     console.error('Create tag error:', error);
-    return NextResponse.json(
-      { error: 'Помилка створення тегу' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Помилка створення тегу' }, { status: 500 });
   }
 }
 

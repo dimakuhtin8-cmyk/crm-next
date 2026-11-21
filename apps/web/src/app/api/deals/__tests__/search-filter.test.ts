@@ -3,18 +3,15 @@
  * NOTE: GET /api/deals отвечает через apiSuccess → тело лежит в data.data.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { prisma } from '@crm-next/database';
 import { SignJWT } from 'jose';
 import { NextRequest } from 'next/server';
-import { prisma } from '@crm-next/database';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
 const SECRET = new TextEncoder().encode('4p200FzdKSNdfxdHaoTOa9m6WoEzmwEbl0CqrcuPOgc=');
 
 async function createToken(payload: Record<string, unknown>): Promise<string> {
-  return new SignJWT(payload)
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .sign(SECRET);
+  return new SignJWT(payload).setProtectedHeader({ alg: 'HS256' }).setIssuedAt().sign(SECRET);
 }
 
 function makeRequest(url: string, token: string): NextRequest {
@@ -71,13 +68,31 @@ beforeAll(async () => {
   });
 
   await prisma.deal.create({
-    data: { tenantId, pipelineId: pipeline.id, stageId: stage.id, title: 'Zzzsearchable', ownerId: memberAId },
+    data: {
+      tenantId,
+      pipelineId: pipeline.id,
+      stageId: stage.id,
+      title: 'Zzzsearchable',
+      ownerId: memberAId,
+    },
   });
   await prisma.deal.create({
-    data: { tenantId, pipelineId: pipeline.id, stageId: stage.id, title: 'Plaindeal', ownerId: memberAId },
+    data: {
+      tenantId,
+      pipelineId: pipeline.id,
+      stageId: stage.id,
+      title: 'Plaindeal',
+      ownerId: memberAId,
+    },
   });
   await prisma.deal.create({
-    data: { tenantId, pipelineId: pipeline.id, stageId: stage.id, title: 'Zzzsearchable', ownerId: memberBId },
+    data: {
+      tenantId,
+      pipelineId: pipeline.id,
+      stageId: stage.id,
+      title: 'Zzzsearchable',
+      ownerId: memberBId,
+    },
   });
 });
 
@@ -98,7 +113,7 @@ describe('member: search + dataFilter combine with AND, not overwrite', () => {
     const token = await createToken({ id: memberAId, tenantId });
     const req = makeRequest(
       `http://localhost:3000/api/deals?tenantId=${tenantId}&search=Zzzsearchable`,
-      token
+      token,
     );
 
     const response = await GET(req);
@@ -116,7 +131,7 @@ describe('member: search + dataFilter combine with AND, not overwrite', () => {
     const token = await createToken({ id: memberAId, tenantId });
     const req = makeRequest(
       `http://localhost:3000/api/deals?tenantId=${tenantId}&search=Nomatch`,
-      token
+      token,
     );
 
     const response = await GET(req);

@@ -10,11 +10,11 @@ import { NextResponse } from 'next/server';
 
 import type { NextRequest } from 'next/server';
 
+import { listProviderKeys, setProviderKey, deleteProviderKey } from '@/lib/ai/keys';
+import { getProvider } from '@/lib/ai/providers';
+import { withAuth } from '@/lib/auth-guard';
 import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
-import { getProvider } from '@/lib/ai/providers';
-import { listProviderKeys, setProviderKey, deleteProviderKey } from '@/lib/ai/keys';
-import { withAuth } from '@/lib/auth-guard';
 
 async function GETHandler(request: NextRequest) {
   const csrfError = csrfProtection(request);
@@ -47,7 +47,7 @@ async function POSTHandler(request: NextRequest) {
       return NextResponse.json({ error: 'Невідомий провайдер' }, { status: 400 });
     }
     if (!apiKey || typeof apiKey !== 'string' || !apiKey.trim()) {
-      return NextResponse.json({ error: 'API-ключ обов\'язковий' }, { status: 400 });
+      return NextResponse.json({ error: "API-ключ обов'язковий" }, { status: 400 });
     }
 
     await setProviderKey(tq.tenantId, provider, apiKey.trim());

@@ -9,9 +9,9 @@ import { NextResponse } from 'next/server';
 
 import type { NextRequest } from 'next/server';
 
-import { verifyWorkerSecret } from '@/lib/worker-auth';
-import { registerQueueHandlers } from '@/lib/queues/handlers';
 import { processQueueJobs } from '@/lib/queues';
+import { registerQueueHandlers } from '@/lib/queues/handlers';
+import { verifyWorkerSecret } from '@/lib/worker-auth';
 
 registerQueueHandlers();
 
@@ -25,16 +25,13 @@ export async function POST(request: NextRequest) {
 
     const limit = Math.min(
       Math.max(Number(body.limit ?? searchParams.get('limit') ?? 10) || 10, 1),
-      50
+      50,
     );
     const tenantId =
       (typeof body.tenantId === 'string' && body.tenantId) ||
       searchParams.get('tenantId') ||
       undefined;
-    const timeoutMs = Math.min(
-      Math.max(Number(body.timeoutMs ?? 30000) || 30000, 1000),
-      120000
-    );
+    const timeoutMs = Math.min(Math.max(Number(body.timeoutMs ?? 30000) || 30000, 1000), 120000);
 
     const result = await processQueueJobs({ limit, tenantId, timeoutMs });
     return NextResponse.json({ success: true, ...result });

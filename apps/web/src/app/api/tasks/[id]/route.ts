@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 
+import { withAuth } from '@/lib/auth-guard';
 import { csrfProtection } from '@/lib/csrf';
 import { notifyTaskEvent } from '@/lib/telegram/notifications';
 import { getTenantQuery } from '@/lib/tenant-query';
-import { withAuth } from '@/lib/auth-guard';
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -62,12 +62,23 @@ const updateTaskSchema = z.object({
 function getNextDueDate(dueDate: Date, rule: string): Date | null {
   const next = new Date(dueDate);
   switch (rule) {
-    case 'daily': next.setDate(next.getDate() + 1); break;
-    case 'weekly': next.setDate(next.getDate() + 7); break;
-    case 'biweekly': next.setDate(next.getDate() + 14); break;
-    case 'monthly': next.setMonth(next.getMonth() + 1); break;
-    case 'quarterly': next.setMonth(next.getMonth() + 3); break;
-    default: return null;
+    case 'daily':
+      next.setDate(next.getDate() + 1);
+      break;
+    case 'weekly':
+      next.setDate(next.getDate() + 7);
+      break;
+    case 'biweekly':
+      next.setDate(next.getDate() + 14);
+      break;
+    case 'monthly':
+      next.setMonth(next.getMonth() + 1);
+      break;
+    case 'quarterly':
+      next.setMonth(next.getMonth() + 3);
+      break;
+    default:
+      return null;
   }
   return next;
 }
@@ -86,13 +97,15 @@ async function PUTHandler(request: NextRequest, { params }: Params) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Невірні дані', details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const data = { ...parsed.data } as Record<string, unknown>;
-    if (parsed.data.dueDate !== undefined) data.dueDate = parsed.data.dueDate ? new Date(parsed.data.dueDate) : null;
-    if (parsed.data.reminderAt !== undefined) data.reminderAt = parsed.data.reminderAt ? new Date(parsed.data.reminderAt) : null;
+    if (parsed.data.dueDate !== undefined)
+      data.dueDate = parsed.data.dueDate ? new Date(parsed.data.dueDate) : null;
+    if (parsed.data.reminderAt !== undefined)
+      data.reminderAt = parsed.data.reminderAt ? new Date(parsed.data.reminderAt) : null;
 
     // Ownership check BEFORE update
     const owned = await tq.task.findUnique({
@@ -139,7 +152,9 @@ async function PUTHandler(request: NextRequest, { params }: Params) {
       } else if (parsed.data.assigneeId) {
         notifyTaskEvent(tenantId, id, 'assigned').catch(() => {});
       }
-    } catch {}
+    } catch {
+      /* ignore */
+    }
 
     return NextResponse.json({ task });
   } catch (error) {

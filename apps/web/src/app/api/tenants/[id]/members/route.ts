@@ -2,12 +2,12 @@ import { prisma } from '@crm-next/database';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 
+import { logAuditEvent, extractRequestMeta } from '@/lib/audit';
 import { extractUserId } from '@/lib/auth-utils';
 import { csrfProtection } from '@/lib/csrf';
-import { hasMinRole, getUserRole, canManageRole, type TenantRole } from '@/lib/rbac';
-import { logAuditEvent, extractRequestMeta } from '@/lib/audit';
+import { hasMinRole, getUserRole } from '@/lib/rbac';
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -46,10 +46,7 @@ export async function GET(request: NextRequest, { params }: Params) {
     return NextResponse.json({ members });
   } catch (error) {
     console.error('List members error:', error);
-    return NextResponse.json(
-      { error: 'Помилка отримання списку учасників' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Помилка отримання списку учасників' }, { status: 500 });
   }
 }
 
@@ -73,7 +70,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Невірні дані', details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -87,17 +84,14 @@ export async function POST(request: NextRequest, { params }: Params) {
     if (!(await hasMinRole(userId, id, 'admin'))) {
       return NextResponse.json(
         { error: 'Недостатньо прав для додавання учасників' },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
     // Find user by email
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
-      return NextResponse.json(
-        { error: 'Користувача з таким email не знайдено' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Користувача з таким email не знайдено' }, { status: 404 });
     }
 
     // Check if already member
@@ -108,7 +102,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     if (existingMember) {
       return NextResponse.json(
         { error: 'Користувач вже є учасником цієї компанії' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -141,8 +135,11 @@ export async function POST(request: NextRequest, { params }: Params) {
   } catch (error) {
     console.error('Add member error:', error);
     return NextResponse.json(
-      { error: 'Помилка додавання учасника', details: error instanceof Error ? error.message : String(error) },
-      { status: 500 }
+      {
+        error: 'Помилка додавання учасника',
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
     );
   }
 }

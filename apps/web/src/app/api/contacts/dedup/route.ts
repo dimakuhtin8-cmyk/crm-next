@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 
+import { withAuth } from '@/lib/auth-guard';
 import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
-import { withAuth } from '@/lib/auth-guard';
 
 /**
  * GET /api/contacts/dedup — Find potential duplicates
@@ -80,10 +80,7 @@ async function GETHandler(request: NextRequest) {
     return NextResponse.json({ duplicates, total: duplicates.length });
   } catch (error) {
     console.error('Dedup error:', error);
-    return NextResponse.json(
-      { error: 'Помилка пошуку дублікатів' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Помилка пошуку дублікатів' }, { status: 500 });
   }
 }
 

@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest';
-import { encode } from 'next-auth/jwt';
 import { NextRequest } from 'next/server';
+import { encode } from 'next-auth/jwt';
+import { describe, it, expect } from 'vitest';
+
 import { extractUser, extractUserId } from '@/lib/auth-utils';
 
 const SECRET = '4p200FzdKSNdfxdHaoTOa9m6WoEzmwEbl0CqrcuPOgc=';

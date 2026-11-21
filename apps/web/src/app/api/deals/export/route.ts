@@ -1,13 +1,15 @@
 /**
  * Export Deals API — экспорт сделок в CSV
- * 
+ *
  * GET /api/deals/export — скачать все сделки в CSV
  */
 
 import { NextResponse } from 'next/server';
+
 import type { NextRequest } from 'next/server';
-import { getTenantQuery } from '@/lib/tenant-query';
+
 import { withAuth } from '@/lib/auth-guard';
+import { getTenantQuery } from '@/lib/tenant-query';
 
 async function GETHandler(request: NextRequest) {
   try {
@@ -22,9 +24,18 @@ async function GETHandler(request: NextRequest) {
     } as never);
 
     if (format === 'csv') {
-      const headers = ['ID', 'Назва', 'Сума', 'Валюта', 'Ймовірність', 'Статус', 'Компанія', 'Створено'];
+      const headers = [
+        'ID',
+        'Назва',
+        'Сума',
+        'Валюта',
+        'Ймовірність',
+        'Статус',
+        'Компанія',
+        'Створено',
+      ];
 
-      const rows = (deals as Array<Record<string, unknown>>).map(deal => [
+      const rows = (deals as Array<Record<string, unknown>>).map((deal) => [
         (deal.id as string) || '',
         (deal.title as string) || '',
         (deal.value as number)?.toString() || '0',
@@ -42,10 +53,9 @@ async function GETHandler(request: NextRequest) {
         return value;
       };
 
-      const csv = [
-        headers.join(','),
-        ...rows.map(row => row.map(escapeCSV).join(','))
-      ].join('\n');
+      const csv = [headers.join(','), ...rows.map((row) => row.map(escapeCSV).join(','))].join(
+        '\n',
+      );
 
       return new Response(csv, {
         status: 200,
@@ -57,7 +67,7 @@ async function GETHandler(request: NextRequest) {
     }
 
     // JSON format
-    const json = (deals as Array<Record<string, unknown>>).map(deal => ({
+    const json = (deals as Array<Record<string, unknown>>).map((deal) => ({
       id: deal.id,
       title: deal.title,
       value: deal.value,

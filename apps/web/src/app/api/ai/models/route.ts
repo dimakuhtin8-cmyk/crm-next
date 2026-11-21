@@ -9,11 +9,11 @@ import { NextResponse } from 'next/server';
 
 import type { NextRequest } from 'next/server';
 
+import { getProviderModels } from '@/lib/ai/models';
+import { getProvider } from '@/lib/ai/providers';
+import { withAuth } from '@/lib/auth-guard';
 import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
-import { getProvider } from '@/lib/ai/providers';
-import { getProviderModels } from '@/lib/ai/models';
-import { withAuth } from '@/lib/auth-guard';
 
 async function GETHandler(request: NextRequest) {
   const csrfError = csrfProtection(request);
@@ -33,7 +33,7 @@ async function GETHandler(request: NextRequest) {
     const result = await getProviderModels(
       tq.tenantId,
       providerId,
-      provider.models.map((m) => ({ id: m.id, name: m.name }))
+      provider.models.map((m) => ({ id: m.id, name: m.name })),
     );
     return NextResponse.json(result);
   } catch (error) {

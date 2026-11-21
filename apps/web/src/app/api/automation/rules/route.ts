@@ -1,12 +1,17 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 
-import { getAutomationRules, createAutomationRule, deleteAutomationRule, toggleAutomationRule } from '@/lib/automation/engine';
+import { withAuth } from '@/lib/auth-guard';
+import {
+  getAutomationRules,
+  createAutomationRule,
+  deleteAutomationRule,
+  toggleAutomationRule,
+} from '@/lib/automation/engine';
 import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
-import { withAuth } from '@/lib/auth-guard';
 
 /**
  * GET /api/automation/rules — List automation rules
@@ -38,7 +43,13 @@ const createRuleSchema = z.object({
   triggerType: z.enum(['stage_change', 'deal_created', 'deal_won', 'deal_lost', 'timer']),
   fromStageId: z.string().optional(),
   toStageId: z.string().optional(),
-  actionType: z.enum(['set_field', 'create_task', 'send_notification', 'move_deal', 'send_message']),
+  actionType: z.enum([
+    'set_field',
+    'create_task',
+    'send_notification',
+    'move_deal',
+    'send_message',
+  ]),
   actionConfig: z.record(z.unknown()),
 });
 
@@ -55,7 +66,7 @@ async function POSTHandler(request: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Невірні дані', details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -108,10 +119,6 @@ export const PATCH = withAuth({ permission: 'settings:update' })(PATCHHandler);
 /**
  * DELETE /api/automation/rules — Delete automation rule
  */
-const deleteRuleSchema = z.object({
-  ruleId: z.string(),
-});
-
 async function DELETEHandler(request: NextRequest) {
   const csrfError = csrfProtection(request);
   if (csrfError) return csrfError;

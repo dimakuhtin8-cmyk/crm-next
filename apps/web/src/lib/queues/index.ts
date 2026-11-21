@@ -14,6 +14,7 @@
  */
 
 import { prisma } from '@crm-next/database';
+
 import { createLogger } from '@/lib/logging/logger';
 
 const log = createLogger({ service: 'queue' });
@@ -125,10 +126,14 @@ function toJob(row: {
   let result: any = undefined;
   try {
     data = JSON.parse(row.payload);
-  } catch {}
+  } catch {
+    /* ignore */
+  }
   try {
     result = row.result ? JSON.parse(row.result) : undefined;
-  } catch {}
+  } catch {
+    /* ignore */
+  }
   return {
     id: row.id,
     tenantId: row.tenantId,
@@ -158,7 +163,7 @@ export async function enqueueJob<T>(
     timeout?: number;
     maxAttempts?: number;
     delayMs?: number;
-  } = {}
+  } = {},
 ): Promise<Job<T>> {
   const row = await prisma.queueJob.create({
     data: {
@@ -191,7 +196,10 @@ export async function getQueueStats(tenantId?: string): Promise<QueueStats> {
   return { pending, processing, completed, failed, total };
 }
 
-export async function cleanupQueue(tenantId?: string, maxAgeMs: number = 60 * 60 * 1000): Promise<number> {
+export async function cleanupQueue(
+  tenantId?: string,
+  maxAgeMs: number = 60 * 60 * 1000,
+): Promise<number> {
   const cutoff = new Date(Date.now() - maxAgeMs);
   const res = await prisma.queueJob.deleteMany({
     where: {
@@ -244,7 +252,7 @@ async function claimJob(tenantId: string | undefined, row: { id: string }): Prom
  * claims are conditional, losers skip.
  */
 export async function processQueueJobs(
-  options: { limit?: number; tenantId?: string; timeoutMs?: number } = {}
+  options: { limit?: number; tenantId?: string; timeoutMs?: number } = {},
 ): Promise<ProcessResult> {
   const { limit = 10, tenantId, timeoutMs = 30000 } = options;
   const result: ProcessResult = { processed: 0, succeeded: 0, failed: 0, errors: [] };
@@ -265,7 +273,8 @@ export async function processQueueJobs(
   // Priority first, FIFO within priority (same as old findNextJob).
   candidates.sort(
     (a, b) =>
-      (PRIORITY_ORDER[a.priority as JobPriority] ?? 1) - (PRIORITY_ORDER[b.priority as JobPriority] ?? 1)
+      (PRIORITY_ORDER[a.priority as JobPriority] ?? 1) -
+      (PRIORITY_ORDER[b.priority as JobPriority] ?? 1),
   );
   const batch = candidates.slice(0, limit);
 
@@ -292,7 +301,11 @@ async function runJob(job: Job, timeoutMs: number): Promise<{ ok: boolean; error
   if (!handler) {
     await prisma.queueJob.update({
       where: { id: job.id },
-      data: { status: 'failed', lastError: `No handler for job type: ${job.type}`, completedAt: new Date() },
+      data: {
+        status: 'failed',
+        lastError: `No handler for job type: ${job.type}`,
+        completedAt: new Date(),
+      },
     });
     log.error({ jobId: job.id, type: job.type }, 'Немає обробника для типу задачі');
     await notifyAdmins(job.tenantId, job, `No handler for job type: ${job.type}`);
@@ -341,7 +354,10 @@ async function runJob(job: Job, timeoutMs: number): Promise<{ ok: boolean; error
           nextRetryAt: new Date(Date.now() + delay),
         },
       });
-      log.warn({ jobId: job.id, type: job.type, attempt: attempts, error: message }, 'Задачу буде повторено');
+      log.warn(
+        { jobId: job.id, type: job.type, attempt: attempts, error: message },
+        'Задачу буде повторено',
+      );
       return { ok: false, error: message };
     }
 
@@ -349,7 +365,10 @@ async function runJob(job: Job, timeoutMs: number): Promise<{ ok: boolean; error
       where: { id: job.id },
       data: { status: 'failed', lastError: message, completedAt: new Date() },
     });
-    log.error({ jobId: job.id, type: job.type, attempts, error: message }, 'Задачу не вдалося виконати');
+    log.error(
+      { jobId: job.id, type: job.type, attempts, error: message },
+      'Задачу не вдалося виконати',
+    );
     await notifyAdmins(job.tenantId, job, message);
     return { ok: false, error: message };
   }
@@ -375,7 +394,7 @@ async function notifyAdmins(tenantId: string, job: Job, error: string): Promise<
         link: '/dashboard/queues',
       })),
     });
-  } catch (e) {
+  } catch {
     log.error({ tenantId, jobId: job.id }, 'Не вдалося створити сповіщення адміну');
   }
 }
@@ -403,6 +422,8 @@ export async function exportData(data: ExportJobData): Promise<Job> {
   return enqueueJob(data.tenantId, 'export', data, { priority: 'low', timeout: 120000 });
 }
 
-export async function sendNotification(data: NotificationJobData & { tenantId: string }): Promise<Job> {
+export async function sendNotification(
+  data: NotificationJobData & { tenantId: string },
+): Promise<Job> {
   return enqueueJob(data.tenantId, 'notification', data, { priority: 'high' });
 }

@@ -1,13 +1,15 @@
 /**
  * Upcoming Tasks API — ближайшие задачи для дашборда
- * 
+ *
  * GET /api/tasks/upcoming — ближайшие задачи (deadline + reminder)
  */
 
 import { NextResponse } from 'next/server';
+
 import type { NextRequest } from 'next/server';
-import { getTenantQuery } from '@/lib/tenant-query';
+
 import { withAuth } from '@/lib/auth-guard';
+import { getTenantQuery } from '@/lib/tenant-query';
 
 async function GETHandler(request: NextRequest) {
   try {
@@ -39,10 +41,7 @@ async function GETHandler(request: NextRequest) {
           },
         ],
       } as never,
-      orderBy: [
-        { reminderAt: 'asc' },
-        { dueDate: 'asc' },
-      ],
+      orderBy: [{ reminderAt: 'asc' }, { dueDate: 'asc' }],
       take: limit,
       select: {
         id: true,
@@ -56,7 +55,7 @@ async function GETHandler(request: NextRequest) {
       },
     } as never);
 
-    const enrichedTasks = (tasks as Array<Record<string, unknown>>).map(task => ({
+    const enrichedTasks = (tasks as Array<Record<string, unknown>>).map((task) => ({
       ...task,
       isOverdue: task.dueDate && new Date(task.dueDate as string) < now,
       isReminderDue: task.reminderAt && new Date(task.reminderAt as string) <= futureDate,

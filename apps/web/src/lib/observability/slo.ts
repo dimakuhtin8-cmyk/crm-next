@@ -1,11 +1,11 @@
 /**
  * SLO (Service Level Objectives) — целевые показатели надёжности
- * 
+ *
  * Концепция:
  * - SLI (Service Level Indicator) — что измеряем (latency, availability, errors)
  * - SLO (Service Level Objective) —目標값 (99.9% availability, p99 < 500ms)
  * - Error Budget — сколько ещё можем позволить ошибок
- * 
+ *
  * Наши SLO:
  * - Availability: 99.9% (8.76 часов простоя в год)
  * - Latency p99: < 500ms
@@ -13,10 +13,9 @@
  * - Data Durability: 99.999999% (8 ноликов)
  */
 
-import { metrics } from './metrics';
 import { createLogger } from '@/lib/logging/logger';
 
-const log = createLogger({ service: 'slo' });
+createLogger({ service: 'slo' });
 
 // ============ SLO Definitions ============
 
@@ -73,13 +72,9 @@ export const SLO_REGISTRY: Record<string, SLO> = {
  * Рассчитать Availability SLI
  * = (total - errors) / total * 100
  */
-export function calculateAvailabilitySLI(
-  totalRequests: number,
-  errorRequests: number
-): SLI {
-  const availability = totalRequests > 0
-    ? ((totalRequests - errorRequests) / totalRequests) * 100
-    : 100;
+export function calculateAvailabilitySLI(totalRequests: number, errorRequests: number): SLI {
+  const availability =
+    totalRequests > 0 ? ((totalRequests - errorRequests) / totalRequests) * 100 : 100;
 
   return {
     name: 'availability',
@@ -93,10 +88,7 @@ export function calculateAvailabilitySLI(
  * Рассчитать Latency SLI
  * = % запросов < threshold
  */
-export function calculateLatencySLI(
-  latencies: number[],
-  thresholdMs: number = 500
-): SLI {
+export function calculateLatencySLI(latencies: number[], thresholdMs: number = 500): SLI {
   if (latencies.length === 0) {
     return {
       name: 'latency',
@@ -106,7 +98,7 @@ export function calculateLatencySLI(
     };
   }
 
-  const withinThreshold = latencies.filter(l => l < thresholdMs).length;
+  const withinThreshold = latencies.filter((l) => l < thresholdMs).length;
   const percentage = (withinThreshold / latencies.length) * 100;
 
   return {
@@ -121,13 +113,8 @@ export function calculateLatencySLI(
  * Рассчитать Error Rate SLI
  * = (1 - errors / total) * 100
  */
-export function calculateErrorRateSLI(
-  totalRequests: number,
-  errorRequests: number
-): SLI {
-  const errorRate = totalRequests > 0
-    ? (1 - errorRequests / totalRequests) * 100
-    : 100;
+export function calculateErrorRateSLI(totalRequests: number, errorRequests: number): SLI {
+  const errorRate = totalRequests > 0 ? (1 - errorRequests / totalRequests) * 100 : 100;
 
   return {
     name: 'errorRate',
@@ -145,16 +132,14 @@ export function calculateErrorRateSLI(
 export function calculateErrorBudget(
   slo: SLO,
   totalRequests: number,
-  errorRequests: number
+  errorRequests: number,
 ): ErrorBudget {
   // Error budget = (100% - target%) * total requests
   const allowedErrorPercent = (100 - slo.target) / 100;
   const totalBudget = Math.floor(totalRequests * allowedErrorPercent);
   const consumed = errorRequests;
   const remaining = Math.max(0, totalBudget - consumed);
-  const remainingPercent = totalBudget > 0
-    ? Math.round((remaining / totalBudget) * 100)
-    : 100;
+  const remainingPercent = totalBudget > 0 ? Math.round((remaining / totalBudget) * 100) : 100;
 
   // Определяем статус
   let status: ErrorBudget['status'] = 'healthy';
@@ -222,9 +207,7 @@ class SLOMonitor {
   getErrorBudgets(): ErrorBudget[] {
     const { total, errors } = this.getWindowStats();
 
-    return Object.values(SLO_REGISTRY).map(slo =>
-      calculateErrorBudget(slo, total, errors)
-    );
+    return Object.values(SLO_REGISTRY).map((slo) => calculateErrorBudget(slo, total, errors));
   }
 
   /**
@@ -234,10 +217,10 @@ class SLOMonitor {
     overall: 'healthy' | 'warning' | 'critical';
     slos: { name: string; status: string; sli: SLI; budget: ErrorBudget }[];
   } {
-    const sliMap = new Map(this.getSLIs().map(sli => [sli.name, sli]));
+    const sliMap = new Map(this.getSLIs().map((sli) => [sli.name, sli]));
     const budgets = this.getErrorBudgets();
 
-    const slos = budgets.map(budget => ({
+    const slos = budgets.map((budget) => ({
       name: budget.sloName,
       status: budget.status,
       sli: sliMap.get(budget.sloName)!,
@@ -246,9 +229,9 @@ class SLOMonitor {
 
     // Overall status
     let overall: 'healthy' | 'warning' | 'critical' = 'healthy';
-    if (slos.some(s => s.budget.status === 'exhausted')) {
+    if (slos.some((s) => s.budget.status === 'exhausted')) {
       overall = 'critical';
-    } else if (slos.some(s => s.budget.status === 'warning')) {
+    } else if (slos.some((s) => s.budget.status === 'warning')) {
       overall = 'warning';
     }
 
@@ -269,12 +252,12 @@ class SLOMonitor {
   private getWindowStats(): { total: number; errors: number; latencies: number[] } {
     const now = Date.now();
     const windowStart = now - this.windowMs;
-    const windowRequests = this.requestLog.filter(r => r.timestamp >= windowStart);
+    const windowRequests = this.requestLog.filter((r) => r.timestamp >= windowStart);
 
     return {
       total: windowRequests.length,
-      errors: windowRequests.filter(r => r.isError).length,
-      latencies: windowRequests.map(r => r.duration),
+      errors: windowRequests.filter((r) => r.isError).length,
+      latencies: windowRequests.map((r) => r.duration),
     };
   }
 
@@ -283,7 +266,7 @@ class SLOMonitor {
    */
   private cleanup(): void {
     const cutoff = Date.now() - this.windowMs;
-    this.requestLog = this.requestLog.filter(r => r.timestamp >= cutoff);
+    this.requestLog = this.requestLog.filter((r) => r.timestamp >= cutoff);
   }
 }
 
@@ -314,7 +297,7 @@ export const ALERT_RULES: AlertRule[] = [
   {
     name: 'high_latency',
     condition: (slos) => {
-      const latencySLI = slos.slos.find(s => s.name === 'latency');
+      const latencySLI = slos.slos.find((s) => s.name === 'latency');
       return latencySLI ? latencySLI.sli.value < 95 : false;
     },
     severity: 'warning',
@@ -327,7 +310,7 @@ export const ALERT_RULES: AlertRule[] = [
  */
 export function checkAlerts(): AlertRule[] {
   const slos = sloMonitor.getSLOStatus();
-  return ALERT_RULES.filter(rule => rule.condition(slos));
+  return ALERT_RULES.filter((rule) => rule.condition(slos));
 }
 
 // ============ Dashboard Data ============
@@ -342,7 +325,7 @@ export function getSLODashboardData() {
   return {
     timestamp: new Date().toISOString(),
     overall: slos.overall,
-    slo: slos.slos.map(s => ({
+    slo: slos.slos.map((s) => ({
       name: s.name,
       description: SLO_REGISTRY[s.name]?.description,
       target: SLO_REGISTRY[s.name]?.target,
@@ -353,7 +336,7 @@ export function getSLODashboardData() {
         status: s.budget.status,
       },
     })),
-    alerts: alerts.map(a => ({
+    alerts: alerts.map((a) => ({
       name: a.name,
       severity: a.severity,
       message: a.message,

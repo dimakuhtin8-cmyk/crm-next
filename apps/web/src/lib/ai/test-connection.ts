@@ -6,6 +6,7 @@
  */
 
 import { getProvider } from './providers';
+
 import { decrypt } from '@/lib/encryption';
 
 export interface TestResult {
@@ -26,17 +27,15 @@ const PROVIDER_ENDPOINTS: Record<string, string> = {
   together: 'https://api.together.xyz/v1/chat/completions',
 };
 
-function maskKey(key: string): string {
-  if (!key || key.length < 8) return '***';
-  return key.slice(0, 4) + '••••••••' + key.slice(-4);
-}
-
-async function testGemini(apiKey: string, model: string): Promise<{ ok: boolean; message: string; latencyMs: number }> {
+async function testGemini(
+  apiKey: string,
+  _model: string,
+): Promise<{ ok: boolean; message: string; latencyMs: number }> {
   const start = Date.now();
   try {
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
-      { signal: AbortSignal.timeout(10_000) }
+      { signal: AbortSignal.timeout(10_000) },
     );
     const latencyMs = Date.now() - start;
 
@@ -49,15 +48,19 @@ async function testGemini(apiKey: string, model: string): Promise<{ ok: boolean;
     }
 
     return { ok: false, message: `Помилка сервера: ${res.status}`, latencyMs };
-  } catch (err) {
-    return { ok: false, message: `Тайм-аут з'єднання (${Date.now() - start}ms)`, latencyMs: Date.now() - start };
+  } catch {
+    return {
+      ok: false,
+      message: `Тайм-аут з'єднання (${Date.now() - start}ms)`,
+      latencyMs: Date.now() - start,
+    };
   }
 }
 
 async function testOpenAICompatible(
   providerId: string,
   apiKey: string,
-  model: string
+  model: string,
 ): Promise<{ ok: boolean; message: string; latencyMs: number }> {
   const endpoint = PROVIDER_ENDPOINTS[providerId];
   if (!endpoint) {
@@ -68,7 +71,7 @@ async function testOpenAICompatible(
   try {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
+      Authorization: `Bearer ${apiKey}`,
     };
 
     const body: Record<string, unknown> = {
@@ -100,7 +103,11 @@ async function testOpenAICompatible(
 
     // 400 = key is valid but request format issue (key works)
     if (res.status === 400) {
-      return { ok: true, message: `Ключ валідний (400 — тестовий запит). ${latencyMs}ms`, latencyMs };
+      return {
+        ok: true,
+        message: `Ключ валідний (400 — тестовий запит). ${latencyMs}ms`,
+        latencyMs,
+      };
     }
 
     if (res.status === 401 || res.status === 403) {
@@ -108,7 +115,11 @@ async function testOpenAICompatible(
     }
 
     if (res.status === 429) {
-      return { ok: true, message: `Ключ валідний, але досягнуто ліміт запитів (${res.status}). ${latencyMs}ms`, latencyMs };
+      return {
+        ok: true,
+        message: `Ключ валідний, але досягнуто ліміт запитів (${res.status}). ${latencyMs}ms`,
+        latencyMs,
+      };
     }
 
     const errText = await res.text().catch(() => 'Unknown error');
@@ -118,7 +129,11 @@ async function testOpenAICompatible(
     if (err instanceof DOMException && err.name === 'TimeoutError') {
       return { ok: false, message: `Тайм-аут з'єднання (${latencyMs}ms)`, latencyMs };
     }
-    return { ok: false, message: `Помилка з'єднання: ${err instanceof Error ? err.message : 'Unknown'}`, latencyMs };
+    return {
+      ok: false,
+      message: `Помилка з'єднання: ${err instanceof Error ? err.message : 'Unknown'}`,
+      latencyMs,
+    };
   }
 }
 
@@ -129,7 +144,7 @@ async function testOpenAICompatible(
 export async function testProviderConnection(
   providerId: string,
   rawApiKey: string,
-  model?: string
+  model?: string,
 ): Promise<TestResult> {
   const provider = getProvider(providerId);
   if (!provider) {
@@ -170,7 +185,7 @@ export async function testProviderConnection(
 export async function testStoredProviderConnection(
   providerId: string,
   storedKey: string,
-  model?: string
+  model?: string,
 ): Promise<TestResult> {
   const provider = getProvider(providerId);
   const resolvedModel = model || provider?.models[0]?.id || 'unknown';
@@ -181,7 +196,8 @@ export async function testStoredProviderConnection(
   } catch {
     return {
       status: 'error',
-      message: 'API-ключ повреждён или сохранён в устаревшем формате — пересохраните его в настройках',
+      message:
+        'API-ключ повреждён или сохранён в устаревшем формате — пересохраните его в настройках',
       provider: providerId,
       model: resolvedModel,
       lastChecked: new Date(),
@@ -195,9 +211,7 @@ export async function testStoredProviderConnection(
 /**
  * Get connection status for all configured providers of a tenant
  */
-export async function getAllProviderStatuses(
-  tenantId: string
-): Promise<TestResult[]> {
+export async function getAllProviderStatuses(tenantId: string): Promise<TestResult[]> {
   const { prisma } = await import('@crm-next/database');
   const { listProviderKeys, getProviderKeyRaw } = await import('./keys');
 
@@ -220,7 +234,11 @@ export async function getAllProviderStatuses(
   // Test the active provider first (if it has any key).
   const primaryRaw = await getProviderKeyRaw(tenantId, primaryProvider);
   if (primaryRaw && !tested.has(primaryProvider)) {
-    const result = await testStoredProviderConnection(primaryProvider, primaryRaw, tenant.aiModel || undefined);
+    const result = await testStoredProviderConnection(
+      primaryProvider,
+      primaryRaw,
+      tenant.aiModel || undefined,
+    );
     results.push(result);
     tested.add(primaryProvider);
   }

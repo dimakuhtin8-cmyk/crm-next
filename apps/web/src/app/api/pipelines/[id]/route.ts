@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 
+import { withAuth } from '@/lib/auth-guard';
 import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
-import { withAuth } from '@/lib/auth-guard';
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -41,11 +41,15 @@ async function GETHandler(request: NextRequest, { params }: Params) {
  */
 const updatePipelineSchema = z.object({
   name: z.string().min(1).max(100).optional(),
-  stages: z.array(z.object({
-    id: z.string().optional(),
-    name: z.string().min(1).max(100),
-    color: z.string().max(7).optional(),
-  })).optional(),
+  stages: z
+    .array(
+      z.object({
+        id: z.string().optional(),
+        name: z.string().min(1).max(100),
+        color: z.string().max(7).optional(),
+      }),
+    )
+    .optional(),
 });
 
 async function PUTHandler(request: NextRequest, { params }: Params) {
@@ -62,7 +66,7 @@ async function PUTHandler(request: NextRequest, { params }: Params) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Невірні дані', details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -122,7 +126,7 @@ async function DELETEHandler(request: NextRequest, { params }: Params) {
     if (dealCount > 0) {
       return NextResponse.json(
         { error: 'Неможливо видалити воронку з наявними угодами' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 

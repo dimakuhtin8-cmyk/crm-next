@@ -3,6 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+
 import {
   PLANS,
   getPlan,
@@ -70,7 +71,15 @@ describe('Billing Plans', () => {
 
 describe('parsePlanLimits', () => {
   it('should parse valid JSON', () => {
-    const json = JSON.stringify({ maxUsers: 5, maxContacts: 100, maxDeals: 20, maxAiRequestsPerDay: 500, maxPipelines: 3, maxStorageGB: 5, features: ['test'] });
+    const json = JSON.stringify({
+      maxUsers: 5,
+      maxContacts: 100,
+      maxDeals: 20,
+      maxAiRequestsPerDay: 500,
+      maxPipelines: 3,
+      maxStorageGB: 5,
+      features: ['test'],
+    });
     const limits = parsePlanLimits(json);
     expect(limits.maxUsers).toBe(5);
     expect(limits.maxContacts).toBe(100);
@@ -118,22 +127,42 @@ describe('checkLimit', () => {
 
 describe('getUpgradeRecommendation', () => {
   it('should recommend starter when free users exceeded', () => {
-    const result = getUpgradeRecommendation('free', { users: 1, contacts: 50, deals: 10, aiRequests: 20 });
+    const result = getUpgradeRecommendation('free', {
+      users: 1,
+      contacts: 50,
+      deals: 10,
+      aiRequests: 20,
+    });
     expect(result).toBe('starter');
   });
 
   it('should recommend professional when starter contacts exceeded', () => {
-    const result = getUpgradeRecommendation('starter', { users: 2, contacts: 1000, deals: 100, aiRequests: 200 });
+    const result = getUpgradeRecommendation('starter', {
+      users: 2,
+      contacts: 1000,
+      deals: 100,
+      aiRequests: 200,
+    });
     expect(result).toBe('professional');
   });
 
   it('should return null when within limits', () => {
-    const result = getUpgradeRecommendation('professional', { users: 5, contacts: 1000, deals: 100, aiRequests: 200 });
+    const result = getUpgradeRecommendation('professional', {
+      users: 5,
+      contacts: 1000,
+      deals: 100,
+      aiRequests: 200,
+    });
     expect(result).toBeNull();
   });
 
   it('should return null for enterprise (highest plan)', () => {
-    const result = getUpgradeRecommendation('enterprise', { users: 100, contacts: 100000, deals: 10000, aiRequests: 5000 });
+    const result = getUpgradeRecommendation('enterprise', {
+      users: 100,
+      contacts: 100000,
+      deals: 10000,
+      aiRequests: 5000,
+    });
     expect(result).toBeNull();
   });
 });

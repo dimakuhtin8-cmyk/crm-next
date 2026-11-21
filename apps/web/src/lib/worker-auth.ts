@@ -5,16 +5,14 @@
  * so they use a shared CRON_SECRET header instead of user sessions.
  */
 
-import { NextResponse } from 'next/server';
 import { timingSafeEqual } from 'crypto';
+
+import { NextResponse } from 'next/server';
 
 export function verifyWorkerSecret(request: Request): NextResponse | null {
   const expected = process.env.CRON_SECRET;
   if (!expected) {
-    return NextResponse.json(
-      { error: 'CRON_SECRET не налаштовано на сервері' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'CRON_SECRET не налаштовано на сервері' }, { status: 500 });
   }
 
   const provided =

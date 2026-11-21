@@ -2,7 +2,7 @@ import { prisma } from '@crm-next/database';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 
 import { extractUserId } from '@/lib/auth-utils';
 import { csrfProtection } from '@/lib/csrf';
@@ -54,10 +54,7 @@ export async function GET(request: NextRequest, { params }: Params) {
     return NextResponse.json({ tenant });
   } catch (error) {
     console.error('Get tenant error:', error);
-    return NextResponse.json(
-      { error: 'Помилка отримання компанії' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Помилка отримання компанії' }, { status: 500 });
   }
 }
 
@@ -93,7 +90,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Невірні дані', details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -104,13 +101,11 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
     // Only owner can update tenant settings
     if (!(await hasMinRole(userId, id, 'owner'))) {
-      return NextResponse.json(
-        { error: 'Недостатньо прав для редагування' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'Недостатньо прав для редагування' }, { status: 403 });
     }
 
-    const { name, slug, domain, logo, settings, geminiApiKey, aiProvider, aiModel, aiApiKey } = parsed.data;
+    const { name, slug, domain, logo, settings, geminiApiKey, aiProvider, aiModel, aiApiKey } =
+      parsed.data;
 
     // Check slug uniqueness if changing
     if (slug) {
@@ -118,10 +113,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
         where: { slug, NOT: { id } },
       });
       if (existing) {
-        return NextResponse.json(
-          { error: 'Цей slug вже зайнятий' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'Цей slug вже зайнятий' }, { status: 400 });
       }
     }
 
@@ -131,10 +123,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
         where: { domain, NOT: { id } },
       });
       if (existing) {
-        return NextResponse.json(
-          { error: 'Цей домен вже зайнятий' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'Цей домен вже зайнятий' }, { status: 400 });
       }
     }
 
@@ -148,20 +137,25 @@ export async function PUT(request: NextRequest, { params }: Params) {
         ...(settings !== undefined && { settings: settings || null }),
         // API keys are stored encrypted, like everywhere else (see ai/quick-setup).
         // Non-empty values are encrypted; explicit null clears the key.
-        ...(geminiApiKey ? { geminiApiKey: encrypt(geminiApiKey) } : geminiApiKey === null ? { geminiApiKey: null } : {}),
+        ...(geminiApiKey
+          ? { geminiApiKey: encrypt(geminiApiKey) }
+          : geminiApiKey === null
+            ? { geminiApiKey: null }
+            : {}),
         ...(aiProvider !== undefined && { aiProvider: aiProvider || 'gemini' }),
         ...(aiModel !== undefined && { aiModel: aiModel || null }),
-        ...(aiApiKey ? { aiApiKey: encrypt(aiApiKey) } : aiApiKey === null ? { aiApiKey: null } : {}),
+        ...(aiApiKey
+          ? { aiApiKey: encrypt(aiApiKey) }
+          : aiApiKey === null
+            ? { aiApiKey: null }
+            : {}),
       },
     });
 
     return NextResponse.json({ tenant });
   } catch (error) {
     console.error('Update tenant error:', error);
-    return NextResponse.json(
-      { error: 'Помилка оновлення компанії' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Помилка оновлення компанії' }, { status: 500 });
   }
 }
 
@@ -182,10 +176,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
 
     // Only owner can delete tenant
     if (!(await hasMinRole(userId, id, 'owner'))) {
-      return NextResponse.json(
-        { error: 'Недостатньо прав для видалення' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'Недостатньо прав для видалення' }, { status: 403 });
     }
 
     // Delete tenant and all members (cascade)
@@ -195,9 +186,6 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Delete tenant error:', error);
-    return NextResponse.json(
-      { error: 'Помилка видалення компанії' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Помилка видалення компанії' }, { status: 500 });
   }
 }

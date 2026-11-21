@@ -5,14 +5,14 @@
  * PATCH /api/notifications — пометить прочитанными { ids?: string[] } или всё
  */
 
+import { prisma } from '@crm-next/database';
 import { NextResponse } from 'next/server';
 
 import type { NextRequest } from 'next/server';
 
+import { withAuth } from '@/lib/auth-guard';
 import { extractUserId } from '@/lib/auth-utils';
 import { getTenantQuery } from '@/lib/tenant-query';
-import { prisma } from '@crm-next/database';
-import { withAuth } from '@/lib/auth-guard';
 
 async function GETHandler(request: NextRequest) {
   try {
@@ -51,7 +51,9 @@ async function PATCHHandler(request: NextRequest) {
     if (!userId) return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
 
     const body = await request.json().catch(() => ({}));
-    const ids = Array.isArray(body.ids) ? body.ids.filter((x: unknown) => typeof x === 'string') : null;
+    const ids = Array.isArray(body.ids)
+      ? body.ids.filter((x: unknown) => typeof x === 'string')
+      : null;
 
     const res = await prisma.notification.updateMany({
       where: {

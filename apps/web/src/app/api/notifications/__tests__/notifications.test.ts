@@ -2,18 +2,15 @@
  * Уведомления: преференсы тостов + прочтение — интеграционный тест.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { prisma } from '@crm-next/database';
 import { SignJWT } from 'jose';
 import { NextRequest } from 'next/server';
-import { prisma } from '@crm-next/database';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
 const SECRET = new TextEncoder().encode('4p200FzdKSNdfxdHaoTOa9m6WoEzmwEbl0CqrcuPOgc=');
 
 async function createToken(payload: Record<string, unknown>): Promise<string> {
-  return new SignJWT(payload)
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .sign(SECRET);
+  return new SignJWT(payload).setProtectedHeader({ alg: 'HS256' }).setIssuedAt().sign(SECRET);
 }
 
 function authed(url: string, token: string | null, init?: RequestInit): NextRequest {
@@ -50,7 +47,9 @@ beforeAll(async () => {
   await prisma.user.deleteMany();
   await prisma.tenant.deleteMany();
 
-  const t = await prisma.tenant.create({ data: { name: 'Notif', slug: 'notif-prefs', plan: 'professional' } });
+  const t = await prisma.tenant.create({
+    data: { name: 'Notif', slug: 'notif-prefs', plan: 'professional' },
+  });
   tenantId = t.id;
   const a = await prisma.user.create({ data: { email: 'notif-admin@test.com', name: 'A' } });
   const v = await prisma.user.create({ data: { email: 'notif-viewer@test.com', name: 'V' } });
@@ -78,7 +77,9 @@ afterAll(async () => {
 
 describe('Преференсы тостов', () => {
   it('GET по умолчанию: enabled + bottom-left', async () => {
-    const r = await prefsGET(authed(`${BASE}/api/notifications/preferences?tenantId=${tenantId}`, tokenViewer));
+    const r = await prefsGET(
+      authed(`${BASE}/api/notifications/preferences?tenantId=${tenantId}`, tokenViewer),
+    );
     expect(r.status).toBe(200);
     expect(await r.json()).toEqual({ toast: { enabled: true, position: 'bottom-left' } });
   });
@@ -88,7 +89,7 @@ describe('Преференсы тостов', () => {
       authed(`${BASE}/api/notifications/preferences?tenantId=${tenantId}`, tokenViewer, {
         method: 'PATCH',
         body: JSON.stringify({ enabled: false }),
-      })
+      }),
     );
     expect(denied.status).toBe(403);
 
@@ -96,12 +97,14 @@ describe('Преференсы тостов', () => {
       authed(`${BASE}/api/notifications/preferences?tenantId=${tenantId}`, tokenAdmin, {
         method: 'PATCH',
         body: JSON.stringify({ enabled: false, position: 'top-right' }),
-      })
+      }),
     );
     expect(ok.status).toBe(200);
     expect(await ok.json()).toEqual({ toast: { enabled: false, position: 'top-right' } });
 
-    const get = await prefsGET(authed(`${BASE}/api/notifications/preferences?tenantId=${tenantId}`, tokenAdmin));
+    const get = await prefsGET(
+      authed(`${BASE}/api/notifications/preferences?tenantId=${tenantId}`, tokenAdmin),
+    );
     expect(await get.json()).toEqual({ toast: { enabled: false, position: 'top-right' } });
   });
 
@@ -110,7 +113,7 @@ describe('Преференсы тостов', () => {
       authed(`${BASE}/api/notifications/preferences?tenantId=${tenantId}`, tokenAdmin, {
         method: 'PATCH',
         body: JSON.stringify({ position: 'center' }),
-      })
+      }),
     );
     expect(r.status).toBe(400);
   });
@@ -125,17 +128,24 @@ describe('Прочтение уведомлений', () => {
       ],
     });
 
-    const get1 = await notifGET(authed(`${BASE}/api/notifications?tenantId=${tenantId}`, tokenViewer));
+    const get1 = await notifGET(
+      authed(`${BASE}/api/notifications?tenantId=${tenantId}`, tokenViewer),
+    );
     const b1 = await get1.json();
     expect(b1.unreadCount).toBe(2);
     expect(b1.notifications.length).toBe(2);
 
     const patch = await notifPATCH(
-      authed(`${BASE}/api/notifications?tenantId=${tenantId}`, tokenViewer, { method: 'PATCH', body: JSON.stringify({}) })
+      authed(`${BASE}/api/notifications?tenantId=${tenantId}`, tokenViewer, {
+        method: 'PATCH',
+        body: JSON.stringify({}),
+      }),
     );
     expect((await patch.json()).marked).toBe(2);
 
-    const get2 = await notifGET(authed(`${BASE}/api/notifications?tenantId=${tenantId}`, tokenViewer));
+    const get2 = await notifGET(
+      authed(`${BASE}/api/notifications?tenantId=${tenantId}`, tokenViewer),
+    );
     expect((await get2.json()).unreadCount).toBe(0);
   });
 });

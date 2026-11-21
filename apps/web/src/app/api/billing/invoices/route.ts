@@ -2,12 +2,14 @@
  * GET /api/billing/invoices — Get payment history
  */
 
+import { prisma } from '@crm-next/database';
 import { NextResponse } from 'next/server';
+
 import type { NextRequest } from 'next/server';
+
+import { withAuth } from '@/lib/auth-guard';
 import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
-import { withAuth } from '@/lib/auth-guard';
-import { prisma } from '@crm-next/database';
 
 async function GETHandler(request: NextRequest) {
   const csrfError = csrfProtection(request);
@@ -42,10 +44,7 @@ async function GETHandler(request: NextRequest) {
     });
   } catch (error) {
     console.error('Invoices error:', error);
-    return NextResponse.json(
-      { error: 'Помилка отримання історії платежів' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Помилка отримання історії платежів' }, { status: 500 });
   }
 }
 

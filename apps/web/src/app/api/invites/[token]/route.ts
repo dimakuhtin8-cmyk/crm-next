@@ -1,7 +1,7 @@
 import { prisma } from '@crm-next/database';
 import { NextResponse } from 'next/server';
 
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 
 import { extractUserId } from '@/lib/auth-utils';
 
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     if (!user || user.email !== invite.email) {
       return NextResponse.json(
         { error: 'Запрошення призначене для іншого email' },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -81,10 +81,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     return NextResponse.json({ success: true, tenant: invite.tenant });
   } catch (error) {
     console.error('Accept invite error:', error);
-    return NextResponse.json(
-      { error: 'Помилка прийняття запрошення' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Помилка прийняття запрошення' }, { status: 500 });
   }
 }
 
@@ -122,9 +119,6 @@ export async function GET(request: NextRequest, { params }: Params) {
     return NextResponse.json({ invite });
   } catch (error) {
     console.error('Get invite error:', error);
-    return NextResponse.json(
-      { error: 'Помилка отримання запрошення' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Помилка отримання запрошення' }, { status: 500 });
   }
 }

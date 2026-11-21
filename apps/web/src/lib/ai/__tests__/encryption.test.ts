@@ -3,6 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+
 import { encrypt, decrypt, isEncrypted, encryptFields, decryptFields } from '@/lib/encryption';
 
 describe('Encryption', () => {
@@ -41,7 +42,7 @@ describe('Encryption', () => {
 
   it('decrypt should throw on plaintext (not encrypted)', () => {
     expect(() => decrypt('some-plaintext-key')).toThrow(
-      'Ключ не в ожидаемом зашифрованном формате'
+      'Ключ не в ожидаемом зашифрованном формате',
     );
   });
 

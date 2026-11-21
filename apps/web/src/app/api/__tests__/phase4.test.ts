@@ -5,18 +5,15 @@
  * кроме блока fail-fast (юнит-тест, явно помечен).
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { prisma } from '@crm-next/database';
 import { SignJWT } from 'jose';
 import { NextRequest } from 'next/server';
-import { prisma } from '@crm-next/database';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
 const SECRET = new TextEncoder().encode('4p200FzdKSNdfxdHaoTOa9m6WoEzmwEbl0CqrcuPOgc=');
 
 async function createToken(payload: Record<string, unknown>): Promise<string> {
-  return new SignJWT(payload)
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .sign(SECRET);
+  return new SignJWT(payload).setProtectedHeader({ alg: 'HS256' }).setIssuedAt().sign(SECRET);
 }
 
 function makeRequest(url: string, token: string | null, init?: RequestInit): NextRequest {
@@ -30,8 +27,8 @@ function makeRequest(url: string, token: string | null, init?: RequestInit): Nex
   });
 }
 
-import { PUT as tenantsPUT } from '@/app/api/tenants/[id]/route';
 import { POST as testKeyPOST } from '@/app/api/ai/test-key/route';
+import { PUT as tenantsPUT } from '@/app/api/tenants/[id]/route';
 import { decrypt, encrypt, isEncrypted } from '@/lib/encryption';
 
 const BASE = 'http://localhost:3000';
@@ -53,7 +50,9 @@ beforeAll(async () => {
   await prisma.user.deleteMany();
   await prisma.tenant.deleteMany();
 
-  const t = await prisma.tenant.create({ data: { name: 'P4 Tenant', slug: 'p4-tenant', plan: 'professional' } });
+  const t = await prisma.tenant.create({
+    data: { name: 'P4 Tenant', slug: 'p4-tenant', plan: 'professional' },
+  });
   tenantId = t.id;
   const u = await prisma.user.create({ data: { email: 'p4-owner@test.com', name: 'Owner' } });
   await prisma.tenantMember.create({ data: { userId: u.id, tenantId, role: 'owner' } });
@@ -80,11 +79,14 @@ describe('ФАЗА 4.1: tenants PUT шифрует ключи', () => {
         method: 'PUT',
         body: JSON.stringify({ aiApiKey: RAW_KEY, aiProvider: 'openai' }),
       }),
-      tctx(tenantId)
+      tctx(tenantId),
     );
     expect(r.status).toBe(200);
 
-    const stored = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { aiApiKey: true } });
+    const stored = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { aiApiKey: true },
+    });
     expect(stored?.aiApiKey).not.toBe(RAW_KEY);
     expect(isEncrypted(stored?.aiApiKey || '')).toBe(true);
     expect(decrypt(stored?.aiApiKey || '')).toBe(RAW_KEY);
@@ -97,11 +99,14 @@ describe('ФАЗА 4.1: tenants PUT шифрует ключи', () => {
         method: 'PUT',
         body: JSON.stringify({ geminiApiKey: raw }),
       }),
-      tctx(tenantId)
+      tctx(tenantId),
     );
     expect(r.status).toBe(200);
 
-    const stored = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { geminiApiKey: true } });
+    const stored = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { geminiApiKey: true },
+    });
     expect(stored?.geminiApiKey).not.toBe(raw);
     expect(decrypt(stored?.geminiApiKey || '')).toBe(raw);
   });
@@ -112,9 +117,13 @@ describe('ФАЗА 4.2: test-key принимает сырой ключ (не т
     const r = await testKeyPOST(
       makeRequest(`${BASE}/api/ai/test-key`, tokenOwner, {
         method: 'POST',
-        body: JSON.stringify({ apiKey: 'sk-raw-form-key-12345', provider: 'openai', model: 'gpt-4o-mini' }),
+        body: JSON.stringify({
+          apiKey: 'sk-raw-form-key-12345',
+          provider: 'openai',
+          model: 'gpt-4o-mini',
+        }),
       }),
-      {}
+      {},
     );
     expect(r.status).toBe(200);
     const body = await r.json();

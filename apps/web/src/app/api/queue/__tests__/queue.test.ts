@@ -3,19 +3,16 @@
  * Мокается ТОЛЬКО исходящий HTTP (Resend/Telegram), внутренняя логика — нет.
  */
 
-import { describe, it, expect, beforeAll, afterAll, vi, beforeEach } from 'vitest';
+import { prisma } from '@crm-next/database';
 import { SignJWT } from 'jose';
 import { NextRequest } from 'next/server';
-import { prisma } from '@crm-next/database';
+import { describe, it, expect, beforeAll, afterAll, vi, beforeEach } from 'vitest';
 
 const SECRET = new TextEncoder().encode('4p200FzdKSNdfxdHaoTOa9m6WoEzmwEbl0CqrcuPOgc=');
 const CRON = 'test-cron-secret-123';
 
 async function createToken(payload: Record<string, unknown>): Promise<string> {
-  return new SignJWT(payload)
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .sign(SECRET);
+  return new SignJWT(payload).setProtectedHeader({ alg: 'HS256' }).setIssuedAt().sign(SECRET);
 }
 
 function authed(url: string, token: string, init?: RequestInit): NextRequest {
@@ -36,9 +33,9 @@ function worker(url: string, body?: unknown): NextRequest {
   });
 }
 
-import { POST as processPOST } from '@/app/api/queue/process/route';
-import { POST as dealsPOST } from '@/app/api/deals/route';
 import { POST as tickPOST } from '@/app/api/automation/tick/route';
+import { POST as dealsPOST } from '@/app/api/deals/route';
+import { POST as processPOST } from '@/app/api/queue/process/route';
 import { enqueueJob } from '@/lib/queues';
 
 const BASE = 'http://localhost:3000';
@@ -71,7 +68,9 @@ beforeAll(async () => {
   await prisma.user.deleteMany();
   await prisma.tenant.deleteMany();
 
-  const t = await prisma.tenant.create({ data: { name: 'Queue', slug: 'queue-test', plan: 'professional' } });
+  const t = await prisma.tenant.create({
+    data: { name: 'Queue', slug: 'queue-test', plan: 'professional' },
+  });
   tenantId = t.id;
   const u = await prisma.user.create({ data: { email: 'queue-owner@test.com', name: 'Owner' } });
   ownerId = u.id;
@@ -130,7 +129,9 @@ describe('П7.1: задача → process → completed, обработчик р
     const row = await prisma.queueJob.findUnique({ where: { id: job.id } });
     expect(row?.status).toBe('completed');
 
-    const notifs = await prisma.notification.findMany({ where: { tenantId, userId: ownerId, title: 'Тест' } });
+    const notifs = await prisma.notification.findMany({
+      where: { tenantId, userId: ownerId, title: 'Тест' },
+    });
     expect(notifs.length).toBe(1);
   });
 
@@ -152,7 +153,7 @@ describe('П7.2: три провала → failed + уведомление ад�
       tenantId,
       'email',
       { tenantId, to: 'a@b.c', subject: 't', html: '<p>t</p>' },
-      { maxAttempts: 3 }
+      { maxAttempts: 3 },
     );
 
     for (let i = 0; i < 3; i++) {
@@ -195,7 +196,7 @@ describe('П7.3: создание сделки триггерит deal_created �
       authed(`${BASE}/api/deals?tenantId=${tenantId}`, tokenOwner, {
         method: 'POST',
         body: JSON.stringify({ title: 'Сделка-триггер', pipelineId, stageId }),
-      })
+      }),
     );
     expect(r.status).toBe(201);
 
@@ -250,7 +251,7 @@ describe('П7.4: tick срабатывает только для старой с
 
   it('tick без секрета → 401', async () => {
     const r = await tickPOST(
-      new NextRequest(new URL(`${BASE}/api/automation/tick`), { method: 'POST' })
+      new NextRequest(new URL(`${BASE}/api/automation/tick`), { method: 'POST' }),
     );
     expect(r.status).toBe(401);
   });
@@ -261,7 +262,9 @@ describe('П7.5: email-хендлер с замоканным Resend', () => {
     process.env.RESEND_API_KEY = 're_test_123';
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => ({ ok: true, json: async () => ({ id: 'mail-1' }) }) as unknown as Response)
+      vi.fn(
+        async () => ({ ok: true, json: async () => ({ id: 'mail-1' }) }) as unknown as Response,
+      ),
     );
     try {
       const job = await enqueueJob(tenantId, 'email', {

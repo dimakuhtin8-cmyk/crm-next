@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 
+import { withAuth } from '@/lib/auth-guard';
 import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
-import { withAuth } from '@/lib/auth-guard';
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -33,10 +33,7 @@ async function GETHandler(request: NextRequest, { params }: Params) {
     return NextResponse.json({ activities });
   } catch (error) {
     console.error('List activities error:', error);
-    return NextResponse.json(
-      { error: 'Помилка отримання активностей' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Помилка отримання активностей' }, { status: 500 });
   }
 }
 
@@ -66,7 +63,7 @@ async function POSTHandler(request: NextRequest, { params }: Params) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Невірні дані', details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -83,10 +80,7 @@ async function POSTHandler(request: NextRequest, { params }: Params) {
     return NextResponse.json({ activity }, { status: 201 });
   } catch (error) {
     console.error('Create activity error:', error);
-    return NextResponse.json(
-      { error: 'Помилка створення активності' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Помилка створення активності' }, { status: 500 });
   }
 }
 

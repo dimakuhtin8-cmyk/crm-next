@@ -2,29 +2,36 @@
  * Мульти-ключи провайдеров — интеграционный тест (реальная БД).
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { prisma } from '@crm-next/database';
 import { SignJWT } from 'jose';
 import { NextRequest } from 'next/server';
-import { prisma } from '@crm-next/database';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
 const SECRET = new TextEncoder().encode('4p200FzdKSNdfxdHaoTOa9m6WoEzmwEbl0CqrcuPOgc=');
 
 async function createToken(payload: Record<string, unknown>): Promise<string> {
-  return new SignJWT(payload)
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .sign(SECRET);
+  return new SignJWT(payload).setProtectedHeader({ alg: 'HS256' }).setIssuedAt().sign(SECRET);
 }
 
 function authed(url: string, token: string, init?: RequestInit): NextRequest {
   const headers: Record<string, string> = { cookie: `authjs.session-token=${token}` };
   if (init?.body) headers['content-type'] = 'application/json';
-  return new NextRequest(new URL(url), { method: init?.method || 'GET', headers, body: init?.body as BodyInit | null | undefined });
+  return new NextRequest(new URL(url), {
+    method: init?.method || 'GET',
+    headers,
+    body: init?.body as BodyInit | null | undefined,
+  });
 }
 
-import { setProviderKey, getProviderKey, getProviderKeyRaw, deleteProviderKey, listProviderKeys } from '@/lib/ai/keys';
-import { loadFallbackConfig } from '@/lib/ai/fallback';
 import { GET as keysGET, POST as keysPOST, DELETE as keysDELETE } from '@/app/api/ai/keys/route';
+import { loadFallbackConfig } from '@/lib/ai/fallback';
+import {
+  setProviderKey,
+  getProviderKey,
+  getProviderKeyRaw,
+  deleteProviderKey,
+  listProviderKeys,
+} from '@/lib/ai/keys';
 import { decrypt } from '@/lib/encryption';
 
 const BASE = 'http://localhost:3000';
@@ -44,7 +51,9 @@ beforeAll(async () => {
   await prisma.user.deleteMany();
   await prisma.tenant.deleteMany();
 
-  const t = await prisma.tenant.create({ data: { name: 'MultiKey', slug: 'multikey', plan: 'professional', aiProvider: 'gemini' } });
+  const t = await prisma.tenant.create({
+    data: { name: 'MultiKey', slug: 'multikey', plan: 'professional', aiProvider: 'gemini' },
+  });
   tenantId = t.id;
   const u = await prisma.user.create({ data: { email: 'multikey@test.com', name: 'Owner' } });
   await prisma.tenantMember.create({ data: { userId: u.id, tenantId, role: 'owner' } });
@@ -109,9 +118,12 @@ describe('lib/ai/keys', () => {
 
 describe('POST/GET/DELETE /api/ai/keys', () => {
   it('POST сохраняет, GET отдаёт маску, DELETE чистит', async () => {
-    const post = await keysPOST(authed(`${BASE}/api/ai/keys?tenantId=${tenantId}`, tokenOwner, {
-      method: 'POST', body: JSON.stringify({ provider: 'mistral', apiKey: 'mist-test-1' }),
-    }));
+    const post = await keysPOST(
+      authed(`${BASE}/api/ai/keys?tenantId=${tenantId}`, tokenOwner, {
+        method: 'POST',
+        body: JSON.stringify({ provider: 'mistral', apiKey: 'mist-test-1' }),
+      }),
+    );
     expect(post.status).toBe(200);
 
     const get = await keysGET(authed(`${BASE}/api/ai/keys?tenantId=${tenantId}`, tokenOwner));
@@ -119,17 +131,23 @@ describe('POST/GET/DELETE /api/ai/keys', () => {
     expect(data.keys.map((k: any) => k.provider)).toContain('mistral');
     expect(JSON.stringify(data)).not.toContain('mist-test-1');
 
-    const del = await keysDELETE(authed(`${BASE}/api/ai/keys?tenantId=${tenantId}`, tokenOwner, {
-      method: 'DELETE', body: JSON.stringify({ provider: 'mistral' }),
-    }));
+    const del = await keysDELETE(
+      authed(`${BASE}/api/ai/keys?tenantId=${tenantId}`, tokenOwner, {
+        method: 'DELETE',
+        body: JSON.stringify({ provider: 'mistral' }),
+      }),
+    );
     expect(del.status).toBe(200);
     expect(await getProviderKey(tenantId, 'mistral')).toBeNull();
   });
 
   it('POST с неизвестным провайдером → 400', async () => {
-    const r = await keysPOST(authed(`${BASE}/api/ai/keys?tenantId=${tenantId}`, tokenOwner, {
-      method: 'POST', body: JSON.stringify({ provider: 'nope', apiKey: 'x' }),
-    }));
+    const r = await keysPOST(
+      authed(`${BASE}/api/ai/keys?tenantId=${tenantId}`, tokenOwner, {
+        method: 'POST',
+        body: JSON.stringify({ provider: 'nope', apiKey: 'x' }),
+      }),
+    );
     expect(r.status).toBe(400);
   });
 });

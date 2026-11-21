@@ -6,13 +6,15 @@
  * POST /api/tenant/database  — Test connection to external DB
  */
 
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
 import { prisma } from '@crm-next/database';
-import { testDatabaseConnection, detectProvider, type DatabaseType } from '@crm-next/database/tenant-db';
+import { testDatabaseConnection, type DatabaseType } from '@crm-next/database/tenant-db';
+import { NextResponse } from 'next/server';
+
+import type { NextRequest } from 'next/server';
+
 import { extractUser } from '@/lib/auth-utils';
-import { getUserRole } from '@/lib/rbac';
 import { encrypt } from '@/lib/encryption';
+import { getUserRole } from '@/lib/rbac';
 
 /** Schemes allowed per database type — blocks file://, http:// and other SSRF vectors. */
 const ALLOWED_SCHEMES: Record<string, string[]> = {
@@ -39,7 +41,9 @@ function validateDatabaseUrl(databaseUrl: string, databaseType: string): string 
   return null;
 }
 
-async function getTenantFromRequest(request: NextRequest): Promise<{ tenantId: string } | { status: 401 | 403 }> {
+async function getTenantFromRequest(
+  request: NextRequest,
+): Promise<{ tenantId: string } | { status: 401 | 403 }> {
   const user = await extractUser(request);
   if (!user?.id) return { status: 401 };
 
@@ -57,7 +61,7 @@ async function getTenantFromRequest(request: NextRequest): Promise<{ tenantId: s
 function authError(status: 401 | 403) {
   return NextResponse.json(
     { error: status === 401 ? 'Unauthorized' : 'Недостатньо прав' },
-    { status }
+    { status },
   );
 }
 
@@ -93,7 +97,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Internal error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -110,7 +114,10 @@ export async function PUT(request: NextRequest) {
     const { databaseUrl, databaseType } = body;
 
     // Validate
-    if (databaseType && !['shared', 'postgresql', 'mysql', 'mariadb', 'sqlserver'].includes(databaseType)) {
+    if (
+      databaseType &&
+      !['shared', 'postgresql', 'mysql', 'mariadb', 'sqlserver'].includes(databaseType)
+    ) {
       return NextResponse.json({ error: 'Invalid database type' }, { status: 400 });
     }
 
@@ -169,7 +176,7 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Internal error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -203,7 +210,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Internal error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

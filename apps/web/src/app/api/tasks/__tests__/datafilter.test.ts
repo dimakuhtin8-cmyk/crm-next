@@ -2,18 +2,15 @@
  * P1: dataFilter — интеграционный тест (реальный route handler + реальная БД + JWT)
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { prisma } from '@crm-next/database';
 import { SignJWT } from 'jose';
 import { NextRequest } from 'next/server';
-import { prisma } from '@crm-next/database';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
 const SECRET = new TextEncoder().encode('4p200FzdKSNdfxdHaoTOa9m6WoEzmwEbl0CqrcuPOgc=');
 
 async function createToken(payload: Record<string, unknown>): Promise<string> {
-  return new SignJWT(payload)
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .sign(SECRET);
+  return new SignJWT(payload).setProtectedHeader({ alg: 'HS256' }).setIssuedAt().sign(SECRET);
 }
 
 function makeRequest(url: string, token: string): NextRequest {
@@ -29,9 +26,6 @@ import { GET } from '@/app/api/tasks/route';
 let tenantId: string;
 let memberAId: string;
 let memberBId: string;
-let taskAssignedToA: string;
-let taskAssignedToB: string;
-let taskUnassigned: string;
 
 beforeAll(async () => {
   // Cleanup in reverse FK order
@@ -64,20 +58,17 @@ beforeAll(async () => {
     data: { userId: memberBId, tenantId, role: 'member' },
   });
 
-  const taskA = await prisma.task.create({
+  await prisma.task.create({
     data: { tenantId, title: 'TASK_A_OWN', assigneeId: memberAId },
   });
-  taskAssignedToA = taskA.id;
 
-  const taskB = await prisma.task.create({
+  await prisma.task.create({
     data: { tenantId, title: 'TASK_B_OWN', assigneeId: memberBId },
   });
-  taskAssignedToB = taskB.id;
 
-  const taskNone = await prisma.task.create({
+  await prisma.task.create({
     data: { tenantId, title: 'TASK_UNASSIGNED', assigneeId: null },
   });
-  taskUnassigned = taskNone.id;
 });
 
 afterAll(async () => {

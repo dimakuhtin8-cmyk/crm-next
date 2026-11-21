@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 
+import { withAuth } from '@/lib/auth-guard';
 import { executeAutomations } from '@/lib/automation/engine';
 import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
-import { withAuth } from '@/lib/auth-guard';
 
 /**
  * POST /api/deals/move — Move deal to another stage (Kanban drag-drop)
@@ -29,7 +29,7 @@ async function POSTHandler(request: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Невірні дані', details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -47,9 +47,15 @@ async function POSTHandler(request: NextRequest) {
 
     const previousStageId = (currentDeal as { stageId: string | null }).stageId || null;
 
-    const deal = await (tq.deal as unknown as {
-      update: (args: { where: { id: string }; data: Record<string, unknown>; include?: Record<string, unknown> }) => Promise<unknown>;
-    }).update({
+    const deal = await (
+      tq.deal as unknown as {
+        update: (args: {
+          where: { id: string };
+          data: Record<string, unknown>;
+          include?: Record<string, unknown>;
+        }) => Promise<unknown>;
+      }
+    ).update({
       where: { id: dealId },
       data: { stageId },
       include: { stage: true },

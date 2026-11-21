@@ -5,11 +5,13 @@
  */
 
 import { NextResponse } from 'next/server';
+
 import type { NextRequest } from 'next/server';
+
+import { getUsageStats, checkUsageLimit } from '@/lib/ai/usage';
+import { withAuth } from '@/lib/auth-guard';
 import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
-import { withAuth } from '@/lib/auth-guard';
-import { getUsageStats, checkUsageLimit } from '@/lib/ai/usage';
 
 async function GETHandler(request: NextRequest) {
   const csrfError = csrfProtection(request);
@@ -32,10 +34,7 @@ async function GETHandler(request: NextRequest) {
     });
   } catch (error) {
     console.error('Usage stats error:', error);
-    return NextResponse.json(
-      { error: 'Помилка отримання статистики' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Помилка отримання статистики' }, { status: 500 });
   }
 }
 

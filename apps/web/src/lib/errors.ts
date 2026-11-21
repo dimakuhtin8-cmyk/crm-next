@@ -1,6 +1,6 @@
 /**
  * Error Handling — единая система обработки ошибок
- * 
+ *
  * Концепция:
  * 1. Все ошибки оборачиваются в AppError с HTTP-кодом
  * 2. API routes ловят ошибки и возвращают единый формат
@@ -21,7 +21,7 @@ export class AppError extends Error {
     statusCode: number = 500,
     code: string = 'INTERNAL_ERROR',
     isOperational: boolean = true,
-    context?: Record<string, any>
+    context?: Record<string, any>,
   ) {
     super(message);
     this.name = 'AppError';
@@ -29,7 +29,7 @@ export class AppError extends Error {
     this.code = code;
     this.isOperational = isOperational;
     this.context = context;
-    
+
     // Сохраняем стек-трейс
     Error.captureStackTrace(this, this.constructor);
   }
@@ -39,11 +39,7 @@ export class AppError extends Error {
 
 export class NotFoundError extends AppError {
   constructor(resource: string, id?: string) {
-    super(
-      id ? `${resource} з id ${id} не знайдено` : `${resource} не знайдено`,
-      404,
-      'NOT_FOUND'
-    );
+    super(id ? `${resource} з id ${id} не знайдено` : `${resource} не знайдено`, 404, 'NOT_FOUND');
   }
 }
 
@@ -73,25 +69,15 @@ export class ConflictError extends AppError {
 
 export class RateLimitError extends AppError {
   constructor(retryAfter: number) {
-    super(
-      'Забагато запитів. Спробуйте пізніше.',
-      429,
-      'RATE_LIMITED',
-      true,
-      { retryAfter }
-    );
+    super('Забагато запитів. Спробуйте пізніше.', 429, 'RATE_LIMITED', true, { retryAfter });
   }
 }
 
 export class ExternalServiceError extends AppError {
   constructor(service: string, message: string) {
-    super(
-      `Помилка сервісу ${service}: ${message}`,
-      502,
-      'EXTERNAL_SERVICE_ERROR',
-      true,
-      { service }
-    );
+    super(`Помилка сервісу ${service}: ${message}`, 502, 'EXTERNAL_SERVICE_ERROR', true, {
+      service,
+    });
   }
 }
 
@@ -123,17 +109,14 @@ export function apiSuccess<T>(data: T, status: number = 200): Response {
     success: true,
     data,
   };
-  
+
   return NextResponse.json(response, { status });
 }
 
 /**
  * Ответ с ошибкой
  */
-export function apiError(
-  error: AppError | Error,
-  statusCode?: number
-): Response {
+export function apiError(error: AppError | Error, statusCode?: number): Response {
   if (error instanceof AppError) {
     const response: ApiResponse = {
       success: false,
@@ -143,10 +126,10 @@ export function apiError(
         details: error.context,
       },
     };
-    
+
     return NextResponse.json(response, { status: error.statusCode });
   }
-  
+
   // Неизвестная ошибка — не раскрываем детали в проде
   const isDev = process.env.NODE_ENV !== 'production';
   const response: ApiResponse = {
@@ -156,27 +139,26 @@ export function apiError(
       message: isDev ? error.message : 'Внутрішня помилка сервера',
     },
   };
-  
+
   return NextResponse.json(response, { status: statusCode || 500 });
 }
 
 // ============ API Route Wrapper ============
 
 import { NextResponse } from 'next/server';
+
 import { logError } from '@/lib/logging/logger';
 
 /**
  * Обёртка для API routes с автоматическим error handling
- * 
+ *
  * @example
  * export const GET = withErrorHandling(async (request) => {
  *   const data = await fetchData();
  *   return apiSuccess(data);
  * });
  */
-export function withErrorHandling(
-  handler: (request: Request, context?: any) => Promise<Response>
-) {
+export function withErrorHandling(handler: (request: Request, context?: any) => Promise<Response>) {
   return async (request: Request, context?: any): Promise<Response> => {
     try {
       return await handler(request, context);
@@ -186,12 +168,12 @@ export function withErrorHandling(
         method: request.method,
         url: request.url,
       });
-      
+
       // Возвращаем единый формат
       if (err instanceof AppError) {
         return apiError(err);
       }
-      
+
       return apiError(err);
     }
   };
@@ -201,7 +183,7 @@ export function withErrorHandling(
 
 /**
  * Обработка ошибок на клиенте
- * 
+ *
  * @example
  * try {
  *   const res = await fetch('/api/deals');
@@ -214,16 +196,16 @@ export function withErrorHandling(
  */
 export async function handleApiResponse<T>(response: Response): Promise<T> {
   const data: ApiResponse<T> = await response.json();
-  
+
   if (!data.success || data.error) {
     throw new AppError(
       data.error?.message || 'Помилка запиту',
       response.status,
       data.error?.code || 'API_ERROR',
       true,
-      data.error?.details
+      data.error?.details,
     );
   }
-  
+
   return data.data as T;
 }

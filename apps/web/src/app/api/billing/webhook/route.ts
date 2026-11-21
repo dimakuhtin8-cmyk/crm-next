@@ -9,12 +9,14 @@
  * - customer.subscription.deleted → cancel subscription
  */
 
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
 import { prisma } from '@crm-next/database';
+import { NextResponse } from 'next/server';
+
+import type { NextRequest } from 'next/server';
+import type Stripe from 'stripe';
+
 import { verifyWebhook } from '@/lib/billing/stripe';
 import log from '@/lib/logging/logger';
-import type Stripe from 'stripe';
 
 /**
  * Period end of a subscription (stripe v22 removed Subscription.current_period_end;
@@ -41,17 +43,21 @@ function invoiceSubscriptionId(invoice: Stripe.Invoice): string | null {
  * First payment attempt of an invoice (stripe v22 keeps payments under
  * invoice.payments — there is no top-level `payment_intent`).
  */
-function invoiceFirstPayment(invoice: Stripe.Invoice): { amount: number | null; paymentIntentId: string | null } {
+function invoiceFirstPayment(invoice: Stripe.Invoice): {
+  amount: number | null;
+  paymentIntentId: string | null;
+} {
   const p = invoice.payments?.data?.[0];
   if (!p) return { amount: null, paymentIntentId: null };
   const pi: unknown = p.payment?.payment_intent;
   return {
     amount: typeof p.amount_paid === 'number' ? p.amount_paid : null,
     paymentIntentId:
-      typeof pi === 'string' ? pi
-      : pi && typeof pi === 'object' && 'id' in pi
-        ? String((pi as { id: unknown }).id)
-        : null,
+      typeof pi === 'string'
+        ? pi
+        : pi && typeof pi === 'object' && 'id' in pi
+          ? String((pi as { id: unknown }).id)
+          : null,
   };
 }
 
@@ -94,11 +100,17 @@ export async function POST(request: NextRequest) {
           select: { status: true },
         });
         if (existingEvent?.status === 'completed') {
-          log.info({ eventId: event.id, type: event.type }, 'Stripe event already processed, skipping');
+          log.info(
+            { eventId: event.id, type: event.type },
+            'Stripe event already processed, skipping',
+          );
           return NextResponse.json({ received: true, idempotent: true });
         }
         // status is 'pending' or 'failed' → reprocess
-        log.info({ eventId: event.id, type: event.type, prevStatus: existingEvent?.status }, 'Reprocessing incomplete Stripe event');
+        log.info(
+          { eventId: event.id, type: event.type, prevStatus: existingEvent?.status },
+          'Reprocessing incomplete Stripe event',
+        );
       } else {
         throw e;
       }
@@ -111,7 +123,10 @@ export async function POST(request: NextRequest) {
         const planId = session.metadata?.planId;
 
         if (tenantId && session.subscription) {
-          const subscription = await (await import('@/lib/billing/stripe')).getStripe()
+          const subscription = await (
+            await import('@/lib/billing/stripe')
+          )
+            .getStripe()
             .subscriptions.retrieve(session.subscription as string);
 
           await prisma.tenant.update({
@@ -121,9 +136,7 @@ export async function POST(request: NextRequest) {
               subscriptionId: subscription.id,
               subscriptionStatus: subscription.status,
               subscriptionEndsAt: subscriptionPeriodEnd(subscription),
-              trialEndsAt: subscription.trial_end
-                ? new Date(subscription.trial_end * 1000)
-                : null,
+              trialEndsAt: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
             },
           });
 
@@ -156,7 +169,10 @@ export async function POST(request: NextRequest) {
           });
 
           if (existing?.status === 'succeeded') {
-            log.info({ tenantId: resolvedTenantId, invoiceId: invoice.id }, 'Payment already recorded, skipping');
+            log.info(
+              { tenantId: resolvedTenantId, invoiceId: invoice.id },
+              'Payment already recorded, skipping',
+            );
           } else {
             const firstPayment = invoiceFirstPayment(invoice);
             const paymentData = {
@@ -169,7 +185,10 @@ export async function POST(request: NextRequest) {
             };
             if (existing) {
               await prisma.payment.update({ where: { id: existing.id }, data: paymentData });
-              log.info({ tenantId: resolvedTenantId, invoiceId: invoice.id }, 'Payment updated to succeeded');
+              log.info(
+                { tenantId: resolvedTenantId, invoiceId: invoice.id },
+                'Payment updated to succeeded',
+              );
             } else {
               await prisma.payment.create({
                 data: { tenantId: resolvedTenantId, stripeInvoiceId: invoice.id, ...paymentData },
@@ -240,9 +259,7 @@ export async function POST(request: NextRequest) {
             data: {
               subscriptionStatus: subscription.status,
               subscriptionEndsAt: subscriptionPeriodEnd(subscription),
-              trialEndsAt: subscription.trial_end
-                ? new Date(subscription.trial_end * 1000)
-                : null,
+              trialEndsAt: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
             },
           });
 
@@ -287,10 +304,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true });
   } catch (error) {
     // Mark as failed (allows retry on next Stripe delivery)
-    await prisma.stripeWebhookEvent.update({
-      where: { stripeEventId: event.id },
-      data: { status: 'failed' },
-    }).catch(() => {}); // best-effort
+    await prisma.stripeWebhookEvent
+      .update({
+        where: { stripeEventId: event.id },
+        data: { status: 'failed' },
+      })
+      .catch(() => {}); // best-effort
 
     log.error({ err: error, eventType: event.type }, 'Stripe webhook processing error');
     return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });

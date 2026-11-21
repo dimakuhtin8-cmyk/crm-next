@@ -11,8 +11,9 @@
  */
 
 import { NextResponse } from 'next/server';
+
 import type { NextRequest } from 'next/server';
-import { extractUserId } from '@/lib/auth-utils';
+
 import { hasPermission, hasMinRole, type TenantRole } from '@/lib/rbac';
 import { getTenantQuery } from '@/lib/tenant-query';
 
@@ -39,7 +40,7 @@ export function withPermission(permission: string) {
         if (!allowed) {
           return NextResponse.json(
             { error: 'Недостатньо прав', required: permission },
-            { status: 403 }
+            { status: 403 },
           );
         }
 
@@ -73,7 +74,7 @@ export function withMinRole(minRole: TenantRole) {
         if (!allowed) {
           return NextResponse.json(
             { error: 'Недостатньо прав', required: minRole },
-            { status: 403 }
+            { status: 403 },
           );
         }
 

@@ -7,6 +7,7 @@
  */
 
 import { prisma } from '@crm-next/database';
+
 import { encrypt, decrypt, isEncrypted } from '@/lib/encryption';
 
 export interface ProviderKeyInfo {
@@ -27,7 +28,10 @@ function maskKey(encrypted: string): string {
 }
 
 /** Raw encrypted key for a provider, or null. New table first, legacy second. */
-export async function getProviderKeyRaw(tenantId: string, provider: string): Promise<string | null> {
+export async function getProviderKeyRaw(
+  tenantId: string,
+  provider: string,
+): Promise<string | null> {
   const row = await prisma.aiProviderKey.findUnique({
     where: { tenantId_provider: { tenantId, provider } },
     select: { apiKey: true },
@@ -60,7 +64,7 @@ export async function getProviderKey(tenantId: string, provider: string): Promis
 export async function setProviderKey(
   tenantId: string,
   provider: string,
-  rawApiKey: string
+  rawApiKey: string,
 ): Promise<void> {
   const encrypted = encrypt(rawApiKey);
   await prisma.aiProviderKey.upsert({
@@ -130,10 +134,20 @@ export async function listProviderKeys(tenantId: string): Promise<ProviderKeyInf
   if (tenant) {
     const legacyProvider = tenant.aiProvider || 'gemini';
     if (tenant.aiApiKey && !seen.has(legacyProvider) && isEncrypted(tenant.aiApiKey)) {
-      out.push({ provider: legacyProvider, hasKey: true, maskedKey: maskKey(tenant.aiApiKey), updatedAt: null });
+      out.push({
+        provider: legacyProvider,
+        hasKey: true,
+        maskedKey: maskKey(tenant.aiApiKey),
+        updatedAt: null,
+      });
     }
     if (tenant.geminiApiKey && !seen.has('gemini') && isEncrypted(tenant.geminiApiKey)) {
-      out.push({ provider: 'gemini', hasKey: true, maskedKey: maskKey(tenant.geminiApiKey), updatedAt: null });
+      out.push({
+        provider: 'gemini',
+        hasKey: true,
+        maskedKey: maskKey(tenant.geminiApiKey),
+        updatedAt: null,
+      });
     }
   }
   return out;

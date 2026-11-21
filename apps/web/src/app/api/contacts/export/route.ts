@@ -1,13 +1,15 @@
 /**
  * Export Contacts API — экспорт контактов в CSV
- * 
+ *
  * GET /api/contacts/export — скачать все контакты в CSV
  */
 
 import { NextResponse } from 'next/server';
+
 import type { NextRequest } from 'next/server';
-import { getTenantQuery } from '@/lib/tenant-query';
+
 import { withAuth } from '@/lib/auth-guard';
+import { getTenantQuery } from '@/lib/tenant-query';
 
 async function GETHandler(request: NextRequest) {
   try {
@@ -22,9 +24,19 @@ async function GETHandler(request: NextRequest) {
     } as never);
 
     if (format === 'csv') {
-      const headers = ['ID', 'Ім\'я', 'Email', 'Телефон', 'Компанія', 'Посада', 'Статус', 'Джерело', 'Створено'];
+      const headers = [
+        'ID',
+        "Ім'я",
+        'Email',
+        'Телефон',
+        'Компанія',
+        'Посада',
+        'Статус',
+        'Джерело',
+        'Створено',
+      ];
 
-      const rows = (contacts as Array<Record<string, unknown>>).map(contact => [
+      const rows = (contacts as Array<Record<string, unknown>>).map((contact) => [
         (contact.id as string) || '',
         (contact.firstName as string) || '',
         (contact.email as string) || '',
@@ -43,10 +55,9 @@ async function GETHandler(request: NextRequest) {
         return value;
       };
 
-      const csv = [
-        headers.join(','),
-        ...rows.map(row => row.map(escapeCSV).join(','))
-      ].join('\n');
+      const csv = [headers.join(','), ...rows.map((row) => row.map(escapeCSV).join(','))].join(
+        '\n',
+      );
 
       return new Response(csv, {
         status: 200,
@@ -58,7 +69,7 @@ async function GETHandler(request: NextRequest) {
     }
 
     // JSON format
-    const json = (contacts as Array<Record<string, unknown>>).map(contact => ({
+    const json = (contacts as Array<Record<string, unknown>>).map((contact) => ({
       id: contact.id,
       firstName: contact.firstName,
       email: contact.email,

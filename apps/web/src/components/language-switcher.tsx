@@ -4,10 +4,11 @@
 
 'use client';
 
-import { useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import { Button } from '@/components/ui';
 import { Globe, Check } from 'lucide-react';
+import { useRouter, usePathname } from 'next/navigation';
+import { useState } from 'react';
+
+import { Button } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
 const languages = [
@@ -21,7 +22,7 @@ export function LanguageSwitcher() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const currentLang = languages.find(l => pathname.startsWith(`/${l.code}`)) || languages[0];
+  const currentLang = languages.find((l) => pathname.startsWith(`/${l.code}`)) || languages[0];
 
   const switchLanguage = (langCode: string) => {
     // Replace the locale segment in the pathname
@@ -45,10 +46,7 @@ export function LanguageSwitcher() {
 
       {open && (
         <>
-          <div 
-            className="fixed inset-0 z-40" 
-            onClick={() => setOpen(false)} 
-          />
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div className="absolute right-0 top-full mt-2 w-48 bg-card border border-border rounded-xl shadow-lg z-50 overflow-hidden">
             {languages.map((lang) => (
               <button
@@ -56,14 +54,12 @@ export function LanguageSwitcher() {
                 onClick={() => switchLanguage(lang.code)}
                 className={cn(
                   'w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors',
-                  currentLang.code === lang.code && 'bg-muted'
+                  currentLang.code === lang.code && 'bg-muted',
                 )}
               >
                 <span className="text-lg">{lang.flag}</span>
                 <span className="flex-1 text-left">{lang.label}</span>
-                {currentLang.code === lang.code && (
-                  <Check className="h-4 w-4 text-primary" />
-                )}
+                {currentLang.code === lang.code && <Check className="h-4 w-4 text-primary" />}
               </button>
             ))}
           </div>

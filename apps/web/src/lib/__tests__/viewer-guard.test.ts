@@ -6,18 +6,15 @@
  * Для каждого эндпоинта: создаём viewer, делаем POST, ожидаем 403.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { prisma } from '@crm-next/database';
 import { SignJWT } from 'jose';
 import { NextRequest } from 'next/server';
-import { prisma } from '@crm-next/database';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
 const SECRET = new TextEncoder().encode('4p200FzdKSNdfxdHaoTOa9m6WoEzmwEbl0CqrcuPOgc=');
 
 async function createToken(payload: Record<string, unknown>): Promise<string> {
-  return new SignJWT(payload)
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .sign(SECRET);
+  return new SignJWT(payload).setProtectedHeader({ alg: 'HS256' }).setIssuedAt().sign(SECRET);
 }
 
 function makePostRequest(url: string, token: string, body: Record<string, unknown>): NextRequest {
@@ -32,9 +29,9 @@ function makePostRequest(url: string, token: string, body: Record<string, unknow
 }
 
 // Import route handlers
-import { POST as bulkPOST } from '@/app/api/contacts/bulk/route';
-import { POST as checkoutPOST } from '@/app/api/billing/checkout/route';
 import { POST as rulesPOST } from '@/app/api/automation/rules/route';
+import { POST as checkoutPOST } from '@/app/api/billing/checkout/route';
+import { POST as bulkPOST } from '@/app/api/contacts/bulk/route';
 import { POST as templatesPOST } from '@/app/api/documents/templates/route';
 
 let viewerId: string;
@@ -83,7 +80,7 @@ describe('P3: viewer cannot access mutating routes (integration)', () => {
     const req = makePostRequest(
       `http://localhost:3000/api/contacts/bulk?tenantId=${tenantId}`,
       viewerToken,
-      { action: 'delete', contactIds: [] }
+      { action: 'delete', contactIds: [] },
     );
 
     const response = await bulkPOST(req);
@@ -94,7 +91,7 @@ describe('P3: viewer cannot access mutating routes (integration)', () => {
     const req = makePostRequest(
       `http://localhost:3000/api/billing/checkout?tenantId=${tenantId}`,
       viewerToken,
-      { planId: 'professional' }
+      { planId: 'professional' },
     );
 
     const response = await checkoutPOST(req);
@@ -110,7 +107,7 @@ describe('P3: viewer cannot access mutating routes (integration)', () => {
         triggerType: 'deal_created',
         actionType: 'send_notification',
         actionConfig: {},
-      }
+      },
     );
 
     const response = await rulesPOST(req);
@@ -121,7 +118,7 @@ describe('P3: viewer cannot access mutating routes (integration)', () => {
     const req = makePostRequest(
       `http://localhost:3000/api/documents/templates?tenantId=${tenantId}`,
       viewerToken,
-      { name: 'Test Template', content: 'test', type: 'email' }
+      { name: 'Test Template', content: 'test', type: 'email' },
     );
 
     const response = await templatesPOST(req);

@@ -7,18 +7,15 @@
  * - stripe exports: юнит-тест (импорт/сигнатура без сети)
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { prisma } from '@crm-next/database';
 import { SignJWT } from 'jose';
 import { NextRequest } from 'next/server';
-import { prisma } from '@crm-next/database';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
 const SECRET = new TextEncoder().encode('4p200FzdKSNdfxdHaoTOa9m6WoEzmwEbl0CqrcuPOgc=');
 
 async function createToken(payload: Record<string, unknown>): Promise<string> {
-  return new SignJWT(payload)
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .sign(SECRET);
+  return new SignJWT(payload).setProtectedHeader({ alg: 'HS256' }).setIssuedAt().sign(SECRET);
 }
 
 function makeRequest(url: string, token: string | null): NextRequest {
@@ -27,9 +24,9 @@ function makeRequest(url: string, token: string | null): NextRequest {
   return new NextRequest(new URL(url), { headers });
 }
 
-import { createWebhookSignature, verifyWebhookSignature } from '@/lib/webhooks';
 import { GET as analyticsGET } from '@/app/api/analytics/route';
 import { getStripe, getUpcomingInvoice, verifyWebhook } from '@/lib/billing/stripe';
+import { createWebhookSignature, verifyWebhookSignature } from '@/lib/webhooks';
 
 const BASE = 'http://localhost:3000';
 
@@ -40,7 +37,9 @@ describe('ФАЗА 3.1: webhooks signature (юнит-тест чистых фу�
 
     const { timestamp: ts, signature: sig } = createWebhookSignature(payload, secret);
     expect(verifyWebhookSignature(payload, `t=${ts},s=${sig}`, secret)).toEqual({ valid: true });
-    expect(verifyWebhookSignature(payload, `t=${ts},s=${'0'.repeat(64)}`, secret).valid).toBe(false);
+    expect(verifyWebhookSignature(payload, `t=${ts},s=${'0'.repeat(64)}`, secret).valid).toBe(
+      false,
+    );
     expect(verifyWebhookSignature(payload, 'garbage', secret).valid).toBe(false);
     // просроченный timestamp → anti-replay
     expect(verifyWebhookSignature(payload, `t=${ts - 3600},s=${sig}`, secret).valid).toBe(false);
@@ -57,7 +56,9 @@ describe('ФАЗА 3.2: stripe exports (юнит-тест без сети)', () 
   });
 
   it('getUpcomingInvoice без подписки у тенанта → null (без обращения к Stripe)', async () => {
-    const t = await prisma.tenant.create({ data: { name: 'P3 Stripe', slug: 'p3-stripe', plan: 'free' } });
+    const t = await prisma.tenant.create({
+      data: { name: 'P3 Stripe', slug: 'p3-stripe', plan: 'free' },
+    });
     try {
       await expect(getUpcomingInvoice(t.id)).resolves.toBeNull();
     } finally {
@@ -81,10 +82,14 @@ describe('ФАЗА 3.3: analytics GET (интеграционный тест)', 
     await prisma.user.deleteMany();
     await prisma.tenant.deleteMany();
 
-    const t = await prisma.tenant.create({ data: { name: 'P3 Analytics', slug: 'p3-analytics', plan: 'professional' } });
+    const t = await prisma.tenant.create({
+      data: { name: 'P3 Analytics', slug: 'p3-analytics', plan: 'professional' },
+    });
     tenantId = t.id;
     const owner = await prisma.user.create({ data: { email: 'p3-owner@test.com', name: 'Owner' } });
-    const manager = await prisma.user.create({ data: { email: 'p3-manager@test.com', name: 'Менеджер' } });
+    const manager = await prisma.user.create({
+      data: { email: 'p3-manager@test.com', name: 'Менеджер' },
+    });
     managerId = manager.id;
     await prisma.tenantMember.create({ data: { userId: owner.id, tenantId, role: 'owner' } });
     await prisma.tenantMember.create({ data: { userId: manager.id, tenantId, role: 'member' } });
@@ -92,9 +97,18 @@ describe('ФАЗА 3.3: analytics GET (интеграционный тест)', 
 
     await prisma.contact.create({ data: { tenantId, firstName: 'Контакт' } });
     const pipe = await prisma.pipeline.create({ data: { tenantId, name: 'Пайп' } });
-    const stage = await prisma.pipelineStage.create({ data: { pipelineId: pipe.id, name: 'Виграно', order: 0 } });
+    const stage = await prisma.pipelineStage.create({
+      data: { pipelineId: pipe.id, name: 'Виграно', order: 0 },
+    });
     const deal = await prisma.deal.create({
-      data: { tenantId, pipelineId: pipe.id, stageId: stage.id, title: 'Угода', value: 1000, status: 'won' },
+      data: {
+        tenantId,
+        pipelineId: pipe.id,
+        stageId: stage.id,
+        title: 'Угода',
+        value: 1000,
+        status: 'won',
+      },
     });
     await prisma.task.create({
       data: { tenantId, title: 'Дзвінок', status: 'done', assigneeId: manager.id, dealId: deal.id },
@@ -113,7 +127,9 @@ describe('ФАЗА 3.3: analytics GET (интеграционный тест)', 
   });
 
   it('GET /api/analytics?period=30 → 200, topManagers содержит менеджера (было 500)', async () => {
-    const r = await analyticsGET(makeRequest(`${BASE}/api/analytics?period=30&tenantId=${tenantId}`, token));
+    const r = await analyticsGET(
+      makeRequest(`${BASE}/api/analytics?period=30&tenantId=${tenantId}`, token),
+    );
     expect(r.status).toBe(200);
     const body = await r.json();
     expect(body.stats.wonDeals).toBe(1);

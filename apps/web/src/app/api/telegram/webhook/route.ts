@@ -1,7 +1,7 @@
 import { prisma } from '@crm-next/database';
 import { NextResponse } from 'next/server';
 
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 
 import { handleTelegramUpdate } from '@/lib/telegram/handler';
 

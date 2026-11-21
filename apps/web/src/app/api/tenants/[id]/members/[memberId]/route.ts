@@ -2,10 +2,10 @@ import { prisma } from '@crm-next/database';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 
-import { csrfProtection } from '@/lib/csrf';
 import { extractUserId } from '@/lib/auth-utils';
+import { csrfProtection } from '@/lib/csrf';
 import { canManageRole, getUserRole, type TenantRole } from '@/lib/rbac';
 
 interface Params {
@@ -31,7 +31,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Невірні дані', details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -60,10 +60,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
     // Cannot change own role
     if (targetMember.userId === requesterId) {
-      return NextResponse.json(
-        { error: 'Не можна змінювати власну роль' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Не можна змінювати власну роль' }, { status: 400 });
     }
 
     // Owner management: only an owner may touch another owner,
@@ -72,7 +69,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
       if (requesterRole !== 'owner') {
         return NextResponse.json(
           { error: 'Недостатньо прав для зміни ролі власника' },
-          { status: 403 }
+          { status: 403 },
         );
       }
       const ownerCount = await prisma.tenantMember.count({
@@ -81,7 +78,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
       if (ownerCount <= 1) {
         return NextResponse.json(
           { error: 'Не можна понизити останнього власника' },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -92,17 +89,17 @@ export async function PUT(request: NextRequest, { params }: Params) {
     if (!canManageRole(requesterRole, role)) {
       return NextResponse.json(
         { error: 'Недостатньо прав для призначення цієї ролі' },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
     // Check hierarchy against the target's current role
     // (skipped for owner→owner, handled above)
-    if (targetMember.role !== 'owner' && !canManageRole(requesterRole, targetMember.role as TenantRole)) {
-      return NextResponse.json(
-        { error: 'Недостатньо прав для зміни ролі' },
-        { status: 403 }
-      );
+    if (
+      targetMember.role !== 'owner' &&
+      !canManageRole(requesterRole, targetMember.role as TenantRole)
+    ) {
+      return NextResponse.json({ error: 'Недостатньо прав для зміни ролі' }, { status: 403 });
     }
 
     // Update role
@@ -119,10 +116,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
     return NextResponse.json({ member: updated });
   } catch (error) {
     console.error('Update member role error:', error);
-    return NextResponse.json(
-      { error: 'Помилка оновлення ролі' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Помилка оновлення ролі' }, { status: 500 });
   }
 }
 
@@ -163,7 +157,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
       if (requesterRole !== 'owner') {
         return NextResponse.json(
           { error: 'Недостатньо прав для видалення власника' },
-          { status: 403 }
+          { status: 403 },
         );
       }
       const ownerCount = await prisma.tenantMember.count({
@@ -172,7 +166,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
       if (ownerCount <= 1) {
         return NextResponse.json(
           { error: 'Не можна видалити останнього власника' },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -181,15 +175,18 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     if (targetMember.userId === requesterId) {
       return NextResponse.json(
         { error: 'Для виходу з компанії використовуйте "Покинути компанію"' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Check hierarchy (skipped for owner→owner, handled above)
-    if (targetMember.role !== 'owner' && !canManageRole(requesterRole, targetMember.role as TenantRole)) {
+    if (
+      targetMember.role !== 'owner' &&
+      !canManageRole(requesterRole, targetMember.role as TenantRole)
+    ) {
       return NextResponse.json(
         { error: 'Недостатньо прав для видалення учасника' },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -199,9 +196,6 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Remove member error:', error);
-    return NextResponse.json(
-      { error: 'Помилка видалення учасника' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Помилка видалення учасника' }, { status: 500 });
   }
 }

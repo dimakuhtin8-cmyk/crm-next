@@ -4,18 +4,15 @@
  * и member с ?search=... получал все свои записи без учёта поиска.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { prisma } from '@crm-next/database';
 import { SignJWT } from 'jose';
 import { NextRequest } from 'next/server';
-import { prisma } from '@crm-next/database';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
 const SECRET = new TextEncoder().encode('4p200FzdKSNdfxdHaoTOa9m6WoEzmwEbl0CqrcuPOgc=');
 
 async function createToken(payload: Record<string, unknown>): Promise<string> {
-  return new SignJWT(payload)
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .sign(SECRET);
+  return new SignJWT(payload).setProtectedHeader({ alg: 'HS256' }).setIssuedAt().sign(SECRET);
 }
 
 function makeRequest(url: string, token: string): NextRequest {
@@ -92,7 +89,7 @@ describe('member: search + dataFilter combine with AND, not overwrite', () => {
     const token = await createToken({ id: memberAId, tenantId });
     const req = makeRequest(
       `http://localhost:3000/api/contacts?tenantId=${tenantId}&search=Zzzsearchable`,
-      token
+      token,
     );
 
     const response = await GET(req);
@@ -111,7 +108,7 @@ describe('member: search + dataFilter combine with AND, not overwrite', () => {
     const token = await createToken({ id: memberAId, tenantId });
     const req = makeRequest(
       `http://localhost:3000/api/contacts?tenantId=${tenantId}&search=Nomatch`,
-      token
+      token,
     );
 
     const response = await GET(req);

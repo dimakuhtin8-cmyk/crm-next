@@ -7,24 +7,21 @@
  * обработка не делала сетевых вызовов (invoice.paid/failed, unhandled).
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { prisma } from '@crm-next/database';
 import { SignJWT } from 'jose';
 import { NextRequest } from 'next/server';
-import { prisma } from '@crm-next/database';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
 const SECRET = new TextEncoder().encode('4p200FzdKSNdfxdHaoTOa9m6WoEzmwEbl0CqrcuPOgc=');
 const STRIPE_TEST_SECRET = 'whsec_phase5_test';
 
 async function createToken(payload: Record<string, unknown>): Promise<string> {
-  return new SignJWT(payload)
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .sign(SECRET);
+  return new SignJWT(payload).setProtectedHeader({ alg: 'HS256' }).setIssuedAt().sign(SECRET);
 }
 
-import { POST as webhookPOST } from '@/app/api/billing/webhook/route';
-import { POST as aiPOST } from '@/app/api/ai/route';
 import { POST as aiQuickSetupPOST } from '@/app/api/ai/quick-setup/route';
+import { POST as aiPOST } from '@/app/api/ai/route';
+import { POST as webhookPOST } from '@/app/api/billing/webhook/route';
 import { getStripe } from '@/lib/billing/stripe';
 
 const BASE = 'http://localhost:3000';
@@ -85,7 +82,13 @@ beforeAll(async () => {
   await prisma.tenant.deleteMany();
 
   const t = await prisma.tenant.create({
-    data: { name: 'P5 Tenant', slug: 'p5-tenant', plan: 'professional', subscriptionId: 'sub_phase5', subscriptionStatus: 'active' },
+    data: {
+      name: 'P5 Tenant',
+      slug: 'p5-tenant',
+      plan: 'professional',
+      subscriptionId: 'sub_phase5',
+      subscriptionStatus: 'active',
+    },
   });
   tenantId = t.id;
   const v = await prisma.user.create({ data: { email: 'p5-viewer@test.com', name: 'Viewer' } });
@@ -125,7 +128,9 @@ describe('Ф5.1: Stripe webhook idempotency (без сети)', () => {
     expect(r2.status).toBe(200);
     expect((await r2.json()).idempotent).toBe(true);
 
-    const payments = await prisma.payment.findMany({ where: { tenantId, stripeInvoiceId: 'in_p5_1' } });
+    const payments = await prisma.payment.findMany({
+      where: { tenantId, stripeInvoiceId: 'in_p5_1' },
+    });
     expect(payments.length).toBe(1);
     expect(payments[0].status).toBe('succeeded');
     expect(payments[0].amount).toBe(1000);
@@ -137,21 +142,33 @@ describe('Ф5.1: Stripe webhook idempotency (без сети)', () => {
     expect((await webhookPOST(signedWebhookRequest(evt))).status).toBe(200);
     expect((await webhookPOST(signedWebhookRequest(evt))).status).toBe(200);
 
-    const payments = await prisma.payment.findMany({ where: { tenantId, stripeInvoiceId: 'in_p5_2' } });
+    const payments = await prisma.payment.findMany({
+      where: { tenantId, stripeInvoiceId: 'in_p5_2' },
+    });
     expect(payments.length).toBe(1);
     expect(payments[0].status).toBe('failed');
 
-    const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { subscriptionStatus: true } });
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { subscriptionStatus: true },
+    });
     expect(tenant?.subscriptionStatus).toBe('past_due');
   });
 
   it('неизвестный тип события дважды → completed, затем skip как дубль', async () => {
-    const evt = { id: 'evt_p5_3', object: 'event', type: 'account.updated', data: { object: { id: 'acct_1' } } };
+    const evt = {
+      id: 'evt_p5_3',
+      object: 'event',
+      type: 'account.updated',
+      data: { object: { id: 'acct_1' } },
+    };
 
     const r1 = await webhookPOST(signedWebhookRequest(evt));
     expect(r1.status).toBe(200);
 
-    const rec = await prisma.stripeWebhookEvent.findUnique({ where: { stripeEventId: 'evt_p5_3' } });
+    const rec = await prisma.stripeWebhookEvent.findUnique({
+      where: { stripeEventId: 'evt_p5_3' },
+    });
     expect(rec?.status).toBe('completed');
 
     const r2 = await webhookPOST(signedWebhookRequest(evt));
@@ -160,7 +177,10 @@ describe('Ф5.1: Stripe webhook idempotency (без сети)', () => {
 
   it('подпись от чужого секрета → 400/403, событие не записано', async () => {
     const raw = JSON.stringify(invoiceEvent('evt_p5_4', 'invoice.paid', 'in_p5_4'));
-    const badHeader = getStripe().webhooks.generateTestHeaderString({ payload: raw, secret: 'whsec-wrong' });
+    const badHeader = getStripe().webhooks.generateTestHeaderString({
+      payload: raw,
+      secret: 'whsec-wrong',
+    });
     const req = new NextRequest(new URL(`${BASE}/api/billing/webhook`), {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'stripe-signature': badHeader },
@@ -169,7 +189,9 @@ describe('Ф5.1: Stripe webhook idempotency (без сети)', () => {
     const r = await webhookPOST(req);
     expect([400, 403]).toContain(r.status);
 
-    const rec = await prisma.stripeWebhookEvent.findUnique({ where: { stripeEventId: 'evt_p5_4' } });
+    const rec = await prisma.stripeWebhookEvent.findUnique({
+      where: { stripeEventId: 'evt_p5_4' },
+    });
     expect(rec).toBeNull();
   });
 });
@@ -178,7 +200,10 @@ describe('Ф5.2: AI-guards не сломаны (viewer → 403 живым зап
   function postWith(path: string, body: unknown): NextRequest {
     return new NextRequest(new URL(`${BASE}${path}?tenantId=${tenantId}`), {
       method: 'POST',
-      headers: { cookie: `authjs.session-token=${tokenViewer}`, 'content-type': 'application/json' },
+      headers: {
+        cookie: `authjs.session-token=${tokenViewer}`,
+        'content-type': 'application/json',
+      },
       body: JSON.stringify(body),
     });
   }
@@ -189,7 +214,9 @@ describe('Ф5.2: AI-guards не сломаны (viewer → 403 живым зап
   });
 
   it('viewer POST /api/ai/quick-setup → 403 (нужен settings:update)', async () => {
-    const r = await aiQuickSetupPOST(postWith('/api/ai/quick-setup', { apiKey: 'x', provider: 'openai' }));
+    const r = await aiQuickSetupPOST(
+      postWith('/api/ai/quick-setup', { apiKey: 'x', provider: 'openai' }),
+    );
     expect(r.status).toBe(403);
   });
 });

@@ -9,6 +9,7 @@
  */
 
 import { prisma } from '@crm-next/database';
+
 import type { NextRequest } from 'next/server';
 
 import { extractUser } from '@/lib/auth-utils';
@@ -19,7 +20,6 @@ export interface TenantContext {
   source: 'subdomain' | 'domain' | 'jwt' | 'header' | 'none';
 }
 
-const BASE_DOMAIN = process.env.BASE_DOMAIN || 'localhost';
 const TENANT_HEADER = 'x-tenant-id';
 
 /**

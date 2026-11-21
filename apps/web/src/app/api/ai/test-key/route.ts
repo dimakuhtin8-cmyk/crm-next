@@ -6,11 +6,13 @@
  */
 
 import { NextResponse } from 'next/server';
+
 import type { NextRequest } from 'next/server';
-import { csrfProtection } from '@/lib/csrf';
-import { getTenantQuery } from '@/lib/tenant-query';
+
 import { testProviderConnection } from '@/lib/ai/test-connection';
 import { withAuth } from '@/lib/auth-guard';
+import { csrfProtection } from '@/lib/csrf';
+import { getTenantQuery } from '@/lib/tenant-query';
 
 async function POSTHandler(request: NextRequest) {
   const csrfError = csrfProtection(request);
@@ -26,11 +28,11 @@ async function POSTHandler(request: NextRequest) {
     const { apiKey, provider, model } = body;
 
     if (!apiKey || typeof apiKey !== 'string') {
-      return NextResponse.json({ error: 'API-ключ обов\'язковий' }, { status: 400 });
+      return NextResponse.json({ error: "API-ключ обов'язковий" }, { status: 400 });
     }
 
     if (!provider || typeof provider !== 'string') {
-      return NextResponse.json({ error: 'Провайдер обов\'язковий' }, { status: 400 });
+      return NextResponse.json({ error: "Провайдер обов'язковий" }, { status: 400 });
     }
 
     const result = await testProviderConnection(provider, apiKey, model);
@@ -38,10 +40,7 @@ async function POSTHandler(request: NextRequest) {
     return NextResponse.json(result);
   } catch (error) {
     console.error('Test key error:', error);
-    return NextResponse.json(
-      { error: 'Помилка тестування ключа' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Помилка тестування ключа' }, { status: 500 });
   }
 }
 

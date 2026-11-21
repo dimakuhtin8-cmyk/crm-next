@@ -5,8 +5,6 @@
 import { jwtVerify } from 'jose';
 import { getToken } from 'next-auth/jwt';
 
-import type { NextRequest } from 'next/server';
-
 /** Minimal cookie access — works for NextRequest and plain Request wrappers. */
 interface CookieCarrier {
   cookies: {

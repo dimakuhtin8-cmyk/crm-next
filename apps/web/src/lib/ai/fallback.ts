@@ -8,10 +8,12 @@
  */
 
 import { prisma } from '@crm-next/database';
-import { decrypt } from '@/lib/encryption';
+
 import { getProviderKeyRaw } from './keys';
 import { getProvider } from './providers';
 import { logAiRequest, incrementUsage } from './usage';
+
+import { decrypt } from '@/lib/encryption';
 
 export interface FallbackConfig {
   tenantId: string;
@@ -58,21 +60,25 @@ export async function loadFallbackConfig(tenantId: string): Promise<FallbackConf
 
   if (!tenant) return null;
 
-  const primaryKey = await getProviderKeyRaw(tenantId, tenant.aiProvider || 'gemini')
-    || tenant.aiApiKey || tenant.geminiApiKey || '';
+  const primaryKey =
+    (await getProviderKeyRaw(tenantId, tenant.aiProvider || 'gemini')) ||
+    tenant.aiApiKey ||
+    tenant.geminiApiKey ||
+    '';
   if (!primaryKey) return null;
 
   const fallbackProvider = tenant.aiFallbackProvider || undefined;
   // REAL per-provider fallback key (not the primary key reused).
-  const fallbackKey = fallbackProvider
-    ? await getProviderKeyRaw(tenantId, fallbackProvider)
-    : null;
+  const fallbackKey = fallbackProvider ? await getProviderKeyRaw(tenantId, fallbackProvider) : null;
 
   return {
     tenantId,
     primaryProvider: tenant.aiProvider || 'gemini',
     primaryApiKey: primaryKey,
-    primaryModel: tenant.aiModel || getProvider(tenant.aiProvider || 'gemini')?.models[0]?.id || 'gemini-3-flash-preview',
+    primaryModel:
+      tenant.aiModel ||
+      getProvider(tenant.aiProvider || 'gemini')?.models[0]?.id ||
+      'gemini-3-flash-preview',
     fallbackProvider,
     fallbackApiKey: fallbackKey || undefined,
     fallbackModel: undefined,
@@ -83,7 +89,7 @@ export async function loadFallbackConfig(tenantId: string): Promise<FallbackConf
  * Sleep for specified milliseconds
  */
 function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -105,11 +111,15 @@ function isRetryableError(error: unknown): boolean {
 export async function executeWithFallback(
   config: FallbackConfig,
   options: AiRequestOptions,
-  executeFn: (provider: string, apiKey: string, model: string, opts: AiRequestOptions) => Promise<string>
+  executeFn: (
+    provider: string,
+    apiKey: string,
+    model: string,
+    opts: AiRequestOptions,
+  ) => Promise<string>,
 ): Promise<AiResult> {
   const startTime = Date.now();
   let lastError: unknown = null;
-  let usedFallback = false;
   let retries = 0;
 
   // All keys must be encrypted
@@ -122,7 +132,7 @@ export async function executeWithFallback(
         config.primaryProvider,
         primaryKey,
         config.primaryModel,
-        options
+        options,
       );
 
       // Success — log and return
@@ -165,10 +175,11 @@ export async function executeWithFallback(
     tenantId: config.tenantId,
     provider: config.primaryProvider,
     model: config.primaryModel,
-    status: lastError instanceof Error &&
+    status:
+      lastError instanceof Error &&
       (lastError.message.includes('429') || lastError.message.includes('rate limit'))
-      ? 'rate_limited'
-      : 'error',
+        ? 'rate_limited'
+        : 'error',
     durationMs,
     promptPreview: options.prompt,
     errorMessage: lastError instanceof Error ? lastError.message : 'Unknown error',
@@ -178,16 +189,15 @@ export async function executeWithFallback(
   if (config.fallbackProvider && config.fallbackApiKey) {
     const fallbackKey = decrypt(config.fallbackApiKey);
 
-    const fallbackModel = config.fallbackModel ||
-      getProvider(config.fallbackProvider)?.models[0]?.id ||
-      'unknown';
+    const fallbackModel =
+      config.fallbackModel || getProvider(config.fallbackProvider)?.models[0]?.id || 'unknown';
 
     try {
       const response = await executeFn(
         config.fallbackProvider,
         fallbackKey,
         fallbackModel,
-        options
+        options,
       );
 
       const fallbackDurationMs = Date.now() - startTime;

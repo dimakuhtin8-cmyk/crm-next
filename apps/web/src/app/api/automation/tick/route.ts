@@ -7,11 +7,11 @@
  * по умолчанию 3 дня), вызывая executeAutomations(tenantId, 'timer', ...).
  */
 
+import { prisma } from '@crm-next/database';
 import { NextResponse } from 'next/server';
 
 import type { NextRequest } from 'next/server';
 
-import { prisma } from '@crm-next/database';
 import { executeAutomations, type DealContext } from '@/lib/automation/engine';
 import { verifyWorkerSecret } from '@/lib/worker-auth';
 
@@ -35,7 +35,9 @@ export async function POST(request: NextRequest) {
         if (typeof cfg.inactivityDays === 'number' && cfg.inactivityDays > 0) {
           inactivityDays = Math.min(cfg.inactivityDays, 365);
         }
-      } catch {}
+      } catch {
+        /* ignore */
+      }
 
       const cutoff = new Date(Date.now() - inactivityDays * 24 * 60 * 60 * 1000);
 
@@ -47,8 +49,12 @@ export async function POST(request: NextRequest) {
             updatedAt: { lt: cutoff },
           },
           select: {
-            id: true, title: true, value: true, stageId: true,
-            contactId: true, status: true,
+            id: true,
+            title: true,
+            value: true,
+            stageId: true,
+            contactId: true,
+            status: true,
           },
           take: 100,
         });

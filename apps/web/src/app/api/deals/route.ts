@@ -1,20 +1,22 @@
 /**
  * Deals API — CRUD для угод
- * 
+ *
  * GET /api/deals — Список угод (кэширован)
  * POST /api/deals — Створення угоди (інвалідує кеш)
  */
 
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+
 import type { NextRequest } from 'next/server';
-import { csrfProtection } from '@/lib/csrf';
+
+import { withAuth } from '@/lib/auth-guard';
 import { extractUserId } from '@/lib/auth-utils';
+import { cachedGet, cacheKeys, TTL, cacheTags, invalidateCacheByTag } from '@/lib/cache';
+import { csrfProtection } from '@/lib/csrf';
+import { apiSuccess } from '@/lib/errors';
 import { getUserRole } from '@/lib/rbac';
 import { getTenantQuery } from '@/lib/tenant-query';
-import { cachedGet, cacheKeys, TTL, cacheTags, invalidateCacheByTag } from '@/lib/cache';
-import { apiSuccess } from '@/lib/errors';
-import { withAuth } from '@/lib/auth-guard';
 
 /**
  * GET /api/deals — List deals (кэширован)
@@ -45,7 +47,7 @@ async function GETHandler(request: NextRequest) {
   // Генерируем ключ кэша на основе параметров (включая фильтр доступа)
   const cacheKey = cacheKeys.deals(
     tq.tenantId,
-    `${search || ''}:${pipelineId || ''}:${stageId || ''}:${status || ''}:${contactId || ''}:${page}:${limit}:${dataFilterParam || ''}`
+    `${search || ''}:${pipelineId || ''}:${stageId || ''}:${status || ''}:${contactId || ''}:${page}:${limit}:${dataFilterParam || ''}`,
   );
 
   // Кэшируем результат
@@ -60,12 +62,10 @@ async function GETHandler(request: NextRequest) {
       // друг друга одним ключом where.OR (см. баг search+member).
       const andConditions: Record<string, unknown>[] = [];
 
-      if (search) andConditions.push({
-        OR: [
-          { title: { contains: search } },
-          { company: { contains: search } },
-        ],
-      });
+      if (search)
+        andConditions.push({
+          OR: [{ title: { contains: search } }, { company: { contains: search } }],
+        });
       if (pipelineId) where.pipelineId = pipelineId;
       if (stageId) where.stageId = stageId;
       if (status) where.status = status;
@@ -73,7 +73,9 @@ async function GETHandler(request: NextRequest) {
       if (dataFilterParam) {
         try {
           andConditions.push(JSON.parse(dataFilterParam));
-        } catch {}
+        } catch {
+          /* ignore */
+        }
       }
       if (andConditions.length > 0) {
         where.AND = andConditions;
@@ -96,7 +98,7 @@ async function GETHandler(request: NextRequest) {
       ]);
 
       return { deals, total, page, limit };
-    }
+    },
   );
 
   return apiSuccess(data);
@@ -117,11 +119,15 @@ const createDealSchema = z.object({
   expectedCloseDate: z.string().optional().nullable(),
   notes: z.string().max(5000).optional().nullable(),
   ownerId: z.string().optional().nullable(),
-  products: z.array(z.object({
-    name: z.string().min(1).max(200),
-    quantity: z.number().min(1).default(1),
-    price: z.number().min(0),
-  })).optional(),
+  products: z
+    .array(
+      z.object({
+        name: z.string().min(1).max(200),
+        quantity: z.number().min(1).default(1),
+        price: z.number().min(0),
+      }),
+    )
+    .optional(),
 });
 
 async function POSTHandler(request: NextRequest) {
@@ -138,7 +144,7 @@ async function POSTHandler(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json(
       { error: 'Невірні дані', details: parsed.error.flatten().fieldErrors },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -173,8 +179,12 @@ async function POSTHandler(request: NextRequest) {
   // deal_created trigger (fire-and-forget, must not fail the request)
   {
     const created = deal as unknown as {
-      id: string; title: string; value: number | null; stageId: string | null;
-      contactId: string | null; status: string;
+      id: string;
+      title: string;
+      value: number | null;
+      stageId: string | null;
+      contactId: string | null;
+      status: string;
     };
     const tenantId = (tq as unknown as { tenantId: string }).tenantId;
     import('@/lib/automation/engine')
@@ -188,7 +198,7 @@ async function POSTHandler(request: NextRequest) {
           previousStageId: null,
           contactId: created.contactId,
           status: created.status,
-        })
+        }),
       )
       .catch((err) => console.error('Automation error:', err));
   }

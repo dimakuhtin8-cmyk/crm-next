@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
+
 import type { NextRequest } from 'next/server';
-import { getTenantQuery } from '@/lib/tenant-query';
+
+import { withAuth } from '@/lib/auth-guard';
 import { extractUserId } from '@/lib/auth-utils';
 import { getUserRole } from '@/lib/rbac';
-import { withAuth } from '@/lib/auth-guard';
+import { getTenantQuery } from '@/lib/tenant-query';
 
 /**
  * GET /api/team — List team members for the current tenant
@@ -26,10 +28,15 @@ async function GETHandler(request: NextRequest) {
       orderBy: { createdAt: 'asc' },
     });
 
-    const members = memberships.map((m: { user: { id: string; name: string | null; email: string | null; image: string | null }; role: string }) => ({
-      ...m.user,
-      role: m.role,
-    }));
+    const members = memberships.map(
+      (m: {
+        user: { id: string; name: string | null; email: string | null; image: string | null };
+        role: string;
+      }) => ({
+        ...m.user,
+        role: m.role,
+      }),
+    );
 
     // Current user's role — UI uses it to hide owner-reassign controls from members.
     const userId = await extractUserId(request);

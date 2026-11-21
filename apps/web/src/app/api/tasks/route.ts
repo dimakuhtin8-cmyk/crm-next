@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 
+import { withAuth } from '@/lib/auth-guard';
 import { csrfProtection } from '@/lib/csrf';
 import { notifyTaskEvent } from '@/lib/telegram/notifications';
 import { getTenantQuery } from '@/lib/tenant-query';
-import { withAuth } from '@/lib/auth-guard';
 
 /**
  * GET /api/tasks — List tasks (tenant-scoped, with filters)
@@ -33,17 +33,22 @@ async function GETHandler(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     const where: Record<string, unknown> = {};
-    if (search) where.OR = [
-      { title: { contains: search } },
-      { description: { contains: search } },
-    ];
+    if (search) where.OR = [{ title: { contains: search } }, { description: { contains: search } }];
     if (status) where.status = status;
     if (priority) where.priority = priority;
     if (assigneeId) where.assigneeId = assigneeId;
     if (contactId) where.contactId = contactId;
     if (dealId) where.dealId = dealId;
-    if (dueBefore) where.dueDate = { ...(where.dueDate as Record<string, unknown> || {}), lte: new Date(dueBefore) };
-    if (dueAfter) where.dueDate = { ...(where.dueDate as Record<string, unknown> || {}), gte: new Date(dueAfter) };
+    if (dueBefore)
+      where.dueDate = {
+        ...((where.dueDate as Record<string, unknown>) || {}),
+        lte: new Date(dueBefore),
+      };
+    if (dueAfter)
+      where.dueDate = {
+        ...((where.dueDate as Record<string, unknown>) || {}),
+        gte: new Date(dueAfter),
+      };
 
     // Apply RBAC data filter (injected by withAuth)
     const dataFilterParam = searchParams.get('_dataFilter');
@@ -51,7 +56,9 @@ async function GETHandler(request: NextRequest) {
       try {
         const dataFilter = JSON.parse(dataFilterParam);
         Object.assign(where, dataFilter);
-      } catch {}
+      } catch {
+        /* ignore */
+      }
     }
 
     const [tasks, total] = await Promise.all([
@@ -102,7 +109,7 @@ async function POSTHandler(request: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Невірні дані', details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -116,20 +123,28 @@ async function POSTHandler(request: NextRequest) {
 
     // Log activity
     try {
-      await (tq as unknown as { activity: { create: (args: { data: Record<string, unknown> }) => Promise<unknown> } }).activity.create({
+      await (
+        tq as unknown as {
+          activity: { create: (args: { data: Record<string, unknown> }) => Promise<unknown> };
+        }
+      ).activity.create({
         data: {
           type: 'task',
           title: `Створено задачу: ${parsed.data.title}`,
           contactId: parsed.data.contactId || null,
         },
       });
-    } catch {}
+    } catch {
+      /* ignore */
+    }
 
     // Telegram notification
     try {
       const tenantId = (tq as unknown as { tenantId: string }).tenantId;
       notifyTaskEvent(tenantId, (task as { id: string }).id, 'created').catch(() => {});
-    } catch {}
+    } catch {
+      /* ignore */
+    }
 
     return NextResponse.json({ task }, { status: 201 });
   } catch (error) {

@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 
+import { withAuth } from '@/lib/auth-guard';
 import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
-import { withAuth } from '@/lib/auth-guard';
 
 /**
  * POST /api/contacts/import — Import contacts from CSV
@@ -81,10 +81,7 @@ async function POSTHandler(request: NextRequest) {
     });
   } catch (error) {
     console.error('Import contacts error:', error);
-    return NextResponse.json(
-      { error: 'Помилка імпорту контактів' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Помилка імпорту контактів' }, { status: 500 });
   }
 }
 

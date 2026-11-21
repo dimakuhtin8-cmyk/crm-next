@@ -1,4 +1,3 @@
-import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Home01Icon,
   UserMultipleIcon,
@@ -60,6 +59,7 @@ import {
   BoltIcon,
   CircleDotIcon,
 } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 
 export {
   Home01Icon,
@@ -133,7 +133,13 @@ export interface IconProps {
   className?: string;
 }
 
-export function Icon({ icon, size = 20, color = 'currentColor', strokeWidth = 1.5, className }: IconProps) {
+export function Icon({
+  icon,
+  size = 20,
+  color = 'currentColor',
+  strokeWidth = 1.5,
+  className,
+}: IconProps) {
   return (
     <HugeiconsIcon
       icon={icon}

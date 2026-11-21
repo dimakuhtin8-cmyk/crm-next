@@ -1,12 +1,12 @@
 /**
  * Webhook System — обработка входящих и исходящих вебхуков
- * 
+ *
  * Архитектура:
  * 1. Inbound Webhooks — входящие от внешних сервисов (Telegram, WhatsApp, Stripe)
  * 2. Outbound Webhooks — исходящие при событиях CRM (сделка закрыта, задача создана)
  * 3. Signature Verification — HMAC подпись для безопасности
  * 4. Retry with Exponential Backoff — повторные попытки
- * 
+ *
  * Безопасность:
  * - Проверка подписи HMAC-SHA256
  * - Верификация timestamp (防止 replay attacks)
@@ -14,6 +14,7 @@
  */
 
 import crypto from 'crypto';
+
 import { createLogger } from '@/lib/logging/logger';
 
 const log = createLogger({ service: 'webhooks' });
@@ -59,7 +60,7 @@ export interface WebhookDelivery {
 export function createWebhookSignature(
   payload: string,
   secret: string,
-  timestamp: number = Math.floor(Date.now() / 1000)
+  timestamp: number = Math.floor(Date.now() / 1000),
 ): { timestamp: number; signature: string } {
   const signature = crypto
     .createHmac('sha256', secret)
@@ -75,7 +76,7 @@ export function verifyWebhookSignature(
   payload: string,
   signature: string,
   secret: string,
-  toleranceSeconds: number = 300 // 5 минут
+  toleranceSeconds: number = 300, // 5 минут
 ): { valid: boolean; error?: string } {
   try {
     // Проверяем формат подписи
@@ -88,7 +89,7 @@ export function verifyWebhookSignature(
     const timestamp = parseInt(timestampPart.replace('t=', ''), 10);
     // Signature arrives as `s=<hex>` — strip the prefix before comparing,
     // otherwise lengths never match and verification always fails.
-    
+
     if (isNaN(timestamp)) {
       return { valid: false, error: 'Invalid timestamp' };
     }
@@ -131,7 +132,7 @@ export function verifyWebhookSignature(
 export function createWebhookHeaders(
   payload: string,
   secret: string,
-  event: string
+  event: string,
 ): Record<string, string> {
   const timestamp = Math.floor(Date.now() / 1000);
   const signature = crypto
@@ -167,7 +168,9 @@ const webhookStore = new Map<string, WebhookRegistration[]>();
 /**
  * Зарегистрировать вебхук
  */
-export function registerWebhook(webhook: Omit<WebhookRegistration, 'id' | 'createdAt'>): WebhookRegistration {
+export function registerWebhook(
+  webhook: Omit<WebhookRegistration, 'id' | 'createdAt'>,
+): WebhookRegistration {
   const registration: WebhookRegistration = {
     ...webhook,
     id: crypto.randomUUID(),
@@ -178,11 +181,14 @@ export function registerWebhook(webhook: Omit<WebhookRegistration, 'id' | 'creat
   tenantWebhooks.push(registration);
   webhookStore.set(webhook.tenantId, tenantWebhooks);
 
-  log.info({
-    webhookId: registration.id,
-    tenantId: webhook.tenantId,
-    events: webhook.events,
-  }, 'Webhook зареєстровано');
+  log.info(
+    {
+      webhookId: registration.id,
+      tenantId: webhook.tenantId,
+      events: webhook.events,
+    },
+    'Webhook зареєстровано',
+  );
 
   return registration;
 }
@@ -192,13 +198,13 @@ export function registerWebhook(webhook: Omit<WebhookRegistration, 'id' | 'creat
  */
 export function unregisterWebhook(tenantId: string, webhookId: string): boolean {
   const tenantWebhooks = webhookStore.get(tenantId) || [];
-  const index = tenantWebhooks.findIndex(w => w.id === webhookId);
-  
+  const index = tenantWebhooks.findIndex((w) => w.id === webhookId);
+
   if (index === -1) return false;
-  
+
   tenantWebhooks.splice(index, 1);
   webhookStore.set(tenantId, tenantWebhooks);
-  
+
   return true;
 }
 
@@ -220,11 +226,9 @@ const deliveryQueue: WebhookDelivery[] = [];
 export async function dispatchWebhook(
   tenantId: string,
   event: string,
-  data: any
+  data: any,
 ): Promise<WebhookDelivery[]> {
-  const webhooks = getWebhooks(tenantId).filter(
-    w => w.active && w.events.includes(event)
-  );
+  const webhooks = getWebhooks(tenantId).filter((w) => w.active && w.events.includes(event));
 
   if (webhooks.length === 0) {
     return [];
@@ -256,7 +260,7 @@ export async function dispatchWebhook(
     deliveries.push(delivery);
 
     // Запускаем доставку
-    deliverWebhook(delivery, webhook).catch(err => {
+    deliverWebhook(delivery, webhook).catch((err) => {
       log.error({ err, deliveryId: delivery.id }, 'Помилка доставки вебхука');
     });
   }
@@ -269,7 +273,7 @@ export async function dispatchWebhook(
  */
 async function deliverWebhook(
   delivery: WebhookDelivery,
-  webhook: WebhookRegistration
+  webhook: WebhookRegistration,
 ): Promise<void> {
   const body = JSON.stringify(delivery.payload);
   const headers = createWebhookHeaders(body, webhook.secret, delivery.event);
@@ -292,25 +296,28 @@ async function deliverWebhook(
       if (response.ok) {
         delivery.status = 'success';
         delivery.deliveredAt = new Date();
-        
-        log.info({
-          deliveryId: delivery.id,
-          webhookId: webhook.id,
-          status: response.status,
-          attempts: delivery.attempts,
-        }, 'Вебхук доставлено');
-        
+
+        log.info(
+          {
+            deliveryId: delivery.id,
+            webhookId: webhook.id,
+            status: response.status,
+            attempts: delivery.attempts,
+          },
+          'Вебхук доставлено',
+        );
+
         return;
       }
 
       // Серверная ошибка — retry
       if (response.status >= 500) {
         delivery.lastError = `HTTP ${response.status}`;
-        
+
         // Exponential backoff: 1s, 2s, 4s, 8s, 16s
         const delay = Math.pow(2, delivery.attempts - 1) * 1000;
         delivery.nextRetryAt = new Date(Date.now() + delay);
-        
+
         await sleep(delay);
         continue;
       }
@@ -318,32 +325,38 @@ async function deliverWebhook(
       // Клиентская ошибка — не retry
       delivery.status = 'failed';
       delivery.lastError = `HTTP ${response.status} — client error, no retry`;
-      
-      log.warn({
-        deliveryId: delivery.id,
-        status: response.status,
-      }, 'Вебхук відхилено (client error)');
-      
+
+      log.warn(
+        {
+          deliveryId: delivery.id,
+          status: response.status,
+        },
+        'Вебхук відхилено (client error)',
+      );
+
       return;
     } catch (err: any) {
       delivery.lastError = err.message;
-      
+
       // Таймаут или сеть — retry
       const delay = Math.pow(2, delivery.attempts - 1) * 1000;
       delivery.nextRetryAt = new Date(Date.now() + delay);
-      
+
       await sleep(delay);
     }
   }
 
   // Все попытки исчерпаны
   delivery.status = 'failed';
-  
-  log.error({
-    deliveryId: delivery.id,
-    attempts: delivery.attempts,
-    lastError: delivery.lastError,
-  }, 'Вебхук не доставлено після всіх спроб');
+
+  log.error(
+    {
+      deliveryId: delivery.id,
+      attempts: delivery.attempts,
+      lastError: delivery.lastError,
+    },
+    'Вебхук не доставлено після всіх спроб',
+  );
 }
 
 // ============ Inbound Webhooks ============
@@ -353,7 +366,7 @@ async function deliverWebhook(
  */
 export async function handleInboundWebhook(
   source: string,
-  request: Request
+  request: Request,
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const body = await request.text();
@@ -376,11 +389,14 @@ export async function handleInboundWebhook(
     const payload = JSON.parse(body);
 
     // Логируем входящий вебхук
-    log.info({
-      source,
-      event,
-      payloadId: payload.id,
-    }, 'Отримано вхідний вебхук');
+    log.info(
+      {
+        source,
+        event,
+        payloadId: payload.id,
+      },
+      'Отримано вхідний вебхук',
+    );
 
     // Маршрутизируем по источнику
     await routeInboundWebhook(source, event, payload);
@@ -395,11 +411,7 @@ export async function handleInboundWebhook(
 /**
  * Маршрутизация входящих вебхуков
  */
-async function routeInboundWebhook(
-  source: string,
-  event: string,
-  payload: any
-): Promise<void> {
+async function routeInboundWebhook(source: string, event: string, payload: any): Promise<void> {
   switch (source) {
     case 'telegram':
       await handleTelegramWebhook(event, payload);
@@ -417,19 +429,19 @@ async function routeInboundWebhook(
 
 // ============ Source Handlers ============
 
-async function handleTelegramWebhook(event: string, payload: any): Promise<void> {
+async function handleTelegramWebhook(event: string, _payload: any): Promise<void> {
   // Обработка Telegram обновлений
   log.info({ event }, 'Telegram webhook оброблено');
   // TODO: Интеграция с Telegram ботом
 }
 
-async function handleWhatsAppWebhook(event: string, payload: any): Promise<void> {
+async function handleWhatsAppWebhook(event: string, _payload: any): Promise<void> {
   // Обработка WhatsApp обновлений
   log.info({ event }, 'WhatsApp webhook оброблено');
   // TODO: Интеграция с WhatsApp Business API
 }
 
-async function handleStripeWebhook(event: string, payload: any): Promise<void> {
+async function handleStripeWebhook(event: string, _payload: any): Promise<void> {
   // Обработка Stripe платежей
   log.info({ event }, 'Stripe webhook оброблено');
   // TODO: Обработка платежей
@@ -447,7 +459,7 @@ function getWebhookSecret(source: string): string | null {
 }
 
 function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 // ============ Webhook Events List ============
@@ -457,19 +469,19 @@ export const WEBHOOK_EVENTS = {
   'contact.created': 'Новий контакт створено',
   'contact.updated': 'Контакт оновлено',
   'contact.deleted': 'Контакт видалено',
-  
+
   // Сделки
   'deal.created': 'Нова угода створено',
   'deal.updated': 'Угоду оновлено',
   'deal.stage_changed': 'Угоду переміщено в іншу стадію',
   'deal.won': 'Угоду виграно',
   'deal.lost': 'Угоду програно',
-  
+
   // Задачі
   'task.created': 'Нова задача створено',
   'task.completed': 'Задачу виконано',
   'task.overdue': 'Задача протермінована',
-  
+
   // AI
   'ai.scored': 'AI проскорив угоду',
   'ai.recommendation': 'AI надав рекомендацію',

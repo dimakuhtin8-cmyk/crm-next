@@ -3,6 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+
 import { AI_PROVIDERS, getProvider, getDefaultProvider } from '../providers';
 
 describe('AI Providers', () => {

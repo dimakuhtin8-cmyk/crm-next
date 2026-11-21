@@ -9,10 +9,12 @@
  * либо из scripts/migrate-encrypt-keys.mjs, либо из lib/encryption.ts.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+
 import { prisma } from '@crm-next/database';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+
 import { decrypt, isEncrypted } from '@/lib/encryption';
 
 const REPO_ROOT = fileURLToPath(new URL('../../../../..', import.meta.url));
@@ -88,7 +90,7 @@ describe('П2: реальный scripts/migrate-encrypt-keys.mjs', () => {
         env: { ...process.env, ENCRYPTION_KEY, DATABASE_URL: process.env.DATABASE_URL! },
         encoding: 'utf-8',
         timeout: 120000,
-      }
+      },
     );
     expect(probe.status).toBe(0);
     const { keyHex, cipher } = JSON.parse(probe.stdout);
