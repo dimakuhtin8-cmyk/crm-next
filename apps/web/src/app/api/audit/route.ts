@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 import { getAuditLogs } from '@/lib/audit';
+import { extractUserId } from '@/lib/auth-utils';
 import { hasPermission } from '@/lib/rbac';
 import { getTenantQuery } from '@/lib/tenant-query';
 
@@ -13,7 +14,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
     }
 
-    const userId = (tq as Record<string, unknown>).userId as string;
+    // Внимание: getTenantQuery() не содержит userId — берём из сессии
+    const userId = await extractUserId(request);
     if (!userId) {
       return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
     }

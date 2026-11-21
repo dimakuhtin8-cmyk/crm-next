@@ -58,8 +58,10 @@ export default function AutomationLogsPage() {
       const res = await fetch(`/api/automation/logs?${params}`);
       if (!res.ok) throw new Error(`Помилка ${res.status}`);
       const data = await res.json();
-      setLogs(data.data.logs);
-      setTotal(data.data.total);
+      // API возвращает { logs, total, limit, offset } без обёртки data
+      const payload = data.data ?? data;
+      setLogs(payload.logs ?? []);
+      setTotal(payload.total ?? 0);
     } catch (err) {
       setLogs([]);
       setLoadError(err instanceof Error ? err.message : 'Помилка завантаження');

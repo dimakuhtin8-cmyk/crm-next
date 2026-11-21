@@ -9,6 +9,8 @@
  */
 
 import { writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 import { prisma } from '@crm-next/database';
 import { SignJWT } from 'jose';
@@ -367,7 +369,15 @@ describe('Eval-набір: 18 реальних питань (укр/рус)', ()
       `Пройдено: ${AI_EVAL_QUESTIONS.length - failed}/${AI_EVAL_QUESTIONS.length}`,
       '',
     ].join('\n');
-    writeFileSync(new URL('./fixtures/eval-results.md', import.meta.url), md, 'utf8');
+    // Отчёт пишем во временную папку, а не в tracked-фикстуру: иначе каждый
+    // прогон тестов оставляет рабочее дерево git «грязным» (формат prettier
+    // для markdown-таблиц расходится с форматом генератора). Путь к отчёту —
+    // в stdout прогона.
+    const reportPath = join(tmpdir(), 'crm-next-eval-results.md');
+    writeFileSync(reportPath, md, 'utf8');
+    console.warn(
+      `[ai-eval] report: ${reportPath} (${AI_EVAL_QUESTIONS.length - failed}/${AI_EVAL_QUESTIONS.length} passed)`,
+    );
 
     expect(failed).toBe(0);
   });

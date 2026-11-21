@@ -12,6 +12,7 @@ import { z } from 'zod';
 import type { NextRequest } from 'next/server';
 
 import { withAuth } from '@/lib/auth-guard';
+import { extractUserId } from '@/lib/auth-utils';
 import { getPlan } from '@/lib/billing/plans';
 import { createCheckoutSession } from '@/lib/billing/stripe';
 import { csrfProtection } from '@/lib/csrf';
@@ -61,11 +62,11 @@ async function POSTHandler(request: NextRequest) {
       return NextResponse.json({ error: 'Тенант не знайдено' }, { status: 404 });
     }
 
-    // Get user email from JWT
-    const userPayload = (tq as Record<string, unknown>).userId;
+    // Get user email (getTenantQuery() не содержит userId — берём из сессии)
+    const userPayload = await extractUserId(request);
     const user = userPayload
       ? await prisma.user.findUnique({
-          where: { id: userPayload as string },
+          where: { id: userPayload },
           select: { email: true },
         })
       : null;
