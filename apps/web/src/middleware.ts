@@ -49,6 +49,13 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  // === REDIRECT: старый /ru → /uk (локаль ru убрана, остались uk + en) ===
+  if (pathname === '/ru' || pathname.startsWith('/ru/')) {
+    const redirectUrl = new URL(pathname.replace(/^\/ru/, '/uk'), request.url);
+    redirectUrl.search = request.nextUrl.search;
+    return NextResponse.redirect(redirectUrl, 301);
+  }
+
   // === REDIRECT: старый /dashboard без locale → /uk/dashboard ===
   if (pathname === '/dashboard' || pathname.startsWith('/dashboard/')) {
     const redirectUrl = new URL(`/uk${pathname}`, request.url);

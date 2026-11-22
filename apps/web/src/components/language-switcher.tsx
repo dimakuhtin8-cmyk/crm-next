@@ -14,7 +14,6 @@ import { cn } from '@/lib/utils';
 const languages = [
   { code: 'uk', label: 'Українська', flag: '🇺🇦' },
   { code: 'en', label: 'English', flag: '🇬🇧' },
-  { code: 'ru', label: 'Русский', flag: '🇷🇺' },
 ];
 
 export function LanguageSwitcher() {

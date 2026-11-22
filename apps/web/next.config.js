@@ -5,11 +5,12 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/config.ts');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Строгие проверки сборки: ошибки ESLint/TS блокируют деплой
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   transpilePackages: ['@crm-next/ui', '@crm-next/types', '@crm-next/utils', '@crm-next/database'],
   typedRoutes: false,

@@ -11,6 +11,7 @@ import {
   Users,
 } from 'lucide-react';
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 
 import { AiTypewriter } from '@/components/landing/ai-typewriter';
 import { DealJourney } from '@/components/landing/deal-journey';
@@ -88,6 +89,7 @@ const FAQ_ITEMS = [
 
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
+  const tCommon = await getTranslations('common');
   return (
     <main className="landing-akari min-h-screen bg-background text-foreground antialiased">
       <style>{`
@@ -159,6 +161,13 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-border">
+        {/* Сайт у розробці: CRM-послуги безкоштовно (рішення власника) */}
+        <div className="mx-auto max-w-7xl px-4 pt-8 sm:px-6">
+          <div className="rounded-xl border border-warning/30 bg-warning/10 px-4 py-3">
+            <p className="text-sm font-semibold">{tCommon('devNoticeTitle')}</p>
+            <p className="mt-1 text-sm text-foreground-secondary">{tCommon('devNoticeBody')}</p>
+          </div>
+        </div>
         <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:py-20">
           <div>
             <SplitHeadline
@@ -187,7 +196,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
               Воронка, завдання, комунікація та контроль команди — без хаосу в таблицях.
             </p>
             <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold">
-              {['Без картки', '14 днів пробного', 'Інтерфейс українською'].map((item) => (
+              {['Без картки', 'Послуги CRM безкоштовно', 'Інтерфейс українською'].map((item) => (
                 <li key={item} className="inline-flex items-center gap-1.5">
                   <Check className="h-4 w-4 text-success" aria-hidden="true" />
                   {item}
@@ -465,7 +474,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
               </Link>
             </div>
             <p className="mt-5 text-sm font-medium text-foreground-secondary">
-              Без картки · 14 днів пробного періоду
+              {tCommon('trialNote')}
             </p>
           </div>
         </div>

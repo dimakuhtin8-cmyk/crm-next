@@ -100,11 +100,10 @@
   },
   "tasks": {
     "title": "Tasks",
-    "description": "Task management",
+    "description": "Description",
     "add": "Add Task",
     "edit": "Edit Task",
     "titleField": "Title",
-    "description": "Description",
     "priority": "Priority",
     "dueDate": "Due Date",
     "assignee": "Assignee",
@@ -299,7 +298,10 @@
     "noData": "No data",
     "viewAll": "View All",
     "showMore": "Show More",
-    "showLess": "Show Less"
+    "showLess": "Show Less",
+    "devNoticeTitle": "The site is under development",
+    "devNoticeBody": "Some services may not work correctly. CRM services are provided free of charge.",
+    "trialNote": "No card required · CRM services are currently free"
   },
   "stages": {
     "lead": "Lead",

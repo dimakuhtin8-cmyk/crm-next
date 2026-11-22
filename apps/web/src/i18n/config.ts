@@ -1,6 +1,7 @@
 import { getRequestConfig } from 'next-intl/server';
 
-export const locales = ['uk', 'en', 'ru'] as const;
+// Интерфейс: только украинский (по умолчанию) и английский — решение владельца
+export const locales = ['uk', 'en'] as const;
 export const defaultLocale = 'uk' as const;
 
 export type Locale = (typeof locales)[number];

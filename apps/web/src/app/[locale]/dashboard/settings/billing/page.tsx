@@ -11,6 +11,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
@@ -155,6 +156,7 @@ interface AiUsageData {
 
 export default function BillingPage() {
   const locale = useLocale();
+  const tCommon = useTranslations('common');
   const [data, setData] = useState<SubscriptionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
@@ -312,6 +314,12 @@ export default function BillingPage() {
           ← Назад
         </Link>
         <h1 className="text-2xl font-bold">Підписка та оплата</h1>
+      </div>
+
+      {/* Сайт у розробці: CRM-послуги безкоштовно (рішення власника) */}
+      <div className="p-4 rounded-xl bg-warning/10 border border-warning/20">
+        <p className="text-sm font-medium">{tCommon('devNoticeTitle')}</p>
+        <p className="text-sm text-foreground-muted">{tCommon('devNoticeBody')}</p>
       </div>
 
       {loadError && !data && <DataError message={loadError} onRetry={loadSubscription} />}
