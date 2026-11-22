@@ -5,6 +5,7 @@
 'use client';
 
 import { Shield, ShieldCheck, ShieldOff, Copy, Check, Loader2, Download } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import QRCode from 'qrcode';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
@@ -24,6 +25,8 @@ function generateRecoveryCodes(): string[] {
 }
 
 export default function TwoFactorSettingsPage() {
+  const t = useTranslations('settings');
+  const tCommon = useTranslations('common');
   const [enabled, setEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [secret, setSecret] = useState('');
@@ -78,11 +81,11 @@ export default function TwoFactorSettingsPage() {
         }
       } else {
         setError(data.error);
-        toast.error('Не вдалося розпочати налаштування', { description: data.error });
+        toast.error(t('setupStartError'), { description: data.error });
       }
     } catch {
-      setError('Помилка сервера');
-      toast.error('Помилка сервера');
+      setError(t('serverError'));
+      toast.error(t('serverError'));
     } finally {
       setBusy(false);
     }
@@ -91,7 +94,7 @@ export default function TwoFactorSettingsPage() {
   const handleVerify = async () => {
     setError('');
     if (!verifyCode || verifyCode.length !== 6) {
-      setError('Код має бути 6 цифр');
+      setError(t('errors.codeLength'));
       return;
     }
     setBusy(true);
@@ -107,14 +110,14 @@ export default function TwoFactorSettingsPage() {
         setVerifyCode('');
         setRecoveryCodes(generateRecoveryCodes());
         setModalStep(3);
-        toast.success('2FA успішно увімкнено');
+        toast.success(t('twoFactorEnableSuccess'));
       } else {
         setError(data.error);
-        toast.error('Невірний код', { description: data.error });
+        toast.error(t('invalidCode'), { description: data.error });
       }
     } catch {
-      setError('Помилка сервера');
-      toast.error('Помилка сервера');
+      setError(t('serverError'));
+      toast.error(t('serverError'));
     } finally {
       setBusy(false);
     }
@@ -123,7 +126,7 @@ export default function TwoFactorSettingsPage() {
   const handleDisable = async () => {
     setError('');
     if (!disableCode || disableCode.length !== 6) {
-      setError('Введіть код для підтвердження');
+      setError(t('errors.codeRequired'));
       return;
     }
     setBusy(true);
@@ -138,14 +141,14 @@ export default function TwoFactorSettingsPage() {
         setEnabled(false);
         setDisableCode('');
         setShowDisable(false);
-        toast.success('2FA вимкнено');
+        toast.success(t('twoFactorDisabled'));
       } else {
         setError(data.error);
-        toast.error('Не вдалося вимкнути 2FA', { description: data.error });
+        toast.error(t('disableError'), { description: data.error });
       }
     } catch {
-      setError('Помилка сервера');
-      toast.error('Помилка сервера');
+      setError(t('serverError'));
+      toast.error(t('serverError'));
     } finally {
       setBusy(false);
     }
@@ -159,13 +162,13 @@ export default function TwoFactorSettingsPage() {
 
   const downloadRecoveryCodes = () => {
     const content = [
-      'Коди відновлення 2FA (CRM-Next)',
+      t('recoveryFileTitle'),
       '================================',
       '',
       ...recoveryCodes,
       '',
-      'Кожен код можна використати один раз.',
-      'Демонстраційні коди: сервер не зберігає коди відновлення.',
+      t('recoveryFileUsage'),
+      t('recoveryFileDemoNote'),
     ].join('\n');
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -174,7 +177,7 @@ export default function TwoFactorSettingsPage() {
     a.download = '2fa-recovery-codes.txt';
     a.click();
     URL.revokeObjectURL(url);
-    toast.success('Коди відновлення завантажено');
+    toast.success(t('recoveryDownloaded'));
   };
 
   const closeSetup = () => {
@@ -199,10 +202,8 @@ export default function TwoFactorSettingsPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Двофакторна автентифікація (2FA)</h1>
-        <p className="text-foreground-muted mt-1">
-          Додатковий захист акаунту за допомогою TOTP-кодів
-        </p>
+        <h1 className="text-2xl font-bold">{t('twoFactorTitle')}</h1>
+        <p className="text-foreground-muted mt-1">{t('twoFactorSubtitle')}</p>
       </div>
 
       {error && !showSetup && (
@@ -221,17 +222,17 @@ export default function TwoFactorSettingsPage() {
               )}
             </div>
             <div className="flex-1">
-              <h2 className="font-semibold">{enabled ? '2FA увімкнено' : '2FA вимкнено'}</h2>
+              <h2 className="font-semibold">
+                {enabled ? t('twoFactorEnabled') : t('twoFactorDisabled')}
+              </h2>
               <p className="text-sm text-foreground-muted">
-                {enabled
-                  ? 'Ваш акаунт захищений додатковим кодом'
-                  : 'Увімкніть 2FA для додаткового захисту'}
+                {enabled ? t('protectedDescription') : t('enablePrompt')}
               </p>
             </div>
             {!enabled && (
               <Button onClick={handleSetup} disabled={busy}>
                 {busy && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                Увімкнути 2FA
+                {t('enableButton')}
               </Button>
             )}
             {enabled && (
@@ -241,7 +242,7 @@ export default function TwoFactorSettingsPage() {
                 aria-expanded={showDisable}
               >
                 <ShieldOff className="h-4 w-4 mr-2" />
-                Вимкнути
+                {t('disableButton')}
               </Button>
             )}
           </div>
@@ -253,11 +254,7 @@ export default function TwoFactorSettingsPage() {
         isOpen={showSetup}
         onClose={closeSetup}
         title={
-          modalStep === 1
-            ? 'Крок 1: Додайте секретний ключ'
-            : modalStep === 2
-              ? 'Крок 2: Підтвердіть кодом'
-              : 'Крок 3: Коди відновлення'
+          modalStep === 1 ? t('step1Title') : modalStep === 2 ? t('step2Title') : t('step3Title')
         }
         size="md"
       >
@@ -267,27 +264,20 @@ export default function TwoFactorSettingsPage() {
           {/* Крок 1: QR + ключ */}
           {modalStep === 1 && (
             <>
-              <p className="text-sm text-foreground-muted">
-                Відскануйте QR-код додатком автентифікації (Google Authenticator, Authy, Microsoft
-                Authenticator) або скопіюйте секретний ключ вручну
-              </p>
+              <p className="text-sm text-foreground-muted">{t('step1Description')}</p>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                 <div className="flex h-[236px] w-[236px] shrink-0 items-center justify-center rounded-xl border border-border bg-white p-2">
                   {qrDataUrl ? (
-                    <img
-                      src={qrDataUrl}
-                      alt="QR-код для налаштування 2FA"
-                      className="h-full w-full"
-                    />
+                    <img src={qrDataUrl} alt={t('qrAlt')} className="h-full w-full" />
                   ) : (
                     <div className="flex h-full w-full flex-col items-center justify-center gap-2 rounded-lg bg-secondary text-foreground-muted">
-                      <span className="text-xs">QR недоступний</span>
-                      <span className="text-[10px]">Введіть ключ вручну</span>
+                      <span className="text-xs">{t('qrUnavailable')}</span>
+                      <span className="text-[10px]">{t('enterKeyManually')}</span>
                     </div>
                   )}
                 </div>
                 <div className="flex-1 space-y-2">
-                  <p className="text-xs text-foreground-muted">Секретний ключ</p>
+                  <p className="text-xs text-foreground-muted">{t('secretKeyLabel')}</p>
                   <div className="flex items-center gap-2">
                     <code className="flex-1 p-3 bg-secondary rounded-lg text-sm font-mono break-all">
                       {secret}
@@ -296,7 +286,7 @@ export default function TwoFactorSettingsPage() {
                       variant="ghost"
                       size="sm"
                       onClick={copySecret}
-                      aria-label="Скопіювати секретний ключ"
+                      aria-label={t('copySecretKey')}
                     >
                       {copied ? (
                         <Check className="h-4 w-4 text-success" />
@@ -305,16 +295,14 @@ export default function TwoFactorSettingsPage() {
                       )}
                     </Button>
                   </div>
-                  <p className="text-xs text-foreground-muted">
-                    Коди оновлюються кожні 30 секунд. Зберігайте ключ у безпечному місці.
-                  </p>
+                  <p className="text-xs text-foreground-muted">{t('secretKeyNote')}</p>
                 </div>
               </div>
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={closeSetup}>
-                  Скасувати
+                  {tCommon('cancel')}
                 </Button>
-                <Button onClick={() => setModalStep(2)}>Далі</Button>
+                <Button onClick={() => setModalStep(2)}>{tCommon('next')}</Button>
               </div>
             </>
           )}
@@ -322,9 +310,7 @@ export default function TwoFactorSettingsPage() {
           {/* Крок 2: OTP */}
           {modalStep === 2 && (
             <>
-              <p className="text-sm text-foreground-muted">
-                Введіть 6-значний код з додатку автентифікації
-              </p>
+              <p className="text-sm text-foreground-muted">{t('step2Description')}</p>
               <div className="flex gap-2">
                 <Input
                   placeholder="000000"
@@ -337,15 +323,15 @@ export default function TwoFactorSettingsPage() {
                 />
                 <Button onClick={handleVerify} disabled={busy || verifyCode.length !== 6}>
                   {busy && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                  Підтвердити
+                  {tCommon('confirm')}
                 </Button>
               </div>
               <div className="flex justify-between">
                 <Button variant="ghost" onClick={() => setModalStep(1)}>
-                  Назад
+                  {tCommon('back')}
                 </Button>
                 <Button variant="outline" onClick={closeSetup}>
-                  Скасувати
+                  {tCommon('cancel')}
                 </Button>
               </div>
             </>
@@ -355,16 +341,10 @@ export default function TwoFactorSettingsPage() {
           {modalStep === 3 && (
             <>
               <div className="p-3 rounded-lg bg-warning/10 border border-warning/20">
-                <p className="text-sm font-medium text-warning">Демонстраційні коди</p>
-                <p className="text-xs text-warning mt-1">
-                  Серверний API кодів відновлення поки що не підтримує — ці коди генеруються
-                  локально і не діють для відновлення доступу.
-                </p>
+                <p className="text-sm font-medium text-warning">{t('demoCodesTitle')}</p>
+                <p className="text-xs text-warning mt-1">{t('demoCodesWarning')}</p>
               </div>
-              <p className="text-sm text-foreground-muted">
-                Зберігайте коди в безпечному місці — кожен код можна використати один раз для входу,
-                якщо втратите доступ до додатка.
-              </p>
+              <p className="text-sm text-foreground-muted">{t('recoveryCodesNote')}</p>
               <div className="grid grid-cols-2 gap-2 rounded-xl border border-border bg-secondary/40 p-4">
                 {recoveryCodes.map((code) => (
                   <code key={code} className="text-sm font-mono text-center">
@@ -375,9 +355,9 @@ export default function TwoFactorSettingsPage() {
               <div className="flex justify-between gap-2">
                 <Button variant="outline" onClick={downloadRecoveryCodes}>
                   <Download className="h-4 w-4 mr-2" />
-                  Завантажити коди
+                  {t('downloadCodesButton')}
                 </Button>
-                <Button onClick={closeSetup}>Готово</Button>
+                <Button onClick={closeSetup}>{t('done')}</Button>
               </div>
             </>
           )}
@@ -388,10 +368,8 @@ export default function TwoFactorSettingsPage() {
       {enabled && showDisable && (
         <Card className="border-danger bg-card shadow-sm rounded-xl">
           <CardContent className="p-5 space-y-4">
-            <h3 className="font-semibold text-danger">Вимкнути 2FA</h3>
-            <p className="text-sm text-foreground-muted">
-              Введіть код з додатку автентифікації для підтвердження вимкнення
-            </p>
+            <h3 className="font-semibold text-danger">{t('disableTwoFactor')}</h3>
+            <p className="text-sm text-foreground-muted">{t('disableDescription')}</p>
             <div className="flex gap-2">
               <Input
                 placeholder="000000"
@@ -407,7 +385,7 @@ export default function TwoFactorSettingsPage() {
                 disabled={busy || disableCode.length !== 6}
               >
                 {busy && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                Вимкнути 2FA
+                {t('disableTwoFactor')}
               </Button>
             </div>
           </CardContent>
@@ -417,31 +395,23 @@ export default function TwoFactorSettingsPage() {
       {/* Info */}
       <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardContent className="p-5">
-          <h3 className="font-semibold mb-3">Як це працює</h3>
+          <h3 className="font-semibold mb-3">{t('howItWorks')}</h3>
           <ul className="space-y-2 text-sm text-foreground-muted">
             <li className="flex items-start gap-2">
               <span className="text-primary mt-0.5">1.</span>
-              <span>
-                Встановіть додаток автентифікації (Google Authenticator, Authy, Microsoft
-                Authenticator)
-              </span>
+              <span>{t('howStep1')}</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-primary mt-0.5">2.</span>
-              <span>
-                Додайте новий обліковий запис у додатку, відсканувавши QR-код або ввівши секретний
-                ключ
-              </span>
+              <span>{t('howStep2')}</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-primary mt-0.5">3.</span>
-              <span>
-                Під час входу додаток генерує 6-значний код, який потрібно ввести додатково
-              </span>
+              <span>{t('howStep3')}</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-primary mt-0.5">4.</span>
-              <span>Код оновлюється кожні 30 секунд</span>
+              <span>{t('howStep4')}</span>
             </li>
           </ul>
         </CardContent>

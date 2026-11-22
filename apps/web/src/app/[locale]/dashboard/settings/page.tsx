@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 import { Card, CardContent } from '@/components/ui';
 import { cn } from '@/lib/utils';
@@ -15,11 +16,11 @@ interface SettingsItem {
 
 const GROUPS: Array<{ title: string; items: SettingsItem[] }> = [
   {
-    title: 'Профіль і безпека',
+    title: 'groupProfileSecurity',
     items: [
       {
-        title: 'Профіль',
-        description: 'Ваші персональні дані та налаштування облікового запису',
+        title: 'profile',
+        description: 'profileCardDescription',
         href: '/dashboard/settings/profile',
         icon: (
           <svg
@@ -35,8 +36,8 @@ const GROUPS: Array<{ title: string; items: SettingsItem[] }> = [
         ),
       },
       {
-        title: 'Безпека',
-        description: 'Пароль, двофакторна автопериферія, сесії',
+        title: 'security',
+        description: 'securityCardDescription',
         href: '/dashboard/settings/security',
         icon: (
           <svg
@@ -52,8 +53,8 @@ const GROUPS: Array<{ title: string; items: SettingsItem[] }> = [
         ),
       },
       {
-        title: 'Двофакторна автентифікація',
-        description: 'TOTP 2FA для додаткового захисту акаунту',
+        title: 'twoFactorCardTitle',
+        description: 'twoFactorCardDescription',
         href: '/dashboard/settings/two-factor',
         icon: (
           <svg
@@ -68,8 +69,8 @@ const GROUPS: Array<{ title: string; items: SettingsItem[] }> = [
         ),
       },
       {
-        title: 'Сповіщення',
-        description: 'Налаштування сповіщень та розсилок',
+        title: 'notifications',
+        description: 'notificationsCardDescription',
         href: '/dashboard/settings/notifications',
         icon: (
           <svg
@@ -87,11 +88,11 @@ const GROUPS: Array<{ title: string; items: SettingsItem[] }> = [
     ],
   },
   {
-    title: 'Компанія і команда',
+    title: 'groupCompanyTeam',
     items: [
       {
-        title: 'Компанії',
-        description: 'Керування компаніями, командами та ролями',
+        title: 'companiesCardTitle',
+        description: 'companiesCardDescription',
         href: '/dashboard/settings/tenants',
         icon: (
           <svg
@@ -109,8 +110,8 @@ const GROUPS: Array<{ title: string; items: SettingsItem[] }> = [
         ),
       },
       {
-        title: 'Ролі та права',
-        description: 'Керування ролями учасників та правами доступу',
+        title: 'rolesCardTitle',
+        description: 'rolesCardDescription',
         href: '/dashboard/settings/roles',
         icon: (
           <svg
@@ -125,8 +126,8 @@ const GROUPS: Array<{ title: string; items: SettingsItem[] }> = [
         ),
       },
       {
-        title: 'Журнал аудиту',
-        description: 'Хто що зробив у системі — дії, зміни, входи',
+        title: 'auditCardTitle',
+        description: 'auditCardDescription',
         href: '/dashboard/settings/audit',
         icon: (
           <svg
@@ -146,11 +147,11 @@ const GROUPS: Array<{ title: string; items: SettingsItem[] }> = [
     ],
   },
   {
-    title: 'Інтеграції і AI',
+    title: 'groupIntegrationsAi',
     items: [
       {
-        title: 'Інтеграції',
-        description: 'Підключення зовнішніх сервісів та API ключі',
+        title: 'integrations',
+        description: 'integrationsCardDescription',
         href: '/dashboard/settings/integrations',
         icon: (
           <svg
@@ -166,8 +167,8 @@ const GROUPS: Array<{ title: string; items: SettingsItem[] }> = [
         ),
       },
       {
-        title: 'API-ключі AI',
-        description: 'Налаштування AI-провайдерів та API-ключів',
+        title: 'aiKeysCardTitle',
+        description: 'aiKeysCardDescription',
         href: '/dashboard/settings/ai-keys',
         icon: (
           <svg
@@ -182,8 +183,8 @@ const GROUPS: Array<{ title: string; items: SettingsItem[] }> = [
         ),
       },
       {
-        title: 'Використання AI',
-        description: 'Ліміти, статистика та логи AI-запитів',
+        title: 'aiUsageCardTitle',
+        description: 'aiUsageCardDescription',
         href: '/dashboard/settings/ai-usage',
         icon: (
           <svg
@@ -200,8 +201,8 @@ const GROUPS: Array<{ title: string; items: SettingsItem[] }> = [
         ),
       },
       {
-        title: 'Telegram-бот',
-        description: 'Підключення Telegram-бота для сповіщень та керування',
+        title: 'telegramBotCardTitle',
+        description: 'telegramBotCardDescription',
         href: '/dashboard/settings/telegram',
         icon: (
           <svg
@@ -216,8 +217,8 @@ const GROUPS: Array<{ title: string; items: SettingsItem[] }> = [
         ),
       },
       {
-        title: 'WhatsApp Business',
-        description: 'Підключення WhatsApp Business API для спілкування з клієнтами',
+        title: 'whatsappBusinessCardTitle',
+        description: 'whatsappBusinessCardDescription',
         href: '/dashboard/settings/whatsapp',
         icon: (
           <svg
@@ -232,8 +233,8 @@ const GROUPS: Array<{ title: string; items: SettingsItem[] }> = [
         ),
       },
       {
-        title: 'База даних',
-        description: 'Підключення зовнішньої бази даних (PostgreSQL, MySQL, MariaDB)',
+        title: 'databaseCardTitle',
+        description: 'databaseCardDescription',
         href: '/dashboard/settings/database',
         icon: (
           <svg
@@ -252,11 +253,11 @@ const GROUPS: Array<{ title: string; items: SettingsItem[] }> = [
     ],
   },
   {
-    title: 'Оплата',
+    title: 'groupBilling',
     items: [
       {
-        title: 'Підписка та оплата',
-        description: 'Тарифний план, оплата та рахунки',
+        title: 'billingCardTitle',
+        description: 'billingCardDescription',
         href: '/dashboard/settings/billing',
         icon: (
           <svg
@@ -277,20 +278,19 @@ const GROUPS: Array<{ title: string; items: SettingsItem[] }> = [
 
 export default function SettingsPage() {
   const pathname = usePathname();
+  const t = useTranslations('settings');
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div>
-        <h1 className="text-2xl font-bold">Налаштування</h1>
-        <p className="text-foreground-muted">
-          Керуйте налаштуваннями вашого облікового запису та компанії
-        </p>
+        <h1 className="text-2xl font-bold">{t('title')}</h1>
+        <p className="text-foreground-muted">{t('pageDescription')}</p>
       </div>
 
       {GROUPS.map((group) => (
         <section key={group.title}>
           <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-foreground-muted">
-            {group.title}
+            {t(group.title)}
           </h2>
           <div className="grid gap-3">
             {group.items.map((section) => {
@@ -315,8 +315,8 @@ export default function SettingsPage() {
                         {section.icon}
                       </div>
                       <div>
-                        <h3 className="font-medium">{section.title}</h3>
-                        <p className="text-sm text-foreground-muted">{section.description}</p>
+                        <h3 className="font-medium">{t(section.title)}</h3>
+                        <p className="text-sm text-foreground-muted">{t(section.description)}</p>
                       </div>
                       <svg
                         className="ml-auto h-5 w-5 text-foreground-muted"

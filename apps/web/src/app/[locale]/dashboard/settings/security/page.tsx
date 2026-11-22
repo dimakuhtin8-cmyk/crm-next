@@ -2,6 +2,7 @@
 
 import { Loader2, MonitorSmartphone } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -33,10 +34,22 @@ const INITIAL_SESSIONS: SessionRow[] = [
     device: 'Chrome · Windows 11',
     ip: '192.168.1.42',
     current: true,
-    lastActive: 'Зараз',
+    lastActive: 'sessionLastActiveNow',
   },
-  { id: '2', device: 'Safari · iPhone', ip: '10.0.0.17', current: false, lastActive: '2 год тому' },
-  { id: '3', device: 'Firefox · Ubuntu', ip: '172.16.8.4', current: false, lastActive: 'Вчора' },
+  {
+    id: '2',
+    device: 'Safari · iPhone',
+    ip: '10.0.0.17',
+    current: false,
+    lastActive: 'sessionLastActiveHours',
+  },
+  {
+    id: '3',
+    device: 'Firefox · Ubuntu',
+    ip: '172.16.8.4',
+    current: false,
+    lastActive: 'sessionLastActiveYesterday',
+  },
 ];
 
 type FieldErrors = {
@@ -54,7 +67,13 @@ function passwordStrength(pw: string): { score: number; label: string } {
   if (/\d/.test(pw)) score++;
   if (/[^a-zA-Z0-9]/.test(pw)) score++;
   const label =
-    score <= 1 ? 'Слабкий' : score === 2 ? 'Середній' : score === 3 ? 'Міцний' : 'Надійний';
+    score <= 1
+      ? 'strengthWeak'
+      : score === 2
+        ? 'strengthMedium'
+        : score === 3
+          ? 'strengthStrong'
+          : 'strengthVeryStrong';
   return { score, label };
 }
 
@@ -75,6 +94,8 @@ const STRENGTH_TEXT: Record<number, string> = {
 };
 
 export default function SecuritySettingsPage() {
+  const t = useTranslations('settings');
+  const tCommon = useTranslations('common');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -87,12 +108,12 @@ export default function SecuritySettingsPage() {
 
   const validate = (): FieldErrors => {
     const next: FieldErrors = {};
-    if (!currentPassword) next.currentPassword = 'Введіть поточний пароль';
-    if (newPassword.length < 8) next.newPassword = 'Новий пароль — щонайменше 8 символів';
+    if (!currentPassword) next.currentPassword = t('errors.currentPasswordRequired');
+    if (newPassword.length < 8) next.newPassword = t('errors.newPasswordMin');
     else if (newPassword === currentPassword) {
-      next.newPassword = 'Новий пароль має відрізнятися від поточного';
+      next.newPassword = t('errors.newPasswordSame');
     }
-    if (confirmPassword !== newPassword) next.confirmPassword = 'Паролі не збігаються';
+    if (confirmPassword !== newPassword) next.confirmPassword = t('errors.passwordMismatch');
     return next;
   };
 
@@ -106,7 +127,7 @@ export default function SecuritySettingsPage() {
     const nextErrors = validate();
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
-      toast.error('Перевірте форму', { description: 'Деякі поля заповнено неправильно' });
+      toast.error(t('checkForm'), { description: t('checkFormDescription') });
       return;
     }
 
@@ -122,10 +143,10 @@ export default function SecuritySettingsPage() {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      toast.success('Пароль оновлено');
+      toast.success(t('passwordUpdated'));
     } catch (err) {
-      toast.error('Не вдалося змінити пароль', {
-        description: err instanceof Error ? err.message : 'Спробуйте ще раз',
+      toast.error(t('passwordChangeError'), {
+        description: err instanceof Error ? err.message : t('tryAgain'),
       });
     } finally {
       setIsSubmitting(false);
@@ -138,9 +159,9 @@ export default function SecuritySettingsPage() {
     try {
       await new Promise((resolve) => setTimeout(resolve, 400));
       setSessions((prev) => prev.filter((s) => s.id !== id));
-      toast.success('Сесію завершено');
+      toast.success(t('sessionRevoked'));
     } catch {
-      toast.error('Не вдалося завершити сесію');
+      toast.error(t('sessionRevokeError'));
     } finally {
       setRevokingId(null);
     }
@@ -150,20 +171,20 @@ export default function SecuritySettingsPage() {
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
         <Link href="/dashboard/settings" className="text-foreground-muted hover:text-foreground">
-          ← Назад
+          ← {tCommon('back')}
         </Link>
-        <h1 className="text-2xl font-bold">Безпека</h1>
+        <h1 className="text-2xl font-bold">{t('security')}</h1>
       </div>
 
       <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
-          <CardTitle>Зміна пароля</CardTitle>
+          <CardTitle>{t('changePassword')}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handlePasswordChange} noValidate className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="current-password" className="text-xs text-foreground-muted">
-                Поточний пароль
+                {t('currentPasswordLabel')}
               </Label>
               <SecretInput
                 id="current-password"
@@ -178,7 +199,7 @@ export default function SecuritySettingsPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="new-password" className="text-xs text-foreground-muted">
-                Новий пароль
+                {t('newPasswordLabel')}
               </Label>
               <SecretInput
                 id="new-password"
@@ -205,14 +226,14 @@ export default function SecuritySettingsPage() {
                   <p
                     className={`text-xs ${STRENGTH_TEXT[strength.score] || 'text-foreground-muted'}`}
                   >
-                    Міцність: {strength.label}
+                    {t('strengthLabel', { label: t(strength.label) })}
                   </p>
                 </div>
               )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirm-password" className="text-xs text-foreground-muted">
-                Підтвердження пароля
+                {t('confirmPasswordLabel')}
               </Label>
               <SecretInput
                 id="confirm-password"
@@ -227,7 +248,7 @@ export default function SecuritySettingsPage() {
             </div>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              {isSubmitting ? 'Збереження...' : 'Змінити пароль'}
+              {isSubmitting ? t('saving') : t('changePasswordAction')}
             </Button>
           </form>
         </CardContent>
@@ -235,8 +256,8 @@ export default function SecuritySettingsPage() {
 
       <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
-          <CardTitle>Активні сесії</CardTitle>
-          <CardDescription>Пристрої, з яких виконано вхід у ваш акаунт</CardDescription>
+          <CardTitle>{t('activeSessions')}</CardTitle>
+          <CardDescription>{t('activeSessionsDescription')}</CardDescription>
         </CardHeader>
         <CardContent>
           <Table<SessionRow>
@@ -244,7 +265,7 @@ export default function SecuritySettingsPage() {
             columns={[
               {
                 key: 'device',
-                header: 'Пристрій',
+                header: t('deviceColumn'),
                 render: (row) => (
                   <div className="flex items-center gap-2">
                     <MonitorSmartphone className="h-4 w-4 text-foreground-muted" />
@@ -254,16 +275,16 @@ export default function SecuritySettingsPage() {
               },
               {
                 key: 'ip',
-                header: 'IP-адреса',
+                header: t('ipColumn'),
                 render: (row) => (
                   <span className="font-mono text-xs text-foreground-muted">{row.ip}</span>
                 ),
               },
               {
                 key: 'lastActive',
-                header: 'Активність',
+                header: t('activityColumn'),
                 render: (row) => (
-                  <span className="text-xs text-foreground-muted">{row.lastActive}</span>
+                  <span className="text-xs text-foreground-muted">{t(row.lastActive)}</span>
                 ),
               },
               {
@@ -271,7 +292,7 @@ export default function SecuritySettingsPage() {
                 header: '',
                 render: (row) =>
                   row.current ? (
-                    <Badge variant="info">Поточна</Badge>
+                    <Badge variant="info">{t('currentSessionBadge')}</Badge>
                   ) : (
                     <Button
                       variant="destructive"
@@ -280,12 +301,12 @@ export default function SecuritySettingsPage() {
                       onClick={() => revokeSession(row.id)}
                     >
                       {revokingId === row.id && <Loader2 className="h-4 w-4 animate-spin mr-1.5" />}
-                      Завершити
+                      {t('endSession')}
                     </Button>
                   ),
               },
             ]}
-            emptyMessage="Немає активних сесій"
+            emptyMessage={t('noActiveSessions')}
           />
         </CardContent>
       </Card>

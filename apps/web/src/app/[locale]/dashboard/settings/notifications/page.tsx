@@ -2,6 +2,7 @@
 
 import { Bell, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -21,10 +22,10 @@ import { cn } from '@/lib/utils';
 type ToastPosition = 'bottom-left' | 'bottom-right' | 'top-right';
 
 const MATRIX_EVENTS = [
-  { key: 'deal_new', label: 'Нова угода' },
-  { key: 'deal_won', label: 'Угода виграна' },
-  { key: 'task_deadline', label: 'Дедлайн завдання' },
-  { key: 'contact_new', label: 'Новий контакт' },
+  { key: 'deal_new', label: 'eventDealNew' },
+  { key: 'deal_won', label: 'eventDealWon' },
+  { key: 'task_deadline', label: 'eventTaskDeadline' },
+  { key: 'contact_new', label: 'eventContactNew' },
 ];
 
 type MatrixRow = {
@@ -36,6 +37,8 @@ type MatrixRow = {
 };
 
 export default function NotificationsSettingsPage() {
+  const t = useTranslations('settings');
+  const tCommon = useTranslations('common');
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [telegramNotifications, setTelegramNotifications] = useState(false);
   const [taskReminders, setTaskReminders] = useState(true);
@@ -103,17 +106,17 @@ export default function NotificationsSettingsPage() {
           dealUpdates,
         }),
       });
-      if (!resUser.ok) throw new Error(`Помилка ${resUser.status}`);
+      if (!resUser.ok) throw new Error(t('errors.requestFailed', { status: resUser.status }));
       const res = await fetch('/api/notifications/preferences', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabled: toastEnabled, position: toastPosition }),
       });
-      if (!res.ok) throw new Error(`Помилка ${res.status}`);
+      if (!res.ok) throw new Error(t('errors.requestFailed', { status: res.status }));
       window.dispatchEvent(new Event('notif-prefs-changed'));
-      toast.success('Налаштування збережено');
+      toast.success(t('settingsSaved'));
     } catch {
-      toast.error('Не вдалося зберегти налаштування', { description: 'Спробуйте ще раз' });
+      toast.error(t('settingsSaveError'), { description: t('tryAgain') });
     } finally {
       setSaving(false);
     }
@@ -142,49 +145,47 @@ export default function NotificationsSettingsPage() {
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
         <Link href="/dashboard/settings" className="text-foreground-muted hover:text-foreground">
-          ← Назад
+          ← {tCommon('back')}
         </Link>
-        <h1 className="text-2xl font-bold">Сповіщення</h1>
+        <h1 className="text-2xl font-bold">{t('notifications')}</h1>
       </div>
 
       <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
-          <CardTitle>Канали сповіщень</CardTitle>
+          <CardTitle>{t('notificationChannels')}</CardTitle>
         </CardHeader>
         <CardContent className="divide-y">
           <ToggleRow
             htmlFor="notif-email"
             checked={emailNotifications}
             onChange={setEmailNotifications}
-            label="Email-сповіщення"
+            label={t('emailNotificationsLabel')}
           />
           <ToggleRow
             htmlFor="notif-telegram"
             checked={telegramNotifications}
             onChange={setTelegramNotifications}
-            label="Telegram-сповіщення"
+            label={t('telegramNotificationsLabel')}
           />
           <ToggleRow
             htmlFor="notif-tasks"
             checked={taskReminders}
             onChange={setTaskReminders}
-            label="Нагадування про завдання"
+            label={t('taskRemindersLabel')}
           />
           <ToggleRow
             htmlFor="notif-deals"
             checked={dealUpdates}
             onChange={setDealUpdates}
-            label="Оновлення угод"
+            label={t('dealUpdatesLabel')}
           />
         </CardContent>
       </Card>
 
       <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
-          <CardTitle>Події та канали</CardTitle>
-          <CardDescription>
-            Точкове налаштування сповіщень для кожної події (демонстраційна матриця)
-          </CardDescription>
+          <CardTitle>{t('eventsAndChannels')}</CardTitle>
+          <CardDescription>{t('eventsAndChannelsDescription')}</CardDescription>
         </CardHeader>
         <CardContent>
           <Table<MatrixRow>
@@ -192,8 +193,8 @@ export default function NotificationsSettingsPage() {
             columns={[
               {
                 key: 'event',
-                header: 'Подія',
-                render: (row) => <span className="font-medium">{row.event}</span>,
+                header: t('eventColumn'),
+                render: (row) => <span className="font-medium">{t(row.event)}</span>,
               },
               {
                 key: 'email',
@@ -202,7 +203,7 @@ export default function NotificationsSettingsPage() {
                   <Switch
                     checked={row.email}
                     onCheckedChange={() => toggleMatrix(row.id, 'email')}
-                    aria-label={`Email: ${row.event}`}
+                    aria-label={`Email: ${t(row.event)}`}
                   />
                 ),
               },
@@ -213,7 +214,7 @@ export default function NotificationsSettingsPage() {
                   <Switch
                     checked={row.push}
                     onCheckedChange={() => toggleMatrix(row.id, 'push')}
-                    aria-label={`Push: ${row.event}`}
+                    aria-label={`Push: ${t(row.event)}`}
                   />
                 ),
               },
@@ -224,36 +225,36 @@ export default function NotificationsSettingsPage() {
                   <Switch
                     checked={row.telegram}
                     onCheckedChange={() => toggleMatrix(row.id, 'telegram')}
-                    aria-label={`Telegram: ${row.event}`}
+                    aria-label={`Telegram: ${t(row.event)}`}
                   />
                 ),
               },
             ]}
-            emptyMessage="Немає подій"
+            emptyMessage={t('noEvents')}
           />
         </CardContent>
       </Card>
 
       <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
-          <CardTitle>Спливаючі сповіщення</CardTitle>
+          <CardTitle>{t('toastNotifications')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <ToggleRow
             htmlFor="notif-toast"
             checked={toastEnabled}
             onChange={setToastEnabled}
-            label="Показувати сповіщення поверх вікон"
+            label={t('showToastsLabel')}
           />
           <div>
-            <p className="text-sm mb-1.5">Позиція на екрані</p>
+            <p className="text-sm mb-1.5">{t('positionLabel')}</p>
             <QuickSelect
               value={toastPosition}
               onChange={(v) => setToastPosition(v as ToastPosition)}
               options={[
-                { id: 'bottom-left', name: 'Зліва знизу' },
-                { id: 'bottom-right', name: 'Справа знизу' },
-                { id: 'top-right', name: 'Справа зверху' },
+                { id: 'bottom-left', name: t('positionBottomLeft') },
+                { id: 'bottom-right', name: t('positionBottomRight') },
+                { id: 'top-right', name: t('positionTopRight') },
               ]}
               disabled={!toastEnabled}
             />
@@ -266,22 +267,17 @@ export default function NotificationsSettingsPage() {
                 setTimeout(() => setShowPreview(false), 4000);
               }}
             >
-              Показати приклад
+              {t('showPreviewButton')}
             </Button>
-            <p className="mt-2 text-xs text-foreground-muted">
-              Приклад з&apos;явиться там, де приходитимуть справжні сповіщення.
-            </p>
+            <p className="mt-2 text-xs text-foreground-muted">{t('previewNote')}</p>
           </div>
-          <p className="text-xs text-foreground-muted">
-            Вимкнення прибирає спливаючі вікна, але лічильник на дзвонику та сторінка сповіщень
-            працюють як раніше.
-          </p>
+          <p className="text-xs text-foreground-muted">{t('disableNote')}</p>
         </CardContent>
       </Card>
 
       <Button onClick={handleSave} disabled={saving}>
         {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-        {saving ? 'Збереження...' : 'Зберегти'}
+        {saving ? t('saving') : tCommon('save')}
       </Button>
 
       {showPreview && (
@@ -300,15 +296,15 @@ export default function NotificationsSettingsPage() {
                 <Bell className="h-4 w-4 text-primary-foreground" />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-bold">Автоматизація</p>
+                <p className="text-sm font-bold">{t('previewNotificationTitle')}</p>
                 <p className="text-xs text-foreground-muted mt-0.5">
-                  Так виглядатиме сповіщення. Натисни — відкриється пов&apos;язана сторінка.
+                  {t('previewNotificationBody')}
                 </p>
               </div>
               <button
                 onClick={() => setShowPreview(false)}
                 className="shrink-0 rounded-md px-1.5 py-0.5 text-sm text-foreground-muted hover:text-foreground"
-                aria-label="Закрити"
+                aria-label={tCommon('close')}
               >
                 ×
               </button>

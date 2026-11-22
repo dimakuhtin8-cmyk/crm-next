@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
 import { useAuth } from '@/components/auth/auth-provider';
@@ -11,6 +12,7 @@ import { useLocalePath } from '@/lib/use-locale-path';
 export default function LoginPage() {
   const router = useRouter();
   const lp = useLocalePath();
+  const t = useTranslations('auth');
   const { login, loginGoogle, error, clearError, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -59,8 +61,8 @@ export default function LoginPage() {
             </svg>
             <span className="text-xl font-bold">CRM-Next</span>
           </Link>
-          <h1 className="mt-6 text-2xl font-bold">Увійти в акаунт</h1>
-          <p className="mt-2 text-muted-foreground">Введіть свої дані для входу</p>
+          <h1 className="mt-6 text-2xl font-bold">{t('loginTitle')}</h1>
+          <p className="mt-2 text-muted-foreground">{t('loginDescription')}</p>
         </div>
 
         {error && (
@@ -72,7 +74,7 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium">
-              Email
+              {t('email')}
             </label>
             <input
               id="email"
@@ -86,7 +88,7 @@ export default function LoginPage() {
           </div>
           <div>
             <label htmlFor="password" className="block text-sm font-medium">
-              Пароль
+              {t('password')}
             </label>
             <input
               id="password"
@@ -103,7 +105,7 @@ export default function LoginPage() {
             disabled={isLoading || loading}
             className="flex h-9 w-full items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary-hover disabled:opacity-50"
           >
-            {isLoading ? 'Вхід...' : 'Увійти'}
+            {isLoading ? t('loggingIn') : t('login')}
           </button>
         </form>
 
@@ -112,7 +114,7 @@ export default function LoginPage() {
             <div className="w-full border-t border-border" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="bg-background px-2 text-muted-foreground">або</span>
+            <span className="bg-background px-2 text-muted-foreground">{t('or')}</span>
           </div>
         </div>
 
@@ -140,15 +142,15 @@ export default function LoginPage() {
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
             />
           </svg>
-          Увійти через Google
+          {t('loginWithGoogle')}
         </button>
 
         <TelegramLoginButton />
 
         <p className="text-center text-sm text-muted-foreground">
-          Ще немає акаунту?{' '}
+          {t('noAccount')}{' '}
           <Link href={lp('/auth/register')} className="text-primary hover:text-primary-hover">
-            Зареєструватися
+            {t('register')}
           </Link>
         </p>
       </div>

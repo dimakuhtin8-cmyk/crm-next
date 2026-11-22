@@ -3,6 +3,7 @@
 import { Zap } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
 import { resetTour, useTour, useTourAutoStart } from '@/components/tour/tour-provider';
@@ -65,23 +66,6 @@ const currencySymbols: Record<string, string> = {
   EUR: '€',
 };
 
-const actionLabels: Record<string, string> = {
-  set_field: 'Оновлено поле',
-  create_task: 'Створено задачу',
-  send_notification: 'Надіслано сповіщення',
-  move_deal: 'Переміщено угоду',
-  send_message: 'Надіслано повідомлення',
-};
-
-const activityTypeLabels: Record<string, string> = {
-  call: 'Дзвінок',
-  email: 'Лист',
-  meeting: 'Зустріч',
-  task: 'Задача',
-  note: 'Нотатка',
-  sms: 'SMS',
-};
-
 const formatFeedTime = (value: string) =>
   new Date(value).toLocaleString('uk', {
     day: '2-digit',
@@ -89,47 +73,6 @@ const formatFeedTime = (value: string) =>
     hour: '2-digit',
     minute: '2-digit',
   });
-
-const dealColumns = [
-  {
-    key: 'title',
-    header: 'Назва',
-    className: 'w-1/3',
-    render: (deal: RecentDeal) => <span className="block truncate font-medium">{deal.title}</span>,
-  },
-  {
-    key: 'value',
-    header: 'Сума',
-    render: (deal: RecentDeal) =>
-      deal.value == null
-        ? '—'
-        : `${currencySymbols[deal.currency] || deal.currency}${deal.value.toLocaleString('uk')}`,
-  },
-  {
-    key: 'contact',
-    header: 'Контакт',
-    render: (deal: RecentDeal) => (
-      <span className="block truncate text-sm text-foreground-muted">
-        {deal.contact
-          ? `${deal.contact.firstName} ${deal.contact.lastName || ''}`.trim()
-          : deal.company || '—'}
-      </span>
-    ),
-  },
-  {
-    key: 'probability',
-    header: 'Ймовірність',
-    render: (deal: RecentDeal) => (
-      <span className="text-sm text-foreground-muted">{deal.probability}%</span>
-    ),
-  },
-  {
-    key: 'createdAt',
-    header: 'Створено',
-    render: (deal: RecentDeal) =>
-      new Date(deal.createdAt).toLocaleDateString('uk', { day: '2-digit', month: 'short' }),
-  },
-];
 
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -151,6 +94,8 @@ export default function DashboardPage() {
   const [stepsHidden, setStepsHidden] = useState(false);
   const { startTour } = useTour();
   const router = useRouter();
+  const t = useTranslations('dashboard');
+  const tRoot = useTranslations();
 
   useTourAutoStart('dashboard');
 
@@ -260,6 +205,66 @@ export default function DashboardPage() {
 
   const stats = data?.stats;
 
+  const actionLabels: Record<string, string> = {
+    set_field: t('feed.actions.set_field'),
+    create_task: t('feed.actions.create_task'),
+    send_notification: t('feed.actions.send_notification'),
+    move_deal: t('feed.actions.move_deal'),
+    send_message: t('feed.actions.send_message'),
+  };
+
+  const activityTypeLabels: Record<string, string> = {
+    call: t('feed.activityTypes.call'),
+    email: t('feed.activityTypes.email'),
+    meeting: t('feed.activityTypes.meeting'),
+    task: t('feed.activityTypes.task'),
+    note: t('feed.activityTypes.note'),
+    sms: t('feed.activityTypes.sms'),
+  };
+
+  const dealColumns = [
+    {
+      key: 'title',
+      header: tRoot('common.name'),
+      className: 'w-1/3',
+      render: (deal: RecentDeal) => (
+        <span className="block truncate font-medium">{deal.title}</span>
+      ),
+    },
+    {
+      key: 'value',
+      header: t('dealsTable.amount'),
+      render: (deal: RecentDeal) =>
+        deal.value == null
+          ? '—'
+          : `${currencySymbols[deal.currency] || deal.currency}${deal.value.toLocaleString('uk')}`,
+    },
+    {
+      key: 'contact',
+      header: tRoot('deals.contact'),
+      render: (deal: RecentDeal) => (
+        <span className="block truncate text-sm text-foreground-muted">
+          {deal.contact
+            ? `${deal.contact.firstName} ${deal.contact.lastName || ''}`.trim()
+            : deal.company || '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'probability',
+      header: tRoot('deals.probability'),
+      render: (deal: RecentDeal) => (
+        <span className="text-sm text-foreground-muted">{deal.probability}%</span>
+      ),
+    },
+    {
+      key: 'createdAt',
+      header: t('dealsTable.created'),
+      render: (deal: RecentDeal) =>
+        new Date(deal.createdAt).toLocaleDateString('uk', { day: '2-digit', month: 'short' }),
+    },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Trial banner */}
@@ -267,11 +272,8 @@ export default function DashboardPage() {
         <div className="flex items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
           <span className="text-lg">🎁</span>
           <p>
-            <span className="font-semibold">Пробний період: залишилось {trialDaysLeft} дн.</span>{' '}
-            <span className="text-foreground-muted">
-              Насолоджуйтесь повними можливостями — після закінчення діятимуть ліміти безкоштовного
-              плану, дані збережуться.
-            </span>
+            <span className="font-semibold">{t('trial.title', { days: trialDaysLeft })}</span>{' '}
+            <span className="text-foreground-muted">{t('trial.body')}</span>
           </p>
         </div>
       )}
@@ -288,7 +290,7 @@ export default function DashboardPage() {
         ) && (
           <Card className="p-5" data-tour="first-steps">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-base font-bold">Перші кроки</h2>
+              <h2 className="text-base font-bold">{t('firstSteps.title')}</h2>
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => {
@@ -297,7 +299,7 @@ export default function DashboardPage() {
                   }}
                   className="text-sm text-foreground-muted transition-colors hover:text-foreground"
                 >
-                  Пройти тур
+                  {t('firstSteps.takeTour')}
                 </button>
                 <button
                   onClick={() => {
@@ -310,7 +312,7 @@ export default function DashboardPage() {
                   }}
                   className="text-sm text-foreground-muted transition-colors hover:text-foreground"
                 >
-                  Пізніше
+                  {t('firstSteps.later')}
                 </button>
               </div>
             </div>
@@ -318,23 +320,27 @@ export default function DashboardPage() {
               {[
                 {
                   done: steps.hasContacts,
-                  label: 'Додати або імпортувати контакти',
+                  label: t('firstSteps.addContacts'),
                   href: '/dashboard/contacts',
                 },
-                { done: steps.hasDeals, label: 'Створити першу угоду', href: '/dashboard/deals' },
+                {
+                  done: steps.hasDeals,
+                  label: t('firstSteps.createDeal'),
+                  href: '/dashboard/deals',
+                },
                 {
                   done: steps.telegramConnected,
-                  label: 'Підключити Telegram',
+                  label: t('firstSteps.connectTelegram'),
                   href: '/dashboard/settings/telegram',
                 },
                 {
                   done: steps.aiConnected,
-                  label: 'Підключити AI',
+                  label: t('firstSteps.connectAI'),
                   href: '/dashboard/settings/ai-keys',
                 },
                 {
                   done: steps.hasTeammates,
-                  label: 'Запросити колегу',
+                  label: t('firstSteps.inviteColleague'),
                   href: '/dashboard/settings/tenants',
                 },
               ].map((s) => (
@@ -362,45 +368,49 @@ export default function DashboardPage() {
 
       {/* Шапка */}
       <div className="space-y-1">
-        <h1 className="text-2xl font-bold">Огляд</h1>
-        <p className="text-sm text-foreground-muted">Статистика за останні 30 днів</p>
+        <h1 className="text-2xl font-bold">{tRoot('navigation.dashboard')}</h1>
+        <p className="text-sm text-foreground-muted">{t('overviewSubtitle')}</p>
       </div>
 
       {/* Метрики */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="p-4">
-          <p className="text-xs font-medium text-foreground-muted">Контакти</p>
+          <p className="text-xs font-medium text-foreground-muted">{t('contacts')}</p>
           <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight">
             {stats?.totalContacts || 0}
           </p>
-          <p className="mt-1 text-xs text-foreground-muted">+{stats?.newContacts || 0} за місяць</p>
+          <p className="mt-1 text-xs text-foreground-muted">
+            {t('metrics.newThisMonth', { count: stats?.newContacts || 0 })}
+          </p>
         </Card>
 
         <Card className="p-4">
-          <p className="text-xs font-medium text-foreground-muted">Активні угоди</p>
+          <p className="text-xs font-medium text-foreground-muted">{t('activeDeals')}</p>
           <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight">
             {stats?.activeDeals || 0}
           </p>
           <p className="mt-1 text-xs text-foreground-muted">
-            {stats?.conversionRate || 0}% конверсія
+            {t('metrics.conversion', { rate: stats?.conversionRate || 0 })}
           </p>
         </Card>
 
         <Card className="border-foreground bg-foreground p-4 text-background">
-          <p className="text-xs font-medium text-background/60">Виграна виручка</p>
+          <p className="text-xs font-medium text-background/60">{t('metrics.wonRevenue')}</p>
           <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-primary">
             ₴{(stats?.totalRevenue || 0).toLocaleString('uk')}
           </p>
-          <p className="mt-1 text-xs text-background/60">{stats?.wonDeals || 0} виграних угод</p>
+          <p className="mt-1 text-xs text-background/60">
+            {t('metrics.wonDeals', { count: stats?.wonDeals || 0 })}
+          </p>
         </Card>
 
         <Card className="p-4">
-          <p className="text-xs font-medium text-foreground-muted">AI-автоматизації</p>
+          <p className="text-xs font-medium text-foreground-muted">{t('metrics.aiAutomations')}</p>
           <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight">
             {automationStats ? automationStats.total : 0}
           </p>
           <p className="mt-1 text-xs text-foreground-muted">
-            {automationStats ? `${automationStats.active} активних` : '—'}
+            {automationStats ? t('metrics.activeCount', { count: automationStats.active }) : '—'}
           </p>
         </Card>
       </div>
@@ -410,24 +420,26 @@ export default function DashboardPage() {
         {/* Останні угоди */}
         <Card className="lg:col-span-2">
           <div className="flex items-center justify-between border-b border-border p-4">
-            <h2 className="text-base font-semibold">Останні угоди</h2>
+            <h2 className="text-base font-semibold">{t('recentDeals')}</h2>
             <Link
               href="/dashboard/deals"
               className="text-xs font-semibold text-foreground underline-offset-4 hover:underline"
             >
-              Всі угоди →
+              {t('dealsTable.allDeals')}
             </Link>
           </div>
           <div className="p-4">
             {recentDeals.length === 0 ? (
-              <p className="py-8 text-center text-sm text-foreground-muted">Угод поки немає</p>
+              <p className="py-8 text-center text-sm text-foreground-muted">
+                {t('dealsTable.empty')}
+              </p>
             ) : (
               <Table
                 columns={dealColumns}
                 data={recentDeals}
                 pageSize={10}
                 onRowClick={(deal) => router.push('/dashboard/deals/' + deal.id)}
-                emptyMessage="Угод поки немає"
+                emptyMessage={t('dealsTable.empty')}
               />
             )}
           </div>
@@ -436,7 +448,7 @@ export default function DashboardPage() {
         {/* AI-стрічка */}
         <Card>
           <div className="border-b border-border p-4">
-            <h2 className="text-base font-semibold">AI та автоматизації</h2>
+            <h2 className="text-base font-semibold">{t('feed.title')}</h2>
           </div>
           {feed === null ? (
             <div className="space-y-3 p-4">
@@ -445,7 +457,7 @@ export default function DashboardPage() {
               ))}
             </div>
           ) : feed.items.length === 0 ? (
-            <p className="py-8 text-center text-sm text-foreground-muted">Подій ще немає</p>
+            <p className="py-8 text-center text-sm text-foreground-muted">{t('feed.empty')}</p>
           ) : feed.kind === 'logs' ? (
             <ul>
               {feed.items.map((log) => (
@@ -459,13 +471,13 @@ export default function DashboardPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge variant="outline" className="text-xs">
-                        {log.ruleName || 'Система'}
+                        {log.ruleName || t('feed.system')}
                       </Badge>
                       <Badge
                         variant={log.result === 'error' ? 'danger' : 'success'}
                         className="text-xs"
                       >
-                        {log.result === 'error' ? 'Помилка' : 'Успіх'}
+                        {log.result === 'error' ? tRoot('common.error') : tRoot('common.success')}
                       </Badge>
                     </div>
                     <p className="truncate text-sm">

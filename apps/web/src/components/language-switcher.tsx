@@ -6,6 +6,7 @@
 
 import { Globe, Check } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui';
@@ -17,6 +18,7 @@ const languages = [
 ];
 
 export function LanguageSwitcher() {
+  const t = useTranslations('settings');
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
@@ -38,7 +40,7 @@ export function LanguageSwitcher() {
         size="icon"
         onClick={() => setOpen(!open)}
         className="relative"
-        title="Мова"
+        title={t('language')}
       >
         <Globe className="h-5 w-5" />
       </Button>

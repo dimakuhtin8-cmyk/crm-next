@@ -62,12 +62,21 @@ describe('реквізити субʼєкта господарювання', () 
 describe('юридичні привʼязки сторінок входу та реєстрації', () => {
   it('реєстрація: згода під кнопкою з двома клікабельними лінками', () => {
     const content = read('app/[locale]/auth/register/page.tsx');
-    expect(content).toContain('Реєструючись, ви погоджуєтесь із');
     expect(content).toContain("lp('/legal/oferta')");
     expect(content).toContain("lp('/legal/privacy')");
-    // згода має бути безпосередньо під кнопкою «Зареєструватися»
-    const buttonAt = content.indexOf('Зареєструватися');
-    const consentAt = content.indexOf('Реєструючись, ви погоджуєтесь із');
+    // Тексти згод живуть у словниках i18n (uk + en)
+    const uk = readMessages('uk.json');
+    const en = readMessages('en.json');
+    expect(uk.auth.registerConsent).toContain('Реєструючись, ви погоджуєтесь із');
+    expect(en.auth.registerConsent).toContain('By signing up');
+    expect(uk.auth.termsLink).toBe('Умовами використання');
+    expect(en.auth.termsLink).toBe('Terms of Use');
+    expect(uk.auth.privacyLink).toBe('Політикою конфіденційності');
+    expect(en.auth.privacyLink).toBe('Privacy Policy');
+    // згода має бути безпосередньо під кнопкою «Зареєструватися»:
+    // стабільні маркери у вихідному коді — кнопка та лінк згоди після неї
+    const buttonAt = content.indexOf('type="submit"');
+    const consentAt = content.indexOf("lp('/legal/oferta')", buttonAt);
     expect(buttonAt).toBeGreaterThan(0);
     expect(consentAt).toBeGreaterThan(buttonAt);
   });

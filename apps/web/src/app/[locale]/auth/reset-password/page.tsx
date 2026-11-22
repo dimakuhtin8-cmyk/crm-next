@@ -7,6 +7,7 @@
 import { Lock, ArrowLeft, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
 import { Card, CardContent, Button, Input, Label } from '@/components/ui';
@@ -16,6 +17,7 @@ import { MIN_PASSWORD_LENGTH, PASSWORD_HINT } from '@/lib/validation/password';
 export default function ResetPasswordPage() {
   const searchParams = useSearchParams();
   const lp = useLocalePath();
+  const t = useTranslations('auth');
   const token = searchParams.get('token');
 
   const [password, setPassword] = useState('');
@@ -30,12 +32,10 @@ export default function ResetPasswordPage() {
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md">
           <CardContent className="p-5 text-center">
-            <h1 className="text-2xl font-bold mb-2">Невірне посилання</h1>
-            <p className="text-foreground-muted mb-6">
-              Токен не знайдено. Запросіть нове посилання для скидання пароля.
-            </p>
+            <h1 className="text-2xl font-bold mb-2">{t('invalidLink')}</h1>
+            <p className="text-foreground-muted mb-6">{t('tokenNotFound')}</p>
             <Link href={lp('/auth/forgot-password')}>
-              <Button className="w-full">Запросити нове посилання</Button>
+              <Button className="w-full">{t('requestNewLink')}</Button>
             </Link>
           </CardContent>
         </Card>
@@ -49,13 +49,13 @@ export default function ResetPasswordPage() {
     setError('');
 
     if (password !== confirmPassword) {
-      setError('Паролі не збігаються');
+      setError(t('errors.passwordsDiffer'));
       setLoading(false);
       return;
     }
 
     if (password.length < MIN_PASSWORD_LENGTH) {
-      setError(`Пароль має бути не менше ${MIN_PASSWORD_LENGTH} символів`);
+      setError(t('errors.passwordMinLength', { min: MIN_PASSWORD_LENGTH }));
       setLoading(false);
       return;
     }
@@ -72,10 +72,10 @@ export default function ResetPasswordPage() {
       if (data.success) {
         setSuccess(true);
       } else {
-        setError(data.error || 'Помилка');
+        setError(data.error || t('errors.generic'));
       }
     } catch {
-      setError('Помилка мережі');
+      setError(t('errors.network'));
     } finally {
       setLoading(false);
     }
@@ -91,10 +91,10 @@ export default function ResetPasswordPage() {
                 <CheckCircle className="h-12 w-12 text-success" />
               </div>
             </div>
-            <h1 className="text-2xl font-bold mb-2">Пароль змінено!</h1>
-            <p className="text-foreground-muted mb-6">Тепер увійдіть з новим паролем</p>
+            <h1 className="text-2xl font-bold mb-2">{t('passwordChanged')}</h1>
+            <p className="text-foreground-muted mb-6">{t('passwordChangedHint')}</p>
             <Link href={lp('/auth/login')}>
-              <Button className="w-full">Увійти</Button>
+              <Button className="w-full">{t('login')}</Button>
             </Link>
           </CardContent>
         </Card>
@@ -107,8 +107,8 @@ export default function ResetPasswordPage() {
       <Card className="w-full max-w-md">
         <CardContent className="p-5">
           <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold">Новий пароль</h1>
-            <p className="text-foreground-muted mt-2">Введіть новий пароль для вашого акаунту</p>
+            <h1 className="text-2xl font-bold">{t('newPassword')}</h1>
+            <p className="text-foreground-muted mt-2">{t('newPasswordDescription')}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -117,7 +117,7 @@ export default function ResetPasswordPage() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="password">Новий пароль</Label>
+              <Label htmlFor="password">{t('newPassword')}</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground-muted" />
                 <Input
@@ -141,13 +141,13 @@ export default function ResetPasswordPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Підтвердіть пароль</Label>
+              <Label htmlFor="confirmPassword">{t('confirmPassword')}</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground-muted" />
                 <Input
                   id="confirmPassword"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Повторіть пароль"
+                  placeholder={t('repeatPassword')}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="pl-10"
@@ -158,7 +158,7 @@ export default function ResetPasswordPage() {
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Зберігаємо...' : 'Змінити пароль'}
+              {loading ? t('saving') : t('changePassword')}
             </Button>
           </form>
 
@@ -168,7 +168,7 @@ export default function ResetPasswordPage() {
               className="text-sm text-foreground-muted hover:text-foreground"
             >
               <ArrowLeft className="h-4 w-4 inline mr-1" />
-              Повернутися до входу
+              {t('backToLogin')}
             </Link>
           </div>
         </CardContent>

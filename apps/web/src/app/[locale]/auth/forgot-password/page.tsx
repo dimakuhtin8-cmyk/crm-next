@@ -6,6 +6,7 @@
 
 import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
 import { Card, CardContent, Button, Input, Label } from '@/components/ui';
@@ -14,6 +15,7 @@ import { useLocale, useLocalePath } from '@/lib/use-locale-path';
 export default function ForgotPasswordPage() {
   const locale = useLocale();
   const lp = useLocalePath();
+  const t = useTranslations('auth');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -36,10 +38,10 @@ export default function ForgotPasswordPage() {
       if (data.success) {
         setSent(true);
       } else {
-        setError(data.error || 'Помилка');
+        setError(data.error || t('errors.generic'));
       }
     } catch {
-      setError('Помилка мережі');
+      setError(t('errors.network'));
     } finally {
       setLoading(false);
     }
@@ -55,17 +57,15 @@ export default function ForgotPasswordPage() {
                 <CheckCircle className="h-12 w-12 text-success" />
               </div>
             </div>
-            <h1 className="text-2xl font-bold mb-2">Перевірте пошту</h1>
+            <h1 className="text-2xl font-bold mb-2">{t('checkYourEmail')}</h1>
             <p className="text-foreground-muted mb-6">
-              Ми надіслали посилання для скидання пароля на <strong>{email}</strong>
+              {t('resetSentTo')} <strong>{email}</strong>
             </p>
-            <p className="text-sm text-foreground-muted mb-6">
-              Якщо листа немає, перевірте папку "Спам"
-            </p>
+            <p className="text-sm text-foreground-muted mb-6">{t('spamFolderHint')}</p>
             <Link href={lp('/auth/login')}>
               <Button variant="outline" className="w-full">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Повернутися до входу
+                {t('backToLogin')}
               </Button>
             </Link>
           </CardContent>
@@ -79,10 +79,8 @@ export default function ForgotPasswordPage() {
       <Card className="w-full max-w-md">
         <CardContent className="p-5">
           <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold">Забули пароль?</h1>
-            <p className="text-foreground-muted mt-2">
-              Введіть ваш email і ми надішлемо посилання для скидання
-            </p>
+            <h1 className="text-2xl font-bold">{t('forgotPassword')}</h1>
+            <p className="text-foreground-muted mt-2">{t('forgotDescription')}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -91,7 +89,7 @@ export default function ForgotPasswordPage() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t('email')}</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground-muted" />
                 <Input
@@ -107,7 +105,7 @@ export default function ForgotPasswordPage() {
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Надсилаємо...' : 'Надіслати посилання'}
+              {loading ? t('sending') : t('sendLink')}
             </Button>
           </form>
 
@@ -117,7 +115,7 @@ export default function ForgotPasswordPage() {
               className="text-sm text-foreground-muted hover:text-foreground"
             >
               <ArrowLeft className="h-4 w-4 inline mr-1" />
-              Повернутися до входу
+              {t('backToLogin')}
             </Link>
           </div>
         </CardContent>

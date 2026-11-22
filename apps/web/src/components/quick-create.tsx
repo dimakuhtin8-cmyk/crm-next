@@ -7,6 +7,7 @@
  */
 
 import { Check, ChevronDown } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -31,6 +32,7 @@ export function QuickCreatePopover({
   children,
   width = 400,
 }: QuickCreatePopoverProps) {
+  const t = useTranslations('common');
   const [shown, setShown] = useState(false);
 
   useEffect(() => {
@@ -79,7 +81,7 @@ export function QuickCreatePopover({
           <button
             onClick={onClose}
             className="rounded-lg p-1 text-foreground-muted hover:bg-secondary hover:text-foreground transition-colors"
-            aria-label="Закрити"
+            aria-label={t('close')}
           >
             <svg
               className="h-4 w-4"
@@ -127,6 +129,7 @@ export function QuickSelect({
   disabled,
   label,
 }: QuickSelectProps) {
+  const t = useTranslations('quickCreate');
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState<{
     top: number;
@@ -199,7 +202,7 @@ export function QuickSelect({
         aria-expanded={open}
       >
         <span className={current ? 'truncate' : 'truncate text-foreground-muted'}>
-          {current?.name || placeholder || 'Обрати'}
+          {current?.name || placeholder || t('choose')}
         </span>
         <ChevronDown
           className={`h-4 w-4 shrink-0 text-foreground-muted transition-transform duration-200 ${
@@ -250,6 +253,7 @@ export function QuickSelect({
 
 /** Раскрывашка деталей внизу формы: плавное расширение, без прыжков. */
 export function Extras({ children }: { children: ReactNode }) {
+  const t = useTranslations('quickCreate');
   const [open, setOpen] = useState(false);
   return (
     <div>
@@ -259,7 +263,7 @@ export function Extras({ children }: { children: ReactNode }) {
         aria-expanded={open}
         className="flex w-full items-center justify-center gap-1.5 py-1 text-xs font-medium text-foreground-muted hover:text-foreground transition-colors"
       >
-        Доповнення
+        {t('extras')}
         <ChevronDown
           className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
         />
@@ -295,6 +299,7 @@ function useQuickSubmit(
   buildBody: () => Record<string, unknown>,
   onCreated: () => void,
 ) {
+  const t = useTranslations('quickCreate');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const submit = async (e: React.FormEvent) => {
@@ -308,10 +313,10 @@ function useQuickSubmit(
         body: JSON.stringify(buildBody()),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || data.message || 'Помилка створення');
+      if (!res.ok) throw new Error(data.error || data.message || t('createError'));
       onCreated();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Помилка створення');
+      setError(err instanceof Error ? err.message : t('createError'));
     } finally {
       setSaving(false);
     }
@@ -324,14 +329,9 @@ const textareaCls =
 
 // ================= Contact =================
 
-const contactStatuses = [
-  { id: 'lead', name: 'Лід' },
-  { id: 'active', name: 'Активний' },
-  { id: 'client', name: 'Клієнт' },
-  { id: 'inactive', name: 'Неактивний' },
-];
-
 export function QuickContactForm({ onCreated }: QuickFormProps) {
+  const t = useTranslations('quickCreate');
+  const tRoot = useTranslations();
   const [firstName, setFirstName] = useState('');
   const [phone, setPhone] = useState('');
   const [company, setCompany] = useState('');
@@ -339,6 +339,12 @@ export function QuickContactForm({ onCreated }: QuickFormProps) {
   const [position, setPosition] = useState('');
   const [status, setStatus] = useState('lead');
   const [notes, setNotes] = useState('');
+  const contactStatuses = [
+    { id: 'lead', name: tRoot('stages.lead') },
+    { id: 'active', name: t('contactStatuses.active') },
+    { id: 'client', name: t('contactStatuses.client') },
+    { id: 'inactive', name: t('contactStatuses.inactive') },
+  ];
   const { saving, error, submit } = useQuickSubmit(
     '/api/contacts',
     () => ({
@@ -359,33 +365,46 @@ export function QuickContactForm({ onCreated }: QuickFormProps) {
         value={firstName}
         onChange={(e) => setFirstName(e.target.value)}
         required
-        placeholder="Ім'я *"
+        placeholder={t('contact.namePlaceholder')}
         autoFocus
       />
-      <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Телефон" />
-      <Input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Компанія" />
+      <Input
+        value={phone}
+        onChange={(e) => setPhone(e.target.value)}
+        placeholder={tRoot('contacts.phone')}
+      />
+      <Input
+        value={company}
+        onChange={(e) => setCompany(e.target.value)}
+        placeholder={tRoot('contacts.company')}
+      />
       <Extras>
         <Input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email"
+          placeholder={tRoot('contacts.email')}
         />
         <Input
           value={position}
           onChange={(e) => setPosition(e.target.value)}
-          placeholder="Посада"
+          placeholder={tRoot('contacts.position')}
         />
-        <QuickSelect value={status} onChange={setStatus} options={contactStatuses} label="Статус" />
+        <QuickSelect
+          value={status}
+          onChange={setStatus}
+          options={contactStatuses}
+          label={tRoot('common.status')}
+        />
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="Нотатки"
+          placeholder={tRoot('contacts.notes')}
           className={textareaCls}
         />
       </Extras>
       <Button type="submit" disabled={saving || !firstName.trim()} className="w-full">
-        {saving ? 'Створення...' : 'Додати контакт'}
+        {saving ? t('creating') : tRoot('contacts.add')}
       </Button>
     </form>
   );
@@ -400,6 +419,8 @@ interface PipelineOpt {
 }
 
 export function QuickDealForm({ onCreated }: QuickFormProps) {
+  const t = useTranslations('quickCreate');
+  const tRoot = useTranslations();
   const [title, setTitle] = useState('');
   const [value, setValue] = useState('');
   const [pipelines, setPipelines] = useState<PipelineOpt[]>([]);
@@ -427,7 +448,7 @@ export function QuickDealForm({ onCreated }: QuickFormProps) {
     setStagesError(false);
     fetch('/api/pipelines')
       .then((r) => {
-        if (!r.ok) throw new Error(`Помилка ${r.status}`);
+        if (!r.ok) throw new Error(t('loadError', { status: r.status }));
         return r.json();
       })
       .then((d) => {
@@ -459,24 +480,24 @@ export function QuickDealForm({ onCreated }: QuickFormProps) {
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         required
-        placeholder="Назва угоди *"
+        placeholder={t('deal.titlePlaceholder')}
         autoFocus
       />
       <Input
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder="Сума, грн"
+        placeholder={t('deal.amountPlaceholder')}
         inputMode="decimal"
       />
       {stagesError ? (
         <div className="p-2.5 bg-destructive/10 rounded-lg text-sm space-y-2">
-          <p className="text-destructive">Не вдалося завантажити етапи воронки</p>
+          <p className="text-destructive">{t('deal.stagesError')}</p>
           <button
             type="button"
             onClick={loadPipelines}
             className="font-medium text-primary hover:underline"
           >
-            Спробувати ще раз
+            {t('tryAgain')}
           </button>
         </div>
       ) : (
@@ -490,7 +511,7 @@ export function QuickDealForm({ onCreated }: QuickFormProps) {
                 setStageId(p?.stages?.[0]?.id || '');
               }}
               options={pipelines.map((p) => ({ id: p.id, name: p.name }))}
-              label="Воронка"
+              label={tRoot('deals.pipeline')}
             />
           )}
           {selected && selected.stages?.length > 0 && (
@@ -498,7 +519,7 @@ export function QuickDealForm({ onCreated }: QuickFormProps) {
               value={stageId}
               onChange={setStageId}
               options={selected.stages.map((s) => ({ id: s.id, name: s.name }))}
-              label="Етап"
+              label={tRoot('deals.stage')}
             />
           )}
         </>
@@ -507,23 +528,23 @@ export function QuickDealForm({ onCreated }: QuickFormProps) {
         <Input
           value={company}
           onChange={(e) => setCompany(e.target.value)}
-          placeholder="Компанія клієнта"
+          placeholder={t('deal.companyPlaceholder')}
         />
         <Input
           type="date"
           value={closeDate}
           onChange={(e) => setCloseDate(e.target.value)}
-          aria-label="Очікувана дата закриття"
+          aria-label={t('deal.closeDateLabel')}
         />
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="Нотатки"
+          placeholder={tRoot('contacts.notes')}
           className={textareaCls}
         />
       </Extras>
       <Button type="submit" disabled={saving || !title.trim() || !stageId} className="w-full">
-        {saving ? 'Створення...' : 'Створити угоду'}
+        {saving ? t('creating') : t('deal.submit')}
       </Button>
     </form>
   );
@@ -531,27 +552,28 @@ export function QuickDealForm({ onCreated }: QuickFormProps) {
 
 // ================= Task =================
 
-const taskPriorities = [
-  { id: 'low', name: 'Низький' },
-  { id: 'medium', name: 'Середній' },
-  { id: 'high', name: 'Високий' },
-  { id: 'urgent', name: 'Терміново' },
-];
-
-const taskTypes = [
-  { id: 'task', name: 'Задача' },
-  { id: 'call', name: 'Дзвінок' },
-  { id: 'email', name: 'Лист' },
-  { id: 'meeting', name: 'Зустріч' },
-  { id: 'follow_up', name: 'Нагадування' },
-];
-
 export function QuickTaskForm({ onCreated }: QuickFormProps) {
+  const t = useTranslations('quickCreate');
+  const tRoot = useTranslations();
   const [title, setTitle] = useState('');
   const [priority, setPriority] = useState('medium');
   const [type, setType] = useState('task');
   const [dueDate, setDueDate] = useState('');
   const [description, setDescription] = useState('');
+  const taskPriorities = [
+    { id: 'low', name: tRoot('tasks.low') },
+    { id: 'medium', name: tRoot('tasks.medium') },
+    { id: 'high', name: tRoot('tasks.high') },
+    { id: 'urgent', name: t('task.priorities.urgent') },
+  ];
+
+  const taskTypes = [
+    { id: 'task', name: t('task.types.task') },
+    { id: 'call', name: t('task.types.call') },
+    { id: 'email', name: t('task.types.email') },
+    { id: 'meeting', name: t('task.types.meeting') },
+    { id: 'follow_up', name: tRoot('tasks.reminders') },
+  ];
   const { saving, error, submit } = useQuickSubmit(
     '/api/tasks',
     () => ({
@@ -570,32 +592,37 @@ export function QuickTaskForm({ onCreated }: QuickFormProps) {
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         required
-        placeholder="Назва задачі *"
+        placeholder={t('task.titlePlaceholder')}
         autoFocus
       />
       <QuickSelect
         value={priority}
         onChange={setPriority}
         options={taskPriorities}
-        label="Пріоритет"
+        label={tRoot('tasks.priority')}
       />
       <Extras>
-        <QuickSelect value={type} onChange={setType} options={taskTypes} label="Тип" />
+        <QuickSelect
+          value={type}
+          onChange={setType}
+          options={taskTypes}
+          label={t('task.typeLabel')}
+        />
         <Input
           type="date"
           value={dueDate}
           onChange={(e) => setDueDate(e.target.value)}
-          aria-label="Дедлайн"
+          aria-label={t('task.dueDateLabel')}
         />
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Опис"
+          placeholder={tRoot('common.description')}
           className={textareaCls}
         />
       </Extras>
       <Button type="submit" disabled={saving || !title.trim()} className="w-full">
-        {saving ? 'Створення...' : 'Створити задачу'}
+        {saving ? t('creating') : t('task.submit')}
       </Button>
     </form>
   );
@@ -604,6 +631,7 @@ export function QuickTaskForm({ onCreated }: QuickFormProps) {
 // ================= Tenant =================
 
 export function QuickTenantForm({ onCreated }: QuickFormProps) {
+  const t = useTranslations('quickCreate');
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [slugTouched, setSlugTouched] = useState(false);
@@ -633,7 +661,7 @@ export function QuickTenantForm({ onCreated }: QuickFormProps) {
         required
         minLength={2}
         maxLength={100}
-        placeholder="Назва компанії *"
+        placeholder={t('tenant.namePlaceholder')}
         autoFocus
       />
       <Input
@@ -646,18 +674,18 @@ export function QuickTenantForm({ onCreated }: QuickFormProps) {
         minLength={2}
         maxLength={50}
         pattern="^[a-z0-9-]+$"
-        placeholder="slug-компанії *"
+        placeholder={t('tenant.slugPlaceholder')}
       />
       <Extras>
         <Input
           value={domain}
           onChange={(e) => setDomain(e.target.value)}
-          placeholder="Домен (необовʼязково)"
+          placeholder={t('tenant.domainPlaceholder')}
           inputMode="url"
         />
       </Extras>
       <Button type="submit" disabled={saving || !name.trim() || !slug.trim()} className="w-full">
-        {saving ? 'Створення...' : 'Створити компанію'}
+        {saving ? t('creating') : t('tenant.submit')}
       </Button>
     </form>
   );
@@ -665,32 +693,33 @@ export function QuickTenantForm({ onCreated }: QuickFormProps) {
 
 // ================= Automation rule =================
 
-const ruleTriggers = [
-  { id: 'stage_change', name: 'Зміна етапу' },
-  { id: 'deal_created', name: 'Створення угоди' },
-  { id: 'deal_won', name: 'Угода виграна' },
-  { id: 'deal_lost', name: 'Угода втрачена' },
-  { id: 'timer', name: 'Таймер' },
-];
-
-const ruleActions = [
-  { id: 'set_field', name: 'Встановити поле' },
-  { id: 'create_task', name: 'Створити задачу' },
-  { id: 'send_notification', name: 'Надіслати сповіщення' },
-  { id: 'move_deal', name: 'Перемістити угоду' },
-  { id: 'send_message', name: 'Надіслати повідомлення' },
-];
-
 export function QuickRuleForm({
   onCreated,
   initial,
 }: QuickFormProps & {
   initial?: { name: string; triggerType: string; actionType: string };
 }) {
+  const t = useTranslations('quickCreate');
+  const tRoot = useTranslations();
   const [name, setName] = useState(initial?.name || '');
   const [triggerType, setTriggerType] = useState(initial?.triggerType || 'stage_change');
   const [actionType, setActionType] = useState(initial?.actionType || 'send_notification');
   const [description, setDescription] = useState('');
+  const ruleTriggers = [
+    { id: 'stage_change', name: t('triggers.stage_change') },
+    { id: 'deal_created', name: t('triggers.deal_created') },
+    { id: 'deal_won', name: t('triggers.deal_won') },
+    { id: 'deal_lost', name: t('triggers.deal_lost') },
+    { id: 'timer', name: t('triggers.timer') },
+  ];
+
+  const ruleActions = [
+    { id: 'set_field', name: t('ruleActions.set_field') },
+    { id: 'create_task', name: t('ruleActions.create_task') },
+    { id: 'send_notification', name: t('ruleActions.send_notification') },
+    { id: 'move_deal', name: t('ruleActions.move_deal') },
+    { id: 'send_message', name: t('ruleActions.send_message') },
+  ];
   const { saving, error, submit } = useQuickSubmit(
     '/api/automation/rules',
     () => ({
@@ -709,26 +738,31 @@ export function QuickRuleForm({
         value={name}
         onChange={(e) => setName(e.target.value)}
         required
-        placeholder="Назва правила *"
+        placeholder={t('rule.namePlaceholder')}
         autoFocus
       />
       <QuickSelect
         value={triggerType}
         onChange={setTriggerType}
         options={ruleTriggers}
-        label="Тригер"
+        label={tRoot('automation.trigger')}
       />
-      <QuickSelect value={actionType} onChange={setActionType} options={ruleActions} label="Дія" />
+      <QuickSelect
+        value={actionType}
+        onChange={setActionType}
+        options={ruleActions}
+        label={tRoot('automation.action')}
+      />
       <Extras>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Опис правила (необовʼязково)"
+          placeholder={t('rule.descriptionPlaceholder')}
           className={textareaCls}
         />
       </Extras>
       <Button type="submit" disabled={saving || !name.trim()} className="w-full">
-        {saving ? 'Створення...' : 'Створити правило'}
+        {saving ? t('creating') : t('rule.submit')}
       </Button>
     </form>
   );
@@ -737,6 +771,7 @@ export function QuickRuleForm({
 // ================= Webhook =================
 
 export function QuickWebhookForm({ onCreated }: QuickFormProps) {
+  const t = useTranslations('quickCreate');
   const [url, setUrl] = useState('');
   const [events, setEvents] = useState<Array<{ event: string; description: string }>>([]);
   const [eventsError, setEventsError] = useState(false);
@@ -748,7 +783,7 @@ export function QuickWebhookForm({ onCreated }: QuickFormProps) {
   useEffect(() => {
     fetch('/api/v1/webhooks')
       .then((r) => {
-        if (!r.ok) throw new Error(`Помилка ${r.status}`);
+        if (!r.ok) throw new Error(t('loadError', { status: r.status }));
         return r.json();
       })
       .then((d) => setEvents(d.data?.availableEvents || []))
@@ -772,14 +807,14 @@ export function QuickWebhookForm({ onCreated }: QuickFormProps) {
         body: JSON.stringify({ url, events: selected }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || 'Помилка створення');
+      if (!res.ok) throw new Error(data.error || t('createError'));
       if (data.data?.secret) {
         setSecret(data.data.secret);
       } else {
         onCreated();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Помилка створення');
+      setError(err instanceof Error ? err.message : t('createError'));
     } finally {
       setSaving(false);
     }
@@ -788,9 +823,7 @@ export function QuickWebhookForm({ onCreated }: QuickFormProps) {
   if (secret) {
     return (
       <div className="space-y-3">
-        <p className="text-sm text-foreground-muted">
-          Збережіть секрет — він показується лише один раз:
-        </p>
+        <p className="text-sm text-foreground-muted">{t('webhook.secretNotice')}</p>
         <code className="block p-2.5 bg-secondary rounded-lg text-xs font-mono break-all">
           {secret}
         </code>
@@ -801,7 +834,7 @@ export function QuickWebhookForm({ onCreated }: QuickFormProps) {
             onCreated();
           }}
         >
-          Скопіювати та закрити
+          {t('webhook.copyAndClose')}
         </Button>
       </div>
     );
@@ -817,11 +850,7 @@ export function QuickWebhookForm({ onCreated }: QuickFormProps) {
         placeholder="https://... *"
         autoFocus
       />
-      {eventsError && (
-        <p className="text-xs text-destructive">
-          Не вдалося завантажити список подій — вебхук не створити
-        </p>
-      )}
+      {eventsError && <p className="text-xs text-destructive">{t('webhook.eventsError')}</p>}
       {events.length > 0 && (
         <div className="space-y-1.5 max-h-40 overflow-y-auto">
           {events.map((ev) => (
@@ -842,7 +871,7 @@ export function QuickWebhookForm({ onCreated }: QuickFormProps) {
         disabled={saving || !url.trim() || selected.length === 0}
         className="w-full"
       >
-        {saving ? 'Створення...' : 'Створити вебхук'}
+        {saving ? t('creating') : t('webhook.submit')}
       </Button>
     </form>
   );
@@ -851,8 +880,9 @@ export function QuickWebhookForm({ onCreated }: QuickFormProps) {
 // ================= Pipeline =================
 
 export function QuickPipelineForm({ onCreated }: QuickFormProps) {
+  const t = useTranslations('quickCreate');
   const [name, setName] = useState('');
-  const [stages, setStages] = useState<string[]>(['Новий']);
+  const [stages, setStages] = useState<string[]>([t('pipeline.defaultStage')]);
   const { saving, error, submit } = useQuickSubmit(
     '/api/pipelines',
     () => ({ name, stages: stages.filter((s) => s.trim()).map((s) => ({ name: s.trim() })) }),
@@ -865,7 +895,7 @@ export function QuickPipelineForm({ onCreated }: QuickFormProps) {
         value={name}
         onChange={(e) => setName(e.target.value)}
         required
-        placeholder="Назва воронки *"
+        placeholder={t('pipeline.namePlaceholder')}
         autoFocus
       />
       <Input
@@ -877,7 +907,7 @@ export function QuickPipelineForm({ onCreated }: QuickFormProps) {
             return next;
           })
         }
-        placeholder="Перший етап"
+        placeholder={t('pipeline.firstStage')}
       />
       <Extras>
         {stages.slice(1).map((s, i) => (
@@ -891,25 +921,25 @@ export function QuickPipelineForm({ onCreated }: QuickFormProps) {
                   return next;
                 })
               }
-              placeholder={`Етап ${i + 2}`}
+              placeholder={t('pipeline.stageNumber', { number: i + 2 })}
               className="flex-1"
             />
             <Button
               type="button"
               variant="outline"
               onClick={() => setStages((prev) => prev.filter((_, idx) => idx !== i + 1))}
-              aria-label="Видалити етап"
+              aria-label={t('pipeline.removeStage')}
             >
               ×
             </Button>
           </div>
         ))}
         <Button type="button" variant="outline" onClick={() => setStages((prev) => [...prev, ''])}>
-          + Додати етап
+          {t('pipeline.addStage')}
         </Button>
       </Extras>
       <Button type="submit" disabled={saving || !name.trim()} className="w-full">
-        {saving ? 'Створення...' : 'Створити воронку'}
+        {saving ? t('creating') : t('pipeline.submit')}
       </Button>
     </form>
   );
