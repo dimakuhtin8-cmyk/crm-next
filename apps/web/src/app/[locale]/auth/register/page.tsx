@@ -3,19 +3,21 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
+import { useTranslations } from 'next-intl';
 import { useCallback, useState } from 'react';
 
 import {
   TelegramLoginWidget,
   type TelegramAuthData,
 } from '@/components/auth/telegram-login-widget';
-import { friendlyAuthError } from '@/lib/auth-errors';
+import { authErrorKey } from '@/lib/auth-errors';
 import { useLocalePath } from '@/lib/use-locale-path';
 import { MIN_PASSWORD_LENGTH, PASSWORD_HINT } from '@/lib/validation/password';
 
 export default function RegisterPage() {
   const router = useRouter();
   const lp = useLocalePath();
+  const tRoot = useTranslations();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -63,7 +65,7 @@ export default function RegisterPage() {
         });
 
         if (result?.error) {
-          setError(friendlyAuthError(result.error));
+          setError(tRoot(authErrorKey(result.error)));
         } else {
           router.push(lp('/dashboard'));
           router.refresh();

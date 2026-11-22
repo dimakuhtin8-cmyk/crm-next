@@ -3,13 +3,14 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn, useSession } from 'next-auth/react';
+import { useTranslations } from 'next-intl';
 import { useState, useCallback, useEffect } from 'react';
 
 import {
   TelegramLoginWidget,
   type TelegramAuthData,
 } from '@/components/auth/telegram-login-widget';
-import { friendlyAuthError } from '@/lib/auth-errors';
+import { authErrorKey } from '@/lib/auth-errors';
 import { useLocalePath, useLocale } from '@/lib/use-locale-path';
 
 export default function LoginPage() {
@@ -17,6 +18,8 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const locale = useLocale();
   const lp = useLocalePath();
+  const t = useTranslations('auth');
+  const tRoot = useTranslations();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -38,7 +41,7 @@ export default function LoginPage() {
   useEffect(() => {
     const oauthError = searchParams.get('error');
     if (oauthError) {
-      setError(friendlyAuthError(oauthError));
+      setError(tRoot(authErrorKey(oauthError)));
     }
   }, [searchParams]);
 
@@ -55,13 +58,13 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        setError(friendlyAuthError(result.error));
+        setError(tRoot(authErrorKey(result.error)));
       } else {
         router.push(lp('/dashboard'));
         router.refresh();
       }
     } catch {
-      setError('Помилка входу. Спробуйте ще раз.');
+      setError(t('errors.loginFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -83,12 +86,12 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (data.success) {
-        setSuccess(`Посилання для входу надіслано на ${email}. Перевірте пошту.`);
+        setSuccess(t('magicLinkSentTo', { email }));
       } else {
-        setError(data.error || 'Помилка надсилання посилання');
+        setError(data.error || t('errors.sendFailed'));
       }
     } catch {
-      setError("Помилка з'єднання. Спробуйте ще раз.");
+      setError(t('errors.connection'));
     } finally {
       setIsLoading(false);
     }
@@ -118,10 +121,10 @@ export default function LoginPage() {
           router.push(lp('/dashboard'));
           router.refresh();
         } else {
-          setError(result.error || 'Помилка авторизації через Telegram');
+          setError(result.error || t('errors.telegramFailed'));
         }
       } catch {
-        setError("Помилка з'єднання. Спробуйте ще раз.");
+        setError(t('errors.connection'));
       } finally {
         setIsLoading(false);
       }
@@ -132,7 +135,7 @@ export default function LoginPage() {
   if (status === 'loading' || status === 'authenticated') {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center p-4">
-        <p className="text-sm text-muted-foreground">Зачекайте...</p>
+        <p className="text-sm text-muted-foreground">{t('waiting')}</p>
       </div>
     );
   }
@@ -154,12 +157,10 @@ export default function LoginPage() {
             <span className="text-xl font-bold">CRM-Next</span>
           </Link>
           <h1 className="mt-6 text-2xl font-bold">
-            {mode === 'password' ? 'Увійти в акаунт' : 'Вхід по посиланню'}
+            {mode === 'password' ? t('loginTitle') : t('magicLinkTitle')}
           </h1>
           <p className="mt-2 text-muted-foreground">
-            {mode === 'password'
-              ? 'Введіть свої дані для входу'
-              : 'Вкажіть email — надішлемо посилання для входу без пароля'}
+            {mode === 'password' ? t('loginDescription') : t('magicLinkDescription')}
           </p>
         </div>
 
@@ -181,7 +182,7 @@ export default function LoginPage() {
         >
           <div>
             <label htmlFor="email" className="block text-sm font-medium">
-              Email
+              {t('email')}
             </label>
             <input
               id="email"
@@ -198,7 +199,7 @@ export default function LoginPage() {
           {mode === 'password' && (
             <div>
               <label htmlFor="password" className="block text-sm font-medium">
-                Пароль
+                {t('password')}
               </label>
               <input
                 id="password"
@@ -219,7 +220,7 @@ export default function LoginPage() {
                 href={lp('/auth/forgot-password')}
                 className="text-sm text-muted-foreground hover:text-foreground"
               >
-                Забули пароль?
+                {t('forgotPassword')}
               </Link>
             </div>
           )}
@@ -229,7 +230,7 @@ export default function LoginPage() {
             disabled={isLoading}
             className="flex h-9 w-full items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary-hover disabled:opacity-50"
           >
-            {isLoading ? 'Зачекайте...' : mode === 'password' ? 'Увійти' : 'Отримати посилання'}
+            {isLoading ? t('waiting') : mode === 'password' ? t('login') : t('getLink')}
           </button>
         </form>
 
@@ -238,7 +239,7 @@ export default function LoginPage() {
             <div className="w-full border-t border-border" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="bg-background px-2 text-muted-foreground">або</span>
+            <span className="bg-background px-2 text-muted-foreground">{t('or')}</span>
           </div>
         </div>
 
@@ -266,10 +267,10 @@ export default function LoginPage() {
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
             />
           </svg>
-          Увійти через Google
+          {t('loginWithGoogle')}
         </button>
 
-        <div className="text-center text-sm text-muted-foreground">або</div>
+        <div className="text-center text-sm text-muted-foreground">{t('or')}</div>
 
         <TelegramLoginWidget
           botUsername={process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || ''}
@@ -279,53 +280,53 @@ export default function LoginPage() {
         <p className="text-center text-sm text-muted-foreground">
           {mode === 'password' ? (
             <>
-              Хочете ввійти без пароля?{' '}
+              {t('wantPasswordless')}{' '}
               <button
                 type="button"
                 onClick={() => setMode('magic-link')}
                 className="text-primary hover:text-primary-hover font-medium"
               >
-                Отримати посилання
+                {t('getLink')}
               </button>
             </>
           ) : (
             <>
-              Пам'ятаєте пароль?{' '}
+              {t('rememberPassword')}{' '}
               <button
                 type="button"
                 onClick={() => setMode('password')}
                 className="text-primary hover:text-primary-hover font-medium"
               >
-                Увійти паролем
+                {t('loginWithPassword')}
               </button>
             </>
           )}
         </p>
 
         <p className="text-center text-sm text-muted-foreground">
-          Ще немає акаунту?{' '}
+          {t('noAccount')}{' '}
           <Link
             href={lp('/auth/register')}
             className="text-primary hover:text-primary-hover font-medium"
           >
-            Зареєструватися
+            {t('register')}
           </Link>
         </p>
 
         <p className="text-center text-xs leading-5 text-muted-foreground">
-          Продовжуючи, ви погоджуєтесь із{' '}
+          {t('consentContinue')}{' '}
           <Link
             href={lp('/legal/oferta')}
             className="text-primary underline-offset-4 hover:text-primary-hover hover:underline"
           >
-            Умовами використання
+            {t('termsLink')}
           </Link>{' '}
-          та{' '}
+          {t('andWord')}{' '}
           <Link
             href={lp('/legal/privacy')}
             className="text-primary underline-offset-4 hover:text-primary-hover hover:underline"
           >
-            Політикою конфіденційності
+            {t('privacyLink')}
           </Link>
           .
         </p>

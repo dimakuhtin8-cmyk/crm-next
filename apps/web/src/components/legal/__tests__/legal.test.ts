@@ -18,6 +18,13 @@ function read(rel: string): string {
   return fs.readFileSync(abs, 'utf8');
 }
 
+/** Словники i18n (apps/web/messages) — тексти згод живуть там. */
+function readMessages(file: string): { auth: Record<string, string> } {
+  const abs = path.resolve(SRC, '..', 'messages', file);
+  expect(fs.existsSync(abs), `словник ${file} має існувати`).toBe(true);
+  return JSON.parse(fs.readFileSync(abs, 'utf8'));
+}
+
 describe('локалізація: українська за замовчуванням', () => {
   it("defaultLocale === 'uk'", () => {
     expect(defaultLocale).toBe('uk');
@@ -69,7 +76,12 @@ describe('юридичні привʼязки сторінок входу та �
     const content = read('app/[locale]/auth/login/page.tsx');
     expect(content).toContain("lp('/legal/privacy')");
     expect(content).toContain("lp('/legal/oferta')");
-    expect(content).toContain('Політикою конфіденційності');
+    // Тексти згоди живуть у словниках i18n (uk + en)
+    const uk = readMessages('uk.json');
+    const en = readMessages('en.json');
+    expect(uk.auth.privacyLink).toBe('Політикою конфіденційності');
+    expect(en.auth.privacyLink).toBe('Privacy Policy');
+    expect(uk.auth.consentContinue).toContain('Продовжуючи');
   });
 });
 
