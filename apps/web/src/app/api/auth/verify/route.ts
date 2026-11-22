@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import type { NextRequest } from 'next/server';
-
 import { verifyMagicLink, signIn } from '@/auth/config';
+
+import type { NextRequest } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {

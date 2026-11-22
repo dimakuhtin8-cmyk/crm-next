@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import type { NextRequest } from 'next/server';
-
 import { withAuth } from '@/lib/auth-guard';
 import { csrfProtection } from '@/lib/csrf';
 import { notifyTaskEvent } from '@/lib/telegram/notifications';
 import { getTenantQuery } from '@/lib/tenant-query';
+
+import type { NextRequest } from 'next/server';
 
 /**
  * GET /api/tasks — List tasks (tenant-scoped, with filters)

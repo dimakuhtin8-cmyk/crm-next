@@ -5,6 +5,15 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui';
+
+import {
   SETTINGS_ITEMS,
   dynamicItemValue,
   emptyStateText,
@@ -13,15 +22,6 @@ import {
   settingsItemValue,
   type PaletteSearchResults,
 } from './command-palette-logic';
-
-import {
-  CommandDialog,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui';
 
 /** Подія відкриття палітри (header диспатчить її на клік по кнопці пошуку). */
 export const OPEN_PALETTE_EVENT = 'crm:open-command-palette';

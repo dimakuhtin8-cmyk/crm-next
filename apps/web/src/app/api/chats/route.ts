@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 
-import type { NextRequest } from 'next/server';
-
 import { withAuth } from '@/lib/auth-guard';
 import { csrfProtection } from '@/lib/csrf';
 import { decrypt } from '@/lib/encryption';
 import { getTenantQuery } from '@/lib/tenant-query';
+
+import type { NextRequest } from 'next/server';
 
 const CHANNELS = ['TELEGRAM', 'WHATSAPP', 'EMAIL', 'SMS'];
 

@@ -1,9 +1,9 @@
 import Link from 'next/link';
 
-import type { Metadata } from 'next';
-
 import { DocH2, DocOl, DocP, DocTitle, DocUl, DocUpdated } from '@/components/legal/doc';
 import { siteOwnerLine, SITE_OWNER } from '@/lib/legal/company';
+
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Політика конфіденційності · CRM-Next',

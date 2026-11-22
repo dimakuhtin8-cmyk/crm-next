@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 
-import type { NextRequest } from 'next/server';
-
 import { withAuth } from '@/lib/auth-guard';
 import { getTenantQuery } from '@/lib/tenant-query';
+
+import type { NextRequest } from 'next/server';
 
 /**
  * GET /api/tasks/reminders — Get tasks with upcoming reminders

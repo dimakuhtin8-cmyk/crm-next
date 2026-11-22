@@ -10,9 +10,9 @@ import { compare, hash } from 'bcryptjs';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import type { NextRequest } from 'next/server';
-
 import { extractUser } from '@/lib/auth-utils';
+
+import type { NextRequest } from 'next/server';
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, 'Введіть поточний пароль'),

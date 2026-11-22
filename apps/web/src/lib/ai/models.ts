@@ -11,9 +11,9 @@
  * documented endpoints, НЕ ПРОВЕРЕНО live (no keys available).
  */
 
-import { getProviderKey } from './keys';
-
 import { cache } from '@/lib/cache';
+
+import { getProviderKey } from './keys';
 
 export interface DynamicModel {
   id: string;

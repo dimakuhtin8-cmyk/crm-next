@@ -12,11 +12,11 @@
 import { prisma } from '@crm-next/database';
 import { NextResponse } from 'next/server';
 
-import type { NextRequest } from 'next/server';
-import type Stripe from 'stripe';
-
 import { verifyWebhook } from '@/lib/billing/stripe';
 import log from '@/lib/logging/logger';
+
+import type { NextRequest } from 'next/server';
+import type Stripe from 'stripe';
 
 /**
  * Period end of a subscription (stripe v22 removed Subscription.current_period_end;

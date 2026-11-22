@@ -5,9 +5,9 @@
  * Returns structured result with status and message.
  */
 
-import { getProvider } from './providers';
-
 import { decrypt } from '@/lib/encryption';
+
+import { getProvider } from './providers';
 
 export interface TestResult {
   status: 'connected' | 'error' | 'not_configured';

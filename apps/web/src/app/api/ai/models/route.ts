@@ -7,13 +7,13 @@
 
 import { NextResponse } from 'next/server';
 
-import type { NextRequest } from 'next/server';
-
 import { getProviderModels } from '@/lib/ai/models';
 import { getProvider } from '@/lib/ai/providers';
 import { withAuth } from '@/lib/auth-guard';
 import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
+
+import type { NextRequest } from 'next/server';
 
 async function GETHandler(request: NextRequest) {
   const csrfError = csrfProtection(request);

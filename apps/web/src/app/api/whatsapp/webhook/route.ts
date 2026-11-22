@@ -3,10 +3,10 @@ import crypto from 'crypto';
 import { prisma } from '@crm-next/database';
 import { NextResponse } from 'next/server';
 
+import { handleWhatsAppWebhook } from '@/lib/whatsapp/handler';
+
 import type { WhatsAppWebhookBody } from '@/lib/whatsapp/client';
 import type { NextRequest } from 'next/server';
-
-import { handleWhatsAppWebhook } from '@/lib/whatsapp/handler';
 
 /**
  * GET /api/whatsapp/webhook — Webhook verification (360dialog/Facebook)

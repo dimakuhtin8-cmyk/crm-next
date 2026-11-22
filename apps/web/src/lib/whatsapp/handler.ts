@@ -1,10 +1,10 @@
 import { prisma } from '@crm-next/database';
 
+import { normalizeWhatsAppMessage, persistInboundMessage } from '@/lib/channels';
+
 import { sendTextMessage, markAsRead } from './client';
 
 import type { WhatsAppWebhookBody, WhatsAppMessage } from './client';
-
-import { normalizeWhatsAppMessage, persistInboundMessage } from '@/lib/channels';
 
 export async function handleWhatsAppWebhook(body: WhatsAppWebhookBody) {
   if (body.object !== 'whatsapp_business_account') return;

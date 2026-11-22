@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 
-import type { NextRequest } from 'next/server';
-
 import { withAuth } from '@/lib/auth-guard';
 import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
+
+import type { NextRequest } from 'next/server';
 
 interface Params {
   params: Promise<{ chatId: string }>;

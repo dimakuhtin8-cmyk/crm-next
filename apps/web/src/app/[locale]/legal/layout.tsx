@@ -1,9 +1,9 @@
 import Link from 'next/link';
 
-import type { ReactNode } from 'react';
-
 import { LegalNav } from '@/components/legal/legal-nav';
 import { siteOwnerLine, SITE_OWNER } from '@/lib/legal/company';
+
+import type { ReactNode } from 'react';
 
 export default async function LegalLayout({
   children,

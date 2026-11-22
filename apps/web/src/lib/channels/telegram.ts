@@ -3,10 +3,10 @@
  * Уся Telegram-специфічна логіка ізольована тут (правило модульної ізоляції).
  */
 
+import { sendMessage } from '@/lib/telegram/bot';
+
 import type { ChannelSendResult, InboundChannelMessage } from './types';
 import type { TelegramMessage } from '@/lib/telegram/bot';
-
-import { sendMessage } from '@/lib/telegram/bot';
 
 /** Формат відповіді Telegram Bot API sendMessage */
 interface TelegramSendResponse {

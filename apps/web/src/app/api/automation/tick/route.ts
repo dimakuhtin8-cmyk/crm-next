@@ -10,10 +10,10 @@
 import { prisma } from '@crm-next/database';
 import { NextResponse } from 'next/server';
 
-import type { NextRequest } from 'next/server';
-
 import { executeAutomations, type DealContext } from '@/lib/automation/engine';
 import { verifyWorkerSecret } from '@/lib/worker-auth';
+
+import type { NextRequest } from 'next/server';
 
 export async function POST(request: NextRequest) {
   const denied = verifyWorkerSecret(request);

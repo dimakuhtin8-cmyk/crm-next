@@ -1,8 +1,6 @@
 import { prisma } from '@crm-next/database';
 import { NextResponse } from 'next/server';
 
-import type { NextRequest } from 'next/server';
-
 import {
   generateKP,
   generateFollowUp,
@@ -22,6 +20,8 @@ import { withAuth } from '@/lib/auth-guard';
 import { extractUserId } from '@/lib/auth-utils';
 import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
+
+import type { NextRequest } from 'next/server';
 
 async function getTenantAiSettings(tenantId: string) {
   const tenant = await prisma.tenant.findUnique({

@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import type { NextRequest } from 'next/server';
-
 import { withAuth } from '@/lib/auth-guard';
 import { executeAutomations } from '@/lib/automation/engine';
 import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
+
+import type { NextRequest } from 'next/server';
 
 /**
  * POST /api/deals/move — Move deal to another stage (Kanban drag-drop)

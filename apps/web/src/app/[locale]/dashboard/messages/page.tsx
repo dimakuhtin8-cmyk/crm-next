@@ -18,8 +18,6 @@ import {
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import type { LucideIcon } from 'lucide-react';
-
 import {
   Avatar,
   Badge,
@@ -36,6 +34,8 @@ import {
 } from '@/components/ui';
 import { ApiError, apiGet, apiSend } from '@/lib/client-api';
 import { cn } from '@/lib/utils';
+
+import type { LucideIcon } from 'lucide-react';
 
 // ============ Types ============
 

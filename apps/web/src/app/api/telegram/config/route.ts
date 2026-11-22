@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import type { NextRequest } from 'next/server';
-
 import { csrfProtection } from '@/lib/csrf';
 import { getBotInfo, setWebhook, deleteWebhook } from '@/lib/telegram/bot';
 import { getTenantQuery } from '@/lib/tenant-query';
+
+import type { NextRequest } from 'next/server';
 
 /**
  * GET /api/telegram/config — Get bot config for current tenant

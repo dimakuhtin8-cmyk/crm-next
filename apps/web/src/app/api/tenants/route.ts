@@ -2,12 +2,12 @@ import { prisma } from '@crm-next/database';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import type { NextRequest } from 'next/server';
-
 import { extractUserId } from '@/lib/auth-utils';
 import { getTrialEndsAt } from '@/lib/billing/plans';
 import { csrfProtection } from '@/lib/csrf';
 import { checkRateLimit, getRateLimitHeaders, RATE_LIMITS } from '@/lib/rate-limit';
+
+import type { NextRequest } from 'next/server';
 
 /**
  * GET /api/tenants — List user's tenants

@@ -9,11 +9,11 @@
 
 import { prisma } from '@crm-next/database';
 
+import { decrypt } from '@/lib/encryption';
+
 import { getProviderKeyRaw } from './keys';
 import { getProvider } from './providers';
 import { logAiRequest, incrementUsage } from './usage';
-
-import { decrypt } from '@/lib/encryption';
 
 export interface FallbackConfig {
   tenantId: string;

@@ -6,13 +6,13 @@
 
 import { NextResponse } from 'next/server';
 
-import type { NextRequest } from 'next/server';
-
 import { withAuth } from '@/lib/auth-guard';
 import { createPortalSession } from '@/lib/billing/stripe';
 import { csrfProtection } from '@/lib/csrf';
 import { localeUrl } from '@/lib/locale-path';
 import { getTenantQuery } from '@/lib/tenant-query';
+
+import type { NextRequest } from 'next/server';
 
 async function POSTHandler(request: NextRequest) {
   const csrfError = csrfProtection(request);

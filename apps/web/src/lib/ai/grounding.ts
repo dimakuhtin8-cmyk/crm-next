@@ -9,10 +9,10 @@
  * prisma.contact/deal reads without tenantId anywhere in this file.
  */
 
+import { decrypt } from '@/lib/encryption';
+
 import type { TenantRole } from '@/lib/rbac';
 import type { createTenantQuery } from '@/lib/tenant-query';
-
-import { decrypt } from '@/lib/encryption';
 
 type TenantQuery = ReturnType<typeof createTenantQuery>;
 

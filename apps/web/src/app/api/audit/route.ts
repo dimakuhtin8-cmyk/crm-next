@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 
-import type { NextRequest } from 'next/server';
-
 import { getAuditLogs } from '@/lib/audit';
 import { extractUserId } from '@/lib/auth-utils';
 import { hasPermission } from '@/lib/rbac';
 import { getTenantQuery } from '@/lib/tenant-query';
+
+import type { NextRequest } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {

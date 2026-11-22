@@ -9,8 +9,6 @@ import { prisma } from '@crm-next/database';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import type { NextRequest } from 'next/server';
-
 import { withAuth } from '@/lib/auth-guard';
 import { extractUserId } from '@/lib/auth-utils';
 import { getPlan } from '@/lib/billing/plans';
@@ -18,6 +16,8 @@ import { createCheckoutSession } from '@/lib/billing/stripe';
 import { csrfProtection } from '@/lib/csrf';
 import { localeUrl } from '@/lib/locale-path';
 import { getTenantQuery } from '@/lib/tenant-query';
+
+import type { NextRequest } from 'next/server';
 
 const checkoutSchema = z.object({
   planId: z.enum(['starter', 'professional', 'enterprise']),

@@ -1,12 +1,12 @@
 import { prisma } from '@crm-next/database';
 import { NextResponse } from 'next/server';
 
-import type { NextRequest } from 'next/server';
-
 import { setProviderKey, getProviderKeyRaw } from '@/lib/ai/keys';
 import { getProvider } from '@/lib/ai/providers';
 import { withAuth } from '@/lib/auth-guard';
 import { getTenantQuery } from '@/lib/tenant-query';
+
+import type { NextRequest } from 'next/server';
 
 async function POSTHandler(request: NextRequest) {
   try {

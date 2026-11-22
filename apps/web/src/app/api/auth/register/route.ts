@@ -3,12 +3,12 @@ import { hash } from 'bcryptjs';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import type { NextRequest } from 'next/server';
-
 import { csrfProtection } from '@/lib/csrf';
 import { checkRateLimit, getRateLimitHeaders, RATE_LIMITS } from '@/lib/rate-limit';
 import { sanitizeName, sanitizeEmail } from '@/lib/sanitize';
 import { passwordSchema } from '@/lib/validation/password';
+
+import type { NextRequest } from 'next/server';
 
 export async function POST(request: NextRequest) {
   // CSRF protection

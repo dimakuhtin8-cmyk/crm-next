@@ -12,11 +12,11 @@
 import { prisma } from '@crm-next/database';
 import { getTenantDbClient, type DatabaseType } from '@crm-next/database/tenant-db';
 
-import type { NextRequest } from 'next/server';
-
 import { extractUser } from '@/lib/auth-utils';
 import { decrypt, isEncrypted } from '@/lib/encryption';
 import { getUserRole } from '@/lib/rbac';
+
+import type { NextRequest } from 'next/server';
 
 type PrismaClient = typeof prisma;
 

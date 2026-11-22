@@ -3,10 +3,10 @@
  * Уся WhatsApp-специфічна логіка ізольована тут (правило модульної ізоляції).
  */
 
+import { sendTextMessage } from '@/lib/whatsapp/client';
+
 import type { ChannelSendResult, InboundChannelMessage } from './types';
 import type { WhatsAppMessage } from '@/lib/whatsapp/client';
-
-import { sendTextMessage } from '@/lib/whatsapp/client';
 
 /** Формат відповіді Graph API messages (360dialog) */
 interface WhatsAppSendResponse {

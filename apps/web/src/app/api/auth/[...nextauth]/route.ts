@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 
-import type { NextRequest } from 'next/server';
-
 import { handlers } from '@/auth/config';
 import { checkRateLimit, getRateLimitHeaders, RATE_LIMITS } from '@/lib/rate-limit';
+
+import type { NextRequest } from 'next/server';
 
 const { GET } = handlers;
 

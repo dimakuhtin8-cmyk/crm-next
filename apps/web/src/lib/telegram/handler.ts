@@ -1,8 +1,8 @@
+import { normalizeTelegramMessage, persistInboundMessage } from '@/lib/channels';
+
 import { sendMessage, answerCallbackQuery, editMessageText } from './bot';
 
 import type { TelegramMessage, TelegramCallbackQuery } from './bot';
-
-import { normalizeTelegramMessage, persistInboundMessage } from '@/lib/channels';
 
 export async function handleTelegramUpdate(
   tenantId: string,

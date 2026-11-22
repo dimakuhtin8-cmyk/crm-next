@@ -4,13 +4,13 @@ import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Toaster } from 'sonner';
 
-import { Header } from './header';
-import { Sidebar } from './sidebar';
-
 import { CommandPalette } from '@/components/command-palette';
 import { NotificationsProvider } from '@/components/notifications-provider';
 import { useTheme } from '@/components/theme-provider';
 import { TourProvider } from '@/components/tour/tour-provider';
+
+import { Header } from './header';
+import { Sidebar } from './sidebar';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

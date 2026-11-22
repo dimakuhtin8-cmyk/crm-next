@@ -2,11 +2,11 @@ import { prisma } from '@crm-next/database';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import type { NextRequest } from 'next/server';
-
 import { extractUserId } from '@/lib/auth-utils';
 import { csrfProtection } from '@/lib/csrf';
 import { canManageRole, getUserRole, type TenantRole } from '@/lib/rbac';
+
+import type { NextRequest } from 'next/server';
 
 interface Params {
   params: Promise<{ id: string; memberId: string }>;

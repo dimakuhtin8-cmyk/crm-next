@@ -3,10 +3,10 @@ import { headers } from 'next/headers';
 
 import './globals.css';
 
-import type { Metadata, Viewport } from 'next';
-
 import { ThemeProvider } from '@/components/theme-provider';
 import { defaultLocale, type Locale } from '@/i18n/config';
+
+import type { Metadata, Viewport } from 'next';
 
 const geist = Geist({
   subsets: ['latin'],

@@ -10,10 +10,10 @@
 
 import { NextResponse } from 'next/server';
 
-import type { NextRequest } from 'next/server';
-
 import intlMiddleware from '@/i18n/middleware';
 import { apiLimiter, getClientIp } from '@/lib/middleware/rate-limit';
+
+import type { NextRequest } from 'next/server';
 
 // Генерация уникального ID запроса
 function generateRequestId(): string {

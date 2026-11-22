@@ -12,10 +12,10 @@
 
 import { NextResponse } from 'next/server';
 
-import type { NextRequest } from 'next/server';
-
 import { hasPermission, hasMinRole, type TenantRole } from '@/lib/rbac';
 import { getTenantQuery } from '@/lib/tenant-query';
+
+import type { NextRequest } from 'next/server';
 
 type Handler = (request: NextRequest, context?: any) => Promise<Response>;
 

@@ -17,8 +17,6 @@ import { SignJWT } from 'jose';
 import { NextRequest } from 'next/server';
 import { describe, it, expect, beforeAll, afterAll, vi, beforeEach } from 'vitest';
 
-import { AI_EVAL_QUESTIONS, REFUSAL_MARKERS } from './fixtures/ai-eval-questions';
-
 import { POST as aiPOST } from '@/app/api/ai/route';
 import { POST as sessionsPOST } from '@/app/api/ai/sessions/route';
 import { generateWithTools } from '@/lib/ai/gemini';
@@ -29,6 +27,8 @@ import {
   TOOL_CONTEXT_BUDGET_CHARS,
 } from '@/lib/ai/tools';
 import { createTenantQuery } from '@/lib/tenant-query';
+
+import { AI_EVAL_QUESTIONS, REFUSAL_MARKERS } from './fixtures/ai-eval-questions';
 
 const SECRET = new TextEncoder().encode('4p200FzdKSNdfxdHaoTOa9m6WoEzmwEbl0CqrcuPOgc=');
 

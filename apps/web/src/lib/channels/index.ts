@@ -9,12 +9,12 @@
 
 import { prisma } from '@crm-next/database';
 
+import { encrypt } from '@/lib/encryption';
+
 import { sendTelegramMessage } from './telegram';
 import { sendWhatsAppMessage } from './whatsapp';
 
 import type { ChannelKind, ChannelSendResult, InboundChannelMessage } from './types';
-
-import { encrypt } from '@/lib/encryption';
 
 export type { ChannelKind, ChannelSendResult, InboundChannelMessage } from './types';
 export { normalizeTelegramMessage, sendTelegramMessage } from './telegram';

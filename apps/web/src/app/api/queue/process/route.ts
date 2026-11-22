@@ -7,11 +7,11 @@
 
 import { NextResponse } from 'next/server';
 
-import type { NextRequest } from 'next/server';
-
 import { processQueueJobs } from '@/lib/queues';
 import { registerQueueHandlers } from '@/lib/queues/handlers';
 import { verifyWorkerSecret } from '@/lib/worker-auth';
+
+import type { NextRequest } from 'next/server';
 
 registerQueueHandlers();
 

@@ -1,6 +1,6 @@
-import { getProvider, type AiProvider } from './providers';
-
 import { decrypt } from '@/lib/encryption';
+
+import { getProvider, type AiProvider } from './providers';
 
 export interface GenerateResult {
   response: string;

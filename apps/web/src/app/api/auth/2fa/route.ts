@@ -13,11 +13,11 @@
 import { prisma } from '@crm-next/database';
 import { NextResponse } from 'next/server';
 
-import type { NextRequest } from 'next/server';
-
 import { extractUser } from '@/lib/auth-utils';
 import { encrypt, decrypt } from '@/lib/encryption';
 import { generateTOTPSecret, verifyTOTP } from '@/lib/totp';
+
+import type { NextRequest } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {

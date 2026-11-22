@@ -10,11 +10,11 @@ import { prisma } from '@crm-next/database';
 import { testDatabaseConnection, type DatabaseType } from '@crm-next/database/tenant-db';
 import { NextResponse } from 'next/server';
 
-import type { NextRequest } from 'next/server';
-
 import { extractUser } from '@/lib/auth-utils';
 import { encrypt } from '@/lib/encryption';
 import { getUserRole } from '@/lib/rbac';
+
+import type { NextRequest } from 'next/server';
 
 /** Schemes allowed per database type — blocks file://, http:// and other SSRF vectors. */
 const ALLOWED_SCHEMES: Record<string, string[]> = {

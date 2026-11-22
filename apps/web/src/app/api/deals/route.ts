@@ -8,8 +8,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import type { NextRequest } from 'next/server';
-
 import { withAuth } from '@/lib/auth-guard';
 import { extractUserId } from '@/lib/auth-utils';
 import { cachedGet, cacheKeys, TTL, cacheTags, invalidateCacheByTag } from '@/lib/cache';
@@ -17,6 +15,8 @@ import { csrfProtection } from '@/lib/csrf';
 import { apiSuccess } from '@/lib/errors';
 import { getUserRole } from '@/lib/rbac';
 import { getTenantQuery } from '@/lib/tenant-query';
+
+import type { NextRequest } from 'next/server';
 
 /**
  * GET /api/deals — List deals (кэширован)

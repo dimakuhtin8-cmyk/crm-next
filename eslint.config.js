@@ -18,6 +18,10 @@ export default tseslint.config(
       },
     },
     settings: {
+      // Детерминированная классификация "@/..." путей как internal независимо
+      // от рабочей папки запуска: без этого eslint из корня и из apps/web
+      // по-разному сортируют импорты и --fix отменяет сам себя в lint-staged
+      'import/internal-regex': '^@/',
       'import/resolver': {
         typescript: true,
         node: true,

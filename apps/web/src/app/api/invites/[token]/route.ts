@@ -1,9 +1,9 @@
 import { prisma } from '@crm-next/database';
 import { NextResponse } from 'next/server';
 
-import type { NextRequest } from 'next/server';
-
 import { extractUserId } from '@/lib/auth-utils';
+
+import type { NextRequest } from 'next/server';
 
 interface Params {
   params: Promise<{ token: string }>;

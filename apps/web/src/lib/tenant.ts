@@ -10,9 +10,9 @@
 
 import { prisma } from '@crm-next/database';
 
-import type { NextRequest } from 'next/server';
-
 import { extractUser } from '@/lib/auth-utils';
+
+import type { NextRequest } from 'next/server';
 
 export interface TenantContext {
   tenantId: string | null;
