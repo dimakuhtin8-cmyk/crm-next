@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 
 import { withAuth } from '@/lib/auth-guard';
+import { extractUserId } from '@/lib/auth-utils';
 import { csrfProtection } from '@/lib/csrf';
+import { upsertContacts } from '@/lib/import/upsert';
 import { getTenantQuery } from '@/lib/tenant-query';
 
 import type { NextRequest } from 'next/server';
@@ -9,6 +11,14 @@ import type { NextRequest } from 'next/server';
 /**
  * POST /api/contacts/import — Import contacts from CSV
  * Accepts JSON array of rows with column mapping
+ *
+ * Write phase is delegated to the import engine (src/lib/import/upsert):
+ * `mode: 'create'` (default) skips rows matching an existing contact,
+ * `mode: 'upsert'` updates them (actualization) — matching by `externalId`
+ * (mapping.externalId), then email, then phone.
+ *
+ * The response keeps the legacy fields ({ imported, skipped, errors, total })
+ * and adds the engine `report` ({ created, updated, skipped, errors }).
  */
 async function POSTHandler(request: NextRequest) {
   const csrfError = csrfProtection(request);
@@ -20,9 +30,9 @@ async function POSTHandler(request: NextRequest) {
       return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { rows, mapping } = body as {
+    const body = (await request.json()) as {
       rows: Array<Record<string, string>>;
+      mode?: 'create' | 'upsert';
       mapping: {
         firstName: string;
         lastName?: string;
@@ -30,8 +40,10 @@ async function POSTHandler(request: NextRequest) {
         phone?: string;
         company?: string;
         position?: string;
+        externalId?: string;
       };
     };
+    const { rows, mapping, mode } = body;
 
     if (!rows?.length) {
       return NextResponse.json({ error: 'Немає даних для імпорту' }, { status: 400 });
@@ -41,43 +53,23 @@ async function POSTHandler(request: NextRequest) {
       return NextResponse.json({ error: 'Не вказано стовпчик для імені' }, { status: 400 });
     }
 
-    let imported = 0;
-    let skipped = 0;
-    const errors: Array<{ row: number; error: string }> = [];
+    const tenantId = (tq as unknown as { tenantId: string }).tenantId;
+    const userId = await extractUserId(request);
 
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
-      const firstName = row[mapping.firstName]?.trim();
-
-      if (!firstName) {
-        skipped++;
-        continue;
-      }
-
-      try {
-        await tq.contact.create({
-          data: {
-            firstName,
-            lastName: mapping.lastName ? row[mapping.lastName]?.trim() || null : null,
-            email: mapping.email ? row[mapping.email]?.trim() || null : null,
-            phone: mapping.phone ? row[mapping.phone]?.trim() || null : null,
-            company: mapping.company ? row[mapping.company]?.trim() || null : null,
-            position: mapping.position ? row[mapping.position]?.trim() || null : null,
-            source: 'csv_import',
-            status: 'active',
-          },
-        } as never);
-        imported++;
-      } catch (err) {
-        errors.push({ row: i + 1, error: err instanceof Error ? err.message : 'Unknown error' });
-      }
-    }
+    const report = await upsertContacts(
+      tenantId,
+      userId,
+      rows,
+      mode === 'upsert' ? 'upsert' : 'create',
+      mapping,
+    );
 
     return NextResponse.json({
-      imported,
-      skipped,
-      errors,
+      imported: report.created + report.updated,
+      skipped: report.skipped,
+      errors: report.errors.map((error) => ({ row: error.row, error: error.message })),
       total: rows.length,
+      report,
     });
   } catch (error) {
     console.error('Import contacts error:', error);

@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { withAuth } from '@/lib/auth-guard';
 import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
+import { dispatchWebhook } from '@/lib/webhooks';
 
 import type { NextRequest } from 'next/server';
 
@@ -91,6 +92,7 @@ async function PUTHandler(request: NextRequest, { params }: Params) {
     }
 
     const { products, ownerId: requestedOwnerId, ...dealData } = parsed.data;
+    const tenantId = (tq as unknown as { tenantId: string }).tenantId;
 
     // Ownership check BEFORE any product mutations
     const owned = await tq.deal.findUnique({
@@ -114,6 +116,9 @@ async function PUTHandler(request: NextRequest, { params }: Params) {
       }
       dealUpdateData.ownerId = requestedOwnerId;
     }
+
+    // Знімок змінених полів для вебхука (до перетворення дат)
+    const webhookChangedFields: Record<string, unknown> = { ...dealUpdateData };
 
     // Handle close date and status
     if (dealData.status === 'won' || dealData.status === 'lost') {
@@ -161,10 +166,10 @@ async function PUTHandler(request: NextRequest, { params }: Params) {
       stageId: string | null;
       contactId: string | null;
       status: string;
+      updatedAt: Date;
     };
     if (dealUpdateData.status === 'won' || dealUpdateData.status === 'lost') {
       const trigger = dealUpdateData.status === 'won' ? 'deal_won' : 'deal_lost';
-      const tenantId = (tq as unknown as { tenantId: string }).tenantId;
       import('@/lib/automation/engine')
         .then(({ executeAutomations }) =>
           executeAutomations(tenantId, trigger, {
@@ -179,6 +184,22 @@ async function PUTHandler(request: NextRequest, { params }: Params) {
           }),
         )
         .catch((err) => console.error('Automation error:', err));
+    }
+
+    // Outgoing webhooks (fire-and-forget — ніколи не впливають на відповідь)
+    {
+      const webhookData = {
+        id,
+        tenantId,
+        ...webhookChangedFields,
+        updatedAt: updated.updatedAt ?? new Date(),
+      };
+      void dispatchWebhook(tenantId, 'deal.updated', webhookData);
+      if (dealUpdateData.status === 'won') {
+        void dispatchWebhook(tenantId, 'deal.won', webhookData);
+      } else if (dealUpdateData.status === 'lost') {
+        void dispatchWebhook(tenantId, 'deal.lost', webhookData);
+      }
     }
 
     return NextResponse.json({ deal });
@@ -200,6 +221,7 @@ async function DELETEHandler(request: NextRequest, { params }: Params) {
     if (!tq) return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
 
     const { id } = await params;
+    const tenantId = (tq as unknown as { tenantId: string }).tenantId;
     const owned = await tq.deal.findUnique({
       where: { id },
       select: { id: true },
@@ -208,6 +230,10 @@ async function DELETEHandler(request: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'Угоду не знайдено' }, { status: 404 });
     }
     await tq.deal.delete({ where: { id } });
+
+    // Outgoing webhook (fire-and-forget — ніколи не впливає на відповідь)
+    void dispatchWebhook(tenantId, 'deal.deleted', { id, tenantId });
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Delete deal error:', error);

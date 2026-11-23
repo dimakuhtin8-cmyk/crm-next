@@ -7,6 +7,7 @@ import { csrfProtection } from '@/lib/csrf';
 import { decrypt } from '@/lib/encryption';
 import { getUserRole } from '@/lib/rbac';
 import { getTenantQuery } from '@/lib/tenant-query';
+import { dispatchWebhook } from '@/lib/webhooks';
 
 import type { NextRequest } from 'next/server';
 
@@ -201,6 +202,29 @@ async function POSTHandler(request: NextRequest) {
       },
       ...meta,
     });
+
+    // Outgoing webhook (fire-and-forget — ніколи не впливає на відповідь)
+    {
+      const created = contact as unknown as {
+        id: string;
+        firstName: string;
+        lastName: string | null;
+        email: string | null;
+        company: string | null;
+        status: string;
+        updatedAt: Date;
+      };
+      void dispatchWebhook(tenantId, 'contact.created', {
+        id: created.id,
+        tenantId,
+        firstName: created.firstName,
+        lastName: created.lastName,
+        email: created.email,
+        company: created.company,
+        status: created.status,
+        updatedAt: created.updatedAt,
+      });
+    }
 
     return NextResponse.json({ contact }, { status: 201 });
   } catch (error) {

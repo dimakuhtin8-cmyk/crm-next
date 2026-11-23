@@ -5,7 +5,7 @@
  * 1. Inbound Webhooks — входящие от внешних сервисов (Telegram, WhatsApp, Stripe)
  * 2. Outbound Webhooks — исходящие при событиях CRM (сделка закрыта, задача создана)
  * 3. Signature Verification — HMAC подпись для безопасности
- * 4. Retry with Exponential Backoff — повторные попытки
+ * 4. Persistent Registry — вебхуки зберігаються в БД (Prisma), переживают cold start
  *
  * Безопасность:
  * - Проверка подписи HMAC-SHA256
@@ -14,6 +14,8 @@
  */
 
 import crypto from 'crypto';
+
+import { prisma } from '@crm-next/database';
 
 import { createLogger } from '@/lib/logging/logger';
 
@@ -149,7 +151,7 @@ export function createWebhookHeaders(
   };
 }
 
-// ============ Webhook Registry ============
+// ============ Webhook Registry (Prisma, persistent) ============
 
 interface WebhookRegistration {
   id: string;
@@ -162,24 +164,21 @@ interface WebhookRegistration {
   headers?: Record<string, string>;
 }
 
-// In-memory store (в проде — в БД)
-const webhookStore = new Map<string, WebhookRegistration[]>();
-
 /**
- * Зарегистрировать вебхук
+ * Зарегистрировать вебхук (Prisma — зберігається в БД, переживає cold start)
  */
-export function registerWebhook(
+export async function registerWebhook(
   webhook: Omit<WebhookRegistration, 'id' | 'createdAt'>,
-): WebhookRegistration {
-  const registration: WebhookRegistration = {
-    ...webhook,
-    id: crypto.randomUUID(),
-    createdAt: new Date(),
-  };
-
-  const tenantWebhooks = webhookStore.get(webhook.tenantId) || [];
-  tenantWebhooks.push(registration);
-  webhookStore.set(webhook.tenantId, tenantWebhooks);
+): Promise<WebhookRegistration> {
+  const registration = await prisma.webhook.create({
+    data: {
+      tenantId: webhook.tenantId,
+      url: webhook.url,
+      secret: webhook.secret,
+      events: webhook.events,
+      active: webhook.active,
+    },
+  });
 
   log.info(
     {
@@ -194,82 +193,92 @@ export function registerWebhook(
 }
 
 /**
- * Удалить вебхук
+ * Удалить вебхук (только в межах тенанта власника)
  */
-export function unregisterWebhook(tenantId: string, webhookId: string): boolean {
-  const tenantWebhooks = webhookStore.get(tenantId) || [];
-  const index = tenantWebhooks.findIndex((w) => w.id === webhookId);
+export async function unregisterWebhook(tenantId: string, webhookId: string): Promise<boolean> {
+  // Перевіряємо належність тенанту перед видаленням
+  const existing = await prisma.webhook.findFirst({
+    where: { id: webhookId, tenantId },
+    select: { id: true },
+  });
 
-  if (index === -1) return false;
+  if (!existing) return false;
 
-  tenantWebhooks.splice(index, 1);
-  webhookStore.set(tenantId, tenantWebhooks);
-
+  await prisma.webhook.delete({ where: { id: webhookId } });
   return true;
 }
 
 /**
  * Получить вебхуки тенанта
  */
-export function getWebhooks(tenantId: string): WebhookRegistration[] {
-  return webhookStore.get(tenantId) || [];
+export async function getWebhooks(tenantId: string): Promise<WebhookRegistration[]> {
+  return prisma.webhook.findMany({ where: { tenantId } });
 }
 
 // ============ Outbound Webhooks ============
 
-// Очередь доставки (в проде — Redis/BullMQ)
-const deliveryQueue: WebhookDelivery[] = [];
-
 /**
- * Отправить вебхук всем подписчикам события
+ * Отправить вебхук всем подписчикам события (fire-and-forget).
+ *
+ * Доставки запускаються у фоні через Promise.allSettled — викликаючий код
+ * НЕ чекає мережевих запитів (`void dispatchWebhook(...)`), тому latency API
+ * не змінюється. Функція ніколи не кидає виняток: усі помилки логуються
+ * через console.warn.
  */
 export async function dispatchWebhook(
   tenantId: string,
   event: string,
   data: any,
 ): Promise<WebhookDelivery[]> {
-  const webhooks = getWebhooks(tenantId).filter((w) => w.active && w.events.includes(event));
+  try {
+    const webhooks = await prisma.webhook.findMany({
+      where: { tenantId, active: true, events: { has: event } },
+    });
 
-  if (webhooks.length === 0) {
-    return [];
-  }
+    if (webhooks.length === 0) {
+      return [];
+    }
 
-  const payload: WebhookPayload = {
-    id: crypto.randomUUID(),
-    event,
-    data,
-    timestamp: new Date().toISOString(),
-    source: 'crm-next',
-  };
+    const payload: WebhookPayload = {
+      id: crypto.randomUUID(),
+      event,
+      data,
+      timestamp: new Date().toISOString(),
+      source: 'crm-next',
+    };
 
-  const deliveries: WebhookDelivery[] = [];
-
-  for (const webhook of webhooks) {
-    const delivery: WebhookDelivery = {
+    const deliveries: WebhookDelivery[] = webhooks.map((webhook) => ({
       id: crypto.randomUUID(),
       webhookId: webhook.id,
       event,
       payload,
       status: 'pending',
       attempts: 0,
-      maxAttempts: 5,
+      maxAttempts: 1,
       createdAt: new Date(),
-    };
+    }));
 
-    deliveryQueue.push(delivery);
-    deliveries.push(delivery);
-
-    // Запускаем доставку
-    deliverWebhook(delivery, webhook).catch((err) => {
-      log.error({ err, deliveryId: delivery.id }, 'Помилка доставки вебхука');
+    // Доставки виконуються у фоні (fire-and-forget). Promise.allSettled — щоб
+    // помилка одного вебхука не впливала на решту.
+    void Promise.allSettled(
+      deliveries.map((delivery, index) =>
+        deliverWebhook(delivery, webhooks[index] as WebhookRegistration),
+      ),
+    ).catch((err) => {
+      console.warn('[webhooks] Помилка доставки вебхуків:', err);
     });
-  }
 
-  return deliveries;
+    return deliveries;
+  } catch (err) {
+    console.warn('[webhooks] dispatchWebhook failed:', err);
+    return [];
+  }
 }
 
 /**
- * Доставить вебхук (с retry)
+ * Доставить вебхук одному підписнику (одна спроба, таймаут ~5с).
+ * Ніколи не кидає виняток — статус фіксується в delivery, помилки
+ * логуються через console.warn.
  */
 async function deliverWebhook(
   delivery: WebhookDelivery,
@@ -278,85 +287,52 @@ async function deliverWebhook(
   const body = JSON.stringify(delivery.payload);
   const headers = createWebhookHeaders(body, webhook.secret, delivery.event);
 
-  while (delivery.attempts < delivery.maxAttempts) {
-    delivery.attempts++;
-    delivery.status = 'retrying';
+  delivery.attempts = 1;
+  delivery.status = 'retrying';
 
-    try {
-      const response = await fetch(webhook.url, {
-        method: 'POST',
-        headers: {
-          ...headers,
-          ...webhook.headers,
-        },
-        body,
-        signal: AbortSignal.timeout(10000), // 10 секунд таймаут
-      });
+  try {
+    const response = await fetch(webhook.url, {
+      method: 'POST',
+      headers: {
+        ...headers,
+        ...webhook.headers,
+      },
+      body,
+      signal: AbortSignal.timeout(5000), // ~5 секунд таймаут
+    });
 
-      if (response.ok) {
-        delivery.status = 'success';
-        delivery.deliveredAt = new Date();
+    if (response.ok) {
+      delivery.status = 'success';
+      delivery.deliveredAt = new Date();
 
-        log.info(
-          {
-            deliveryId: delivery.id,
-            webhookId: webhook.id,
-            status: response.status,
-            attempts: delivery.attempts,
-          },
-          'Вебхук доставлено',
-        );
-
-        return;
-      }
-
-      // Серверная ошибка — retry
-      if (response.status >= 500) {
-        delivery.lastError = `HTTP ${response.status}`;
-
-        // Exponential backoff: 1s, 2s, 4s, 8s, 16s
-        const delay = Math.pow(2, delivery.attempts - 1) * 1000;
-        delivery.nextRetryAt = new Date(Date.now() + delay);
-
-        await sleep(delay);
-        continue;
-      }
-
-      // Клиентская ошибка — не retry
-      delivery.status = 'failed';
-      delivery.lastError = `HTTP ${response.status} — client error, no retry`;
-
-      log.warn(
+      log.info(
         {
           deliveryId: delivery.id,
+          webhookId: webhook.id,
           status: response.status,
+          attempts: delivery.attempts,
         },
-        'Вебхук відхилено (client error)',
+        'Вебхук доставлено',
       );
 
       return;
-    } catch (err: any) {
-      delivery.lastError = err.message;
-
-      // Таймаут или сеть — retry
-      const delay = Math.pow(2, delivery.attempts - 1) * 1000;
-      delivery.nextRetryAt = new Date(Date.now() + delay);
-
-      await sleep(delay);
     }
+
+    delivery.status = 'failed';
+    delivery.lastError = `HTTP ${response.status}`;
+
+    console.warn(
+      `[webhooks] Delivery ${delivery.id} to ${webhook.url} failed: HTTP ${response.status}`,
+    );
+  } catch (err: any) {
+    delivery.status = 'failed';
+    delivery.lastError = err?.message ?? String(err);
+
+    console.warn(
+      `[webhooks] Delivery ${delivery.id} to ${webhook.url} failed:`,
+      err?.message ?? err,
+    );
   }
-
-  // Все попытки исчерпаны
-  delivery.status = 'failed';
-
-  log.error(
-    {
-      deliveryId: delivery.id,
-      attempts: delivery.attempts,
-      lastError: delivery.lastError,
-    },
-    'Вебхук не доставлено після всіх спроб',
-  );
 }
 
 // ============ Inbound Webhooks ============
@@ -458,10 +434,6 @@ function getWebhookSecret(source: string): string | null {
   return secrets[source] || null;
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 // ============ Webhook Events List ============
 
 export const WEBHOOK_EVENTS = {
@@ -473,12 +445,15 @@ export const WEBHOOK_EVENTS = {
   // Сделки
   'deal.created': 'Нова угода створено',
   'deal.updated': 'Угоду оновлено',
+  'deal.deleted': 'Угоду видалено',
   'deal.stage_changed': 'Угоду переміщено в іншу стадію',
   'deal.won': 'Угоду виграно',
   'deal.lost': 'Угоду програно',
 
   // Задачі
   'task.created': 'Нова задача створено',
+  'task.updated': 'Задачу оновлено',
+  'task.deleted': 'Задачу видалено',
   'task.completed': 'Задачу виконано',
   'task.overdue': 'Задача протермінована',
 

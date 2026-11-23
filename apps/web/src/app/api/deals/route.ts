@@ -15,6 +15,7 @@ import { csrfProtection } from '@/lib/csrf';
 import { apiSuccess } from '@/lib/errors';
 import { getUserRole } from '@/lib/rbac';
 import { getTenantQuery } from '@/lib/tenant-query';
+import { dispatchWebhook } from '@/lib/webhooks';
 
 import type { NextRequest } from 'next/server';
 
@@ -201,6 +202,33 @@ async function POSTHandler(request: NextRequest) {
         }),
       )
       .catch((err) => console.error('Automation error:', err));
+  }
+
+  // Outgoing webhook (fire-and-forget — ніколи не впливає на відповідь)
+  {
+    const created = deal as unknown as {
+      id: string;
+      title: string;
+      value: number | null;
+      currency: string;
+      status: string;
+      stageId: string | null;
+      pipelineId: string;
+      contactId: string | null;
+      updatedAt: Date;
+    };
+    void dispatchWebhook(tqTenantId, 'deal.created', {
+      id: created.id,
+      tenantId: tqTenantId,
+      title: created.title,
+      value: created.value,
+      currency: created.currency,
+      status: created.status,
+      stageId: created.stageId,
+      pipelineId: created.pipelineId,
+      contactId: created.contactId,
+      updatedAt: created.updatedAt,
+    });
   }
 
   return apiSuccess({ deal }, 201);

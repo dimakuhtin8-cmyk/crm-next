@@ -7,6 +7,7 @@ import { csrfProtection } from '@/lib/csrf';
 import { decrypt, encrypt } from '@/lib/encryption';
 import { getUserRole } from '@/lib/rbac';
 import { getTenantQuery } from '@/lib/tenant-query';
+import { dispatchWebhook } from '@/lib/webhooks';
 
 import type { NextRequest } from 'next/server';
 
@@ -96,6 +97,7 @@ async function PUTHandler(request: NextRequest, { params }: Params) {
     }
 
     const { tagIds, ownerId: requestedOwnerId, ...contactData } = parsed.data;
+    const tenantId = (tq as unknown as { tenantId: string }).tenantId;
 
     // Owner resolution on update: explicit ownerId allowed only for admin+.
     const updateData = { ...contactData } as Record<string, unknown>;
@@ -108,6 +110,9 @@ async function PUTHandler(request: NextRequest, { params }: Params) {
       }
       updateData.ownerId = requestedOwnerId;
     }
+
+    // Знімок змінених полів для вебхука (до шифрування PII)
+    const webhookChangedFields: Record<string, unknown> = { ...updateData };
 
     // Encrypt PII on update — same as POST /api/contacts.
     // Reads (GET list/[id]) decrypt via safeDecrypt.
@@ -162,6 +167,17 @@ async function PUTHandler(request: NextRequest, { params }: Params) {
       include: { tags: { include: { tag: true } } },
     });
 
+    // Outgoing webhook (fire-and-forget — ніколи не впливає на відповідь)
+    {
+      const updatedContact = contact as unknown as { updatedAt?: Date };
+      void dispatchWebhook(tenantId, 'contact.updated', {
+        id,
+        tenantId,
+        ...webhookChangedFields,
+        updatedAt: updatedContact.updatedAt ?? new Date(),
+      });
+    }
+
     return NextResponse.json({ contact });
   } catch (error) {
     console.error('Update contact error:', error);
@@ -183,6 +199,7 @@ async function DELETEHandler(request: NextRequest, { params }: Params) {
     }
 
     const { id } = await params;
+    const tenantId = (tq as unknown as { tenantId: string }).tenantId;
     const owned = await tq.contact.findUnique({
       where: { id },
       select: { id: true },
@@ -191,6 +208,9 @@ async function DELETEHandler(request: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'Контакт не знайдено' }, { status: 404 });
     }
     await tq.contact.delete({ where: { id } });
+
+    // Outgoing webhook (fire-and-forget — ніколи не впливає на відповідь)
+    void dispatchWebhook(tenantId, 'contact.deleted', { id, tenantId });
 
     return NextResponse.json({ success: true });
   } catch (error) {

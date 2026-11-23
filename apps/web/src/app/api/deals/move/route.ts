@@ -5,6 +5,7 @@ import { withAuth } from '@/lib/auth-guard';
 import { executeAutomations } from '@/lib/automation/engine';
 import { csrfProtection } from '@/lib/csrf';
 import { getTenantQuery } from '@/lib/tenant-query';
+import { dispatchWebhook } from '@/lib/webhooks';
 
 import type { NextRequest } from 'next/server';
 
@@ -88,6 +89,15 @@ async function POSTHandler(request: NextRequest) {
       oldValues: previousStageId ? { stageId: previousStageId } : undefined,
       newValues: { stageId },
       ...meta,
+    });
+
+    // Outgoing webhook (fire-and-forget — ніколи не впливає на відповідь)
+    void dispatchWebhook(tenantId, 'deal.updated', {
+      id: dealId,
+      tenantId,
+      stageId,
+      previousStageId,
+      updatedAt: (deal as { updatedAt?: Date }).updatedAt ?? new Date(),
     });
 
     return NextResponse.json({ deal });

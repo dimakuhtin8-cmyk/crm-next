@@ -5,6 +5,7 @@ import { withAuth } from '@/lib/auth-guard';
 import { csrfProtection } from '@/lib/csrf';
 import { notifyTaskEvent } from '@/lib/telegram/notifications';
 import { getTenantQuery } from '@/lib/tenant-query';
+import { dispatchWebhook } from '@/lib/webhooks';
 
 import type { NextRequest } from 'next/server';
 
@@ -90,6 +91,7 @@ async function PUTHandler(request: NextRequest, { params }: Params) {
   try {
     const tq = await getTenantQuery(request);
     if (!tq) return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
+    const tenantId = (tq as unknown as { tenantId: string }).tenantId;
 
     const { id } = await params;
     const body = await request.json();
@@ -100,6 +102,9 @@ async function PUTHandler(request: NextRequest, { params }: Params) {
         { status: 400 },
       );
     }
+
+    // Знімок змінених полів для вебхука
+    const webhookChangedFields: Record<string, unknown> = { ...parsed.data };
 
     const data = { ...parsed.data } as Record<string, unknown>;
     if (parsed.data.dueDate !== undefined)
@@ -146,7 +151,6 @@ async function PUTHandler(request: NextRequest, { params }: Params) {
 
     // Telegram notifications
     try {
-      const tenantId = (tq as unknown as { tenantId: string }).tenantId;
       if (parsed.data.status === 'done' || parsed.data.status === 'cancelled') {
         notifyTaskEvent(tenantId, id, 'status_changed').catch(() => {});
       } else if (parsed.data.assigneeId) {
@@ -154,6 +158,20 @@ async function PUTHandler(request: NextRequest, { params }: Params) {
       }
     } catch {
       /* ignore */
+    }
+
+    // Outgoing webhooks (fire-and-forget — ніколи не впливають на відповідь)
+    {
+      const webhookData = {
+        id,
+        tenantId,
+        ...webhookChangedFields,
+        updatedAt: (task as { updatedAt?: Date }).updatedAt ?? new Date(),
+      };
+      void dispatchWebhook(tenantId, 'task.updated', webhookData);
+      if (parsed.data.status === 'done') {
+        void dispatchWebhook(tenantId, 'task.completed', webhookData);
+      }
     }
 
     return NextResponse.json({ task });
@@ -173,6 +191,7 @@ async function DELETEHandler(request: NextRequest, { params }: Params) {
   try {
     const tq = await getTenantQuery(request);
     if (!tq) return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
+    const tenantId = (tq as unknown as { tenantId: string }).tenantId;
 
     const { id } = await params;
     const owned = await tq.task.findUnique({
@@ -183,6 +202,10 @@ async function DELETEHandler(request: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'Задачу не знайдено' }, { status: 404 });
     }
     await tq.task.delete({ where: { id } });
+
+    // Outgoing webhook (fire-and-forget — ніколи не впливає на відповідь)
+    void dispatchWebhook(tenantId, 'task.deleted', { id, tenantId });
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Delete task error:', error);

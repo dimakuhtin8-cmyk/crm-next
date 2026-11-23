@@ -5,6 +5,7 @@ import { withAuth } from '@/lib/auth-guard';
 import { csrfProtection } from '@/lib/csrf';
 import { notifyTaskEvent } from '@/lib/telegram/notifications';
 import { getTenantQuery } from '@/lib/tenant-query';
+import { dispatchWebhook } from '@/lib/webhooks';
 
 import type { NextRequest } from 'next/server';
 
@@ -103,6 +104,7 @@ async function POSTHandler(request: NextRequest) {
   try {
     const tq = await getTenantQuery(request);
     if (!tq) return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
+    const tenantId = (tq as unknown as { tenantId: string }).tenantId;
 
     const body = await request.json();
     const parsed = createTaskSchema.safeParse(body);
@@ -140,10 +142,32 @@ async function POSTHandler(request: NextRequest) {
 
     // Telegram notification
     try {
-      const tenantId = (tq as unknown as { tenantId: string }).tenantId;
       notifyTaskEvent(tenantId, (task as { id: string }).id, 'created').catch(() => {});
     } catch {
       /* ignore */
+    }
+
+    // Outgoing webhook (fire-and-forget — ніколи не впливає на відповідь)
+    {
+      const created = task as unknown as {
+        id: string;
+        title: string;
+        status: string;
+        priority: string;
+        dueDate: Date | null;
+        assigneeId: string | null;
+        updatedAt: Date;
+      };
+      void dispatchWebhook(tenantId, 'task.created', {
+        id: created.id,
+        tenantId,
+        title: created.title,
+        status: created.status,
+        priority: created.priority,
+        dueDate: created.dueDate,
+        assigneeId: created.assigneeId,
+        updatedAt: created.updatedAt,
+      });
     }
 
     return NextResponse.json({ task }, { status: 201 });

@@ -37,7 +37,7 @@ export const GET = withErrorHandling(async (request: Request) => {
     return NextResponse.json({ error: 'Недостатньо прав' }, { status: 403 });
   }
 
-  const webhooks = getWebhooks(member.tenantId);
+  const webhooks = await getWebhooks(member.tenantId);
 
   const response = apiSuccess({
     webhooks: webhooks.map((w) => ({
@@ -87,7 +87,7 @@ export const POST = withErrorHandling(async (request: Request) => {
   // Генерируем секрет для подписи
   const secret = `whsec_${randomBytes(32).toString('hex')}`;
 
-  const webhook = registerWebhook({
+  const webhook = await registerWebhook({
     tenantId: member.tenantId,
     url: body.url,
     secret,

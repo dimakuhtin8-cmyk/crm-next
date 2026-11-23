@@ -2,6 +2,7 @@
 
 import { Check, X, Loader2, Key, BarChart3, FileText, MessageCircle, Database } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
 
 import {
@@ -22,11 +23,20 @@ interface ProviderStatus {
 }
 
 export default function IntegrationsSettingsPage() {
+  const t = useTranslations('exchange1c');
   const [aiStatus, setAiStatus] = useState<ProviderStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [telegramConfigured, setTelegramConfigured] = useState<boolean | null>(null);
   const [whatsappConfigured, setWhatsappConfigured] = useState<boolean | null>(null);
   const [databaseConfigured, setDatabaseConfigured] = useState<boolean | null>(null);
+  const [exchangeToken, setExchangeToken] = useState<{
+    hasToken: boolean;
+    masked: string | null;
+  } | null>(null);
+  const [exchangeBusy, setExchangeBusy] = useState(false);
+  const [exchangeNewToken, setExchangeNewToken] = useState<string | null>(null);
+  const [exchangeMessage, setExchangeMessage] = useState<string | null>(null);
+  const [exchangeCopied, setExchangeCopied] = useState(false);
 
   useEffect(() => {
     // Check AI connection status
@@ -63,6 +73,11 @@ export default function IntegrationsSettingsPage() {
       .then((r) => r.json())
       .then((d) => setDatabaseConfigured(!!d?.data?.hasExternalDb))
       .catch(() => setDatabaseConfigured(false));
+
+    fetch('/api/v1/exchange/token', { credentials: 'include' })
+      .then((r) => r.json())
+      .then((d) => setExchangeToken({ hasToken: !!d?.hasToken, masked: d?.masked ?? null }))
+      .catch(() => setExchangeToken(null));
   }, []);
 
   const statusBadge = (status: string) => {
@@ -89,6 +104,39 @@ export default function IntegrationsSettingsPage() {
   const connBadge = (value: boolean | null) => {
     if (value === null) return <Badge variant="outline">…</Badge>;
     return value ? statusBadge('connected') : statusBadge('not_configured');
+  };
+
+  const handleExchangeAction = async (action: 'generate' | 'revoke') => {
+    if (action === 'revoke' && !window.confirm(t('confirmRevoke'))) return;
+    setExchangeBusy(true);
+    setExchangeMessage(null);
+    setExchangeCopied(false);
+    try {
+      const res = await fetch('/api/v1/exchange/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error();
+      setExchangeToken({ hasToken: !!data?.hasToken, masked: data?.masked ?? null });
+      setExchangeNewToken(action === 'generate' ? (data?.token ?? null) : null);
+      setExchangeMessage(t(action === 'generate' ? 'generated' : 'revoked'));
+    } catch {
+      setExchangeMessage(t('error'));
+    } finally {
+      setExchangeBusy(false);
+    }
+  };
+
+  const copyExchangeToken = async () => {
+    if (!exchangeNewToken) return;
+    try {
+      await navigator.clipboard.writeText(exchangeNewToken);
+      setExchangeCopied(true);
+    } catch {
+      /* ignore */
+    }
   };
 
   return (
@@ -224,6 +272,71 @@ export default function IntegrationsSettingsPage() {
                 Налаштувати з&apos;єднання
               </Button>
             </Link>
+          </CardContent>
+        </Card>
+
+        {/* 1C Exchange */}
+        <Card className="sm:col-span-2 bg-card border-border shadow-sm rounded-xl">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Database className="w-4 h-4" />
+              {t('title')}
+              {connBadge(exchangeToken?.hasToken ?? null)}
+            </CardTitle>
+            <CardDescription>{t('description')}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {exchangeToken?.hasToken && exchangeToken.masked && (
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-accent/50">
+                <Key className="w-4 h-4 text-foreground-muted" />
+                <span className="text-sm font-mono text-foreground-muted">
+                  {exchangeToken.masked}
+                </span>
+              </div>
+            )}
+
+            {exchangeNewToken && (
+              <div className="p-3 rounded-xl bg-accent/50 space-y-2">
+                <p className="text-xs text-foreground-muted">{t('oneTime')}</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-mono break-all">{exchangeNewToken}</span>
+                  <Button variant="outline" size="sm" onClick={copyExchangeToken}>
+                    {exchangeCopied ? t('copied') : t('copy')}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {exchangeMessage && <p className="text-sm text-foreground-muted">{exchangeMessage}</p>}
+
+            <div className="flex items-center justify-between gap-3">
+              <a
+                href="https://github.com/dimakuhtin8-cmyk/crm-next/blob/main/docs/1c-integration.md"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-primary hover:underline"
+              >
+                {t('docs')}
+              </a>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleExchangeAction('generate')}
+                  disabled={exchangeBusy}
+                >
+                  {t('generate')}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleExchangeAction('revoke')}
+                  disabled={exchangeBusy}
+                >
+                  {t('revoke')}
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
