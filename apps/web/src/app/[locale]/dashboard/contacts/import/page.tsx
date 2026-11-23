@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useState, useRef } from 'react';
 
 import { QuickSelect } from '@/components/quick-create';
@@ -13,18 +14,20 @@ interface ParsedCSV {
 }
 
 const fieldLabels: Record<string, string> = {
-  firstName: "Ім'я *",
-  lastName: 'Прізвище',
-  email: 'Email',
-  phone: 'Телефон',
-  company: 'Компанія',
-  position: 'Посада',
+  firstName: 'importFields.firstName',
+  lastName: 'lastName',
+  email: 'email',
+  phone: 'phone',
+  company: 'company',
+  position: 'position',
 };
 
 const requiredFields = ['firstName'];
 
 export default function ImportContactsPage() {
   const fileRef = useRef<HTMLInputElement>(null);
+  const t = useTranslations('contacts');
+  const tCommon = useTranslations('common');
 
   const [step, setStep] = useState<'upload' | 'mapping' | 'result'>('upload');
   const [csvData, setCsvData] = useState<ParsedCSV | null>(null);
@@ -128,13 +131,11 @@ export default function ImportContactsPage() {
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Імпорт контактів</h1>
-          <p className="text-foreground-muted">
-            Завантажте CSV файл (amoCRM, Bitrix24, Google Contacts)
-          </p>
+          <h1 className="text-2xl font-bold">{t('importTitle')}</h1>
+          <p className="text-foreground-muted">{t('importDescription')}</p>
         </div>
         <Link href="/dashboard/contacts">
-          <Button variant="outline">Назад</Button>
+          <Button variant="outline">{tCommon('back')}</Button>
         </Link>
       </div>
 
@@ -142,8 +143,8 @@ export default function ImportContactsPage() {
       {step === 'upload' && (
         <Card>
           <CardHeader>
-            <CardTitle>1. Завантажте файл</CardTitle>
-            <CardDescription>Підтримуються формати: .csv, .txt</CardDescription>
+            <CardTitle>{t('importStep1')}</CardTitle>
+            <CardDescription>{t('importFormats')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div
@@ -161,8 +162,8 @@ export default function ImportContactsPage() {
                 <polyline points="7 10 12 15 17 10" />
                 <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
-              <p className="text-foreground-muted mb-2">Натисніть або перетягніть файл</p>
-              <p className="text-xs text-foreground-muted">Формат: CSV (розділювач: кома)</p>
+              <p className="text-foreground-muted mb-2">{t('importDropHint')}</p>
+              <p className="text-xs text-foreground-muted">{t('importFormatHint')}</p>
             </div>
             <input
               ref={fileRef}
@@ -179,10 +180,8 @@ export default function ImportContactsPage() {
       {step === 'mapping' && csvData && (
         <Card>
           <CardHeader>
-            <CardTitle>2. Зіставте колонки</CardTitle>
-            <CardDescription>
-              Знайдено {csvData.totalRows} рядків. Вкажіть, яка колонка відповідає кожному полю.
-            </CardDescription>
+            <CardTitle>{t('importStep2')}</CardTitle>
+            <CardDescription>{t('importRowsFound', { count: csvData.totalRows })}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Preview */}
@@ -211,33 +210,33 @@ export default function ImportContactsPage() {
               </table>
             </div>
 
-            <p className="text-xs text-foreground-muted">Попередній перегляд (перші 3 рядки)</p>
+            <p className="text-xs text-foreground-muted">{t('importPreviewHint')}</p>
 
             {/* Mapping */}
             <div className="grid grid-cols-2 gap-4">
               {Object.entries(fieldLabels).map(([field, label]) => (
                 <div key={field} className="space-y-1">
-                  <label className="text-xs font-medium text-muted-foreground">{label}</label>
+                  <label className="text-xs font-medium text-muted-foreground">{t(label)}</label>
                   <QuickSelect
                     value={mapping[field] || ''}
                     onChange={(v) => setMapping({ ...mapping, [field]: v })}
                     options={[
-                      { id: '', name: '— Не імпортувати —' },
+                      { id: '', name: t('importSkip') },
                       ...csvData.headers.map((h) => ({ id: h, name: h })),
                     ]}
-                    placeholder="— Не імпортувати —"
+                    placeholder={t('importSkip')}
                   />
                 </div>
               ))}
             </div>
 
             {!hasRequiredFields && (
-              <p className="text-sm text-destructive">Потрібно обрати колонку для поля "Ім'я"</p>
+              <p className="text-sm text-destructive">{t('importRequiredColumn')}</p>
             )}
 
             <div className="flex gap-3 pt-4">
               <Button onClick={handleImport} disabled={!hasRequiredFields || importing}>
-                {importing ? 'Імпорт...' : `Імпортувати ${csvData.totalRows} контактів`}
+                {importing ? t('importing') : t('importCount', { count: csvData.totalRows })}
               </Button>
               <Button
                 variant="outline"
@@ -246,7 +245,7 @@ export default function ImportContactsPage() {
                   setCsvData(null);
                 }}
               >
-                Завантажити інший файл
+                {t('importUploadAnother')}
               </Button>
             </div>
           </CardContent>
@@ -257,31 +256,31 @@ export default function ImportContactsPage() {
       {step === 'result' && result && (
         <Card>
           <CardHeader>
-            <CardTitle>3. Результат імпорту</CardTitle>
+            <CardTitle>{t('importStep3')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-3 gap-4 text-center">
               <div className="p-4 bg-success/10 rounded-lg">
                 <p className="text-3xl font-bold text-success">{result.imported}</p>
-                <p className="text-sm text-foreground-muted">Імпортовано</p>
+                <p className="text-sm text-foreground-muted">{t('importResultImported')}</p>
               </div>
               <div className="p-4 bg-warning/10 rounded-lg">
                 <p className="text-3xl font-bold text-warning">{result.skipped}</p>
-                <p className="text-sm text-foreground-muted">Пропущено</p>
+                <p className="text-sm text-foreground-muted">{t('importResultSkipped')}</p>
               </div>
               <div className="p-4 bg-destructive/10 rounded-lg">
                 <p className="text-3xl font-bold text-destructive">{result.errors.length}</p>
-                <p className="text-sm text-foreground-muted">Помилок</p>
+                <p className="text-sm text-foreground-muted">{t('importResultErrors')}</p>
               </div>
             </div>
 
             {result.errors.length > 0 && (
               <div className="space-y-2">
-                <p className="text-sm font-medium">Помилки:</p>
+                <p className="text-sm font-medium">{t('importErrorsTitle')}</p>
                 <div className="max-h-40 overflow-y-auto space-y-1">
                   {result.errors.map((err, i) => (
                     <p key={i} className="text-xs text-destructive">
-                      Рядок {err.row}: {err.error}
+                      {t('importRowError', { row: err.row, error: err.error })}
                     </p>
                   ))}
                 </div>
@@ -290,7 +289,7 @@ export default function ImportContactsPage() {
 
             <div className="flex gap-3 pt-4">
               <Link href="/dashboard/contacts">
-                <Button>Перейти до контактів</Button>
+                <Button>{t('importGoToContacts')}</Button>
               </Link>
               <Button
                 variant="outline"
@@ -300,7 +299,7 @@ export default function ImportContactsPage() {
                   setResult(null);
                 }}
               >
-                Імпортувати ще
+                {t('importMore')}
               </Button>
             </div>
           </CardContent>

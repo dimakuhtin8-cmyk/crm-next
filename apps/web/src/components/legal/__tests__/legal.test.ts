@@ -19,7 +19,7 @@ function read(rel: string): string {
 }
 
 /** Словники i18n (apps/web/messages) — тексти згод живуть там. */
-function readMessages(file: string): { auth: Record<string, string> } {
+function readMessages(file: string): Record<string, Record<string, string>> {
   const abs = path.resolve(SRC, '..', 'messages', file);
   expect(fs.existsSync(abs), `словник ${file} має існувати`).toBe(true);
   return JSON.parse(fs.readFileSync(abs, 'utf8'));
@@ -107,7 +107,11 @@ describe('cookie-банер першого візиту', () => {
     expect(content).toContain('localStorage.getItem(COOKIE_CONSENT_KEY)');
     expect(content).toContain('privacy#cookie');
     expect(content).toContain('role="region"');
-    expect(content).toContain('Зрозуміло');
+    // Текст кнопки живе у словниках i18n (uk + en)
+    const uk = readMessages('uk.json');
+    const en = readMessages('en.json');
+    expect(uk.common?.understood).toBe('Зрозуміло');
+    expect(en.common?.understood).toBe('Got it');
   });
 });
 

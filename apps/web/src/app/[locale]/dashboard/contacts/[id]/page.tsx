@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
 import { DataError } from '@/components/data-error';
@@ -57,6 +58,8 @@ export default function ContactDetailPage() {
   const router = useRouter();
   const params = useParams();
   const contactId = params.id as string;
+  const t = useTranslations('contacts');
+  const tCommon = useTranslations('common');
 
   const [contact, setContact] = useState<Contact | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -83,8 +86,9 @@ export default function ContactDetailPage() {
         fetch(`/api/contacts/${contactId}`),
         fetch(`/api/contacts/${contactId}/activities`),
       ]);
-      if (!contactRes.ok) throw new Error(`Контакт: помилка ${contactRes.status}`);
-      if (!activitiesRes.ok) throw new Error(`Активності: помилка ${activitiesRes.status}`);
+      if (!contactRes.ok) throw new Error(t('errors.contactLoad', { status: contactRes.status }));
+      if (!activitiesRes.ok)
+        throw new Error(t('errors.activitiesLoad', { status: activitiesRes.status }));
 
       const contactData = await contactRes.json();
       const activitiesData = await activitiesRes.json();
@@ -93,7 +97,7 @@ export default function ContactDetailPage() {
       setActivities(activitiesData.activities || []);
     } catch (err) {
       setContact(null);
-      setLoadError(err instanceof Error ? err.message : 'Помилка завантаження');
+      setLoadError(err instanceof Error ? err.message : t('errors.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -110,26 +114,26 @@ export default function ContactDetailPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(activityForm),
       });
-      if (!res.ok) throw new Error(`Помилка ${res.status}`);
+      if (!res.ok) throw new Error(t('errors.requestStatus', { status: res.status }));
 
       setActivityForm({ type: 'note', title: '', body: '' });
       setShowActivityForm(false);
       fetchData();
     } catch {
-      setFormError('Не вдалося додати активність. Спробуйте ще раз.');
+      setFormError(t('errors.addActivityFailed'));
     } finally {
       setActivityLoading(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!confirm('Видалити цей контакт?')) return;
+    if (!confirm(t('confirmDeleteThis'))) return;
     try {
       const res = await fetch(`/api/contacts/${contactId}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error(`Помилка ${res.status}`);
+      if (!res.ok) throw new Error(t('errors.requestStatus', { status: res.status }));
       router.push('/dashboard/contacts');
     } catch {
-      setFormError('Не вдалося видалити контакт. Спробуйте ще раз.');
+      setFormError(t('errors.deleteContactFailed'));
     }
   };
 
@@ -164,9 +168,9 @@ export default function ContactDetailPage() {
       });
       const json = await res.json();
       if (res.ok) setAiAnalysis(json.result);
-      else setFormError(json.error || 'AI-аналіз не вдався');
+      else setFormError(json.error || t('errors.aiFailed'));
     } catch {
-      setFormError('AI-аналіз не вдався. Спробуйте ще раз.');
+      setFormError(t('errors.aiFailedRetry'));
     } finally {
       setAiLoading(false);
     }
@@ -190,9 +194,9 @@ export default function ContactDetailPage() {
           <DataError message={loadError} onRetry={fetchData} />
         ) : (
           <>
-            <h2 className="text-xl font-bold mb-2">Контакт не знайдено</h2>
+            <h2 className="text-xl font-bold mb-2">{t('contactNotFound')}</h2>
             <Link href="/dashboard/contacts">
-              <Button>Повернутися до списку</Button>
+              <Button>{t('backToList')}</Button>
             </Link>
           </>
         )}
@@ -221,13 +225,13 @@ export default function ContactDetailPage() {
         </div>
         <div className="flex gap-2">
           <Link href={`/dashboard/copilot?contactId=${contactId}`}>
-            <Button variant="outline">🤖 Запитати AI</Button>
+            <Button variant="outline">{t('askAi')}</Button>
           </Link>
           <Link href={`/dashboard/contacts/${contactId}/edit`}>
-            <Button variant="outline">Редагувати</Button>
+            <Button variant="outline">{tCommon('edit')}</Button>
           </Link>
           <Button variant="outline" onClick={() => router.back()}>
-            Назад
+            {tCommon('back')}
           </Button>
         </div>
       </div>
@@ -238,64 +242,64 @@ export default function ContactDetailPage() {
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Інформація</CardTitle>
+              <CardTitle>{t('info')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <InlineEdit
-                  label="Ім'я"
+                  label={t('firstName')}
                   value={contact.firstName}
                   onSave={(v) => handleInlineSave('firstName', v)}
                 />
                 <InlineEdit
-                  label="Прізвище"
+                  label={t('lastName')}
                   value={contact.lastName}
                   onSave={(v) => handleInlineSave('lastName', v)}
                   emptyText="—"
                 />
                 <InlineEdit
-                  label="Email"
+                  label={t('email')}
                   value={contact.email}
                   onSave={(v) => handleInlineSave('email', v)}
                   type="email"
                   emptyText="—"
                 />
                 <InlineEdit
-                  label="Телефон"
+                  label={t('phone')}
                   value={contact.phone}
                   onSave={(v) => handleInlineSave('phone', v)}
                   type="phone"
                   emptyText="—"
                 />
                 <InlineEdit
-                  label="Компанія"
+                  label={t('company')}
                   value={contact.company}
                   onSave={(v) => handleInlineSave('company', v)}
                   emptyText="—"
                 />
                 <InlineEdit
-                  label="Посада"
+                  label={t('position')}
                   value={contact.position}
                   onSave={(v) => handleInlineSave('position', v)}
                   emptyText="—"
                 />
                 <div>
-                  <p className="text-xs text-foreground-muted mb-1">Статус</p>
+                  <p className="text-xs text-foreground-muted mb-1">{tCommon('status')}</p>
                   <div className="w-44">
                     <QuickSelect
                       value={contact.status}
                       onChange={(v) => handleInlineSave('status', v)}
                       options={[
-                        { id: 'active', name: 'Активний' },
-                        { id: 'inactive', name: 'Неактивний' },
-                        { id: 'lead', name: 'Лід' },
-                        { id: 'client', name: 'Клієнт' },
+                        { id: 'active', name: t('status.active') },
+                        { id: 'inactive', name: t('status.inactive') },
+                        { id: 'lead', name: t('status.lead') },
+                        { id: 'client', name: t('status.client') },
                       ]}
                     />
                   </div>
                 </div>
                 <InlineEdit
-                  label="Джерело"
+                  label={t('source')}
                   value={contact.source}
                   onSave={(v) => handleInlineSave('source', v)}
                   emptyText="—"
@@ -309,17 +313,21 @@ export default function ContactDetailPage() {
 
               <div className="pt-4 border-t border-border">
                 <InlineEdit
-                  label="Нотатки"
+                  label={t('notes')}
                   value={contact.notes}
                   onSave={(v) => handleInlineSave('notes', v)}
                   type="textarea"
-                  emptyText="Додати нотатки..."
+                  emptyText={t('addNotes')}
                 />
               </div>
 
               <div className="pt-4 border-t border-border flex gap-4 text-xs text-foreground-muted">
-                <span>Створено: {new Date(contact.createdAt).toLocaleDateString('uk')}</span>
-                <span>Оновлено: {new Date(contact.updatedAt).toLocaleDateString('uk')}</span>
+                <span>
+                  {t('created', { date: new Date(contact.createdAt).toLocaleDateString('uk') })}
+                </span>
+                <span>
+                  {t('updated', { date: new Date(contact.updatedAt).toLocaleDateString('uk') })}
+                </span>
               </div>
             </CardContent>
           </Card>
@@ -328,7 +336,7 @@ export default function ContactDetailPage() {
           {contact.tags && contact.tags.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Теги</CardTitle>
+                <CardTitle>{t('tags')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex gap-2 flex-wrap">
@@ -353,9 +361,9 @@ export default function ContactDetailPage() {
           {/* AI Analysis */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-base">🤖 AI-аналіз</CardTitle>
+              <CardTitle className="text-base">{t('aiAnalysis')}</CardTitle>
               <Button size="sm" variant="outline" onClick={handleAnalyze} disabled={aiLoading}>
-                {aiLoading ? 'Аналіз...' : 'Проаналізувати'}
+                {aiLoading ? t('analyzing') : t('analyze')}
               </Button>
             </CardHeader>
             <CardContent>
@@ -364,9 +372,7 @@ export default function ContactDetailPage() {
                   {aiAnalysis}
                 </div>
               ) : (
-                <p className="text-sm text-foreground-muted">
-                  AI проаналізує активності, угоди та історію контакту і запропонує рекомендації.
-                </p>
+                <p className="text-sm text-foreground-muted">{t('aiAnalysisHint')}</p>
               )}
             </CardContent>
           </Card>
@@ -376,9 +382,9 @@ export default function ContactDetailPage() {
         <div className="space-y-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-base">Активність</CardTitle>
+              <CardTitle className="text-base">{t('activity')}</CardTitle>
               <Button size="sm" onClick={() => setShowActivityForm(!showActivityForm)}>
-                {showActivityForm ? 'Скасувати' : '+ Додати'}
+                {showActivityForm ? tCommon('cancel') : t('addActivity')}
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -396,34 +402,36 @@ export default function ContactDetailPage() {
                     value={activityForm.type}
                     onChange={(v) => setActivityForm({ ...activityForm, type: v })}
                     options={[
-                      { id: 'note', name: 'Нотатка' },
-                      { id: 'call', name: 'Дзвінок' },
-                      { id: 'email', name: 'Лист' },
-                      { id: 'meeting', name: 'Зустріч' },
-                      { id: 'task', name: 'Задача' },
-                      { id: 'sms', name: 'SMS' },
+                      { id: 'note', name: t('activityTypes.note') },
+                      { id: 'call', name: t('activityTypes.call') },
+                      { id: 'email', name: t('activityTypes.email') },
+                      { id: 'meeting', name: t('activityTypes.meeting') },
+                      { id: 'task', name: t('activityTypes.task') },
+                      { id: 'sms', name: t('activityTypes.sms') },
                     ]}
                   />
                   <Input
-                    placeholder="Заголовок"
+                    placeholder={t('activityTitlePlaceholder')}
                     value={activityForm.title}
                     onChange={(e) => setActivityForm({ ...activityForm, title: e.target.value })}
                     required
                   />
                   <textarea
-                    placeholder="Деталі (необов'язково)"
+                    placeholder={t('activityBodyPlaceholder')}
                     value={activityForm.body}
                     onChange={(e) => setActivityForm({ ...activityForm, body: e.target.value })}
                     className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-ring min-h-[80px]"
                   />
                   <Button type="submit" size="sm" disabled={activityLoading}>
-                    {activityLoading ? 'Збереження...' : 'Зберегти'}
+                    {activityLoading ? t('saving') : tCommon('save')}
                   </Button>
                 </form>
               )}
 
               {activities.length === 0 ? (
-                <p className="text-sm text-foreground-muted text-center py-4">Немає активностей</p>
+                <p className="text-sm text-foreground-muted text-center py-4">
+                  {t('noActivities')}
+                </p>
               ) : (
                 <div className="space-y-3">
                   {activities.map((activity) => (
@@ -459,7 +467,7 @@ export default function ContactDetailPage() {
           <Card className="border-destructive/50">
             <CardContent className="pt-6">
               <Button variant="destructive" className="w-full" onClick={handleDelete}>
-                Видалити контакт
+                {t('deleteContact')}
               </Button>
             </CardContent>
           </Card>

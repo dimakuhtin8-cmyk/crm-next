@@ -2,6 +2,7 @@
 
 import { Check, Loader2, MessageCircle, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -15,6 +16,9 @@ interface WhatsAppConfig {
 }
 
 export default function WhatsAppSettingsPage() {
+  const t = useTranslations('whatsapp');
+  const tSettings = useTranslations('settings');
+  const tCommon = useTranslations('common');
   const [config, setConfig] = useState<WhatsAppConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
@@ -52,13 +56,13 @@ export default function WhatsAppSettingsPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error('Не вдалося підключити WhatsApp', {
-          description: data.error || 'Помилка налаштування',
+        toast.error(t('connectError'), {
+          description: data.error || tCommon('setupError'),
         });
         return;
       }
 
-      toast.success('WhatsApp підключено');
+      toast.success(t('whatsappConnected'));
       setWebhookUrl(data.webhookUrl);
       setConfig({
         configured: true,
@@ -68,22 +72,22 @@ export default function WhatsAppSettingsPage() {
       });
       setFormData({ apiKey: '', appId: '', phoneNumberId: '', phoneNumber: '', wabaId: '' });
     } catch {
-      toast.error("Помилка з'єднання");
+      toast.error(tCommon('connectionError'));
     } finally {
       setSaving(false);
     }
   };
 
   const handleRemove = async () => {
-    if (!confirm('Відключити WhatsApp?')) return;
+    if (!confirm(t('disconnectConfirm'))) return;
     setSaving(true);
     try {
       const res = await fetch('/api/whatsapp/config', { method: 'DELETE' });
       if (!res.ok) throw new Error();
       setConfig({ configured: false, phoneNumber: null, phoneNumberId: null, wabaId: null });
-      toast.success('WhatsApp відключено');
+      toast.success(t('whatsappDisconnected'));
     } catch {
-      toast.error('Помилка відключення');
+      toast.error(tCommon('disconnectError'));
     } finally {
       setSaving(false);
     }
@@ -98,11 +102,11 @@ export default function WhatsAppSettingsPage() {
     try {
       await new Promise((resolve) => setTimeout(resolve, 800));
       setLastSynced(new Date().toLocaleTimeString('uk'));
-      toast.success('Шаблони синхронізовано', {
-        description: 'Демонстраційна синхронізація — Meta Templates API не інтегровано',
+      toast.success(t('templatesSynced'), {
+        description: t('demoSyncDescription'),
       });
     } catch {
-      toast.error('Не вдалося синхронізувати шаблони');
+      toast.error(t('syncError'));
     } finally {
       setSyncing(false);
     }
@@ -124,20 +128,18 @@ export default function WhatsAppSettingsPage() {
             href="/dashboard/settings"
             className="text-sm text-foreground-muted hover:text-foreground transition-colors"
           >
-            ← Налаштування
+            ← {tSettings('title')}
           </Link>
         </div>
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold">WhatsApp Business</h1>
           {config?.configured ? (
-            <Badge variant="success">Підключено</Badge>
+            <Badge variant="success">{t('connected')}</Badge>
           ) : (
-            <Badge variant="secondary">Не налаштовано</Badge>
+            <Badge variant="secondary">{tCommon('notConfigured')}</Badge>
           )}
         </div>
-        <p className="text-foreground-muted">
-          Підключіть WhatsApp Business API для спілкування з клієнтами
-        </p>
+        <p className="text-foreground-muted">{t('subtitle')}</p>
       </div>
 
       {config?.configured ? (
@@ -148,33 +150,29 @@ export default function WhatsAppSettingsPage() {
                 <Check className="h-6 w-6 text-success" />
               </div>
               <div className="flex-1">
-                <h3 className="font-medium">WhatsApp підключено</h3>
+                <h3 className="font-medium">{t('whatsappConnected')}</h3>
                 <p className="text-sm text-foreground-muted">{config.phoneNumber}</p>
               </div>
               <Button variant="outline" onClick={handleRemove} disabled={saving}>
-                Відключити
+                {tCommon('disconnect')}
               </Button>
             </div>
 
             <div className="mt-6 p-4 bg-secondary/50 rounded-lg">
-              <h4 className="text-sm font-medium mb-2">Webhook URL (для 360dialog):</h4>
+              <h4 className="text-sm font-medium mb-2">{t('webhookUrlLabel')}</h4>
               <code className="block bg-background px-3 py-2 rounded text-xs break-all">
                 {webhookUrl ||
                   `${typeof window !== 'undefined' ? window.location.origin : ''}/api/whatsapp/webhook`}
               </code>
-              <p className="text-xs text-foreground-muted mt-2">
-                Встановіть цей URL у налаштуваннях 360dialog як Webhook URL
-              </p>
+              <p className="text-xs text-foreground-muted mt-2">{t('webhookUrlHint')}</p>
             </div>
 
             <div className="mt-4 p-4 bg-secondary/50 rounded-lg">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <h4 className="text-sm font-medium">Шаблони повідомлень</h4>
+                  <h4 className="text-sm font-medium">{t('templatesTitle')}</h4>
                   <p className="text-xs text-foreground-muted mt-1">
-                    {lastSynced
-                      ? `Остання синхронізація: ${lastSynced}`
-                      : 'Шаблони ще не синхронізувалися'}
+                    {lastSynced ? t('lastSync', { time: lastSynced }) : t('neverSynced')}
                   </p>
                 </div>
                 <Button
@@ -188,43 +186,41 @@ export default function WhatsAppSettingsPage() {
                   ) : (
                     <RefreshCw className="h-4 w-4 mr-2" />
                   )}
-                  {syncing ? 'Синхронізація...' : 'Синхронізувати шаблони'}
+                  {syncing ? t('syncing') : t('syncTemplates')}
                 </Button>
               </div>
-              <p className="text-xs text-foreground-muted mt-2">
-                Демонстраційна синхронізація — інтеграція з Meta Templates API відсутня
-              </p>
+              <p className="text-xs text-foreground-muted mt-2">{t('demoSyncNote')}</p>
             </div>
 
             <div className="mt-4 p-4 bg-secondary/50 rounded-lg">
-              <h4 className="text-sm font-medium mb-2">Як використовувати:</h4>
+              <h4 className="text-sm font-medium mb-2">{tCommon('howToUse')}</h4>
               <ol className="text-sm text-foreground-muted space-y-1 list-decimal list-inside">
-                <li>Напишіть вашому номеру WhatsApp</li>
-                <li>Надішліть /start для підключення</li>
-                <li>Використовуйте /deals для перегляду угод</li>
-                <li>Використовуйте /tasks для перегляду задач</li>
-                <li>Повідомлення зберігаються як активність контакту</li>
+                <li>{t('howToMessageNumber')}</li>
+                <li>{tCommon('howToUseStart')}</li>
+                <li>{tCommon('howToUseDeals')}</li>
+                <li>{tCommon('howToUseTasks')}</li>
+                <li>{t('howToMessagesSaved')}</li>
               </ol>
             </div>
 
             <div className="mt-4 p-4 bg-secondary/50 rounded-lg">
-              <h4 className="text-sm font-medium mb-2">Команди:</h4>
+              <h4 className="text-sm font-medium mb-2">{t('commands')}:</h4>
               <div className="grid grid-cols-2 gap-2 text-sm text-foreground-muted">
                 <div>
-                  <code className="bg-background px-1.5 py-0.5 rounded text-xs">/start</code> —
-                  Головне меню
+                  <code className="bg-background px-1.5 py-0.5 rounded text-xs">/start</code> —{' '}
+                  {tCommon('cmdStart')}
                 </div>
                 <div>
-                  <code className="bg-background px-1.5 py-0.5 rounded text-xs">/help</code> —
-                  Довідка
+                  <code className="bg-background px-1.5 py-0.5 rounded text-xs">/help</code> —{' '}
+                  {tCommon('cmdHelp')}
                 </div>
                 <div>
-                  <code className="bg-background px-1.5 py-0.5 rounded text-xs">/deals</code> —
-                  Список угод
+                  <code className="bg-background px-1.5 py-0.5 rounded text-xs">/deals</code> —{' '}
+                  {tCommon('cmdDeals')}
                 </div>
                 <div>
-                  <code className="bg-background px-1.5 py-0.5 rounded text-xs">/tasks</code> — Мої
-                  задачі
+                  <code className="bg-background px-1.5 py-0.5 rounded text-xs">/tasks</code> —{' '}
+                  {tCommon('cmdTasks')}
                 </div>
               </div>
             </div>
@@ -238,18 +234,16 @@ export default function WhatsAppSettingsPage() {
                 <MessageCircle className="h-6 w-6 text-success" />
               </div>
               <div>
-                <h3 className="font-medium">Підключити WhatsApp Business</h3>
-                <p className="text-sm text-foreground-muted">
-                  Потрібен акаунт 360dialog або WhatsApp Business API провайдер
-                </p>
+                <h3 className="font-medium">{t('connectTitle')}</h3>
+                <p className="text-sm text-foreground-muted">{t('connectDescription')}</p>
               </div>
             </div>
 
             <div className="p-4 bg-secondary/50 rounded-lg mb-6">
-              <h4 className="text-sm font-medium mb-2">Інструкція (360dialog):</h4>
+              <h4 className="text-sm font-medium mb-2">{t('instructions')}</h4>
               <ol className="text-sm text-foreground-muted space-y-1 list-decimal list-inside">
                 <li>
-                  Зареєструйтесь на{' '}
+                  {t('registerOn')}{' '}
                   <a
                     href="https://360dialog.com"
                     target="_blank"
@@ -259,11 +253,11 @@ export default function WhatsAppSettingsPage() {
                     360dialog.com
                   </a>
                 </li>
-                <li>Створіть WhatsApp Business Account (WABA)</li>
-                <li>Отримайте API Key та App ID</li>
-                <li>Додайте номер телефону та Phone Number ID</li>
-                <li>Введіть дані нижче</li>
-                <li>Встановіть Webhook URL у налаштуваннях 360dialog</li>
+                <li>{t('stepCreateWaba')}</li>
+                <li>{t('stepGetApi')}</li>
+                <li>{t('stepAddPhone')}</li>
+                <li>{t('stepEnterData')}</li>
+                <li>{t('stepWebhook')}</li>
               </ol>
             </div>
 
@@ -297,7 +291,7 @@ export default function WhatsAppSettingsPage() {
                   Phone Number ID
                 </label>
                 <Input
-                  placeholder="ID номера телефону з 360dialog"
+                  placeholder={t('phoneNumberIdPlaceholder')}
                   value={formData.phoneNumberId}
                   onChange={(e) => setFormData({ ...formData, phoneNumberId: e.target.value })}
                   required
@@ -306,7 +300,7 @@ export default function WhatsAppSettingsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-foreground-muted mb-1">
-                    Номер телефону
+                    {t('phoneNumber')}
                   </label>
                   <Input
                     placeholder="+380XXXXXXXXX"
@@ -328,7 +322,7 @@ export default function WhatsAppSettingsPage() {
                 </div>
               </div>
               <Button type="submit" disabled={saving || !formData.apiKey}>
-                {saving ? 'Налаштування...' : 'Підключити WhatsApp'}
+                {saving ? tCommon('configuring') : t('connectButton')}
               </Button>
             </form>
           </CardContent>
@@ -338,27 +332,27 @@ export default function WhatsAppSettingsPage() {
       {/* Features */}
       <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardContent className="p-5">
-          <h3 className="font-medium mb-3">Можливості</h3>
+          <h3 className="font-medium mb-3">{t('featuresTitle')}</h3>
           <ul className="text-sm text-foreground-muted space-y-2">
             <li className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-success flex-shrink-0" />
-              Вхідні повідомлення → створення Activity
+              {t('featureInbox')}
             </li>
             <li className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-success flex-shrink-0" />
-              Привязка WhatsApp до контактів CRM
+              {t('featureLink')}
             </li>
             <li className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0" />
-              Команди: /start, /help, /deals, /tasks
+              {t('featureCommands')}
             </li>
             <li className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0" />
-              Автоматичні сповіщення про задачі та угоди
+              {t('featureNotifications')}
             </li>
             <li className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-warning flex-shrink-0" />
-              Відправка документів та зображень
+              {t('featureMedia')}
             </li>
           </ul>
         </CardContent>

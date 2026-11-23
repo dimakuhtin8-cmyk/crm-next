@@ -1,5 +1,6 @@
 'use client';
 import { useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
 import { DataError } from '@/components/data-error';
@@ -23,6 +24,8 @@ interface DealData {
 export default function EditDealPage() {
   const params = useParams();
   const dealId = params.id as string;
+  const t = useTranslations('deals');
+  const tCommon = useTranslations('common');
   const [data, setData] = useState<DealData | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -32,7 +35,7 @@ export default function EditDealPage() {
     setLoading(true);
     fetch(`/api/deals/${dealId}`)
       .then((r) => {
-        if (!r.ok) throw new Error(`Помилка ${r.status}`);
+        if (!r.ok) throw new Error(t('errors.requestFailed', { status: r.status }));
         return r.json();
       })
       .then((d) => {
@@ -53,7 +56,7 @@ export default function EditDealPage() {
       })
       .catch((err: unknown) => {
         setData(null);
-        setLoadError(err instanceof Error ? err.message : 'Помилка завантаження');
+        setLoadError(err instanceof Error ? err.message : t('errors.loadFailed'));
       })
       .finally(() => setLoading(false));
   };
@@ -75,8 +78,8 @@ export default function EditDealPage() {
           <DataError message={loadError} onRetry={loadDeal} />
         ) : (
           <>
-            <p>Угоду не знайдено</p>
-            <Button onClick={() => window.history.back()}>Назад</Button>
+            <p>{t('notFound')}</p>
+            <Button onClick={() => window.history.back()}>{tCommon('back')}</Button>
           </>
         )}
       </div>

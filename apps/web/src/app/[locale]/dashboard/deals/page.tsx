@@ -23,6 +23,7 @@ import {
   GripVertical,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { QuickCreatePopover, QuickDealForm, QuickSelect } from '@/components/quick-create';
@@ -116,24 +117,6 @@ function getScoreTextClass(score: number) {
   if (score >= 50) return 'text-warning';
   return 'text-danger';
 }
-
-const statusBadge: Record<
-  string,
-  { label: string; variant: 'info' | 'success' | 'danger' | 'secondary' }
-> = {
-  open: { label: 'Відкрита', variant: 'info' },
-  won: { label: 'Виграна', variant: 'success' },
-  lost: { label: 'Програна', variant: 'danger' },
-};
-
-const activityTypeLabels: Record<string, string> = {
-  call: 'Дзвінок',
-  email: 'Лист',
-  meeting: 'Зустріч',
-  task: 'Задача',
-  note: 'Нотатка',
-  sms: 'SMS',
-};
 
 function DraggableDeal({
   deal,
@@ -253,6 +236,9 @@ function DroppableStage({
 }
 
 export default function DealsPage() {
+  const t = useTranslations('deals');
+  const tCommon = useTranslations('common');
+  const tRoot = useTranslations();
   const [pipelines, setPipelines] = useState<Pipeline[]>([]);
   const [selectedPipeline, setSelectedPipeline] = useState<Pipeline | null>(null);
   const [deals, setDeals] = useState<Deal[]>([]);
@@ -273,6 +259,24 @@ export default function DealsPage() {
   const quickBtnRef = useRef<HTMLButtonElement>(null);
 
   useTourAutoStart('deals');
+
+  const statusBadge: Record<
+    string,
+    { label: string; variant: 'info' | 'success' | 'danger' | 'secondary' }
+  > = {
+    open: { label: t('dealStatus.open'), variant: 'info' },
+    won: { label: t('dealStatus.won'), variant: 'success' },
+    lost: { label: t('dealStatus.lost'), variant: 'danger' },
+  };
+
+  const activityTypeLabels: Record<string, string> = {
+    call: t('activityTypes.call'),
+    email: t('activityTypes.email'),
+    meeting: t('activityTypes.meeting'),
+    task: t('activityTypes.task'),
+    note: t('activityTypes.note'),
+    sms: t('activityTypes.sms'),
+  };
 
   const handleQuickCreated = () => {
     setQuickOpen(false);
@@ -484,10 +488,12 @@ export default function DealsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Воронка продажів</h1>
+          <h1 className="text-2xl font-bold">{t('salesPipeline')}</h1>
           <p className="text-foreground-muted mt-1">
-            {deals.length} угод на суму {currencySymbols.UAH}
-            {getTotalPipelineValue().toLocaleString('uk')}
+            {t('dealsSummary', {
+              count: deals.length,
+              amount: `${currencySymbols.UAH}${getTotalPipelineValue().toLocaleString('uk')}`,
+            })}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -499,7 +505,7 @@ export default function DealsPage() {
             data-tour="deal-score"
           >
             <Bot className="h-4 w-4 mr-1.5" />
-            {scoringDeals ? 'Оцінка...' : 'AI Оцінити все'}
+            {scoringDeals ? t('scoring') : t('scoreAll')}
           </Button>
           <Link href="/dashboard/deals/pipelines">
             <Button variant="ghost" size="icon" className="h-9 w-9">
@@ -513,13 +519,13 @@ export default function DealsPage() {
             data-tour="deal-add"
           >
             <Plus className="h-4 w-4 mr-1.5" />
-            Нова угода
+            {t('newDeal')}
           </Button>
           <QuickCreatePopover
             anchorEl={quickBtnRef.current}
             open={quickOpen}
             onClose={() => setQuickOpen(false)}
-            title="Нова угода"
+            title={t('newDeal')}
           >
             <QuickDealForm onCreated={handleQuickCreated} />
           </QuickCreatePopover>
@@ -551,9 +557,9 @@ export default function DealsPage() {
         <Card>
           <CardContent>
             <EmptyState
-              title="Угод поки немає"
-              description="Створіть першу угоду, щоб воронка ожила"
-              action={<Button onClick={() => setQuickOpen(true)}>Створити угоду</Button>}
+              title={t('emptyTitle')}
+              description={t('emptyDescription')}
+              action={<Button onClick={() => setQuickOpen(true)}>{t('createDeal')}</Button>}
             />
           </CardContent>
         </Card>
@@ -598,7 +604,7 @@ export default function DealsPage() {
 
                       <div className="flex items-center gap-4">
                         <div>
-                          <p className="text-xs text-foreground-muted">Сума</p>
+                          <p className="text-xs text-foreground-muted">{t('amount')}</p>
                           <p className="text-sm font-bold text-foreground">
                             {total > 0
                               ? `${currencySymbols.UAH}${total.toLocaleString('uk')}`
@@ -607,7 +613,7 @@ export default function DealsPage() {
                         </div>
                         <div className="h-6 w-px bg-border" />
                         <div>
-                          <p className="text-xs text-foreground-muted">Зважена</p>
+                          <p className="text-xs text-foreground-muted">{t('weighted')}</p>
                           <p className="text-sm font-bold text-foreground">
                             {weighted > 0
                               ? `${currencySymbols.UAH}${Math.round(weighted).toLocaleString('uk')}`
@@ -629,7 +635,7 @@ export default function DealsPage() {
                                   : 'text-danger',
                             )}
                           >
-                            {conversion}% конверсія
+                            {t('conversionRate', { rate: conversion })}
                           </span>
                         </div>
                       )}
@@ -648,7 +654,7 @@ export default function DealsPage() {
 
                       {stageDeals.length === 0 && (
                         <div className="py-8 text-center">
-                          <p className="text-xs text-foreground-muted/60">Перетягніть угоду сюди</p>
+                          <p className="text-xs text-foreground-muted/60">{t('dragDealHere')}</p>
                         </div>
                       )}
                     </div>
@@ -702,10 +708,10 @@ export default function DealsPage() {
       >
         <SheetContent side="right" className="sm:max-w-lg">
           <SheetHeader>
-            <SheetTitle className="truncate pr-8">{dealDetail?.title || 'Угода'}</SheetTitle>
-            <SheetDescription className="sr-only">
-              Деталі угоди, стадія та таймлайн
-            </SheetDescription>
+            <SheetTitle className="truncate pr-8">
+              {dealDetail?.title || tRoot('tasks.deal')}
+            </SheetTitle>
+            <SheetDescription className="sr-only">{t('sheetDescription')}</SheetDescription>
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="text-xs">
                 {dealDetail?.probability ?? 0}%
@@ -726,10 +732,10 @@ export default function DealsPage() {
               <>
                 {/* Дані */}
                 <div>
-                  <p className="text-xs font-medium text-foreground-muted">Дані</p>
+                  <p className="text-xs font-medium text-foreground-muted">{t('dataSection')}</p>
                   <div className="mt-2 grid grid-cols-2 gap-3">
                     <div>
-                      <p className="text-xs text-foreground-muted">Сума</p>
+                      <p className="text-xs text-foreground-muted">{t('amount')}</p>
                       <p className="text-sm font-medium">
                         {dealDetail.value != null
                           ? `${currencySymbols[dealDetail.currency] || dealDetail.currency}${dealDetail.value.toLocaleString('uk')}`
@@ -737,7 +743,7 @@ export default function DealsPage() {
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-foreground-muted">Контакт</p>
+                      <p className="text-xs text-foreground-muted">{t('contact')}</p>
                       <p className="text-sm font-medium">
                         {dealDetail.contact
                           ? `${dealDetail.contact.firstName} ${dealDetail.contact.lastName || ''}`.trim()
@@ -745,11 +751,11 @@ export default function DealsPage() {
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-foreground-muted">Компанія</p>
+                      <p className="text-xs text-foreground-muted">{t('company')}</p>
                       <p className="text-sm font-medium">{dealDetail.company || '—'}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-foreground-muted">Очікуване закриття</p>
+                      <p className="text-xs text-foreground-muted">{t('expectedCloseDate')}</p>
                       <p className="text-sm font-medium">
                         {dealDetail.expectedCloseDate
                           ? new Date(dealDetail.expectedCloseDate).toLocaleDateString('uk', {
@@ -761,7 +767,7 @@ export default function DealsPage() {
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-foreground-muted">Власник</p>
+                      <p className="text-xs text-foreground-muted">{t('owner')}</p>
                       <p className="text-sm font-medium">{dealDetail.owner?.name || '—'}</p>
                     </div>
                   </div>
@@ -769,7 +775,7 @@ export default function DealsPage() {
 
                 {/* Стадія */}
                 <div>
-                  <p className="text-xs font-medium text-foreground-muted">Стадія</p>
+                  <p className="text-xs font-medium text-foreground-muted">{t('stageSection')}</p>
                   <div className="mt-2 w-56">
                     <QuickSelect
                       value={dealDetail.stageId}
@@ -777,17 +783,17 @@ export default function DealsPage() {
                       options={
                         selectedPipeline?.stages.map((s) => ({ id: s.id, name: s.name })) || []
                       }
-                      placeholder="Оберіть стадію"
+                      placeholder={t('selectStage')}
                     />
                   </div>
                 </div>
 
                 {/* Таймлайн */}
                 <div>
-                  <p className="text-xs font-medium text-foreground-muted">Таймлайн</p>
+                  <p className="text-xs font-medium text-foreground-muted">{t('timeline')}</p>
                   <div className="mt-1">
                     {timeline.length === 0 ? (
-                      <p className="text-sm text-foreground-muted">Таймлайн порожній</p>
+                      <p className="text-sm text-foreground-muted">{t('timelineEmpty')}</p>
                     ) : (
                       timeline.map((item) => (
                         <div
@@ -822,10 +828,10 @@ export default function DealsPage() {
               href={`/dashboard/deals/${openDealId}`}
               className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-background px-4 text-sm font-medium transition-colors hover:bg-secondary"
             >
-              Відкрити сторінку угоди
+              {t('openDealPage')}
             </Link>
             <SheetClose className="h-9 rounded-md px-4 text-sm font-medium text-foreground-muted transition-colors hover:bg-secondary">
-              Закрити
+              {tCommon('close')}
             </SheetClose>
           </SheetFooter>
         </SheetContent>

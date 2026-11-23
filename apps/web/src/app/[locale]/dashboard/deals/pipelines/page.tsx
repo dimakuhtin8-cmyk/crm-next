@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
 import { DataError } from '@/components/data-error';
@@ -32,16 +33,19 @@ const stageColors = [
 ];
 
 export default function PipelinesPage() {
+  const t = useTranslations('deals');
+  const tCommon = useTranslations('common');
+  const tRoot = useTranslations();
   const [pipelines, setPipelines] = useState<Pipeline[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [formName, setFormName] = useState('');
   const [formStages, setFormStages] = useState<Array<{ name: string; color: string }>>([
-    { name: 'Лід', color: stageColors[0] },
-    { name: 'Кваліфікація', color: stageColors[1] },
-    { name: 'Пропозиція', color: stageColors[2] },
-    { name: 'Перемовини', color: stageColors[3] },
-    { name: 'Закриття', color: stageColors[4] },
+    { name: tRoot('stages.lead'), color: stageColors[0] },
+    { name: tRoot('stages.qualified'), color: stageColors[1] },
+    { name: t('defaultStages.proposal'), color: stageColors[2] },
+    { name: t('defaultStages.negotiation'), color: stageColors[3] },
+    { name: t('defaultStages.closing'), color: stageColors[4] },
   ]);
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -55,11 +59,11 @@ export default function PipelinesPage() {
     setLoadError(null);
     try {
       const res = await fetch('/api/pipelines');
-      if (!res.ok) throw new Error(`Помилка ${res.status}`);
+      if (!res.ok) throw new Error(t('errors.requestFailed', { status: res.status }));
       const data = await res.json();
       setPipelines(data.pipelines || []);
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : 'Помилка завантаження воронок');
+      setLoadError(err instanceof Error ? err.message : t('errors.loadPipelines'));
     } finally {
       setLoading(false);
     }
@@ -95,14 +99,14 @@ export default function PipelinesPage() {
       setFormName('');
       fetchPipelines();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Не вдалося створити воронку');
+      setFormError(err instanceof Error ? err.message : t('errors.createPipeline'));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Видалити воронку "${name}"?`)) return;
+    if (!confirm(t('confirmDeletePipeline', { name }))) return;
     try {
       const res = await fetch(`/api/pipelines/${id}`, { method: 'DELETE' });
       if (!res.ok) {
@@ -112,7 +116,7 @@ export default function PipelinesPage() {
       }
       fetchPipelines();
     } catch {
-      alert('Не вдалося видалити воронку. Спробуйте ще раз.');
+      alert(t('errors.deletePipeline'));
     }
   };
 
@@ -127,15 +131,15 @@ export default function PipelinesPage() {
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Воронки</h1>
-          <p className="text-foreground-muted">Налаштування воронок продажів</p>
+          <h1 className="text-2xl font-bold">{t('pipelinesTitle')}</h1>
+          <p className="text-foreground-muted">{t('pipelinesDescription')}</p>
         </div>
         <div className="flex gap-2">
           <Link href="/dashboard/deals">
-            <Button variant="outline">До угод</Button>
+            <Button variant="outline">{t('backToDeals')}</Button>
           </Link>
           <Button onClick={() => setShowForm(!showForm)}>
-            {showForm ? 'Скасувати' : '+ Нова воронка'}
+            {showForm ? tCommon('cancel') : t('newPipeline')}
           </Button>
         </div>
       </div>
@@ -143,21 +147,25 @@ export default function PipelinesPage() {
       {showForm && (
         <Card>
           <CardHeader>
-            <CardTitle>Створити воронку</CardTitle>
+            <CardTitle>{t('createPipeline')}</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleCreate} className="space-y-4">
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Назва воронки *</label>
+                <label className="text-xs font-medium text-muted-foreground">
+                  {t('pipelineNameLabel')}
+                </label>
                 <Input
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   required
-                  placeholder="Продажі, Оренда, тощо"
+                  placeholder={t('pipelineNamePlaceholder')}
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Етапи</label>
+                <label className="text-xs font-medium text-muted-foreground">
+                  {t('stagesLabel')}
+                </label>
                 {formStages.map((stage, i) => (
                   <div key={i} className="flex gap-2 items-center">
                     <input
@@ -169,7 +177,7 @@ export default function PipelinesPage() {
                     <Input
                       value={stage.name}
                       onChange={(e) => updateStage(i, 'name', e.target.value)}
-                      placeholder={`Етап ${i + 1}`}
+                      placeholder={t('stageNumber', { number: i + 1 })}
                       className="flex-1"
                     />
                     {formStages.length > 1 && (
@@ -185,11 +193,11 @@ export default function PipelinesPage() {
                   </div>
                 ))}
                 <Button type="button" variant="outline" size="sm" onClick={addStage}>
-                  + Додати етап
+                  {t('addStage')}
                 </Button>
               </div>
               <Button type="submit" disabled={saving}>
-                {saving ? 'Створення...' : 'Створити воронку'}
+                {saving ? t('creating') : t('createPipeline')}
               </Button>
               {formError && <p className="text-sm text-destructive">{formError}</p>}
             </form>
@@ -212,7 +220,7 @@ export default function PipelinesPage() {
                     onClick={() => handleDelete(pipeline.id, pipeline.name)}
                     className="text-destructive"
                   >
-                    Видалити
+                    {tCommon('delete')}
                   </Button>
                 </div>
               </CardHeader>

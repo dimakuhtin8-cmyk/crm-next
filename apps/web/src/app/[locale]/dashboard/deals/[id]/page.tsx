@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
 import { DataError } from '@/components/data-error';
@@ -38,26 +39,29 @@ interface Deal {
   products: Array<{ id: string; name: string; quantity: number; price: number }>;
 }
 
-const statusConfig: Record<
-  string,
-  { label: string; variant: 'default' | 'secondary' | 'outline' | 'success' }
-> = {
-  open: { label: 'Відкрита', variant: 'default' },
-  won: { label: 'Виграна', variant: 'success' },
-  lost: { label: 'Програна', variant: 'secondary' },
-};
-
 const currencySymbols: Record<string, string> = { UAH: '₴', USD: '$', EUR: '€' };
 
 export default function DealDetailPage() {
   const router = useRouter();
   const params = useParams();
   const dealId = params.id as string;
+  const t = useTranslations('deals');
+  const tCommon = useTranslations('common');
+  const tRoot = useTranslations();
   const [deal, setDeal] = useState<Deal | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const { currentRole } = useTeam();
   const canManageOwner = currentRole === 'owner' || currentRole === 'admin';
+
+  const statusConfig: Record<
+    string,
+    { label: string; variant: 'default' | 'secondary' | 'outline' | 'success' }
+  > = {
+    open: { label: t('dealStatus.open'), variant: 'default' },
+    won: { label: t('dealStatus.won'), variant: 'success' },
+    lost: { label: t('dealStatus.lost'), variant: 'secondary' },
+  };
 
   useEffect(() => {
     fetchDeal();
@@ -67,19 +71,19 @@ export default function DealDetailPage() {
     setLoadError(null);
     try {
       const res = await fetch(`/api/deals/${dealId}`);
-      if (!res.ok) throw new Error(`Помилка ${res.status}`);
+      if (!res.ok) throw new Error(t('errors.requestFailed', { status: res.status }));
       const data = await res.json();
       setDeal(data.deal);
     } catch (err) {
       setDeal(null);
-      setLoadError(err instanceof Error ? err.message : 'Помилка завантаження');
+      setLoadError(err instanceof Error ? err.message : t('errors.loadFailed'));
     } finally {
       setLoading(false);
     }
   };
 
   const handleWinLoss = async (status: 'won' | 'lost') => {
-    const reason = status === 'won' ? prompt('Причина виграшу:') : prompt('Причина програшу:');
+    const reason = status === 'won' ? prompt(t('winReasonPrompt')) : prompt(t('lossReasonPrompt'));
     if (reason === null) return;
 
     await fetch(`/api/deals/${dealId}`, {
@@ -94,7 +98,7 @@ export default function DealDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (!confirm('Видалити угоду?')) return;
+    if (!confirm(t('confirmDelete'))) return;
     await fetch(`/api/deals/${dealId}`, { method: 'DELETE' });
     router.push('/dashboard/deals');
   };
@@ -117,11 +121,7 @@ export default function DealDetailPage() {
   if (!deal) {
     return (
       <div className="max-w-4xl mx-auto text-center py-12">
-        {loadError ? (
-          <DataError message={loadError} onRetry={fetchDeal} />
-        ) : (
-          <p>Угоду не знайдено</p>
-        )}
+        {loadError ? <DataError message={loadError} onRetry={fetchDeal} /> : <p>{t('notFound')}</p>}
       </div>
     );
   }
@@ -135,7 +135,7 @@ export default function DealDetailPage() {
         <div>
           <div className="flex items-center gap-2 text-sm text-foreground-muted mb-1">
             <Link href="/dashboard/deals" className="hover:text-foreground">
-              Угоди
+              {t('title')}
             </Link>
             <svg
               className="h-4 w-4"
@@ -162,10 +162,10 @@ export default function DealDetailPage() {
         </div>
         <div className="flex gap-2">
           <Link href={`/dashboard/copilot?dealId=${dealId}`}>
-            <Button variant="outline">🤖 Запитати AI</Button>
+            <Button variant="outline">{t('askAi')}</Button>
           </Link>
           <Link href={`/dashboard/deals/${dealId}/edit`}>
-            <Button variant="outline">Редагувати</Button>
+            <Button variant="outline">{tCommon('edit')}</Button>
           </Link>
           {deal.status === 'open' && (
             <>
@@ -174,15 +174,15 @@ export default function DealDetailPage() {
                 className="text-success border-success hover:bg-success/10"
                 onClick={() => handleWinLoss('won')}
               >
-                Виграно
+                {tRoot('stages.closed_won')}
               </Button>
               <Button variant="destructive" onClick={() => handleWinLoss('lost')}>
-                Програно
+                {tRoot('stages.closed_lost')}
               </Button>
             </>
           )}
           <Button variant="outline" onClick={() => router.back()}>
-            Назад
+            {tCommon('back')}
           </Button>
         </div>
       </div>
@@ -192,43 +192,43 @@ export default function DealDetailPage() {
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Деталі угоди</CardTitle>
+              <CardTitle>{t('detailsTitle')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-foreground-muted">Назва</p>
+                  <p className="text-sm text-foreground-muted">{tCommon('name')}</p>
                   <p className="font-medium">{deal.title}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-foreground-muted">Статус</p>
+                  <p className="text-sm text-foreground-muted">{tCommon('status')}</p>
                   <Badge variant={statusConfig[deal.status]?.variant}>
                     {statusConfig[deal.status]?.label}
                   </Badge>
                 </div>
                 <div>
-                  <p className="text-sm text-foreground-muted">Сума</p>
+                  <p className="text-sm text-foreground-muted">{t('amount')}</p>
                   <p className="font-bold text-lg">
                     {currencySymbols[deal.currency]}
                     {deal.value?.toLocaleString('uk') || '—'}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-foreground-muted">Ймовірність</p>
+                  <p className="text-sm text-foreground-muted">{t('probability')}</p>
                   <p className="font-medium">{deal.probability}%</p>
                 </div>
                 <div>
-                  <p className="text-sm text-foreground-muted">Воронка</p>
+                  <p className="text-sm text-foreground-muted">{t('pipeline')}</p>
                   <p className="font-medium">
                     {deal.pipeline.name} → {deal.stage.name}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-foreground-muted">Компанія</p>
+                  <p className="text-sm text-foreground-muted">{t('company')}</p>
                   <p className="font-medium">{deal.company || '—'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-foreground-muted">Очікуване закриття</p>
+                  <p className="text-sm text-foreground-muted">{t('expectedCloseDate')}</p>
                   <p className="font-medium">
                     {deal.expectedCloseDate
                       ? new Date(deal.expectedCloseDate).toLocaleDateString('uk')
@@ -236,7 +236,7 @@ export default function DealDetailPage() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-foreground-muted">Фактичне закриття</p>
+                  <p className="text-sm text-foreground-muted">{t('actualCloseDate')}</p>
                   <p className="font-medium">
                     {deal.actualCloseDate
                       ? new Date(deal.actualCloseDate).toLocaleDateString('uk')
@@ -246,7 +246,7 @@ export default function DealDetailPage() {
               </div>
               {deal.contact && (
                 <div className="pt-4 border-t border-border">
-                  <p className="text-sm text-foreground-muted mb-1">Контакт</p>
+                  <p className="text-sm text-foreground-muted mb-1">{t('contact')}</p>
                   <Link
                     href={`/dashboard/contacts/${deal.contact.id}`}
                     className="text-primary hover:underline"
@@ -262,14 +262,14 @@ export default function DealDetailPage() {
               )}
               {deal.notes && (
                 <div className="pt-4 border-t border-border">
-                  <p className="text-sm text-foreground-muted mb-1">Нотатки</p>
+                  <p className="text-sm text-foreground-muted mb-1">{tRoot('contacts.notes')}</p>
                   <p className="text-sm whitespace-pre-wrap">{deal.notes}</p>
                 </div>
               )}
               {(deal.winReason || deal.lossReason) && (
                 <div className="pt-4 border-t border-border">
                   <p className="text-sm text-foreground-muted mb-1">
-                    {deal.status === 'won' ? 'Причина виграшу' : 'Причина програшу'}
+                    {deal.status === 'won' ? t('winReasonLabel') : t('lossReasonLabel')}
                   </p>
                   <p className="text-sm">
                     {deal.status === 'won' ? deal.winReason : deal.lossReason}
@@ -290,15 +290,15 @@ export default function DealDetailPage() {
           {deal.products.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Продукти ({deal.products.length})</CardTitle>
+                <CardTitle>{t('productsTitle', { count: deal.products.length })}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
                   <div className="grid grid-cols-12 gap-2 text-xs font-medium text-foreground-muted">
-                    <div className="col-span-5">Назва</div>
-                    <div className="col-span-2 text-right">Кількість</div>
-                    <div className="col-span-2 text-right">Ціна</div>
-                    <div className="col-span-3 text-right">Сума</div>
+                    <div className="col-span-5">{tCommon('name')}</div>
+                    <div className="col-span-2 text-right">{t('quantity')}</div>
+                    <div className="col-span-2 text-right">{t('price')}</div>
+                    <div className="col-span-3 text-right">{t('amount')}</div>
                   </div>
                   {deal.products.map((p) => (
                     <div
@@ -318,7 +318,7 @@ export default function DealDetailPage() {
                     </div>
                   ))}
                   <div className="grid grid-cols-12 gap-2 pt-2 border-t border-border font-bold text-sm">
-                    <div className="col-span-9 text-right">Разом:</div>
+                    <div className="col-span-9 text-right">{t('total')}</div>
                     <div className="col-span-3 text-right">
                       {currencySymbols[deal.currency]}
                       {totalProducts.toLocaleString('uk')}
@@ -335,22 +335,22 @@ export default function DealDetailPage() {
           <Card>
             <CardContent className="pt-6 space-y-3">
               <div className="text-center p-4 bg-primary-light rounded-lg">
-                <p className="text-sm text-foreground-muted">Сума угоди</p>
+                <p className="text-sm text-foreground-muted">{t('dealAmount')}</p>
                 <p className="text-3xl font-bold text-primary">
                   {currencySymbols[deal.currency]}
                   {deal.value?.toLocaleString('uk') || '0'}
                 </p>
                 <p className="text-xs text-foreground-muted mt-1">
-                  Ймовірність: {deal.probability}%
+                  {t('probabilityValue', { value: deal.probability })}
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-2 text-center text-sm">
                 <div className="p-2 bg-secondary/50 rounded">
-                  <p className="text-foreground-muted">Створено</p>
+                  <p className="text-foreground-muted">{t('created')}</p>
                   <p className="font-medium">{new Date(deal.createdAt).toLocaleDateString('uk')}</p>
                 </div>
                 <div className="p-2 bg-secondary/50 rounded">
-                  <p className="text-foreground-muted">Оновлено</p>
+                  <p className="text-foreground-muted">{t('updated')}</p>
                   <p className="font-medium">{new Date(deal.updatedAt).toLocaleDateString('uk')}</p>
                 </div>
               </div>
@@ -360,7 +360,7 @@ export default function DealDetailPage() {
           <Card className="border-destructive/50">
             <CardContent className="pt-6">
               <Button variant="destructive" className="w-full" onClick={handleDelete}>
-                Видалити угоду
+                {t('deleteDeal')}
               </Button>
             </CardContent>
           </Card>

@@ -2,6 +2,7 @@
 
 import { Key, Check, X, Loader2, ExternalLink, Shield, Zap } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
@@ -31,6 +32,8 @@ interface TestResult {
 }
 
 export default function AiKeysSettingsPage() {
+  const t = useTranslations('settings');
+  const tCommon = useTranslations('common');
   const [selectedProvider, setSelectedProvider] = useState('gemini');
   const [selectedModel, setSelectedModel] = useState('');
   const [apiKey, setApiKey] = useState('');
@@ -60,7 +63,7 @@ export default function AiKeysSettingsPage() {
       setSavedKeys(data.keys || []);
     } catch (err) {
       setSavedKeys([]);
-      setKeysError(err instanceof ApiError ? err.message : 'Помилка завантаження ключів');
+      setKeysError(err instanceof ApiError ? err.message : t('keysLoadError'));
     } finally {
       setKeysLoading(false);
     }
@@ -134,23 +137,23 @@ export default function AiKeysSettingsPage() {
       setTestResult(result);
       if (!silent) {
         if (result.status === 'connected') {
-          toast.success('З’єднання встановлено', { description: result.message });
+          toast.success(t('connectionEstablished'), { description: result.message });
         } else {
-          toast.error('Тест не пройшов', { description: result.message });
+          toast.error(tCommon('testFailed'), { description: result.message });
         }
       }
       return result;
     } catch {
       const fallback: TestResult = {
         status: 'error',
-        message: "Помилка з'єднання з сервером",
+        message: tCommon('serverConnectionError'),
         provider: selectedProvider,
         model: selectedModel || 'unknown',
         lastChecked: new Date(),
         latencyMs: 0,
       };
       setTestResult(fallback);
-      if (!silent) toast.error('Тест не пройшов', { description: fallback.message });
+      if (!silent) toast.error(tCommon('testFailed'), { description: fallback.message });
       return fallback;
     } finally {
       setTesting(false);
@@ -170,7 +173,7 @@ export default function AiKeysSettingsPage() {
 
     // If test failed, require explicit confirmation
     if (result.status === 'error') {
-      if (!window.confirm(`Тест показав помилку: ${result.message}. Зберегти попри помилку?`)) {
+      if (!window.confirm(t('confirmSaveDespiteError', { message: result.message }))) {
         return;
       }
     }
@@ -193,26 +196,27 @@ export default function AiKeysSettingsPage() {
         setApiKey('');
         setTestResult(null);
         refreshSavedKeys();
-        toast.success('Ключ збережено', {
+        toast.success(t('keySaved'), {
           description: getProvider(selectedProvider)?.name || selectedProvider,
         });
         setTimeout(() => setSaved(false), 3000);
       } else {
         const data = await res.json().catch(() => null);
-        const msg = data?.error || `Не вдалося зберегти (статус ${res.status})`;
+        const msg = data?.error || t('saveFailedWithStatus', { status: res.status });
         setSaveError(msg);
-        toast.error('Не вдалося зберегти ключ', { description: msg });
+        toast.error(t('keySaveError'), { description: msg });
       }
     } catch {
-      setSaveError("Помилка з'єднання з сервером");
-      toast.error('Не вдалося зберегти ключ', { description: "Помилка з'єднання з сервером" });
+      setSaveError(tCommon('serverConnectionError'));
+      toast.error(t('keySaveError'), { description: tCommon('serverConnectionError') });
     } finally {
       setSaving(false);
     }
   };
 
   const handleDeleteKey = async (provider: string) => {
-    if (!window.confirm(`Видалити ключ ${getProvider(provider)?.name || provider}?`)) return;
+    if (!window.confirm(t('deleteKeyConfirm', { name: getProvider(provider)?.name || provider })))
+      return;
     try {
       const res = await fetch('/api/ai/keys', {
         method: 'DELETE',
@@ -222,16 +226,16 @@ export default function AiKeysSettingsPage() {
       });
       if (res.ok) {
         refreshSavedKeys();
-        toast.success('Ключ видалено', {
+        toast.success(t('keyDeleted'), {
           description: getProvider(provider)?.name || provider,
         });
       } else {
-        setSaveError('Не вдалося видалити ключ');
-        toast.error('Не вдалося видалити ключ');
+        setSaveError(t('keyDeleteError'));
+        toast.error(t('keyDeleteError'));
       }
     } catch {
-      setSaveError("Помилка з'єднання з сервером");
-      toast.error('Не вдалося видалити ключ', { description: "Помилка з'єднання з сервером" });
+      setSaveError(tCommon('serverConnectionError'));
+      toast.error(t('keyDeleteError'), { description: tCommon('serverConnectionError') });
     }
   };
 
@@ -247,17 +251,17 @@ export default function AiKeysSettingsPage() {
         setSelectedProvider(provider);
         setSaved(true);
         refreshSavedKeys();
-        toast.success('Ключ активовано', {
+        toast.success(t('keyActivated'), {
           description: getProvider(provider)?.name || provider,
         });
         setTimeout(() => setSaved(false), 3000);
       } else {
-        setSaveError('Не вдалося активувати ключ');
-        toast.error('Не вдалося активувати ключ');
+        setSaveError(t('keyActivateError'));
+        toast.error(t('keyActivateError'));
       }
     } catch {
-      setSaveError("Помилка з'єднання з сервером");
-      toast.error('Не вдалося активувати ключ', { description: "Помилка з'єднання з сервером" });
+      setSaveError(tCommon('serverConnectionError'));
+      toast.error(t('keyActivateError'), { description: tCommon('serverConnectionError') });
     }
   };
 
@@ -265,9 +269,9 @@ export default function AiKeysSettingsPage() {
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
         <Link href="/dashboard/settings" className="text-foreground-muted hover:text-foreground">
-          ← Назад
+          ← {tCommon('back')}
         </Link>
-        <h1 className="text-2xl font-bold">API-ключі AI</h1>
+        <h1 className="text-2xl font-bold">{t('aiKeysCardTitle')}</h1>
       </div>
 
       {/* Security Notice */}
@@ -276,11 +280,8 @@ export default function AiKeysSettingsPage() {
           <div className="flex items-start gap-3">
             <Shield className="w-5 h-5 text-success mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-medium text-success">Безпечне зберігання</p>
-              <p className="text-xs text-foreground-muted mt-1">
-                API-ключі шифруються AES-256-GCM перед збереженням у базі даних. Ми ніколи не
-                повертаємо розшифрований ключ з сервера.
-              </p>
+              <p className="text-sm font-medium text-success">{t('secureStorage')}</p>
+              <p className="text-xs text-foreground-muted mt-1">{t('secureStorageDescription')}</p>
             </div>
           </div>
         </CardContent>
@@ -289,8 +290,8 @@ export default function AiKeysSettingsPage() {
       {/* Provider Selection */}
       <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
-          <CardTitle>Оберіть провайдера</CardTitle>
-          <CardDescription>Активний AI-провайдер для вашого тенанту</CardDescription>
+          <CardTitle>{t('chooseProvider')}</CardTitle>
+          <CardDescription>{t('chooseProviderDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -328,7 +329,7 @@ export default function AiKeysSettingsPage() {
             <div className="p-4 rounded-xl bg-accent/50 border border-border/40">
               <p className="text-sm text-foreground-muted">{currentProvider.description}</p>
               <p className="text-xs text-foreground-muted mt-1">
-                <span className="font-medium">Безкоштовний тариф:</span> {currentProvider.freeQuota}
+                <span className="font-medium">{t('freeQuota')}</span> {currentProvider.freeQuota}
               </p>
             </div>
           )}
@@ -338,7 +339,7 @@ export default function AiKeysSettingsPage() {
       {/* API Key Input */}
       <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
-          <CardTitle>API-ключ</CardTitle>
+          <CardTitle>{t('apiKeyTitle')}</CardTitle>
           <CardDescription>
             {currentProvider?.keyUrl && (
               <a
@@ -347,7 +348,7 @@ export default function AiKeysSettingsPage() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-primary hover:underline"
               >
-                Отримати ключ {currentProvider.name}
+                {t('getKey', { name: currentProvider.name })}
                 <ExternalLink className="w-3 h-3" />
               </a>
             )}
@@ -367,7 +368,7 @@ export default function AiKeysSettingsPage() {
                   id: m.id,
                   name: m.description ? `${m.name} — ${m.description}` : m.name,
                 }))}
-                label="Модель"
+                label={t('modelLabel')}
               />
             </div>
           )}
@@ -375,10 +376,11 @@ export default function AiKeysSettingsPage() {
           {/* API Key input */}
           <div>
             <label className="block text-xs font-medium text-foreground-muted mb-1.5">
-              API-ключ {currentProvider?.keyPlaceholder && `(${currentProvider.keyPlaceholder})`}
+              {t('apiKeyTitle')}{' '}
+              {currentProvider?.keyPlaceholder && `(${currentProvider.keyPlaceholder})`}
             </label>
             <SecretInput
-              placeholder={currentProvider?.keyPlaceholder || 'Введіть API-ключ'}
+              placeholder={currentProvider?.keyPlaceholder || t('enterApiKey')}
               value={apiKey}
               onChange={(e) => {
                 setApiKey(e.target.value);
@@ -400,12 +402,12 @@ export default function AiKeysSettingsPage() {
               {testing ? (
                 <span className="flex items-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Тестування...
+                  {t('testing')}
                 </span>
               ) : (
                 <span className="flex items-center gap-2">
                   <Zap className="w-4 h-4" />
-                  Перевірити з'єднання
+                  {tCommon('testConnection')}
                 </span>
               )}
             </Button>
@@ -422,12 +424,12 @@ export default function AiKeysSettingsPage() {
               ) : saved ? (
                 <span className="flex items-center gap-2">
                   <Check className="w-4 h-4" />
-                  Збережено
+                  {t('saved')}
                 </span>
               ) : (
                 <span className="flex items-center gap-2">
                   <Key className="w-4 h-4" />
-                  Зберегти ключ
+                  {t('saveKey')}
                 </span>
               )}
             </Button>
@@ -436,7 +438,7 @@ export default function AiKeysSettingsPage() {
           {/* Save error (previously swallowed silently) */}
           {saveError && (
             <div className="p-3 rounded-xl border border-danger/30 bg-danger/5">
-              <p className="text-sm font-medium text-danger">Не збережено</p>
+              <p className="text-sm font-medium text-danger">{t('notSaved')}</p>
               <p className="text-xs text-foreground-muted mt-0.5">{saveError}</p>
             </div>
           )}
@@ -462,7 +464,7 @@ export default function AiKeysSettingsPage() {
                       testResult.status === 'connected' ? 'text-success' : 'text-danger'
                     }`}
                   >
-                    {testResult.status === 'connected' ? 'Підключено' : 'Помилка'}
+                    {testResult.status === 'connected' ? t('connected') : tCommon('error')}
                   </p>
                   <p className="text-xs text-foreground-muted mt-0.5">{testResult.message}</p>
                 </div>
@@ -475,10 +477,8 @@ export default function AiKeysSettingsPage() {
       {/* Saved keys per provider */}
       <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
-          <CardTitle>Збережені ключі</CardTitle>
-          <CardDescription>
-            По одному ключу на провайдера — перемикайтесь без повторного вводу
-          </CardDescription>
+          <CardTitle>{t('savedKeysTitle')}</CardTitle>
+          <CardDescription>{t('savedKeysDescription')}</CardDescription>
         </CardHeader>
         <CardContent>
           {keysError ? (
@@ -489,7 +489,7 @@ export default function AiKeysSettingsPage() {
               <Skeleton className="h-28 rounded-xl" />
             </div>
           ) : savedKeys.length === 0 ? (
-            <p className="text-sm text-foreground-muted">Поки що немає збережених ключів.</p>
+            <p className="text-sm text-foreground-muted">{t('noSavedKeys')}</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {savedKeys.map((k) => (
@@ -511,9 +511,9 @@ export default function AiKeysSettingsPage() {
                         </span>
                       </div>
                       {selectedProvider === k.provider ? (
-                        <Badge variant="success">Активний</Badge>
+                        <Badge variant="success">{t('activeBadge')}</Badge>
                       ) : (
-                        <Badge variant="secondary">Збережено</Badge>
+                        <Badge variant="secondary">{t('saved')}</Badge>
                       )}
                     </div>
                     <code className="block text-xs font-mono text-foreground-muted">
@@ -526,7 +526,7 @@ export default function AiKeysSettingsPage() {
                           size="sm"
                           onClick={() => handleActivateKey(k.provider)}
                         >
-                          Активувати
+                          {t('activate')}
                         </Button>
                       )}
                       <Button
@@ -535,7 +535,7 @@ export default function AiKeysSettingsPage() {
                         onClick={() => handleDeleteKey(k.provider)}
                         className="text-danger hover:text-danger"
                       >
-                        Видалити
+                        {tCommon('delete')}
                       </Button>
                     </div>
                   </CardContent>
@@ -549,22 +549,20 @@ export default function AiKeysSettingsPage() {
       {/* Fallback Provider */}
       <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
-          <CardTitle>Резервний провайдер</CardTitle>
-          <CardDescription>
-            Автоматичне переключення при помилці основного провайдера
-          </CardDescription>
+          <CardTitle>{t('fallbackProvider')}</CardTitle>
+          <CardDescription>{t('fallbackProviderDescription')}</CardDescription>
         </CardHeader>
         <CardContent>
           <QuickSelect
             value={fallbackProvider}
             onChange={setFallbackProvider}
             options={[
-              { id: '', name: 'Не налаштовано' },
+              { id: '', name: tCommon('notConfigured') },
               ...AI_PROVIDERS.filter((p) => p.id !== selectedProvider && p.id !== 'custom').map(
                 (p) => ({ id: p.id, name: p.name }),
               ),
             ]}
-            placeholder="Не налаштовано"
+            placeholder={tCommon('notConfigured')}
           />
         </CardContent>
       </Card>

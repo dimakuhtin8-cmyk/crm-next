@@ -2,6 +2,7 @@
 
 import { Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 
 import { QuickCreatePopover, QuickTaskForm, QuickSelect } from '@/components/quick-create';
@@ -46,23 +47,6 @@ interface TeamMember {
   role: string;
 }
 
-const priorityConfig: Record<string, { label: string; color: string; order: number }> = {
-  urgent: { label: 'Терміново', color: 'text-danger', order: 0 },
-  high: { label: 'Високий', color: 'text-warning', order: 1 },
-  medium: { label: 'Середній', color: 'text-info', order: 2 },
-  low: { label: 'Низький', color: 'text-foreground-muted', order: 3 },
-};
-
-const statusConfig: Record<
-  string,
-  { label: string; variant: 'default' | 'secondary' | 'outline' | 'success'; color: string }
-> = {
-  todo: { label: 'До виконання', variant: 'secondary', color: 'border-t-foreground-muted' },
-  in_progress: { label: 'В роботі', variant: 'default', color: 'border-t-primary' },
-  done: { label: 'Готово', variant: 'success', color: 'border-t-success' },
-  cancelled: { label: 'Скасовано', variant: 'outline', color: 'border-t-foreground-muted' },
-};
-
 const typeIcons: Record<string, string> = {
   task: '📋',
   call: '📞',
@@ -81,6 +65,8 @@ const priorityVariant: Record<string, 'danger' | 'warning' | 'info' | 'secondary
 
 export default function TasksPage() {
   const router = useRouter();
+  const t = useTranslations('tasks');
+  const tCommon = useTranslations('common');
   const [tasks, setTasks] = useState<Task[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -157,7 +143,7 @@ export default function TasksPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Видалити задачу?')) return;
+    if (!confirm(t('confirmDelete'))) return;
     await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
     fetchTasks();
   };
@@ -253,6 +239,27 @@ export default function TasksPage() {
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate();
 
+  const priorityConfig: Record<string, { label: string; color: string; order: number }> = {
+    urgent: { label: t('priorityUrgent'), color: 'text-danger', order: 0 },
+    high: { label: t('high'), color: 'text-warning', order: 1 },
+    medium: { label: t('medium'), color: 'text-info', order: 2 },
+    low: { label: t('low'), color: 'text-foreground-muted', order: 3 },
+  };
+
+  const statusConfig: Record<
+    string,
+    { label: string; variant: 'default' | 'secondary' | 'outline' | 'success'; color: string }
+  > = {
+    todo: { label: t('todo'), variant: 'secondary', color: 'border-t-foreground-muted' },
+    in_progress: { label: t('inProgress'), variant: 'default', color: 'border-t-primary' },
+    done: { label: t('statusDone'), variant: 'success', color: 'border-t-success' },
+    cancelled: {
+      label: t('statusCancelled'),
+      variant: 'outline',
+      color: 'border-t-foreground-muted',
+    },
+  };
+
   // Канбан: групування видимих задач за статусом
   const kanbanColumns = Object.entries(statusConfig).map(([key, cfg]) => ({
     key,
@@ -264,8 +271,8 @@ export default function TasksPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Задачі</h1>
-          <p className="text-foreground-muted">{total} задач</p>
+          <h1 className="text-2xl font-bold">{t('title')}</h1>
+          <p className="text-foreground-muted">{t('taskCount', { count: total })}</p>
         </div>
         <div className="flex gap-2">
           {/* Перемикач вигляду: список / канбан / календар */}
@@ -279,7 +286,7 @@ export default function TasksPage() {
                   : 'text-foreground-muted hover:bg-secondary/50',
               )}
             >
-              Список
+              {t('list')}
             </button>
             <button
               onClick={() => setView('kanban')}
@@ -290,7 +297,7 @@ export default function TasksPage() {
                   : 'text-foreground-muted hover:bg-secondary/50',
               )}
             >
-              Канбан
+              {t('kanban')}
             </button>
             <button
               onClick={() => setView('calendar')}
@@ -301,7 +308,7 @@ export default function TasksPage() {
                   : 'text-foreground-muted hover:bg-secondary/50',
               )}
             >
-              Календар
+              {t('calendar')}
             </button>
           </div>
           <Button ref={quickBtnRef} onClick={() => setQuickOpen(true)} data-tour="task-add">
@@ -315,13 +322,13 @@ export default function TasksPage() {
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
-            Нова задача
+            {t('newTask')}
           </Button>
           <QuickCreatePopover
             anchorEl={quickBtnRef.current}
             open={quickOpen}
             onClose={() => setQuickOpen(false)}
-            title="Нова задача"
+            title={t('newTask')}
           >
             <QuickTaskForm onCreated={handleQuickCreated} />
           </QuickCreatePopover>
@@ -331,10 +338,10 @@ export default function TasksPage() {
       {/* Таби: коли дивитися задачі */}
       <Tabs value={tab} onValueChange={(v) => setTab(v as TaskTab)} className="w-full">
         <TabsList data-tour="task-views">
-          <TabsTrigger value="all">Усі</TabsTrigger>
-          <TabsTrigger value="today">Сьогодні</TabsTrigger>
-          <TabsTrigger value="overdue">Прострочені</TabsTrigger>
-          <TabsTrigger value="completed">Завершені</TabsTrigger>
+          <TabsTrigger value="all">{t('tabAll')}</TabsTrigger>
+          <TabsTrigger value="today">{t('tabToday')}</TabsTrigger>
+          <TabsTrigger value="overdue">{t('tabOverdue')}</TabsTrigger>
+          <TabsTrigger value="completed">{t('tabCompleted')}</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -344,7 +351,7 @@ export default function TasksPage() {
           <form onSubmit={handleSearch} className="flex gap-3">
             <div className="relative flex-1">
               <Input
-                placeholder="Пошук задач..."
+                placeholder={t('searchPlaceholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-10"
@@ -361,7 +368,7 @@ export default function TasksPage() {
               </svg>
             </div>
             <Button type="submit" variant="secondary">
-              Знайти
+              {t('searchButton')}
             </Button>
             <Button
               type="button"
@@ -369,7 +376,7 @@ export default function TasksPage() {
               onClick={() => setShowFilters(!showFilters)}
               className={cn(showFilters && 'bg-primary-light')}
             >
-              Фільтри
+              {t('filters')}
             </Button>
           </form>
           {showFilters && (
@@ -382,13 +389,13 @@ export default function TasksPage() {
                     setPage(1);
                   }}
                   options={[
-                    { id: '', name: 'Всі пріоритети' },
-                    { id: 'urgent', name: 'Терміново' },
-                    { id: 'high', name: 'Високий' },
-                    { id: 'medium', name: 'Середній' },
-                    { id: 'low', name: 'Низький' },
+                    { id: '', name: t('allPriorities') },
+                    { id: 'urgent', name: t('priorityUrgent') },
+                    { id: 'high', name: t('high') },
+                    { id: 'medium', name: t('medium') },
+                    { id: 'low', name: t('low') },
                   ]}
-                  placeholder="Всі пріоритети"
+                  placeholder={t('allPriorities')}
                 />
               </div>
               {filterPriority && (
@@ -400,7 +407,7 @@ export default function TasksPage() {
                     setPage(1);
                   }}
                 >
-                  Скинути
+                  {t('reset')}
                 </Button>
               )}
             </div>
@@ -420,9 +427,9 @@ export default function TasksPage() {
           <Card>
             <CardContent>
               <EmptyState
-                title="Задач не знайдено"
-                description="Створіть першу задачу, щоб нічого не забути"
-                action={<Button onClick={() => setQuickOpen(true)}>Створити задачу</Button>}
+                title={t('emptyTitle')}
+                description={t('emptyDescription')}
+                action={<Button onClick={() => setQuickOpen(true)}>{t('createTask')}</Button>}
               />
             </CardContent>
           </Card>
@@ -441,7 +448,7 @@ export default function TasksPage() {
                   <Checkbox
                     checked={task.status === 'done'}
                     onCheckedChange={() => toggleStatus(task)}
-                    aria-label="Позначити виконаною"
+                    aria-label={t('markDone')}
                     className="shrink-0"
                   />
                   <div
@@ -490,7 +497,7 @@ export default function TasksPage() {
                   <button
                     onClick={() => handleDelete(task.id)}
                     className="shrink-0 rounded-md p-1.5 text-foreground-muted transition-colors hover:bg-danger-light hover:text-danger"
-                    aria-label="Видалити задачу"
+                    aria-label={t('deleteTask')}
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -574,7 +581,7 @@ export default function TasksPage() {
                     </div>
                   ))}
                   {col.tasks.length === 0 && (
-                    <p className="text-xs text-foreground-muted text-center py-4">Немає задач</p>
+                    <p className="text-xs text-foreground-muted text-center py-4">{t('noTasks')}</p>
                   )}
                 </div>
               </div>
@@ -594,7 +601,15 @@ export default function TasksPage() {
               </h2>
             </div>
             <div className="grid grid-cols-7 gap-px bg-border">
-              {['Нд', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'].map((day) => (
+              {[
+                t('weekdays.sun'),
+                t('weekdays.mon'),
+                t('weekdays.tue'),
+                t('weekdays.wed'),
+                t('weekdays.thu'),
+                t('weekdays.fri'),
+                t('weekdays.sat'),
+              ].map((day) => (
                 <div
                   key={day}
                   className="bg-background p-2 text-center text-xs font-medium text-foreground-muted"
@@ -657,10 +672,10 @@ export default function TasksPage() {
             disabled={page <= 1}
             onClick={() => setPage(page - 1)}
           >
-            Назад
+            {tCommon('back')}
           </Button>
           <span className="text-sm text-foreground-muted">
-            Сторінка {page} з {Math.ceil(total / 100)}
+            {t('pageOf', { page, pages: Math.ceil(total / 100) })}
           </span>
           <Button
             variant="outline"
@@ -668,7 +683,7 @@ export default function TasksPage() {
             disabled={page >= Math.ceil(total / 100)}
             onClick={() => setPage(page + 1)}
           >
-            Далі
+            {tCommon('next')}
           </Button>
         </div>
       )}

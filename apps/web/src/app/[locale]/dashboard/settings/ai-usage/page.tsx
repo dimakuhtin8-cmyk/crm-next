@@ -2,6 +2,7 @@
 
 import { BarChart3, TrendingUp, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
 
 import { DataError } from '@/components/data-error';
@@ -23,6 +24,8 @@ interface UsageData {
 }
 
 export default function AiUsagePage() {
+  const t = useTranslations('settings');
+  const tCommon = useTranslations('common');
   const [data, setData] = useState<UsageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -32,13 +35,13 @@ export default function AiUsagePage() {
     setLoading(true);
     fetch('/api/ai/usage', { credentials: 'include' })
       .then((r) => {
-        if (!r.ok) throw new Error(`Помилка ${r.status}`);
+        if (!r.ok) throw new Error(t('errors.requestFailed', { status: r.status }));
         return r.json();
       })
       .then(setData)
       .catch((err: unknown) => {
         setData(null);
-        setLoadError(err instanceof Error ? err.message : 'Помилка завантаження');
+        setLoadError(err instanceof Error ? err.message : t('loadError'));
       })
       .finally(() => setLoading(false));
   };
@@ -65,9 +68,9 @@ export default function AiUsagePage() {
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="flex items-center gap-3">
           <Link href="/dashboard/settings" className="text-foreground-muted hover:text-foreground">
-            ← Назад
+            ← {tCommon('back')}
           </Link>
-          <h1 className="text-2xl font-bold">Використання AI</h1>
+          <h1 className="text-2xl font-bold">{t('aiUsageCardTitle')}</h1>
         </div>
         <div className="space-y-4">
           <Skeleton className="h-32" />
@@ -81,9 +84,9 @@ export default function AiUsagePage() {
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
         <Link href="/dashboard/settings" className="text-foreground-muted hover:text-foreground">
-          ← Назад
+          ← {tCommon('back')}
         </Link>
-        <h1 className="text-2xl font-bold">Використання AI</h1>
+        <h1 className="text-2xl font-bold">{t('aiUsageCardTitle')}</h1>
       </div>
 
       {loadError && <DataError message={loadError} onRetry={loadUsage} />}
@@ -93,7 +96,7 @@ export default function AiUsagePage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="w-5 h-5" />
-            Сьогодні
+            {t('today')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -102,11 +105,11 @@ export default function AiUsagePage() {
               <div className="flex items-end justify-between">
                 <div>
                   <p className="text-3xl font-bold">{data.today.requests}</p>
-                  <p className="text-sm text-foreground-muted">запитів сьогодні</p>
+                  <p className="text-sm text-foreground-muted">{t('requestsToday')}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-lg font-semibold">{data.today.limit}</p>
-                  <p className="text-xs text-foreground-muted">ліміт</p>
+                  <p className="text-xs text-foreground-muted">{t('limit')}</p>
                 </div>
               </div>
 
@@ -118,8 +121,8 @@ export default function AiUsagePage() {
                   indicatorClassName={getProgressColor(data.today.percentage)}
                 />
                 <div className="flex justify-between text-xs text-foreground-muted">
-                  <span>{data.today.percentage}% використано</span>
-                  <span>{data.today.limit - data.today.requests} залишилось</span>
+                  <span>{t('percentUsed', { percent: data.today.percentage })}</span>
+                  <span>{t('remaining', { count: data.today.limit - data.today.requests })}</span>
                 </div>
               </div>
 
@@ -127,7 +130,7 @@ export default function AiUsagePage() {
                 <div className="flex items-center gap-2 p-3 rounded-xl bg-warning/10 border border-warning/20">
                   <AlertTriangle className="w-4 h-4 text-warning" />
                   <p className="text-sm text-warning">
-                    Увага! Використано {data.today.percentage}% денного ліміту.
+                    {t('limitWarning', { percent: data.today.percentage })}
                   </p>
                 </div>
               )}
@@ -136,14 +139,15 @@ export default function AiUsagePage() {
                 <div className="flex items-center gap-2 p-3 rounded-xl bg-danger/10 border border-danger/20">
                   <AlertTriangle className="w-4 h-4 text-danger" />
                   <p className="text-sm text-danger">
-                    Денний ліміт вичерпано. Нові AI-запити будуть відхилені до{' '}
-                    {new Date(data.limitStatus.resetAt).toLocaleTimeString('uk')}.
+                    {t('limitExceeded', {
+                      time: new Date(data.limitStatus.resetAt).toLocaleTimeString('uk'),
+                    })}
                   </p>
                 </div>
               )}
             </>
           ) : (
-            <p className="text-sm text-foreground-muted">Немає даних</p>
+            <p className="text-sm text-foreground-muted">{tCommon('noData')}</p>
           )}
         </CardContent>
       </Card>
@@ -153,7 +157,7 @@ export default function AiUsagePage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="w-5 h-5" />
-            Цей місяць
+            {t('thisMonth')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -161,19 +165,19 @@ export default function AiUsagePage() {
             <div className="grid grid-cols-3 gap-4">
               <div className="text-center p-3 rounded-xl bg-accent/50">
                 <p className="text-2xl font-bold">{formatNumber(data.month.requests)}</p>
-                <p className="text-xs text-foreground-muted">запитів</p>
+                <p className="text-xs text-foreground-muted">{t('requestsShort')}</p>
               </div>
               <div className="text-center p-3 rounded-xl bg-accent/50">
                 <p className="text-2xl font-bold">{formatNumber(data.month.tokensIn)}</p>
-                <p className="text-xs text-foreground-muted">вхідних токенів</p>
+                <p className="text-xs text-foreground-muted">{t('tokensIn')}</p>
               </div>
               <div className="text-center p-3 rounded-xl bg-accent/50">
                 <p className="text-2xl font-bold">{formatNumber(data.month.tokensOut)}</p>
-                <p className="text-xs text-foreground-muted">вихідних токенів</p>
+                <p className="text-xs text-foreground-muted">{t('tokensOut')}</p>
               </div>
             </div>
           ) : (
-            <p className="text-sm text-foreground-muted">Немає даних</p>
+            <p className="text-sm text-foreground-muted">{tCommon('noData')}</p>
           )}
         </CardContent>
       </Card>
@@ -181,7 +185,7 @@ export default function AiUsagePage() {
       {/* By Provider */}
       <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
-          <CardTitle>По провайдерах</CardTitle>
+          <CardTitle>{t('byProviders')}</CardTitle>
         </CardHeader>
         <CardContent>
           {data && Object.keys(data.byProvider).length > 0 ? (
@@ -194,7 +198,7 @@ export default function AiUsagePage() {
                   <div>
                     <p className="text-sm font-medium capitalize">{provider}</p>
                     <p className="text-xs text-foreground-muted">
-                      {formatNumber(stats.requests)} запитів
+                      {formatNumber(stats.requests)} {t('requestsShort')}
                     </p>
                   </div>
                   <div className="text-right text-xs text-foreground-muted">
@@ -205,7 +209,7 @@ export default function AiUsagePage() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-foreground-muted">Немає запитів цього місяця</p>
+            <p className="text-sm text-foreground-muted">{t('noRequestsThisMonth')}</p>
           )}
         </CardContent>
       </Card>

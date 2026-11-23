@@ -2,6 +2,7 @@
 
 import { Check, Loader2, Send, Zap } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -17,6 +18,9 @@ interface BotConfig {
 const TOKEN_RE = /^\d{6,}:[A-Za-z0-9_-]{30,}$/;
 
 export default function TelegramSettingsPage() {
+  const t = useTranslations('telegram');
+  const tSettings = useTranslations('settings');
+  const tCommon = useTranslations('common');
   const [config, setConfig] = useState<BotConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState('');
@@ -36,8 +40,8 @@ export default function TelegramSettingsPage() {
 
     const trimmed = token.trim();
     if (!TOKEN_RE.test(trimmed)) {
-      toast.error('Невірний формат токена', {
-        description: 'Очікується рядок на кшталт 123456789:ABCdef...',
+      toast.error(t('invalidTokenFormat'), {
+        description: t('tokenFormatExpected', { example: '123456789:ABCdef...' }),
       });
       return;
     }
@@ -52,17 +56,17 @@ export default function TelegramSettingsPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error('Не вдалося підключити бота', {
-          description: data.error || 'Помилка налаштування',
+        toast.error(t('connectError'), {
+          description: data.error || tCommon('setupError'),
         });
         return;
       }
 
-      toast.success('Бот підключено', { description: `@${data.botUsername}` });
+      toast.success(t('botConnected'), { description: `@${data.botUsername}` });
       setToken('');
       setConfig({ configured: true, botUsername: data.botUsername, webhookSet: data.webhookSet });
     } catch {
-      toast.error("Помилка з'єднання");
+      toast.error(tCommon('connectionError'));
     } finally {
       setSaving(false);
     }
@@ -72,8 +76,8 @@ export default function TelegramSettingsPage() {
   const handleTestToken = async () => {
     const trimmed = token.trim();
     if (!TOKEN_RE.test(trimmed)) {
-      toast.error('Невірний формат токена', {
-        description: 'Очікується рядок на кшталт 123456789:ABCdef...',
+      toast.error(t('invalidTokenFormat'), {
+        description: t('tokenFormatExpected', { example: '123456789:ABCdef...' }),
       });
       return;
     }
@@ -86,12 +90,14 @@ export default function TelegramSettingsPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        toast.success('Токен дійсний', { description: `Бот @${data.botUsername} відповідає` });
+        toast.success(t('tokenValid'), {
+          description: t('tokenValidDescription', { username: data.botUsername }),
+        });
       } else {
-        toast.error('Тест не пройшов', { description: data.error });
+        toast.error(tCommon('testFailed'), { description: data.error });
       }
     } catch {
-      toast.error("Помилка з'єднання з сервером");
+      toast.error(tCommon('serverConnectionError'));
     } finally {
       setTesting(false);
     }
@@ -107,29 +113,29 @@ export default function TelegramSettingsPage() {
         setConfig((prev) =>
           prev ? { ...prev, botUsername: data.botUsername, webhookSet: data.webhookSet } : prev,
         );
-        toast.success('Бот відповідає', {
-          description: `@${data.botUsername} · webhook: ${data.webhookSet ? 'встановлено' : 'не встановлено'}`,
+        toast.success(t('botResponding'), {
+          description: `@${data.botUsername} · webhook: ${data.webhookSet ? t('webhookSet') : t('webhookNotSet')}`,
         });
       } else {
-        toast.error('Тест не пройшов', { description: data.error });
+        toast.error(tCommon('testFailed'), { description: data.error });
       }
     } catch {
-      toast.error("Помилка з'єднання з сервером");
+      toast.error(tCommon('serverConnectionError'));
     } finally {
       setTesting(false);
     }
   };
 
   const handleRemove = async () => {
-    if (!confirm('Відключити бота?')) return;
+    if (!confirm(t('disconnectBotConfirm'))) return;
     setSaving(true);
     try {
       const res = await fetch('/api/telegram/config', { method: 'DELETE' });
       if (!res.ok) throw new Error();
       setConfig({ configured: false, botUsername: null, webhookSet: false });
-      toast.success('Бот відключено');
+      toast.success(t('botDisconnected'));
     } catch {
-      toast.error('Помилка відключення');
+      toast.error(tCommon('disconnectError'));
     } finally {
       setSaving(false);
     }
@@ -151,20 +157,18 @@ export default function TelegramSettingsPage() {
             href="/dashboard/settings"
             className="text-sm text-foreground-muted hover:text-foreground transition-colors"
           >
-            ← Налаштування
+            ← {tSettings('title')}
           </Link>
         </div>
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold">Telegram-бот</h1>
+          <h1 className="text-2xl font-bold">{tSettings('telegramBotCardTitle')}</h1>
           {config?.configured ? (
-            <Badge variant="success">Підключено</Badge>
+            <Badge variant="success">{t('connected')}</Badge>
           ) : (
-            <Badge variant="secondary">Не налаштовано</Badge>
+            <Badge variant="secondary">{tCommon('notConfigured')}</Badge>
           )}
         </div>
-        <p className="text-foreground-muted">
-          Підключіть Telegram-бота для отримання повідомлень та керування CRM
-        </p>
+        <p className="text-foreground-muted">{t('subtitle')}</p>
       </div>
 
       {/* Status */}
@@ -176,7 +180,7 @@ export default function TelegramSettingsPage() {
                 <Check className="h-6 w-6 text-success" />
               </div>
               <div className="flex-1">
-                <h3 className="font-medium">Бот підключено</h3>
+                <h3 className="font-medium">{t('botConnected')}</h3>
                 <p className="text-sm text-foreground-muted">@{config.botUsername}</p>
               </div>
               <div className="flex items-center gap-2">
@@ -186,47 +190,47 @@ export default function TelegramSettingsPage() {
                   ) : (
                     <Zap className="h-4 w-4 mr-2" />
                   )}
-                  Перевірити з&apos;єднання
+                  {tCommon('testConnection')}
                 </Button>
                 <Button variant="outline" onClick={handleRemove} disabled={saving}>
-                  Відключити
+                  {tCommon('disconnect')}
                 </Button>
               </div>
             </div>
 
             <div className="mt-6 p-4 bg-secondary/50 rounded-lg">
-              <h4 className="text-sm font-medium mb-2">Як використовувати:</h4>
+              <h4 className="text-sm font-medium mb-2">{tCommon('howToUse')}</h4>
               <ol className="text-sm text-foreground-muted space-y-1 list-decimal list-inside">
-                <li>Відкрийте бота @{config.botUsername} в Telegram</li>
-                <li>Надішліть /start для підключення</li>
-                <li>Використовуйте /deals для перегляду угод</li>
-                <li>Використовуйте /tasks для перегляду задач</li>
-                <li>Надішліть повідомлення — воно збережеться як активність</li>
+                <li>{t('howToOpenBot', { username: String(config.botUsername) })}</li>
+                <li>{tCommon('howToUseStart')}</li>
+                <li>{tCommon('howToUseDeals')}</li>
+                <li>{tCommon('howToUseTasks')}</li>
+                <li>{t('howToMessage')}</li>
               </ol>
             </div>
 
             <div className="mt-4 p-4 bg-secondary/50 rounded-lg">
-              <h4 className="text-sm font-medium mb-2">Команди бота:</h4>
+              <h4 className="text-sm font-medium mb-2">{t('commands')}:</h4>
               <div className="grid grid-cols-2 gap-2 text-sm text-foreground-muted">
                 <div>
-                  <code className="bg-background px-1.5 py-0.5 rounded text-xs">/start</code> —
-                  Головне меню
+                  <code className="bg-background px-1.5 py-0.5 rounded text-xs">/start</code> —{' '}
+                  {tCommon('cmdStart')}
                 </div>
                 <div>
-                  <code className="bg-background px-1.5 py-0.5 rounded text-xs">/help</code> —
-                  Довідка
+                  <code className="bg-background px-1.5 py-0.5 rounded text-xs">/help</code> —{' '}
+                  {tCommon('cmdHelp')}
                 </div>
                 <div>
-                  <code className="bg-background px-1.5 py-0.5 rounded text-xs">/deals</code> —
-                  Список угод
+                  <code className="bg-background px-1.5 py-0.5 rounded text-xs">/deals</code> —{' '}
+                  {tCommon('cmdDeals')}
                 </div>
                 <div>
-                  <code className="bg-background px-1.5 py-0.5 rounded text-xs">/tasks</code> — Мої
-                  задачі
+                  <code className="bg-background px-1.5 py-0.5 rounded text-xs">/tasks</code> —{' '}
+                  {tCommon('cmdTasks')}
                 </div>
                 <div>
-                  <code className="bg-background px-1.5 py-0.5 rounded text-xs">/status</code> —
-                  Статус бота
+                  <code className="bg-background px-1.5 py-0.5 rounded text-xs">/status</code> —{' '}
+                  {t('cmdStatus')}
                 </div>
               </div>
             </div>
@@ -240,18 +244,16 @@ export default function TelegramSettingsPage() {
                 <Send className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <h3 className="font-medium">Підключити Telegram-бота</h3>
-                <p className="text-sm text-foreground-muted">
-                  Створіть бота через BotFather та введіть токен
-                </p>
+                <h3 className="font-medium">{t('connectTitle')}</h3>
+                <p className="text-sm text-foreground-muted">{t('connectDescription')}</p>
               </div>
             </div>
 
             <div className="p-4 bg-secondary/50 rounded-lg mb-6">
-              <h4 className="text-sm font-medium mb-2">Інструкція:</h4>
+              <h4 className="text-sm font-medium mb-2">{t('instructions')}</h4>
               <ol className="text-sm text-foreground-muted space-y-1 list-decimal list-inside">
                 <li>
-                  Відкрийте{' '}
+                  {t('openWord')}{' '}
                   <a
                     href="https://t.me/BotFather"
                     target="_blank"
@@ -260,22 +262,22 @@ export default function TelegramSettingsPage() {
                   >
                     @BotFather
                   </a>{' '}
-                  в Telegram
+                  {t('inTelegram')}
                 </li>
                 <li>
-                  Надішліть{' '}
+                  {t('sendWord')}{' '}
                   <code className="bg-background px-1.5 py-0.5 rounded text-xs">/newbot</code>
                 </li>
-                <li>Введіть ім&apos;я та username бота</li>
-                <li>Скопіюйте отриманий токен</li>
-                <li>Вставте токен нижче</li>
+                <li>{t('enterNameUsername')}</li>
+                <li>{t('copyToken')}</li>
+                <li>{t('pasteTokenBelow')}</li>
               </ol>
             </div>
 
             <form onSubmit={handleSetup} className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-foreground-muted mb-1">
-                  Токен бота
+                  {t('botToken')}
                 </label>
                 <SecretInput
                   placeholder="1234567890:ABCdefGHIjklMNOpqrsTUVwxyz"
@@ -286,7 +288,7 @@ export default function TelegramSettingsPage() {
               </div>
               <div className="flex gap-2">
                 <Button type="submit" disabled={saving || !token}>
-                  {saving ? 'Налаштування...' : 'Підключити бота'}
+                  {saving ? tCommon('configuring') : t('connectBot')}
                 </Button>
                 <Button
                   type="button"
@@ -299,7 +301,7 @@ export default function TelegramSettingsPage() {
                   ) : (
                     <Zap className="h-4 w-4 mr-2" />
                   )}
-                  Перевірити токен
+                  {t('testToken')}
                 </Button>
               </div>
             </form>
@@ -310,30 +312,28 @@ export default function TelegramSettingsPage() {
       {/* Notifications info */}
       <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardContent className="p-5">
-          <h3 className="font-medium mb-3">Сповіщення</h3>
-          <p className="text-sm text-foreground-muted mb-4">
-            Бот автоматично надсилає сповіщення при:
-          </p>
+          <h3 className="font-medium mb-3">{tSettings('notifications')}</h3>
+          <p className="text-sm text-foreground-muted mb-4">{t('notificationsIntro')}</p>
           <ul className="text-sm text-foreground-muted space-y-2">
             <li className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0" />
-              Створенні нової задачі
+              {t('notifyNewTask')}
             </li>
             <li className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0" />
-              Призначенні задачі на співробітника
+              {t('notifyTaskAssigned')}
             </li>
             <li className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-warning flex-shrink-0" />
-              Наближенні до дедлайну
+              {t('notifyDeadlineSoon')}
             </li>
             <li className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-danger flex-shrink-0" />
-              Протермінуванні задачі
+              {t('notifyTaskOverdue')}
             </li>
             <li className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-success flex-shrink-0" />
-              Зміні статусу угоди (виграна/втрачена)
+              {t('notifyDealStatus')}
             </li>
           </ul>
         </CardContent>

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ export const COOKIE_CONSENT_KEY = 'crm_next_cookie_consent';
  */
 export function CookieBanner() {
   const locale = useLocale();
+  const t = useTranslations('common');
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -42,23 +44,22 @@ export function CookieBanner() {
   return (
     <div
       role="region"
-      aria-label="Файли cookie"
+      aria-label={t('cookieFiles')}
       data-testid="cookie-banner"
       className="landing-akari fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card p-4 shadow-lg"
     >
       <div className="mx-auto flex max-w-5xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm leading-6 text-foreground-secondary">
-          Ми використовуємо необхідні файли cookie (вхід, мова, безпека), щоб сервіс працював
-          коректно.{' '}
+          {t('cookieNotice')}{' '}
           <Link
             href={`/${locale}/legal/privacy#cookie`}
             className="text-primary underline-offset-4 hover:underline"
           >
-            Докладніше про cookie
+            {t('cookieLearnMore')}
           </Link>
         </p>
         <Button type="button" size="sm" onClick={accept}>
-          Зрозуміло
+          {t('understood')}
         </Button>
       </div>
     </div>

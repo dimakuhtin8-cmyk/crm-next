@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 
 import { QuickCreatePopover, QuickContactForm, QuickSelect } from '@/components/quick-create';
@@ -79,10 +80,10 @@ const statusConfig: Record<
   string,
   { label: string; variant: 'default' | 'secondary' | 'outline' | 'success' }
 > = {
-  active: { label: 'Активний', variant: 'success' },
-  inactive: { label: 'Неактивний', variant: 'secondary' },
-  lead: { label: 'Лід', variant: 'default' },
-  client: { label: 'Клієнт', variant: 'outline' },
+  active: { label: 'status.active', variant: 'success' },
+  inactive: { label: 'status.inactive', variant: 'secondary' },
+  lead: { label: 'status.lead', variant: 'default' },
+  client: { label: 'status.client', variant: 'outline' },
 };
 
 const currencySymbols: Record<string, string> = { UAH: '₴', USD: '$', EUR: '€' };
@@ -100,6 +101,9 @@ const formatDealAmount = (
 export default function ContactsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const t = useTranslations('contacts');
+  const tCommon = useTranslations('common');
+  const tDeals = useTranslations('deals');
 
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
@@ -233,7 +237,7 @@ export default function ContactsPage() {
   };
 
   const handleBulkDelete = async () => {
-    if (!confirm(`Видалити ${selectedIds.size} контактів?`)) return;
+    if (!confirm(t('confirmDeleteMany', { count: selectedIds.size }))) return;
 
     setBulkLoading(true);
     try {
@@ -286,7 +290,7 @@ export default function ContactsPage() {
   const columns = [
     {
       key: 'name',
-      header: 'Контакт',
+      header: tDeals('contact'),
       render: (contact: Contact) => (
         <div className="flex items-center gap-3">
           <Avatar name={getName(contact)} size="sm" />
@@ -301,7 +305,7 @@ export default function ContactsPage() {
     },
     {
       key: 'info',
-      header: 'Email / Телефон',
+      header: t('columnEmailPhone'),
       render: (contact: Contact) => (
         <div className="min-w-0">
           <p className="truncate text-sm">{contact.email || '—'}</p>
@@ -311,16 +315,16 @@ export default function ContactsPage() {
     },
     {
       key: 'status',
-      header: 'Статус',
+      header: tCommon('status'),
       render: (contact: Contact) => (
         <Badge variant={statusConfig[contact.status]?.variant || 'outline'} className="text-xs">
-          {statusConfig[contact.status]?.label || contact.status}
+          {statusConfig[contact.status] ? t(statusConfig[contact.status].label) : contact.status}
         </Badge>
       ),
     },
     {
       key: 'tags',
-      header: 'Теги',
+      header: t('tags'),
       render: (contact: Contact) => (
         <div className="flex flex-wrap items-center gap-1">
           {contact.tags?.slice(0, 2).map((ct) => (
@@ -344,32 +348,37 @@ export default function ContactsPage() {
     },
     {
       key: 'actions',
-      header: 'Дії',
+      header: tCommon('actions'),
       className: 'w-14',
       render: (contact: Contact) => (
         // Клік по меню не має відкривати шухляду
         <div onClick={(e) => e.stopPropagation()}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Дії з контактом">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                aria-label={t('contactActionsLabel')}
+              >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => router.push(`/dashboard/contacts/${contact.id}`)}>
-                Відкрити картку
+                {t('openCard')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="text-danger focus:bg-danger-light focus:text-danger"
                 onClick={async () => {
-                  if (!confirm('Видалити контакт?')) return;
+                  if (!confirm(t('confirmDelete'))) return;
                   await fetch('/api/contacts/' + contact.id, { method: 'DELETE' });
                   if (openId === contact.id) setOpenId(null);
                   fetchContacts();
                 }}
               >
-                Видалити
+                {tCommon('delete')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -383,29 +392,29 @@ export default function ContactsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Контакти</h1>
-          <p className="text-sm text-foreground-muted">{total} контактів</p>
+          <h1 className="text-2xl font-bold">{t('title')}</h1>
+          <p className="text-sm text-foreground-muted">{t('contactCount', { count: total })}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleExport}>
             <Download className="h-4 w-4" />
-            Експорт
+            {t('export')}
           </Button>
           <Link href="/dashboard/contacts/import" data-tour="contact-import">
             <Button variant="outline">
               <Upload className="h-4 w-4" />
-              Імпорт
+              {t('importAction')}
             </Button>
           </Link>
           <Button ref={quickBtnRef} onClick={() => setQuickOpen(true)} data-tour="contact-add">
             <Plus className="h-4 w-4" />
-            Додати контакт
+            {t('add')}
           </Button>
           <QuickCreatePopover
             anchorEl={quickBtnRef.current}
             open={quickOpen}
             onClose={() => setQuickOpen(false)}
-            title="Новий контакт"
+            title={t('newContact')}
           >
             <QuickContactForm onCreated={handleQuickCreated} />
           </QuickCreatePopover>
@@ -418,9 +427,11 @@ export default function ContactsPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <span className="text-sm font-medium">Обрано: {selectedIds.size} контактів</span>
+                <span className="text-sm font-medium">
+                  {t('selectedCount', { count: selectedIds.size })}
+                </span>
                 <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>
-                  Скасувати вибір
+                  {t('clearSelection')}
                 </Button>
               </div>
               <div className="flex items-center gap-2">
@@ -431,12 +442,12 @@ export default function ContactsPage() {
                       if (v) handleBulkStatus(v);
                     }}
                     options={[
-                      { id: 'active', name: 'Активний' },
-                      { id: 'inactive', name: 'Неактивний' },
-                      { id: 'lead', name: 'Лід' },
-                      { id: 'client', name: 'Клієнт' },
+                      { id: 'active', name: t('status.active') },
+                      { id: 'inactive', name: t('status.inactive') },
+                      { id: 'lead', name: t('status.lead') },
+                      { id: 'client', name: t('status.client') },
                     ]}
-                    placeholder="Змінити статус..."
+                    placeholder={t('changeStatus')}
                   />
                 </div>
                 <Button
@@ -445,7 +456,7 @@ export default function ContactsPage() {
                   onClick={handleBulkDelete}
                   disabled={bulkLoading}
                 >
-                  {bulkLoading ? 'Видалення...' : 'Видалити'}
+                  {bulkLoading ? t('deleting') : tCommon('delete')}
                 </Button>
               </div>
             </div>
@@ -459,7 +470,7 @@ export default function ContactsPage() {
           <form onSubmit={handleSearch} className="flex gap-3" data-tour="contact-search">
             <div className="relative flex-1">
               <Input
-                placeholder="Пошук за ім'ям, email, телефоном, компанією..."
+                placeholder={t('searchPlaceholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-10"
@@ -467,7 +478,7 @@ export default function ContactsPage() {
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-muted" />
             </div>
             <Button type="submit" variant="secondary">
-              Знайти
+              {t('searchAction')}
             </Button>
             <Button
               type="button"
@@ -476,7 +487,7 @@ export default function ContactsPage() {
               className={cn(showFilters && 'bg-primary-light')}
             >
               <Filter className="h-4 w-4" />
-              Фільтри
+              {t('filters')}
             </Button>
           </form>
 
@@ -490,13 +501,13 @@ export default function ContactsPage() {
                     setPage(1);
                   }}
                   options={[
-                    { id: '', name: 'Всі статуси' },
-                    { id: 'active', name: 'Активний' },
-                    { id: 'inactive', name: 'Неактивний' },
-                    { id: 'lead', name: 'Лід' },
-                    { id: 'client', name: 'Клієнт' },
+                    { id: '', name: t('allStatuses') },
+                    { id: 'active', name: t('status.active') },
+                    { id: 'inactive', name: t('status.inactive') },
+                    { id: 'lead', name: t('status.lead') },
+                    { id: 'client', name: t('status.client') },
                   ]}
-                  placeholder="Всі статуси"
+                  placeholder={t('allStatuses')}
                 />
               </div>
 
@@ -508,10 +519,10 @@ export default function ContactsPage() {
                     setPage(1);
                   }}
                   options={[
-                    { id: '', name: 'Всі теги' },
+                    { id: '', name: t('allTags') },
                     ...tags.map((tag) => ({ id: tag.name, name: tag.name })),
                   ]}
-                  placeholder="Всі теги"
+                  placeholder={t('allTags')}
                 />
               </div>
 
@@ -525,7 +536,7 @@ export default function ContactsPage() {
                     setPage(1);
                   }}
                 >
-                  Скинути фільтри
+                  {t('resetFilters')}
                 </Button>
               )}
             </div>
@@ -558,9 +569,9 @@ export default function ContactsPage() {
                   <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                 </svg>
               }
-              title="Контактів не знайдено"
-              description="Додайте перший контакт, щоб почати роботу"
-              action={<Button onClick={() => setQuickOpen(true)}>Додати перший контакт</Button>}
+              title={t('notFound')}
+              description={t('emptyDescription')}
+              action={<Button onClick={() => setQuickOpen(true)}>{t('addFirst')}</Button>}
             />
           </CardContent>
         </Card>
@@ -595,7 +606,7 @@ export default function ContactsPage() {
                     onChange={() => toggleSelect(contact.id)}
                     onClick={(e) => e.stopPropagation()}
                     className="h-5 w-5 rounded border-border shrink-0"
-                    aria-label="Обрати контакт"
+                    aria-label={t('selectContact')}
                   />
                 </div>
                 {(contact.phone || contact.email) && (
@@ -608,7 +619,9 @@ export default function ContactsPage() {
                     variant={statusConfig[contact.status]?.variant || 'outline'}
                     className="text-xs"
                   >
-                    {statusConfig[contact.status]?.label || contact.status}
+                    {statusConfig[contact.status]
+                      ? t(statusConfig[contact.status].label)
+                      : contact.status}
                   </Badge>
                   {contact.tags?.slice(0, 3).map((ct) => (
                     <Badge
@@ -639,7 +652,7 @@ export default function ContactsPage() {
               selectedRows={contacts.filter((c) => selectedIds.has(c.id))}
               onSelectionChange={(rows) => setSelectedIds(new Set(rows.map((r) => r.id)))}
               onRowClick={(contact) => openSheet(contact.id)}
-              emptyMessage="Контактів не знайдено"
+              emptyMessage={t('notFound')}
             />
           </div>
         </div>
@@ -655,10 +668,10 @@ export default function ContactsPage() {
         <SheetContent side="right" className="sm:max-w-lg" aria-describedby={undefined}>
           <SheetHeader>
             <div className="flex items-center gap-3 pr-8">
-              <Avatar name={sheetContact ? getName(sheetContact) : 'Контакт'} />
+              <Avatar name={sheetContact ? getName(sheetContact) : tDeals('contact')} />
               <div className="min-w-0">
                 <SheetTitle className="truncate">
-                  {sheetContact ? getName(sheetContact) : 'Контакт'}
+                  {sheetContact ? getName(sheetContact) : tDeals('contact')}
                 </SheetTitle>
                 <p className="truncate text-xs text-foreground-muted">
                   {sheetContact
@@ -684,7 +697,9 @@ export default function ContactsPage() {
                     variant={statusConfig[sheetContact.status]?.variant || 'outline'}
                     className="text-xs"
                   >
-                    {statusConfig[sheetContact.status]?.label || sheetContact.status}
+                    {statusConfig[sheetContact.status]
+                      ? t(statusConfig[sheetContact.status].label)
+                      : sheetContact.status}
                   </Badge>
                   {sheetContact.tags?.map((ct) => (
                     <Badge
@@ -723,19 +738,19 @@ export default function ContactsPage() {
 
                 {/* Нотатки */}
                 <div className="space-y-2">
-                  <p className="text-xs font-medium text-foreground-muted">Нотатки</p>
+                  <p className="text-xs font-medium text-foreground-muted">{t('notes')}</p>
                   {sheetContact.notes ? (
                     <p className="rounded-lg border border-border bg-background p-3 text-sm whitespace-pre-wrap">
                       {sheetContact.notes}
                     </p>
                   ) : (
-                    <p className="text-sm text-foreground-muted">Нотаток немає</p>
+                    <p className="text-sm text-foreground-muted">{t('noNotes')}</p>
                   )}
                 </div>
 
                 {/* Пов'язані угоди */}
                 <div className="space-y-2">
-                  <p className="text-xs font-medium text-foreground-muted">Пов&apos;язані угоди</p>
+                  <p className="text-xs font-medium text-foreground-muted">{t('relatedDeals')}</p>
                   {sheetDeals.length > 0 ? (
                     <div className="space-y-2">
                       {sheetDeals.map((deal) => (
@@ -752,7 +767,7 @@ export default function ContactsPage() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-foreground-muted">Угод немає</p>
+                    <p className="text-sm text-foreground-muted">{t('noRelatedDeals')}</p>
                   )}
                 </div>
               </>
@@ -764,10 +779,10 @@ export default function ContactsPage() {
               href={`/dashboard/contacts/${openId ?? ''}`}
               className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-background px-4 text-sm font-medium transition-colors hover:bg-secondary"
             >
-              Відкрити повну картку
+              {t('openFullCard')}
             </Link>
             <SheetClose className="h-9 rounded-md px-4 text-sm font-medium text-foreground-muted transition-colors hover:bg-secondary">
-              Закрити
+              {tCommon('close')}
             </SheetClose>
           </SheetFooter>
         </SheetContent>
@@ -782,10 +797,10 @@ export default function ContactsPage() {
             disabled={page <= 1}
             onClick={() => setPage(page - 1)}
           >
-            Назад
+            {tCommon('back')}
           </Button>
           <span className="text-sm text-foreground-muted">
-            Сторінка {page} з {Math.ceil(total / 50)}
+            {t('pageOf', { page, pages: Math.ceil(total / 50) })}
           </span>
           <Button
             variant="outline"
@@ -793,7 +808,7 @@ export default function ContactsPage() {
             disabled={page >= Math.ceil(total / 50)}
             onClick={() => setPage(page + 1)}
           >
-            Далі
+            {tCommon('next')}
           </Button>
         </div>
       )}

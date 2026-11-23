@@ -1,6 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
 import { ContactForm } from '@/components/contacts/contact-form';
@@ -23,6 +24,8 @@ interface ContactData {
 export default function EditContactPage() {
   const params = useParams();
   const contactId = params.id as string;
+  const t = useTranslations('contacts');
+  const tCommon = useTranslations('common');
   const [data, setData] = useState<ContactData | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -32,7 +35,7 @@ export default function EditContactPage() {
     setLoading(true);
     fetch(`/api/contacts/${contactId}`)
       .then((res) => {
-        if (!res.ok) throw new Error(`Помилка ${res.status}`);
+        if (!res.ok) throw new Error(t('errors.requestStatus', { status: res.status }));
         return res.json();
       })
       .then((d) => {
@@ -52,7 +55,7 @@ export default function EditContactPage() {
       })
       .catch((err: unknown) => {
         setData(null);
-        setLoadError(err instanceof Error ? err.message : 'Помилка завантаження');
+        setLoadError(err instanceof Error ? err.message : t('errors.loadFailed'));
       })
       .finally(() => setLoading(false));
   };
@@ -79,8 +82,8 @@ export default function EditContactPage() {
           <DataError message={loadError} onRetry={loadContact} />
         ) : (
           <>
-            <p className="text-foreground-muted mb-4">Контакт не знайдено</p>
-            <Button onClick={() => window.history.back()}>Назад</Button>
+            <p className="text-foreground-muted mb-4">{t('contactNotFound')}</p>
+            <Button onClick={() => window.history.back()}>{tCommon('back')}</Button>
           </>
         )}
       </div>
