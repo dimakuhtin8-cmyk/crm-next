@@ -7,46 +7,44 @@
  */
 
 import { motion } from 'framer-motion';
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
-const INBOX = [
-  {
-    name: 'Telegram',
-    time: '10:42',
-    unread: 2,
-    tone: 'bg-info-light text-info',
-  },
-  {
-    name: 'WhatsApp',
-    snippet: 'Домовимося на вівторок о 15:00?',
-    time: '09:58',
-    unread: 1,
-    tone: 'bg-success-light text-success',
-  },
-  {
-    name: 'Email',
-    snippet: 'Рахунок №1042 від «Альфа»',
-    time: 'вчора',
-    unread: 0,
-    tone: 'bg-primary-light text-primary',
-  },
-];
-
-const TELEGRAM_SNIPPETS = [
-  'Добрий день, надішліть будь ласка КП',
-  'КП отримали, готуємо відповідь',
-  'Домовились, чекаємо рахунок',
-];
-
-const INCOMING = [
-  'КП отримали, готуємо відповідь',
-  'Домовились, чекаємо рахунок',
-  'Надішліть, будь ласка, рахунок',
-];
-
 export function CommsPreview() {
+  const t = useTranslations('landing.comms');
   const [paused, setPaused] = useState(false);
   const [arrival, setArrival] = useState(0);
+
+  const INBOX = [
+    {
+      name: 'Telegram',
+      time: '10:42',
+      unread: 2,
+      tone: 'bg-info-light text-info',
+    },
+    {
+      name: 'WhatsApp',
+      snippet: t('waSnippet'),
+      time: '09:58',
+      unread: 1,
+      tone: 'bg-success-light text-success',
+    },
+    {
+      name: 'Email',
+      snippet: t('emailSnippet'),
+      time: t('yesterday'),
+      unread: 0,
+      tone: 'bg-primary-light text-primary',
+    },
+  ];
+
+  const TELEGRAM_SNIPPETS = [
+    t('msg.quoteRequest'),
+    t('msg.quoteReceived'),
+    t('msg.waitingInvoice'),
+  ];
+
+  const INCOMING = [t('msg.quoteReceived'), t('msg.waitingInvoice'), t('msg.sendInvoice')];
 
   useEffect(() => {
     if (paused) return;
@@ -65,9 +63,9 @@ export function CommsPreview() {
       onMouseLeave={() => setPaused(false)}
     >
       <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
-        <p className="text-sm font-bold">Вхідні · усі канали</p>
+        <p className="text-sm font-bold">{t('title')}</p>
         <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold text-foreground-secondary">
-          3 канали
+          {t('channelsBadge')}
         </span>
       </div>
 
@@ -125,13 +123,13 @@ export function CommsPreview() {
         {/* Листування */}
         <div className="flex flex-col gap-2.5 px-4 py-3.5">
           <div className="max-w-[85%] rounded-2xl rounded-tl-sm bg-secondary px-3.5 py-2 text-sm">
-            Добрий день, надішліть будь ласка КП
+            {t('msg.quoteRequest')}
           </div>
           <div className="ml-auto max-w-[85%] rounded-2xl rounded-tr-sm bg-primary px-3.5 py-2 text-sm text-primary-foreground">
-            Вже надсилаю — перевірте пошту 📎
+            {t('bubbleReply')}
           </div>
           <div className="max-w-[85%] rounded-2xl rounded-tl-sm bg-secondary px-3.5 py-2 text-sm">
-            Дякую! Погодимо умови до пʼятниці
+            {t('bubbleThanks')}
           </div>
           {incoming && (
             <motion.div
@@ -145,7 +143,7 @@ export function CommsPreview() {
             </motion.div>
           )}
           <div className="mt-auto flex items-center gap-2 rounded-lg border border-border bg-background-secondary px-3 py-2 text-xs text-foreground-muted">
-            Написати повідомлення…
+            {t('placeholder')}
             <span
               className="ml-auto inline-block h-3.5 w-0.5 animate-pulse bg-primary"
               aria-hidden="true"

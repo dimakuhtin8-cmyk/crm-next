@@ -44,6 +44,10 @@ export default function TenantDetailPage() {
   const router = useRouter();
   const params = useParams();
   const tRoot = useTranslations();
+  const t = useTranslations('settings');
+  const tCommon = useTranslations('common');
+  const tTeam = useTranslations('team');
+  const tTenants = useTranslations('tenants');
   const tenantId = params.id as string;
 
   const [tenant, setTenant] = useState<Tenant | null>(null);
@@ -112,7 +116,7 @@ export default function TenantDetailPage() {
       setTenant((prev) => (prev ? { ...prev, ...data.tenant } : null));
       setEditing(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Помилка оновлення');
+      setError(err instanceof Error ? err.message : t('tenantUpdateError'));
     }
   };
 
@@ -133,24 +137,24 @@ export default function TenantDetailPage() {
       setNewMemberEmail('');
       fetchTenant(); // Refresh
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Помилка додавання');
+      setError(err instanceof Error ? err.message : t('tenantMemberAddError'));
     } finally {
       setAddingMember(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!confirm('Ви впевнені? Це видалить компанію назавжди.')) return;
+    if (!confirm(t('tenantDeleteConfirm'))) return;
 
     try {
       const response = await fetch(`/api/tenants/${tenantId}`, {
         method: 'DELETE',
       });
 
-      if (!response.ok) throw new Error('Помилка видалення');
+      if (!response.ok) throw new Error(t('tenantDeleteError'));
       router.push('/dashboard/settings/tenants');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Помилка видалення');
+      setError(err instanceof Error ? err.message : t('tenantDeleteError'));
     }
   };
 
@@ -166,9 +170,9 @@ export default function TenantDetailPage() {
   if (!tenant) {
     return (
       <div className="max-w-4xl mx-auto p-5 text-center">
-        <h2 className="text-xl font-bold mb-2">Компанію не знайдено</h2>
+        <h2 className="text-xl font-bold mb-2">{t('tenantNotFound')}</h2>
         <Button onClick={() => router.push('/dashboard/settings/tenants')}>
-          Повернутися до списку
+          {t('backToList')}
         </Button>
       </div>
     );
@@ -186,10 +190,10 @@ export default function TenantDetailPage() {
             variant="outline"
             onClick={() => router.push(`/dashboard/settings/tenants/${tenantId}/team`)}
           >
-            Команда
+            {t('team')}
           </Button>
           <Button variant="outline" onClick={() => router.back()}>
-            Назад
+            {tCommon('back')}
           </Button>
         </div>
       </div>
@@ -199,14 +203,14 @@ export default function TenantDetailPage() {
       {/* General Settings */}
       <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
-          <CardTitle>Загальні налаштування</CardTitle>
-          <CardDescription>Основна інформація про компанію</CardDescription>
+          <CardTitle>{t('generalSettings')}</CardTitle>
+          <CardDescription>{t('companyInfoDescription')}</CardDescription>
         </CardHeader>
         <CardContent>
           {editing ? (
             <form onSubmit={handleUpdate} className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-xs text-foreground-muted">Назва</Label>
+                <Label className="text-xs text-foreground-muted">{tTenants('name')}</Label>
                 <Input
                   value={form.name}
                   onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
@@ -214,7 +218,7 @@ export default function TenantDetailPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-xs text-foreground-muted">Slug</Label>
+                <Label className="text-xs text-foreground-muted">{t('slugLabel')}</Label>
                 <Input
                   value={form.slug}
                   onChange={(e) => setForm((prev) => ({ ...prev, slug: e.target.value }))}
@@ -223,7 +227,7 @@ export default function TenantDetailPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-xs text-foreground-muted">Домен</Label>
+                <Label className="text-xs text-foreground-muted">{t('domainLabel')}</Label>
                 <Input
                   value={form.domain}
                   onChange={(e) => setForm((prev) => ({ ...prev, domain: e.target.value }))}
@@ -231,35 +235,35 @@ export default function TenantDetailPage() {
                 />
               </div>
               <div className="flex gap-2">
-                <Button type="submit">Зберегти</Button>
+                <Button type="submit">{tCommon('save')}</Button>
                 <Button type="button" variant="outline" onClick={() => setEditing(false)}>
-                  Скасувати
+                  {tCommon('cancel')}
                 </Button>
               </div>
             </form>
           ) : (
             <div>
               <div className="flex justify-between py-2">
-                <span className="text-foreground-muted">Назва:</span>
+                <span className="text-foreground-muted">{t('tenantFieldName')}</span>
                 <span>{tenant.name}</span>
               </div>
               <Separator />
               <div className="flex justify-between py-2">
-                <span className="text-foreground-muted">Slug:</span>
+                <span className="text-foreground-muted">{t('tenantFieldSlug')}</span>
                 <span>/{tenant.slug}</span>
               </div>
               <Separator />
               <div className="flex justify-between py-2">
-                <span className="text-foreground-muted">Домен:</span>
+                <span className="text-foreground-muted">{t('tenantFieldDomain')}</span>
                 <span>{tenant.domain || '—'}</span>
               </div>
               <Separator />
               <div className="flex justify-between py-2">
-                <span className="text-foreground-muted">Створено:</span>
+                <span className="text-foreground-muted">{t('tenantFieldCreated')}</span>
                 <span>{new Date(tenant.createdAt).toLocaleDateString('uk')}</span>
               </div>
               <Button variant="outline" className="mt-3" onClick={() => setEditing(true)}>
-                Редагувати
+                {tCommon('edit')}
               </Button>
             </div>
           )}
@@ -269,17 +273,15 @@ export default function TenantDetailPage() {
       {/* AI Settings */}
       <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
-          <CardTitle>AI-налаштування</CardTitle>
-          <CardDescription>
-            Оберіть AI-провайдера та введіть API-ключ для AI-функцій CRM
-          </CardDescription>
+          <CardTitle>{t('aiSettingsTitle')}</CardTitle>
+          <CardDescription>{t('aiSettingsDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {editing ? (
             <>
               {/* Provider selector */}
               <div className="space-y-2">
-                <Label className="text-xs text-foreground-muted">AI-провайдер</Label>
+                <Label className="text-xs text-foreground-muted">{t('aiProviderLabel')}</Label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {AI_PROVIDERS.filter((p) => p.id !== 'custom').map((provider) => (
                     <Card
@@ -331,7 +333,7 @@ export default function TenantDetailPage() {
                 if (!selectedProvider || selectedProvider.models.length <= 1) return null;
                 return (
                   <div className="space-y-2">
-                    <Label className="text-xs text-foreground-muted">Модель</Label>
+                    <Label className="text-xs text-foreground-muted">{t('modelLabel')}</Label>
                     <QuickSelect
                       value={form.aiModel}
                       onChange={(id) => setForm((prev) => ({ ...prev, aiModel: id }))}
@@ -346,7 +348,7 @@ export default function TenantDetailPage() {
 
               {/* API Key input */}
               <div className="space-y-2">
-                <Label className="text-xs text-foreground-muted">API-ключ</Label>
+                <Label className="text-xs text-foreground-muted">{t('apiKeyTitle')}</Label>
                 <Input
                   type="password"
                   value={form.aiApiKey || form.geminiApiKey}
@@ -360,9 +362,7 @@ export default function TenantDetailPage() {
                   }}
                   placeholder={getProvider(form.aiProvider)?.keyPlaceholder || 'your-api-key'}
                 />
-                <p className="text-xs text-foreground-muted">
-                  Ваш ключ зберігається тільки у вашій компанії. Він не передається третім особам.
-                </p>
+                <p className="text-xs text-foreground-muted">{t('apiKeyPrivacyNote')}</p>
               </div>
 
               {/* Get key link */}
@@ -373,7 +373,7 @@ export default function TenantDetailPage() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
                 >
-                  Отримати API-ключ {getProvider(form.aiProvider)!.name} →
+                  {t('getApiKey', { name: getProvider(form.aiProvider)!.name })}
                 </a>
               )}
             </>
@@ -395,18 +395,19 @@ export default function TenantDetailPage() {
                   </span>
                 </div>
                 {tenant.aiApiKey || tenant.geminiApiKey ? (
-                  <Badge variant="success">Підключено</Badge>
+                  <Badge variant="success">{t('connected')}</Badge>
                 ) : (
-                  <Badge variant="warning">Не налаштовано</Badge>
+                  <Badge variant="warning">{tCommon('notConfigured')}</Badge>
                 )}
               </div>
               {(tenant.aiApiKey || tenant.geminiApiKey) && (
                 <p className="text-xs text-foreground-muted">
-                  Ключ: ••••{(tenant.aiApiKey || tenant.geminiApiKey || '').slice(-4)}
+                  {t('keyMasked')}
+                  {(tenant.aiApiKey || tenant.geminiApiKey || '').slice(-4)}
                 </p>
               )}
               <Button variant="outline" onClick={() => setEditing(true)}>
-                Налаштувати
+                {t('configure')}
               </Button>
             </div>
           )}
@@ -416,8 +417,8 @@ export default function TenantDetailPage() {
       {/* Members */}
       <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
-          <CardTitle>Учасники ({tenant.members.length})</CardTitle>
-          <CardDescription>Керування доступом до компанії</CardDescription>
+          <CardTitle>{t('membersCount', { count: tenant.members.length })}</CardTitle>
+          <CardDescription>{t('membersCardDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <form onSubmit={handleAddMember} className="flex gap-2">
@@ -430,7 +431,7 @@ export default function TenantDetailPage() {
               className="flex-1"
             />
             <Button type="submit" disabled={addingMember}>
-              {addingMember ? 'Додавання...' : 'Додати'}
+              {addingMember ? t('adding') : tCommon('add')}
             </Button>
           </form>
 
@@ -453,10 +454,10 @@ export default function TenantDetailPage() {
                 </div>
                 <Badge variant={member.role === 'owner' ? 'default' : 'outline'}>
                   {member.role === 'owner'
-                    ? 'Власник'
+                    ? tTeam('owner')
                     : member.role === 'admin'
-                      ? 'Адміністратор'
-                      : 'Учасник'}
+                      ? tTeam('admin')
+                      : tTeam('member')}
                 </Badge>
               </div>
             ))}
@@ -467,14 +468,12 @@ export default function TenantDetailPage() {
       {/* Danger Zone */}
       <Card className="border-danger/50 bg-card shadow-sm rounded-xl">
         <CardHeader>
-          <CardTitle className="text-danger">Небезпечна зона</CardTitle>
+          <CardTitle className="text-danger">{t('dangerZone')}</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-foreground-muted mb-4">
-            Видалення компанії призведе до втрати всіх даних. Цю дію неможливо скасувати.
-          </p>
+          <p className="text-sm text-foreground-muted mb-4">{t('dangerZoneDescription')}</p>
           <Button variant="destructive" onClick={handleDelete}>
-            Видалити компанію
+            {t('deleteCompany')}
           </Button>
         </CardContent>
       </Card>

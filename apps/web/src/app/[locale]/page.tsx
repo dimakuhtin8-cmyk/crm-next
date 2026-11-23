@@ -29,67 +29,57 @@ import {
 } from '@/components/ui/accordion';
 import { siteOwnerLine, SITE_OWNER } from '@/lib/legal/company';
 
-const NAV_ITEMS: [string, string][] = [
-  ['#mozlyvosti', 'Можливості'],
-  ['#ai-copilot', 'AI Co-Pilot'],
-  ['#section-chat', 'Комунікація'],
-  ['#section-auto', 'Автоматизація'],
-  ['#admin', 'Адміністрування'],
-  ['#faq', 'FAQ'],
-];
-
-const AUDIENCE = [
-  {
-    icon: Building2,
-    name: 'B2B-продажі',
-    text: 'Довгі угоди, кілька контактів, контроль кожного етапу.',
-  },
-  {
-    icon: Cloud,
-    name: 'SaaS та IT',
-    text: 'Ліди з сайту й форм одразу розподіляються між менеджерами.',
-  },
-  {
-    icon: ShoppingCart,
-    name: 'E-commerce',
-    text: 'Замовлення, оплати й повторні продажі в одному вікні.',
-  },
-  {
-    icon: Briefcase,
-    name: 'Послуги',
-    text: 'Заявки, записи, нагадування й історія кожного клієнта.',
-  },
-];
-
-const SECURITY_ITEMS = [
-  { icon: Users, text: 'Member бачить свої та непризначені завдання' },
-  { icon: Shield, text: 'Viewer має доступ лише для читання' },
-  { icon: KeyRound, text: 'API-ключі зберігаються у зашифрованому вигляді' },
-  { icon: History, text: 'Зміни й входи видно в журналі аудиту' },
-];
-
-const FAQ_ITEMS = [
-  {
-    q: 'Чи побачить менеджер чужі угоди?',
-    a: 'Ні. Member працює зі своїми та непризначеними завданнями, owner і admin бачать усе, viewer лише читає.',
-  },
-  {
-    q: 'Чи можна перенести наявну базу?',
-    a: 'Так. Контакти можна імпортувати, знайти дублі й навести лад у базі перед запуском воронки.',
-  },
-  {
-    q: 'Як працює AI Co-Pilot?',
-    a: 'AI допомагає з наступними діями, статусами й короткими підсумками на основі ваших даних. Використання рахується за тенантом і видно в журналі.',
-  },
-  {
-    q: 'Що з безпекою даних?',
-    a: 'Доступ за ролями, шифрування чутливих полів і журнал аудиту для важливих дій.',
-  },
-];
-
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const tCommon = await getTranslations('common');
+  const t = await getTranslations('landing');
+
+  const NAV_ITEMS: [string, string][] = [
+    ['#mozlyvosti', t('nav.capabilities')],
+    ['#ai-copilot', t('nav.aiCopilot')],
+    ['#section-chat', t('nav.communication')],
+    ['#section-auto', t('nav.automation')],
+    ['#admin', t('nav.admin')],
+    ['#faq', t('nav.faq')],
+  ];
+
+  const AUDIENCE = [
+    {
+      icon: Building2,
+      name: t('audience.b2b.name'),
+      text: t('audience.b2b.text'),
+    },
+    {
+      icon: Cloud,
+      name: t('audience.saas.name'),
+      text: t('audience.saas.text'),
+    },
+    {
+      icon: ShoppingCart,
+      name: t('audience.ecommerce.name'),
+      text: t('audience.ecommerce.text'),
+    },
+    {
+      icon: Briefcase,
+      name: t('audience.services.name'),
+      text: t('audience.services.text'),
+    },
+  ];
+
+  const SECURITY_ITEMS = [
+    { icon: Users, text: t('security.itemMember') },
+    { icon: Shield, text: t('security.itemViewer') },
+    { icon: KeyRound, text: t('security.itemApiKeys') },
+    { icon: History, text: t('security.itemAudit') },
+  ];
+
+  const FAQ_ITEMS = [
+    { q: t('faq.q1'), a: t('faq.a1') },
+    { q: t('faq.q2'), a: t('faq.a2') },
+    { q: t('faq.q3'), a: t('faq.a3') },
+    { q: t('faq.q4'), a: t('faq.a4') },
+  ];
+
   return (
     <main className="landing-akari min-h-screen bg-background text-foreground antialiased">
       <style>{`
@@ -112,7 +102,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           <Link
             href={`/${locale}`}
             className="flex items-center gap-2"
-            aria-label="CRM-Next — на головну"
+            aria-label={t('header.homeAria')}
           >
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -124,7 +114,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
           <nav
             className="hidden items-center gap-6 text-sm font-medium text-inverse-muted lg:flex"
-            aria-label="Розділи"
+            aria-label={t('header.sectionsAria')}
           >
             {NAV_ITEMS.map(([href, label]) => (
               <SectionLink
@@ -141,7 +131,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
           <details className="relative lg:hidden">
             <summary className="inline-flex min-h-11 cursor-pointer list-none items-center rounded-lg border border-white/15 px-4 text-sm font-semibold [&::-webkit-details-marker]:hidden">
-              Меню
+              {t('header.menu')}
             </summary>
             <div className="absolute right-0 mt-2 w-64 rounded-xl border border-border bg-card p-2 text-foreground shadow-xl">
               {NAV_ITEMS.map(([href, label]) => (
@@ -171,40 +161,39 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:py-20">
           <div>
             <SplitHeadline
-              text="Жодна угода не губиться"
+              text={t('hero.headline')}
               className="text-4xl font-bold leading-[1.05] tracking-[-0.03em] sm:text-5xl lg:text-6xl"
             />
             <p className="mt-5 max-w-[62ch] text-base leading-7 text-foreground-secondary sm:text-lg sm:leading-8">
-              База клієнтів, воронка продажу, автоматизація, завдання й аналітика — в одному вікні.
-              Інтерфейс українською.
+              {t('hero.subtitle')}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href={`/${locale}/auth/register`}
                 className="inline-flex min-h-12 items-center justify-center rounded-xl bg-inverse px-7 text-sm font-bold text-inverse-foreground shadow-[0_18px_36px_-18px_rgba(74,60,40,0.5)] transition-colors hover:bg-[#3A352F]"
               >
-                Спробувати безкоштовно
+                {t('cta.tryFree')}
               </Link>
               <SectionLink
                 href="#mozlyvosti"
                 className="inline-flex min-h-12 items-center justify-center rounded-xl border border-border bg-transparent px-7 text-sm font-bold transition-colors hover:bg-secondary"
               >
-                Дивитися можливості
+                {t('hero.secondaryCta')}
               </SectionLink>
             </div>
-            <p className="mt-5 text-sm font-medium text-foreground-secondary">
-              Воронка, завдання, комунікація та контроль команди — без хаосу в таблицях.
-            </p>
+            <p className="mt-5 text-sm font-medium text-foreground-secondary">{t('hero.note')}</p>
             <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold">
-              {['Без картки', 'Послуги CRM безкоштовно', 'Інтерфейс українською'].map((item) => (
-                <li key={item} className="inline-flex items-center gap-1.5">
-                  <Check className="h-4 w-4 text-success" aria-hidden="true" />
-                  {item}
-                </li>
-              ))}
+              {[t('hero.checkNoCard'), t('hero.checkFree'), t('hero.checkUkrainian')].map(
+                (item) => (
+                  <li key={item} className="inline-flex items-center gap-1.5">
+                    <Check className="h-4 w-4 text-success" aria-hidden="true" />
+                    {item}
+                  </li>
+                ),
+              )}
             </ul>
             <div className="mt-4 flex flex-wrap gap-2">
-              {['4 ролі доступу', '3 канали', 'AI на ваших даних'].map((chip) => (
+              {[t('hero.chipRoles'), t('hero.chipChannels'), t('hero.chipAi')].map((chip) => (
                 <span
                   key={chip}
                   className="rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold text-foreground-secondary"
@@ -236,9 +225,9 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       <section className="border-b border-border bg-background-secondary">
         <div className="mx-auto grid max-w-7xl gap-4 px-4 py-10 sm:grid-cols-3 sm:px-6">
           {[
-            ['4', 'ролі доступу: від глядача до власника'],
-            ['3', 'канали: Telegram, WhatsApp, Email'],
-            ['AI', 'Co-Pilot з доступом до ваших даних'],
+            ['4', t('facts.roles')],
+            ['3', t('facts.channels')],
+            ['AI', t('facts.ai')],
           ].map(([value, label]) => (
             <div
               key={label}
@@ -257,25 +246,25 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         <div className="mx-auto grid max-w-7xl gap-4 px-4 py-14 sm:grid-cols-3 sm:px-6">
           {[
             {
-              step: 'Крок 1',
-              title: 'Хаос',
-              text: 'Угоди губляться в таблицях і месенджерах.',
+              step: t('funnel.step1'),
+              title: t('funnel.chaos.title'),
+              text: t('funnel.chaos.text'),
               link: '#section-baza',
-              cta: 'Дивитися воронку',
+              cta: t('funnel.chaos.cta'),
             },
             {
-              step: 'Крок 2',
-              title: 'Порядок',
-              text: 'База, воронка й автоматизація в одному вікні.',
+              step: t('funnel.step2'),
+              title: t('funnel.order.title'),
+              text: t('funnel.order.text'),
               link: '#section-auto',
-              cta: 'Дивитися автоматизацію',
+              cta: t('funnel.order.cta'),
             },
             {
-              step: 'Крок 3',
-              title: 'Контроль',
-              text: 'Ролі, аудит і відповіді AI з ваших даних.',
+              step: t('funnel.step3'),
+              title: t('funnel.control.title'),
+              text: t('funnel.control.text'),
               link: '#section-audit',
-              cta: 'Дивитися контроль',
+              cta: t('funnel.control.cta'),
             },
           ].map((s) => (
             <div key={s.step} className="rounded-2xl border border-border bg-card p-5 shadow-sm">
@@ -302,18 +291,13 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:py-20">
           <div>
             <h2 className="max-w-[20ch] text-2xl font-bold tracking-tight sm:text-3xl">
-              Питання до CRM — відповідь за секунди
+              {t('ai.title')}
             </h2>
             <p className="mt-4 max-w-[62ch] text-sm leading-7 text-foreground-secondary sm:text-base">
-              Co-Pilot читає ваші дані в межах вашої ролі та відповідає природною мовою: які угоди
-              під ризиком, кому подзвонити сьогодні, які підсумки тижня.
+              {t('ai.body')}
             </p>
             <ul className="mt-6 space-y-2.5 text-sm font-medium">
-              {[
-                'Відповіді лише на основі вашої CRM — без вигадок',
-                'Використання рахується за тенантом і видно в журналі',
-                'Можна підключити власний API-ключ AI-провайдера',
-              ].map((item) => (
+              {[t('ai.check1'), t('ai.check2'), t('ai.check3')].map((item) => (
                 <li key={item} className="flex items-start gap-3">
                   <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                     <Check className="h-4 w-4" aria-hidden="true" />
@@ -333,18 +317,13 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           <DevConsole />
           <div>
             <h2 className="max-w-[22ch] text-2xl font-bold tracking-tight sm:text-3xl">
-              Прозорий стан системи — без дзвінків адміну
+              {t('admin.title')}
             </h2>
             <p className="mt-4 max-w-[62ch] text-sm leading-7 text-foreground-secondary sm:text-base">
-              Кеш, черги завдань, вебхуки та системні журнали доступні адміністратору без звернення
-              до підтримки.
+              {t('admin.body')}
             </p>
             <ul className="mt-6 space-y-2.5 text-sm font-medium">
-              {[
-                'Статус кешу та черг завдань у реальному часі',
-                'Вебхуки: доставка й коди відповідей',
-                'Системні журнали й розділ «Логи»',
-              ].map((item) => (
+              {[t('admin.check1'), t('admin.check2'), t('admin.check3')].map((item) => (
                 <li key={item} className="flex items-start gap-3">
                   <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                     <Terminal className="h-4 w-4" aria-hidden="true" />
@@ -361,7 +340,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       <section id="dlya-kogo" className="border-b border-border">
         <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:py-20">
           <h2 className="max-w-[22ch] text-2xl font-bold tracking-tight sm:text-3xl">
-            Для яких команд підходить CRM-Next
+            {t('audience.title')}
           </h2>
           <div className="mt-8 grid gap-4 sm:grid-cols-2">
             {AUDIENCE.map((item) => {
@@ -387,12 +366,9 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       <section id="bezpeka" className="border-b border-border">
         <div className="mx-auto grid max-w-7xl gap-8 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:py-20">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
-              Безпека і порядок у даних
-            </h2>
+            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">{t('security.title')}</h2>
             <p className="mt-4 max-w-[64ch] text-sm leading-7 text-foreground-secondary sm:text-base">
-              Ролі owner, admin, member і viewer розділяють доступ. Чутливі поля шифруються, дії
-              користувачів фіксуються в аудиті.
+              {t('security.body')}
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               {['Owner', 'Admin', 'Member', 'Viewer'].map((role) => (
@@ -408,7 +384,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
               href={`/${locale}/auth/register`}
               className="mt-7 inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-7 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary-hover"
             >
-              Спробувати безкоштовно
+              {t('cta.tryFree')}
             </Link>
           </div>
           <ul className="space-y-3 text-sm font-medium">
@@ -433,7 +409,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       {/* FAQ */}
       <section id="faq" className="border-b border-border bg-background-secondary">
         <div className="mx-auto max-w-4xl px-4 py-14 sm:px-6 lg:py-20">
-          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Часті запитання</h2>
+          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">{t('faq.title')}</h2>
           <Accordion type="single" collapsible className="mt-8">
             {FAQ_ITEMS.map((item) => (
               <AccordionItem
@@ -454,23 +430,23 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:py-20">
           <div className="relative overflow-hidden rounded-2xl border border-border bg-card px-6 py-12 text-center shadow-xl sm:px-12">
             <h2 className="relative mx-auto max-w-[20ch] text-balance text-3xl font-bold tracking-tight sm:text-4xl">
-              Наведіть лад у продажах цього тижня
+              {t('finalCta.title')}
             </h2>
             <p className="mx-auto mt-4 max-w-[60ch] text-sm leading-7 text-foreground-secondary sm:text-base">
-              Почніть з бази й воронки, далі підключіть автоматизацію та AI-підказки.
+              {t('finalCta.body')}
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <Link
                 href={`/${locale}/auth/register`}
                 className="inline-flex min-h-12 items-center justify-center rounded-xl bg-inverse px-7 text-sm font-bold text-inverse-foreground shadow-[0_18px_36px_-18px_rgba(74,60,40,0.5)] transition-colors hover:bg-[#3A352F]"
               >
-                Спробувати безкоштовно
+                {t('cta.tryFree')}
               </Link>
               <Link
                 href={`/${locale}/auth/login`}
                 className="inline-flex min-h-12 items-center justify-center rounded-xl border border-foreground/30 px-7 text-sm font-bold transition-colors hover:bg-secondary"
               >
-                Увійти
+                {t('cta.login')}
               </Link>
             </div>
             <p className="mt-5 text-sm font-medium text-foreground-secondary">
@@ -484,26 +460,26 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-10 text-sm text-foreground-secondary sm:px-6">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <p className="font-bold text-foreground">CRM-Next</p>
-            <p>База клієнтів · Воронка · Автоматизація · Аналітика</p>
+            <p>{t('footer.tagline')}</p>
           </div>
-          <nav className="flex flex-wrap gap-x-5 gap-y-2" aria-label="Правова документація">
+          <nav className="flex flex-wrap gap-x-5 gap-y-2" aria-label={t('footer.legalAria')}>
             <Link
               href={`/${locale}/legal/oferta`}
               className="underline-offset-4 hover:text-foreground hover:underline"
             >
-              Публічна оферта
+              {t('footer.oferta')}
             </Link>
             <Link
               href={`/${locale}/legal/privacy`}
               className="underline-offset-4 hover:text-foreground hover:underline"
             >
-              Політика конфіденційності
+              {t('footer.privacy')}
             </Link>
             <Link
               href={`/${locale}/legal/dpa`}
               className="underline-offset-4 hover:text-foreground hover:underline"
             >
-              Договір обробки даних (DPA)
+              {t('footer.dpa')}
             </Link>
           </nav>
           <p className="text-xs leading-5">

@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 
 import { QuickCreatePopover, QuickTenantForm } from '@/components/quick-create';
@@ -17,9 +18,9 @@ interface Tenant {
 }
 
 const roleLabels: Record<string, string> = {
-  owner: 'Власник',
-  admin: 'Адміністратор',
-  member: 'Учасник',
+  owner: 'team.owner',
+  admin: 'team.admin',
+  member: 'team.member',
 };
 
 const roleVariants: Record<string, 'default' | 'secondary' | 'outline'> = {
@@ -30,8 +31,12 @@ const roleVariants: Record<string, 'default' | 'secondary' | 'outline'> = {
 
 export default function TenantsListPage() {
   const router = useRouter();
+  const t = useTranslations('settings');
+  const tRoot = useTranslations();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const roleLabel = (role: string) => (roleLabels[role] ? tRoot(roleLabels[role]) : role);
 
   // Quick-create popover
   const [quickOpen, setQuickOpen] = useState(false);
@@ -72,17 +77,17 @@ export default function TenantsListPage() {
     <div className="max-w-4xl mx-auto p-5">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Компанії</h1>
-          <p className="text-foreground-muted">Управління компаніями та командами</p>
+          <h1 className="text-2xl font-bold">{t('companiesCardTitle')}</h1>
+          <p className="text-foreground-muted">{t('companiesPageSubtitle')}</p>
         </div>
         <Button ref={quickBtnRef} onClick={() => setQuickOpen(true)}>
-          Створити компанію
+          {t('createCompany')}
         </Button>
         <QuickCreatePopover
           anchorEl={quickBtnRef.current}
           open={quickOpen}
           onClose={() => setQuickOpen(false)}
-          title="Нова компанія"
+          title={t('newCompany')}
         >
           <QuickTenantForm onCreated={handleQuickCreated} />
         </QuickCreatePopover>
@@ -91,8 +96,8 @@ export default function TenantsListPage() {
       {tenants.length === 0 ? (
         <Card className="bg-card border-border shadow-sm rounded-xl">
           <CardContent className="py-12 text-center">
-            <p className="text-foreground-muted mb-4">У вас ще немає компаній</p>
-            <Button onClick={() => setQuickOpen(true)}>Створити першу компанію</Button>
+            <p className="text-foreground-muted mb-4">{t('noCompaniesYet')}</p>
+            <Button onClick={() => setQuickOpen(true)}>{t('createFirstCompany')}</Button>
           </CardContent>
         </Card>
       ) : (
@@ -118,7 +123,7 @@ export default function TenantsListPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant={roleVariants[tenant.role] || 'outline'}>
-                    {roleLabels[tenant.role] || tenant.role}
+                    {roleLabel(tenant.role)}
                   </Badge>
                 </div>
               </CardContent>

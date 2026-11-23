@@ -6,18 +6,24 @@
  */
 
 import gsap from 'gsap';
+import { useTranslations } from 'next-intl';
 import { useEffect, useRef } from 'react';
 
-const STAGES = [
-  { name: 'Нові звернення', time: 'вчора', state: 'done' as const },
-  { name: 'Кваліфікація', time: 'сьогодні вранці', state: 'done' as const },
-  { name: 'Угода', time: 'зараз', state: 'current' as const },
-  { name: 'Оплата', time: 'далі', state: 'next' as const },
-];
-
 export function DealJourney() {
+  const t = useTranslations('landing.dealJourney');
   const rootRef = useRef<HTMLDivElement>(null);
   const fillRef = useRef<HTMLDivElement>(null);
+
+  const STAGES = [
+    { name: t('stages.new.name'), time: t('stages.new.time'), state: 'done' as const },
+    {
+      name: t('stages.qualification.name'),
+      time: t('stages.qualification.time'),
+      state: 'done' as const,
+    },
+    { name: t('stages.deal.name'), time: t('stages.deal.time'), state: 'current' as const },
+    { name: t('stages.payment.name'), time: t('stages.payment.time'), state: 'next' as const },
+  ];
 
   useEffect(() => {
     const reduced =
@@ -55,13 +61,13 @@ export function DealJourney() {
       className="overflow-hidden rounded-2xl border border-border bg-card shadow-lg"
     >
       <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
-        <p className="text-sm font-bold">Шлях угоди №1042</p>
+        <p className="text-sm font-bold">{t('title')}</p>
         <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-foreground-secondary">
           <span
             className="h-1.5 w-1.5 animate-pulse-subtle rounded-full bg-success"
             aria-hidden="true"
           />
-          рухається
+          {t('moving')}
         </span>
       </div>
 
@@ -103,7 +109,7 @@ export function DealJourney() {
             </div>
             {stage.state === 'current' && (
               <span className="shrink-0 rounded-full bg-primary-light px-2.5 py-1 text-[11px] font-bold text-primary">
-                зараз тут
+                {t('hereNow')}
               </span>
             )}
           </li>
@@ -111,8 +117,8 @@ export function DealJourney() {
       </ol>
 
       <div className="flex items-center justify-between border-t border-border px-5 py-4 text-sm">
-        <span className="font-semibold">Жодна угода не губиться</span>
-        <span className="font-bold tabular-nums text-success">на місці</span>
+        <span className="font-semibold">{t('slogan')}</span>
+        <span className="font-bold tabular-nums text-success">{t('onTrack')}</span>
       </div>
     </div>
   );

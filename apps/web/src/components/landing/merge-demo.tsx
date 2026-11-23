@@ -8,20 +8,22 @@
 
 import { AnimatePresence, motion } from 'framer-motion';
 import { Check, RotateCcw } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
-
-const SOURCES = [
-  { source: 'Instagram', name: 'Марія Коваль', field: '@maria_k' },
-  { source: 'Сайт', name: 'М. Коваль', field: 'maria.koval@gmail.com' },
-  { source: 'Excel', name: 'Марія Коваль', field: '+380 ·· ··· 67' },
-];
 
 const STEP_MS = 1200;
 
 export function MergeDemo() {
+  const t = useTranslations('landing.merge');
   const [phase, setPhase] = useState(0);
   const [runId, setRunId] = useState(0);
   const pausedRef = useRef(false);
+
+  const SOURCES = [
+    { source: 'Instagram', name: t('nameMaria'), field: '@maria_k' },
+    { source: t('sourceSite'), name: t('nameMariaShort'), field: 'maria.koval@gmail.com' },
+    { source: 'Excel', name: t('nameMaria'), field: '+380 ·· ··· 67' },
+  ];
 
   useEffect(() => {
     if (phase >= 3) return;
@@ -45,7 +47,7 @@ export function MergeDemo() {
     >
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs font-semibold uppercase tracking-wider text-foreground-secondary">
-          Імпорт · дедублікація
+          {t('title')}
         </p>
         <button
           type="button"
@@ -56,7 +58,7 @@ export function MergeDemo() {
           className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-bold transition-colors hover:border-border-hover hover:bg-secondary"
         >
           <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
-          Показати ще
+          {t('again')}
         </button>
       </div>
 
@@ -85,7 +87,7 @@ export function MergeDemo() {
                   </span>
                 </div>
                 {phase >= 1 && index > 0 && (
-                  <p className="mt-1 text-[11px] font-bold text-primary">можливий дублікат</p>
+                  <p className="mt-1 text-[11px] font-bold text-primary">{t('duplicate')}</p>
                 )}
               </motion.div>
             ))}
@@ -99,7 +101,7 @@ export function MergeDemo() {
             className="rounded-lg border-2 border-success bg-card p-3"
           >
             <div className="flex items-center justify-between gap-2">
-              <p className="truncate text-xs font-bold">Марія Коваль</p>
+              <p className="truncate text-xs font-bold">{t('nameMaria')}</p>
               <span className="shrink-0 rounded-full bg-success px-2.5 py-1 text-[11px] font-bold text-white">
                 3 → 1
               </span>

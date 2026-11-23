@@ -4,6 +4,7 @@ import { ChevronRight, EllipsisVertical, Loader2, Mail, Plus, X } from 'lucide-r
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -58,9 +59,9 @@ interface Invite {
 }
 
 const roleLabels: Record<string, string> = {
-  owner: 'Власник',
-  admin: 'Адміністратор',
-  member: 'Учасник',
+  owner: 'team.owner',
+  admin: 'team.admin',
+  member: 'team.member',
 };
 
 const roleVariants: Record<string, 'default' | 'secondary' | 'outline' | 'success'> = {
@@ -72,6 +73,10 @@ const roleVariants: Record<string, 'default' | 'secondary' | 'outline' | 'succes
 export default function TeamPage() {
   const params = useParams();
   const { data: session } = useSession();
+  const t = useTranslations('settings');
+  const tCommon = useTranslations('common');
+  const tTeam = useTranslations('team');
+  const tRoot = useTranslations();
   const tenantId = params.id as string;
 
   const [tenant, setTenant] = useState<Tenant | null>(null);
@@ -93,6 +98,8 @@ export default function TeamPage() {
   const [changingRole, setChangingRole] = useState<string | null>(null);
 
   const currentUserId = session?.user?.id;
+
+  const roleLabel = (role: string) => (roleLabels[role] ? tRoot(roleLabels[role]) : role);
 
   useTourAutoStart('team');
 
@@ -130,11 +137,11 @@ export default function TeamPage() {
 
     const email = inviteEmail.trim();
     if (!email) {
-      setInviteEmailError('Вкажіть email');
+      setInviteEmailError(t('emailRequired'));
       return;
     }
     if (!EMAIL_RE.test(email)) {
-      setInviteEmailError('Невірний формат email');
+      setInviteEmailError(t('errors.emailInvalid'));
       return;
     }
     setInviteEmailError(null);
@@ -155,21 +162,21 @@ export default function TeamPage() {
       if (!response.ok) throw new Error(data.error);
 
       if (data.emailSent) {
-        setInviteSuccess(`Запрошення надіслано на ${email}`);
-        toast.success('Запрошення надіслано', { description: email });
+        setInviteSuccess(t('inviteSentTo', { email }));
+        toast.success(t('inviteSent'), { description: email });
       } else {
-        setInviteSuccess(`Запрошення створено, але лист не надіслано — скопіюйте посилання вручну`);
+        setInviteSuccess(t('inviteCreatedNoEmail'));
         setManualLink(data.inviteUrl || null);
-        toast.warning('Лист не надіслано', { description: 'Скопіюйте посилання вручну' });
+        toast.warning(t('emailNotSent'), { description: t('copyLinkManually') });
       }
       setInviteEmail('');
       setInviteRole('member');
       setInviteOpen(false);
       fetchData();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Помилка надсилання запрошення';
+      const msg = err instanceof Error ? err.message : t('inviteSendError');
       setInviteError(msg);
-      toast.error('Не вдалося надіслати запрошення', { description: msg });
+      toast.error(t('inviteSendFailed'), { description: msg });
     } finally {
       setInviteLoading(false);
     }
@@ -189,18 +196,18 @@ export default function TeamPage() {
         throw new Error(data.error);
       }
 
-      toast.success('Роль оновлено', { description: roleLabels[newRole] || newRole });
+      toast.success(t('roleUpdated'), { description: roleLabel(newRole) });
       fetchData();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Не вдалося змінити роль';
-      toast.error('Не вдалося змінити роль', { description: msg });
+      const msg = err instanceof Error ? err.message : t('roleChangeError');
+      toast.error(t('roleChangeError'), { description: msg });
     } finally {
       setChangingRole(null);
     }
   };
 
   const handleRemoveMember = async (memberId: string, memberName: string) => {
-    if (!confirm(`Ви впевнені що хочете видалити ${memberName}?`)) return;
+    if (!confirm(t('removeMemberConfirm', { name: memberName }))) return;
 
     try {
       const response = await fetch(`/api/tenants/${tenantId}/members/${memberId}`, {
@@ -212,16 +219,16 @@ export default function TeamPage() {
         throw new Error(data.error);
       }
 
-      toast.success('Учасника видалено', { description: memberName });
+      toast.success(t('memberRemoved'), { description: memberName });
       fetchData();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Не вдалося видалити учасника';
-      toast.error('Не вдалося видалити учасника', { description: msg });
+      const msg = err instanceof Error ? err.message : t('memberRemoveError');
+      toast.error(t('memberRemoveError'), { description: msg });
     }
   };
 
   const handleRevokeInvite = async (inviteId: string) => {
-    if (!confirm('Відкликати запрошення?')) return;
+    if (!confirm(t('revokeInviteConfirm'))) return;
 
     try {
       const response = await fetch(`/api/tenants/${tenantId}/invites/${inviteId}`, {
@@ -233,11 +240,11 @@ export default function TeamPage() {
         throw new Error(data.error);
       }
 
-      toast.success('Запрошення відкликано');
+      toast.success(t('inviteRevoked'));
       fetchData();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Не вдалося відкликати запрошення';
-      toast.error('Не вдалося відкликати запрошення', { description: msg });
+      const msg = err instanceof Error ? err.message : t('inviteRevokeError');
+      toast.error(t('inviteRevokeError'), { description: msg });
     }
   };
 
@@ -257,9 +264,9 @@ export default function TeamPage() {
   if (!tenant) {
     return (
       <div className="max-w-4xl mx-auto text-center py-12">
-        <h2 className="text-xl font-bold mb-2">Компанію не знайдено</h2>
+        <h2 className="text-xl font-bold mb-2">{t('tenantNotFound')}</h2>
         <Link href="/dashboard/settings/tenants">
-          <Button>Повернутися до списку</Button>
+          <Button>{t('backToList')}</Button>
         </Link>
       </div>
     );
@@ -275,7 +282,7 @@ export default function TeamPage() {
               href="/dashboard/settings/tenants"
               className="hover:text-foreground transition-colors"
             >
-              Компанії
+              {t('companiesCardTitle')}
             </Link>
             <ChevronRight className="h-4 w-4" />
             <Link
@@ -286,11 +293,11 @@ export default function TeamPage() {
             </Link>
             <ChevronRight className="h-4 w-4" />
           </div>
-          <h1 className="text-2xl font-bold">Команда</h1>
-          <p className="text-foreground-muted">Управління учасниками та ролями</p>
+          <h1 className="text-2xl font-bold">{t('team')}</h1>
+          <p className="text-foreground-muted">{t('teamPageSubtitle')}</p>
         </div>
         <Link href={`/dashboard/settings/tenants/${tenantId}`}>
-          <Button variant="outline">Налаштування компанії</Button>
+          <Button variant="outline">{t('companySettings')}</Button>
         </Link>
       </div>
 
@@ -299,8 +306,8 @@ export default function TeamPage() {
         <>
           <Card data-tour="team-invite" className="bg-card border-border shadow-sm rounded-xl">
             <CardHeader>
-              <CardTitle>Запросити учасника</CardTitle>
-              <CardDescription>Надішліть запрошення на email</CardDescription>
+              <CardTitle>{tTeam('invite')}</CardTitle>
+              <CardDescription>{t('inviteCardDescription')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {inviteSuccess && (
@@ -317,17 +324,15 @@ export default function TeamPage() {
                     size="sm"
                     onClick={() => navigator.clipboard?.writeText(manualLink).catch(() => {})}
                   >
-                    Копіювати
+                    {t('copyLink')}
                   </Button>
                 </div>
               )}
               <div className="flex items-center justify-between gap-3">
-                <p className="text-xs text-foreground-muted">
-                  Запрошення дійсне 7 днів. Посилання буде згенеровано автоматично.
-                </p>
+                <p className="text-xs text-foreground-muted">{t('inviteValidNote')}</p>
                 <Button onClick={() => setInviteOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Запросити учасника
+                  {tTeam('invite')}
                 </Button>
               </div>
             </CardContent>
@@ -338,7 +343,7 @@ export default function TeamPage() {
             onClose={() => {
               if (!inviteLoading) setInviteOpen(false);
             }}
-            title="Запросити учасника"
+            title={tTeam('invite')}
             size="md"
           >
             <form onSubmit={handleInvite} noValidate className="space-y-4">
@@ -347,7 +352,7 @@ export default function TeamPage() {
               )}
               <div className="space-y-2">
                 <Label htmlFor="invite-email" className="text-xs text-foreground-muted">
-                  Email
+                  {t('emailLabel')}
                 </Label>
                 <Input
                   id="invite-email"
@@ -363,13 +368,13 @@ export default function TeamPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-xs text-foreground-muted">Роль</Label>
+                <Label className="text-xs text-foreground-muted">{tTeam('role')}</Label>
                 <QuickSelect
                   value={inviteRole}
                   onChange={setInviteRole}
                   options={[
-                    { id: 'member', name: 'Учасник' },
-                    { id: 'admin', name: 'Адміністратор' },
+                    { id: 'member', name: tTeam('member') },
+                    { id: 'admin', name: tTeam('admin') },
                   ]}
                 />
               </div>
@@ -380,11 +385,11 @@ export default function TeamPage() {
                   onClick={() => setInviteOpen(false)}
                   disabled={inviteLoading}
                 >
-                  Скасувати
+                  {tCommon('cancel')}
                 </Button>
                 <Button type="submit" disabled={inviteLoading}>
                   {inviteLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                  {inviteLoading ? 'Надсилання...' : 'Надіслати'}
+                  {inviteLoading ? t('sending') : t('send')}
                 </Button>
               </div>
             </form>
@@ -395,8 +400,8 @@ export default function TeamPage() {
       {/* Members */}
       <Card data-tour="team-members" className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
-          <CardTitle>Учасники ({members.length})</CardTitle>
-          <CardDescription>Поточні учасники компанії</CardDescription>
+          <CardTitle>{t('membersCount', { count: members.length })}</CardTitle>
+          <CardDescription>{t('currentMembersDescription')}</CardDescription>
         </CardHeader>
         <CardContent>
           <Table<Member>
@@ -405,7 +410,7 @@ export default function TeamPage() {
             columns={[
               {
                 key: 'user',
-                header: 'Учасник',
+                header: tTeam('member'),
                 render: (row) => {
                   const isCurrentUser = row.userId === currentUserId;
                   return (
@@ -417,9 +422,9 @@ export default function TeamPage() {
                       />
                       <div>
                         <p className="text-sm font-medium">
-                          {row.user.name || 'Без імені'}
+                          {row.user.name || t('noName')}
                           {isCurrentUser && (
-                            <span className="text-foreground-muted ml-1">(Ви)</span>
+                            <span className="text-foreground-muted ml-1">{t('youSuffix')}</span>
                           )}
                         </p>
                         <p className="text-xs text-foreground-muted">{row.user.email}</p>
@@ -430,11 +435,9 @@ export default function TeamPage() {
               },
               {
                 key: 'role',
-                header: 'Роль',
+                header: tTeam('role'),
                 render: (row) => (
-                  <Badge variant={roleVariants[row.role] || 'outline'}>
-                    {roleLabels[row.role] || row.role}
-                  </Badge>
+                  <Badge variant={roleVariants[row.role] || 'outline'}>{roleLabel(row.role)}</Badge>
                 ),
               },
               {
@@ -454,24 +457,24 @@ export default function TeamPage() {
                           variant="ghost"
                           size="sm"
                           disabled={changingRole === row.id}
-                          aria-label="Дії з учасником"
+                          aria-label={t('memberActionsLabel')}
                         >
                           <EllipsisVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Змінити роль</DropdownMenuLabel>
+                        <DropdownMenuLabel>{t('changeRole')}</DropdownMenuLabel>
                         <DropdownMenuItem
                           disabled={row.role === 'member'}
                           onSelect={() => handleChangeRole(row.id, 'member')}
                         >
-                          Учасник
+                          {tTeam('member')}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           disabled={row.role === 'admin'}
                           onSelect={() => handleChangeRole(row.id, 'admin')}
                         >
-                          Адміністратор
+                          {tTeam('admin')}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
@@ -479,11 +482,11 @@ export default function TeamPage() {
                           onSelect={() =>
                             handleRemoveMember(
                               row.id,
-                              row.user.name || row.user.email || 'учасника',
+                              row.user.name || row.user.email || t('memberFallback'),
                             )
                           }
                         >
-                          Видалити з команди
+                          {tTeam('remove')}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -491,7 +494,7 @@ export default function TeamPage() {
                 },
               },
             ]}
-            emptyMessage="Немає учасників"
+            emptyMessage={t('noMembers')}
           />
         </CardContent>
       </Card>
@@ -500,13 +503,13 @@ export default function TeamPage() {
       {canManage && (
         <Card data-tour="team-invites" className="bg-card border-border shadow-sm rounded-xl">
           <CardHeader>
-            <CardTitle>Очікуючі запрошення ({invites.length})</CardTitle>
-            <CardDescription>Нещодавно надіслані запрошення</CardDescription>
+            <CardTitle>{t('pendingInvitesCount', { count: invites.length })}</CardTitle>
+            <CardDescription>{t('pendingInvitesDescription')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {invites.length === 0 ? (
               <p className="text-sm text-foreground-muted text-center py-4">
-                Немає очікуючих запрошень
+                {t('noPendingInvites')}
               </p>
             ) : (
               invites.map((invite) => (
@@ -521,22 +524,24 @@ export default function TeamPage() {
                     <div>
                       <p className="text-sm font-medium">{invite.email}</p>
                       <p className="text-xs text-foreground-muted">
-                        Запросив {invite.invitedBy.name || invite.invitedBy.email} ·{' '}
-                        {new Date(invite.createdAt).toLocaleDateString('uk')}
+                        {t('invitedByLine', {
+                          name: invite.invitedBy.name || invite.invitedBy.email || '',
+                          date: new Date(invite.createdAt).toLocaleDateString('uk'),
+                        })}
                       </p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2">
                     <Badge variant={roleVariants[invite.role] || 'outline'}>
-                      {roleLabels[invite.role] || invite.role}
+                      {roleLabel(invite.role)}
                     </Badge>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleRevokeInvite(invite.id)}
-                      aria-label="Відкликати запрошення"
-                      title="Відкликати запрошення"
+                      aria-label={t('revokeInvite')}
+                      title={t('revokeInvite')}
                     >
                       <X className="h-4 w-4 text-foreground-muted hover:text-danger" />
                     </Button>
@@ -551,28 +556,21 @@ export default function TeamPage() {
       {/* Roles description */}
       <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
-          <CardTitle>Ролі та дозволи</CardTitle>
+          <CardTitle>{t('rolesAndPermissions')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid gap-3">
             <div className="flex items-start gap-3 p-3 bg-secondary/30 rounded-lg">
-              <Badge variant="default">Власник</Badge>
-              <p className="text-sm text-foreground-muted">
-                Повний доступ. може видаляти компанію, змінювати будь-які налаштування, керувати
-                всіма учасниками.
-              </p>
+              <Badge variant="default">{tTeam('owner')}</Badge>
+              <p className="text-sm text-foreground-muted">{t('roleOwnerFullDescription')}</p>
             </div>
             <div className="flex items-start gap-3 p-3 bg-secondary/30 rounded-lg">
-              <Badge variant="secondary">Адміністратор</Badge>
-              <p className="text-sm text-foreground-muted">
-                Може додавати/видаляти учасників, змінювати ролі, керувати контактами та угодами.
-              </p>
+              <Badge variant="secondary">{tTeam('admin')}</Badge>
+              <p className="text-sm text-foreground-muted">{t('roleAdminFullDescription')}</p>
             </div>
             <div className="flex items-start gap-3 p-3 bg-secondary/30 rounded-lg">
-              <Badge variant="outline">Учасник</Badge>
-              <p className="text-sm text-foreground-muted">
-                Може переглядати та редагувати контакти, угоди, задачі в межах компанії.
-              </p>
+              <Badge variant="outline">{tTeam('member')}</Badge>
+              <p className="text-sm text-foreground-muted">{t('roleMemberFullDescription')}</p>
             </div>
           </div>
         </CardContent>

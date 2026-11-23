@@ -7,29 +7,31 @@
 
 import { motion } from 'framer-motion';
 import { KeyRound, Webhook } from 'lucide-react';
-
-const ROWS = [
-  {
-    icon: KeyRound,
-    label: 'AI-ключі',
-    value: 'sk-••••••••••4f2a',
-    badge: { text: 'підключено', tone: 'bg-success-light text-success' },
-  },
-  {
-    icon: Webhook,
-    label: 'Вебхуки',
-    value: 'https://api…/hooks/crm',
-    badge: { text: '2 активні', tone: 'bg-primary-light text-primary' },
-  },
-] as const;
+import { useTranslations } from 'next-intl';
 
 export function SettingsPreview() {
+  const t = useTranslations('landing.settings');
+
+  const ROWS = [
+    {
+      icon: KeyRound,
+      label: t('keysLabel'),
+      value: 'sk-••••••••••4f2a',
+      badge: { text: t('connected'), tone: 'bg-success-light text-success' },
+    },
+    {
+      icon: Webhook,
+      label: t('webhooksLabel'),
+      value: 'https://api…/hooks/crm',
+      badge: { text: t('webhooksActive'), tone: 'bg-primary-light text-primary' },
+    },
+  ] as const;
   return (
     <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-bold">Налаштування</p>
+        <p className="text-sm font-bold">{t('title')}</p>
         <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold text-foreground-secondary">
-          API та інтеграції
+          {t('badge')}
         </span>
       </div>
 
@@ -67,17 +69,15 @@ export function SettingsPreview() {
             AI
           </span>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold">Журнал AI-запитів</p>
-            <p className="truncate text-xs text-foreground-secondary">
-              Використання за тенантом · витрати й ліміти
-            </p>
+            <p className="truncate text-sm font-semibold">{t('aiLogTitle')}</p>
+            <p className="truncate text-xs text-foreground-secondary">{t('aiLogDesc')}</p>
           </div>
-          <span className="shrink-0 text-xs font-bold text-primary">Відкрити →</span>
+          <span className="shrink-0 text-xs font-bold text-primary">{t('open')}</span>
         </li>
       </motion.ul>
 
       <p className="mt-3 border-t border-border pt-3 text-xs leading-5 text-foreground-secondary">
-        Власні ключі AI, вебхуки та інтеграції налаштовує адміністратор тенанта.
+        {t('note')}
       </p>
     </div>
   );

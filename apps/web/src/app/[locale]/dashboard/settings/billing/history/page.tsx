@@ -2,6 +2,7 @@
 
 import { Download, Receipt } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
@@ -29,13 +30,6 @@ interface PaymentsResponse {
   limit: number;
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  succeeded: 'Сплачено',
-  failed: 'Помилка',
-  pending: 'Очікує',
-  refunded: 'Повернення',
-};
-
 const STATUS_VARIANTS: Record<
   string,
   'default' | 'secondary' | 'success' | 'warning' | 'danger' | 'info'
@@ -47,22 +41,31 @@ const STATUS_VARIANTS: Record<
 };
 
 export default function PaymentHistoryPage() {
+  const t = useTranslations('settings');
+  const tCommon = useTranslations('common');
   const [data, setData] = useState<PaymentsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  const STATUS_LABELS: Record<string, string> = {
+    succeeded: t('billingHistoryStatusSucceeded'),
+    failed: t('billingHistoryStatusFailed'),
+    pending: t('billingHistoryStatusPending'),
+    refunded: t('billingHistoryStatusRefunded'),
+  };
 
   const loadInvoices = () => {
     setLoadError(null);
     setLoading(true);
     fetch('/api/billing/invoices', { credentials: 'include' })
       .then((r) => {
-        if (!r.ok) throw new Error(`Помилка ${r.status}`);
+        if (!r.ok) throw new Error(tCommon('errors.requestStatus', { status: r.status }));
         return r.json();
       })
       .then(setData)
       .catch((err: unknown) => {
         setData(null);
-        setLoadError(err instanceof Error ? err.message : 'Помилка завантаження');
+        setLoadError(err instanceof Error ? err.message : tCommon('errors.loadFailed'));
       })
       .finally(() => setLoading(false));
   };
@@ -106,14 +109,14 @@ export default function PaymentHistoryPage() {
   const handleDownloadMockInvoice = (row: Payment) => {
     try {
       const pdf = buildMockInvoicePdf([
-        'CRM-Next - Invoice (demo)',
-        `Date: ${new Date(row.createdAt).toLocaleDateString('uk')}`,
-        `Invoice: ${row.stripeInvoiceId || row.id}`,
-        `Description: ${row.description || 'Subscription payment'}`,
-        `Amount: ${(row.amount / 100).toFixed(2)} ${row.currency.toUpperCase()}`,
-        `Status: ${row.status}`,
+        t('billingHistoryPdfTitle'),
+        `${t('billingHistoryPdfDate')} ${new Date(row.createdAt).toLocaleDateString('uk')}`,
+        `${t('billingHistoryPdfNumber')} ${row.stripeInvoiceId || row.id}`,
+        `${t('billingHistoryPdfDescription')} ${row.description || t('billingHistoryPdfDefaultDescription')}`,
+        `${t('billingHistoryPdfAmount')} ${(row.amount / 100).toFixed(2)} ${row.currency.toUpperCase()}`,
+        `${t('billingHistoryPdfStatus')} ${row.status}`,
         '',
-        'Demo document generated client-side.',
+        t('billingHistoryPdfNote'),
       ]);
       const url = URL.createObjectURL(pdf);
       const a = document.createElement('a');
@@ -121,9 +124,11 @@ export default function PaymentHistoryPage() {
       a.download = `invoice-${(row.stripeInvoiceId || row.id).slice(-12)}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success('Рахунок завантажено', { description: 'Демонстраційний PDF' });
+      toast.success(t('billingHistoryInvoiceDownloaded'), {
+        description: t('billingHistoryDemoPdfNote'),
+      });
     } catch {
-      toast.error('Не вдалося завантажити рахунок');
+      toast.error(t('billingHistoryDownloadError'));
     }
   };
 
@@ -142,9 +147,9 @@ export default function PaymentHistoryPage() {
             href="/dashboard/settings/billing"
             className="text-foreground-muted hover:text-foreground"
           >
-            ← Назад
+            ← {tCommon('back')}
           </Link>
-          <h1 className="text-2xl font-bold">Історія платежів</h1>
+          <h1 className="text-2xl font-bold">{t('billingPaymentHistory')}</h1>
         </div>
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -162,9 +167,9 @@ export default function PaymentHistoryPage() {
           href="/dashboard/settings/billing"
           className="text-foreground-muted hover:text-foreground"
         >
-          ← Назад
+          ← {tCommon('back')}
         </Link>
-        <h1 className="text-2xl font-bold">Історія платежів</h1>
+        <h1 className="text-2xl font-bold">{t('billingPaymentHistory')}</h1>
       </div>
 
       {loadError ? (
@@ -179,7 +184,7 @@ export default function PaymentHistoryPage() {
           columns={[
             {
               key: 'createdAt',
-              header: 'Дата',
+              header: tCommon('date'),
               render: (row) => (
                 <span className="whitespace-nowrap text-sm text-foreground-muted">
                   {new Date(row.createdAt).toLocaleDateString('uk', {
@@ -192,7 +197,7 @@ export default function PaymentHistoryPage() {
             },
             {
               key: 'stripeInvoiceId',
-              header: 'Рахунок',
+              header: t('billingHistoryInvoiceColumn'),
               render: (row) => (
                 <span className="font-mono text-xs text-foreground-muted">
                   {row.stripeInvoiceId || '—'}
@@ -201,14 +206,16 @@ export default function PaymentHistoryPage() {
             },
             {
               key: 'description',
-              header: 'Опис',
+              header: tCommon('description'),
               render: (row) => (
-                <span className="text-sm">{row.description || 'Оплата підписки'}</span>
+                <span className="text-sm">
+                  {row.description || t('billingHistoryDefaultDescription')}
+                </span>
               ),
             },
             {
               key: 'amount',
-              header: 'Сума',
+              header: t('billingHistoryAmountColumn'),
               className: 'text-right',
               render: (row) => (
                 <span className="text-sm font-semibold">
@@ -218,7 +225,7 @@ export default function PaymentHistoryPage() {
             },
             {
               key: 'status',
-              header: 'Статус',
+              header: tCommon('status'),
               render: (row) => (
                 <Badge variant={STATUS_VARIANTS[row.status] ?? 'secondary'}>
                   {STATUS_LABELS[row.status] || row.status}
@@ -231,12 +238,17 @@ export default function PaymentHistoryPage() {
               className: 'w-12 text-right',
               render: (row) =>
                 row.invoiceUrl ? (
-                  <Button variant="ghost" size="sm" asChild title="Завантажити рахунок">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    asChild
+                    title={t('billingHistoryDownloadInvoice')}
+                  >
                     <a
                       href={row.invoiceUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      aria-label="Завантажити рахунок"
+                      aria-label={t('billingHistoryDownloadInvoice')}
                     >
                       <Download className="w-4 h-4" />
                     </a>
@@ -245,8 +257,8 @@ export default function PaymentHistoryPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    title="Завантажити рахунок (демонстраційний PDF)"
-                    aria-label="Завантажити рахунок (демонстраційний PDF)"
+                    title={t('billingHistoryDownloadInvoiceDemo')}
+                    aria-label={t('billingHistoryDownloadInvoiceDemo')}
                     onClick={() => handleDownloadMockInvoice(row)}
                   >
                     <Download className="w-4 h-4" />
@@ -254,14 +266,14 @@ export default function PaymentHistoryPage() {
                 ),
             },
           ]}
-          emptyMessage="Немає платежів"
+          emptyMessage={t('billingHistoryEmpty')}
         />
       )}
 
       {data && data.payments.length === 0 && !loadError && (
         <div className="text-center">
           <Receipt className="w-10 h-10 mx-auto text-foreground-muted/40 mb-3" />
-          <p className="text-sm text-foreground-muted">Рахунків поки що немає</p>
+          <p className="text-sm text-foreground-muted">{t('billingHistoryEmptyDescription')}</p>
         </div>
       )}
     </div>

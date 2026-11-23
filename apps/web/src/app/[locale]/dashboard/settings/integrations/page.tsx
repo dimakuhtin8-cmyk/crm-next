@@ -24,6 +24,8 @@ interface ProviderStatus {
 
 export default function IntegrationsSettingsPage() {
   const t = useTranslations('exchange1c');
+  const tCommon = useTranslations('common');
+  const tSettings = useTranslations('settings');
   const [aiStatus, setAiStatus] = useState<ProviderStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [telegramConfigured, setTelegramConfigured] = useState<boolean | null>(null);
@@ -45,7 +47,7 @@ export default function IntegrationsSettingsPage() {
       .then((d) => {
         setAiStatus({
           status: d.available ? 'connected' : 'not_configured',
-          message: d.available ? 'Підключено' : 'Не налаштовано',
+          message: d.available ? tSettings('connected') : tCommon('notConfigured'),
           provider: d.provider || 'gemini',
           maskedKey: d.maskedKey,
         });
@@ -53,7 +55,7 @@ export default function IntegrationsSettingsPage() {
       .catch(() => {
         setAiStatus({
           status: 'not_configured',
-          message: 'Не налаштовано',
+          message: tCommon('notConfigured'),
           provider: 'gemini',
         });
       })
@@ -86,18 +88,18 @@ export default function IntegrationsSettingsPage() {
         return (
           <Badge variant="success">
             <Check className="w-3 h-3" />
-            Підключено
+            {tSettings('connected')}
           </Badge>
         );
       case 'error':
         return (
           <Badge variant="danger">
             <X className="w-3 h-3" />
-            Помилка ключа
+            {tSettings('keyError')}
           </Badge>
         );
       default:
-        return <Badge variant="secondary">Не налаштовано</Badge>;
+        return <Badge variant="secondary">{tCommon('notConfigured')}</Badge>;
     }
   };
 
@@ -143,9 +145,9 @@ export default function IntegrationsSettingsPage() {
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
         <Link href="/dashboard/settings" className="text-foreground-muted hover:text-foreground">
-          ← Назад
+          ← {tCommon('back')}
         </Link>
-        <h1 className="text-2xl font-bold">Інтеграції</h1>
+        <h1 className="text-2xl font-bold">{tSettings('integrations')}</h1>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -162,9 +164,7 @@ export default function IntegrationsSettingsPage() {
                     statusBadge(aiStatus?.status || 'not_configured')
                   )}
                 </CardTitle>
-                <CardDescription>
-                  AI для аналізу контактів, прогнозування угод та автоматичного генерування контенту
-                </CardDescription>
+                <CardDescription>{tSettings('aiCopilotCardDescription')}</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -177,8 +177,8 @@ export default function IntegrationsSettingsPage() {
               >
                 <Key className="w-5 h-5 text-primary" />
                 <div>
-                  <p className="text-sm font-medium">API-ключі</p>
-                  <p className="text-xs text-foreground-muted">Налаштувати провайдера</p>
+                  <p className="text-sm font-medium">{tSettings('quickApiKeys')}</p>
+                  <p className="text-xs text-foreground-muted">{tSettings('quickApiKeysHint')}</p>
                 </div>
               </Link>
 
@@ -188,8 +188,8 @@ export default function IntegrationsSettingsPage() {
               >
                 <BarChart3 className="w-5 h-5 text-primary" />
                 <div>
-                  <p className="text-sm font-medium">Використання</p>
-                  <p className="text-xs text-foreground-muted">Ліміти та статистика</p>
+                  <p className="text-sm font-medium">{tSettings('quickUsage')}</p>
+                  <p className="text-xs text-foreground-muted">{tSettings('quickUsageHint')}</p>
                 </div>
               </Link>
 
@@ -199,8 +199,8 @@ export default function IntegrationsSettingsPage() {
               >
                 <FileText className="w-5 h-5 text-primary" />
                 <div>
-                  <p className="text-sm font-medium">Логи</p>
-                  <p className="text-xs text-foreground-muted">Історія запитів</p>
+                  <p className="text-sm font-medium">{tSettings('quickLogs')}</p>
+                  <p className="text-xs text-foreground-muted">{tSettings('quickLogsHint')}</p>
                 </div>
               </Link>
             </div>
@@ -224,12 +224,12 @@ export default function IntegrationsSettingsPage() {
               Telegram
               {connBadge(telegramConfigured)}
             </CardTitle>
-            <CardDescription>Бот для сповіщень та керування CRM через Telegram</CardDescription>
+            <CardDescription>{tSettings('integrationsTelegramDescription')}</CardDescription>
           </CardHeader>
           <CardContent className="flex justify-end">
             <Link href="/dashboard/settings/telegram">
               <Button variant="outline" size="sm">
-                Налаштувати бота
+                {tSettings('configureBot')}
               </Button>
             </Link>
           </CardContent>
@@ -243,12 +243,12 @@ export default function IntegrationsSettingsPage() {
               WhatsApp Business
               {connBadge(whatsappConfigured)}
             </CardTitle>
-            <CardDescription>API для спілкування з клієнтами через WhatsApp</CardDescription>
+            <CardDescription>{tSettings('integrationsWhatsappDescription')}</CardDescription>
           </CardHeader>
           <CardContent className="flex justify-end">
             <Link href="/dashboard/settings/whatsapp">
               <Button variant="outline" size="sm">
-                Налаштувати API
+                {tSettings('configureApi')}
               </Button>
             </Link>
           </CardContent>
@@ -259,17 +259,15 @@ export default function IntegrationsSettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Database className="w-4 h-4" />
-              База даних
+              {tSettings('databaseCardTitle')}
               {connBadge(databaseConfigured)}
             </CardTitle>
-            <CardDescription>
-              Підключення власної бази даних (PostgreSQL, MySQL, MariaDB, MS SQL)
-            </CardDescription>
+            <CardDescription>{tSettings('integrationsDatabaseDescription')}</CardDescription>
           </CardHeader>
           <CardContent className="flex justify-end">
             <Link href="/dashboard/settings/database">
               <Button variant="outline" size="sm">
-                Налаштувати з&apos;єднання
+                {tSettings('configureConnection')}
               </Button>
             </Link>
           </CardContent>

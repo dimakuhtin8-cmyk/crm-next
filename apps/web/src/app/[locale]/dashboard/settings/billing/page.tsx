@@ -86,76 +86,13 @@ interface PlanCard {
   maxDeals: number;
 }
 
-const ALL_PLANS: PlanCard[] = [
-  {
-    id: 'free',
-    name: 'Безкоштовний',
-    description: 'Для ознайомлення',
-    price: 0,
-    yearlyPrice: 0,
-    maxUsers: 1,
-    maxContacts: 100,
-    maxDeals: 20,
-    features: ['1 користувач', '100 контактів', '20 угод', '50 AI-запитів/день'],
-  },
-  {
-    id: 'starter',
-    name: 'Стартовий',
-    description: 'Для малого бізнесу',
-    price: 19,
-    yearlyPrice: 190,
-    maxUsers: 3,
-    maxContacts: 1000,
-    maxDeals: 200,
-    features: ['3 користувача', '1,000 контактів', '200 угод', '500 AI-запитів/день', '3 воронки'],
-  },
-  {
-    id: 'professional',
-    name: 'Професійний',
-    description: 'Для команд продажів',
-    price: 49,
-    yearlyPrice: 490,
-    maxUsers: 10,
-    maxContacts: 10000,
-    maxDeals: 2000,
-    isPopular: true,
-    features: [
-      '10 користувачів',
-      '10,000 контактів',
-      '2,000 угод',
-      '1,500 AI-запитів/день',
-      '10 воронок',
-      'Автоматизації',
-      'Звіти',
-    ],
-  },
-  {
-    id: 'enterprise',
-    name: 'Підприємство',
-    description: 'Для великих компаній',
-    price: 99,
-    yearlyPrice: 990,
-    maxUsers: -1,
-    maxContacts: -1,
-    maxDeals: -1,
-    features: [
-      'Необмежено користувачів',
-      'Необмежено контактів',
-      'Необмежено угод',
-      '5,000 AI-запитів/день',
-      'Необмежено воронок',
-      'API доступ',
-      'Пріоритетна підтримка',
-    ],
-  },
-];
-
 interface AiUsageData {
   today: { requests: number; limit: number; percentage: number };
 }
 
 export default function BillingPage() {
   const locale = useLocale();
+  const t = useTranslations('settings');
   const tCommon = useTranslations('common');
   const [data, setData] = useState<SubscriptionData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -172,12 +109,12 @@ export default function BillingPage() {
     setLoading(true);
     fetch('/api/billing/subscription', { credentials: 'include' })
       .then((r) => {
-        if (!r.ok) throw new Error(`Помилка ${r.status}`);
+        if (!r.ok) throw new Error(tCommon('errors.requestStatus', { status: r.status }));
         return r.json();
       })
       .then(setData)
       .catch((err: unknown) => {
-        setLoadError(err instanceof Error ? err.message : 'Помилка завантаження підписки');
+        setLoadError(err instanceof Error ? err.message : t('billingSubscriptionLoadError'));
       })
       .finally(() => setLoading(false));
   };
@@ -186,9 +123,9 @@ export default function BillingPage() {
     // Check for success/canceled params
     const params = new URLSearchParams(window.location.search);
     if (params.get('success') === 'true') {
-      setMessage('Оплата успішна! Вашу підписку оновлено.');
+      setMessage(t('billingPaymentSuccess'));
     } else if (params.get('canceled') === 'true') {
-      setMessage('Оплату скасовано.');
+      setMessage(t('billingPaymentCanceled'));
     }
     loadSubscription();
 
@@ -216,12 +153,12 @@ export default function BillingPage() {
       if (json.url) {
         window.location.href = json.url;
       } else {
-        toast.error('Не вдалося створити оплату', {
-          description: json.error || 'Спробуйте ще раз',
+        toast.error(t('billingCheckoutError'), {
+          description: json.error || t('tryAgain'),
         });
       }
     } catch {
-      toast.error('Не вдалося створити оплату', { description: "Помилка з'єднання" });
+      toast.error(t('billingCheckoutError'), { description: tCommon('connectionError') });
     } finally {
       setCheckoutLoading(null);
     }
@@ -239,19 +176,19 @@ export default function BillingPage() {
       if (json.url) {
         window.location.href = json.url;
       } else {
-        toast.error('Не вдалося відкрити керування підпискою', {
-          description: json.error || 'Спробуйте ще раз',
+        toast.error(t('billingPortalError'), {
+          description: json.error || t('tryAgain'),
         });
       }
     } catch {
-      toast.error('Не вдалося відкрити керування підпискою', {
-        description: "Помилка з'єднання",
+      toast.error(t('billingPortalError'), {
+        description: tCommon('connectionError'),
       });
     }
   };
 
   const formatPrice = (cents: number): string => {
-    if (cents === 0) return 'Безкоштовно';
+    if (cents === 0) return t('billingFreePrice');
     return `$${(cents / 100).toFixed(0)}`;
   };
 
@@ -268,17 +205,92 @@ export default function BillingPage() {
   const statusBadge = (status: string) => {
     switch (status) {
       case 'active':
-        return <Badge variant="success">Активна</Badge>;
+        return <Badge variant="success">{t('billingStatusActive')}</Badge>;
       case 'trialing':
-        return <Badge variant="info">Пробний період</Badge>;
+        return <Badge variant="info">{t('billingStatusTrialing')}</Badge>;
       case 'past_due':
-        return <Badge variant="warning">Прострочена</Badge>;
+        return <Badge variant="warning">{t('billingStatusPastDue')}</Badge>;
       case 'canceled':
-        return <Badge variant="danger">Скасована</Badge>;
+        return <Badge variant="danger">{t('billingStatusCanceled')}</Badge>;
       default:
         return <Badge>{status}</Badge>;
     }
   };
+
+  const ALL_PLANS: PlanCard[] = [
+    {
+      id: 'free',
+      name: t('billingPlans.free.name'),
+      description: t('billingPlans.free.description'),
+      price: 0,
+      yearlyPrice: 0,
+      maxUsers: 1,
+      maxContacts: 100,
+      maxDeals: 20,
+      features: [
+        t('billingPlans.free.feature1'),
+        t('billingPlans.free.feature2'),
+        t('billingPlans.free.feature3'),
+        t('billingPlans.free.feature4'),
+      ],
+    },
+    {
+      id: 'starter',
+      name: t('billingPlans.starter.name'),
+      description: t('billingPlans.starter.description'),
+      price: 19,
+      yearlyPrice: 190,
+      maxUsers: 3,
+      maxContacts: 1000,
+      maxDeals: 200,
+      features: [
+        t('billingPlans.starter.feature1'),
+        t('billingPlans.starter.feature2'),
+        t('billingPlans.starter.feature3'),
+        t('billingPlans.starter.feature4'),
+        t('billingPlans.starter.feature5'),
+      ],
+    },
+    {
+      id: 'professional',
+      name: t('billingPlans.professional.name'),
+      description: t('billingPlans.professional.description'),
+      price: 49,
+      yearlyPrice: 490,
+      maxUsers: 10,
+      maxContacts: 10000,
+      maxDeals: 2000,
+      isPopular: true,
+      features: [
+        t('billingPlans.professional.feature1'),
+        t('billingPlans.professional.feature2'),
+        t('billingPlans.professional.feature3'),
+        t('billingPlans.professional.feature4'),
+        t('billingPlans.professional.feature5'),
+        t('billingPlans.professional.feature6'),
+        t('billingPlans.professional.feature7'),
+      ],
+    },
+    {
+      id: 'enterprise',
+      name: t('billingPlans.enterprise.name'),
+      description: t('billingPlans.enterprise.description'),
+      price: 99,
+      yearlyPrice: 990,
+      maxUsers: -1,
+      maxContacts: -1,
+      maxDeals: -1,
+      features: [
+        t('billingPlans.enterprise.feature1'),
+        t('billingPlans.enterprise.feature2'),
+        t('billingPlans.enterprise.feature3'),
+        t('billingPlans.enterprise.feature4'),
+        t('billingPlans.enterprise.feature5'),
+        t('billingPlans.enterprise.feature6'),
+        t('billingPlans.enterprise.feature7'),
+      ],
+    },
+  ];
 
   const selectedPlan = selectedPlanId
     ? (ALL_PLANS.find((p) => p.id === selectedPlanId) ?? null)
@@ -294,9 +306,9 @@ export default function BillingPage() {
       <div className="max-w-5xl mx-auto space-y-6">
         <div className="flex items-center gap-3">
           <Link href="/dashboard/settings" className="text-foreground-muted hover:text-foreground">
-            ← Назад
+            ← {tCommon('back')}
           </Link>
-          <h1 className="text-2xl font-bold">Підписка та оплата</h1>
+          <h1 className="text-2xl font-bold">{t('billingCardTitle')}</h1>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -311,9 +323,9 @@ export default function BillingPage() {
     <div className="max-w-5xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
         <Link href="/dashboard/settings" className="text-foreground-muted hover:text-foreground">
-          ← Назад
+          ← {tCommon('back')}
         </Link>
-        <h1 className="text-2xl font-bold">Підписка та оплата</h1>
+        <h1 className="text-2xl font-bold">{t('billingCardTitle')}</h1>
       </div>
 
       {/* Сайт у розробці: CRM-послуги безкоштовно (рішення власника) */}
@@ -338,7 +350,7 @@ export default function BillingPage() {
         >
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              Поточна підписка
+              {t('billingCurrentSubscription')}
               {statusBadge(data.subscription.status)}
             </CardTitle>
           </CardHeader>
@@ -347,18 +359,22 @@ export default function BillingPage() {
               <div>
                 <p className="text-2xl font-bold">{data.plan.name}</p>
                 <p className="text-sm text-foreground-muted">
-                  {data.plan.price === 0 ? 'Безкоштовно' : `$${data.plan.price / 100}/міс`}
+                  {data.plan.price === 0
+                    ? t('billingFreePrice')
+                    : `$${data.plan.price / 100}/${t('billingPerMonth')}`}
                 </p>
               </div>
               {data.subscription.isTrial && data.subscription.trialDaysLeft > 0 && (
                 <div className="text-right">
-                  <p className="text-sm font-medium text-warning">Пробний період</p>
-                  <p className="text-2xl font-bold">{data.subscription.trialDaysLeft} дн.</p>
+                  <p className="text-sm font-medium text-warning">{t('billingStatusTrialing')}</p>
+                  <p className="text-2xl font-bold">
+                    {t('billingTrialDaysLeft', { count: data.subscription.trialDaysLeft })}
+                  </p>
                 </div>
               )}
               {data.subscription.endsAt && !data.subscription.isTrial && (
                 <div className="text-right">
-                  <p className="text-sm text-foreground-muted">Діє до</p>
+                  <p className="text-sm text-foreground-muted">{t('billingValidUntil')}</p>
                   <p className="text-sm font-medium">
                     {new Date(data.subscription.endsAt).toLocaleDateString('uk')}
                   </p>
@@ -370,7 +386,7 @@ export default function BillingPage() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-xl bg-accent/30">
               <div>
                 <div className="flex items-center gap-1.5 text-xs text-foreground-muted mb-1">
-                  <Users className="w-3 h-3" /> Користувачі
+                  <Users className="w-3 h-3" /> {t('billingUsageUsers')}
                 </div>
                 <p className="text-lg font-semibold">
                   {data.usage.users}{' '}
@@ -388,7 +404,7 @@ export default function BillingPage() {
               </div>
               <div>
                 <div className="flex items-center gap-1.5 text-xs text-foreground-muted mb-1">
-                  <Contact className="w-3 h-3" /> Контакти
+                  <Contact className="w-3 h-3" /> {t('billingUsageContacts')}
                 </div>
                 <p className="text-lg font-semibold">
                   {data.usage.contacts}{' '}
@@ -408,7 +424,7 @@ export default function BillingPage() {
               </div>
               <div>
                 <div className="flex items-center gap-1.5 text-xs text-foreground-muted mb-1">
-                  <Briefcase className="w-3 h-3" /> Угоди
+                  <Briefcase className="w-3 h-3" /> {t('billingUsageDeals')}
                 </div>
                 <p className="text-lg font-semibold">
                   {data.usage.deals}{' '}
@@ -426,7 +442,7 @@ export default function BillingPage() {
               </div>
               <div>
                 <div className="flex items-center gap-1.5 text-xs text-foreground-muted mb-1">
-                  <Sparkles className="w-3 h-3" /> AI-запити (день)
+                  <Sparkles className="w-3 h-3" /> {t('billingUsageAiRequests')}
                 </div>
                 <p className="text-lg font-semibold">
                   {aiUsage ? aiUsage.today.requests : '—'}{' '}
@@ -448,17 +464,18 @@ export default function BillingPage() {
             {selectedPlan && selectedPlan.id !== data.plan.id && (
               <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl border border-primary/30 bg-primary/5">
                 <p className="text-sm">
-                  Обрано: <span className="font-semibold">{selectedPlan.name}</span> —{' '}
+                  {t('billingSelectedLabel')}{' '}
+                  <span className="font-semibold">{selectedPlan.name}</span> —{' '}
                   {formatPrice(selectedDisplayPrice * 100)}
                   {selectedPlan.price > 0 && (
                     <span className="text-foreground-muted">
-                      /{period === 'yearly' ? 'рік' : 'міс'}
+                      /{period === 'yearly' ? t('billingPerYear') : t('billingPerMonth')}
                     </span>
                   )}
                 </p>
                 <div className="flex gap-2">
                   <Button size="sm" variant="ghost" onClick={() => setSelectedPlanId(null)}>
-                    Скасувати вибір
+                    {t('billingCancelSelection')}
                   </Button>
                   <Button
                     size="sm"
@@ -468,7 +485,7 @@ export default function BillingPage() {
                     {checkoutLoading === selectedPlan.id && (
                       <Loader2 className="w-4 h-4 animate-spin mr-2" />
                     )}
-                    Підтвердити оновлення
+                    {t('billingConfirmUpgrade')}
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </div>
@@ -483,17 +500,17 @@ export default function BillingPage() {
                     ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
                 }
               >
-                Оновити план
+                {t('billingUpgradePlan')}
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
               {data.plan.id !== 'free' && (
                 <Button variant="outline" onClick={handleManageSubscription}>
                   <ExternalLink className="w-4 h-4 mr-2" />
-                  Керувати підпискою
+                  {t('billingManageSubscription')}
                 </Button>
               )}
               <Link href="/dashboard/settings/billing/history">
-                <Button variant="ghost">Історія платежів</Button>
+                <Button variant="ghost">{t('billingPaymentHistory')}</Button>
               </Link>
             </div>
           </CardContent>
@@ -504,9 +521,9 @@ export default function BillingPage() {
       <div className="flex justify-center">
         <Tabs value={period} onValueChange={(v) => setPeriod(v as 'monthly' | 'yearly')}>
           <TabsList>
-            <TabsTrigger value="monthly">Щомісячно</TabsTrigger>
+            <TabsTrigger value="monthly">{t('billingMonthly')}</TabsTrigger>
             <TabsTrigger value="yearly">
-              Щорічно <span className="ml-1 text-success text-xs">-17%</span>
+              {t('billingYearly')} <span className="ml-1 text-success text-xs">-17%</span>
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -531,7 +548,7 @@ export default function BillingPage() {
               {plan.isPopular && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <span className="px-3 py-1 text-xs font-semibold bg-primary text-primary-foreground rounded-full">
-                    Популярний
+                    {t('billingPopular')}
                   </span>
                 </div>
               )}
@@ -542,7 +559,7 @@ export default function BillingPage() {
                   <span className="text-3xl font-bold">{formatPrice(displayPrice * 100)}</span>
                   {plan.price > 0 && (
                     <span className="text-sm text-foreground-muted">
-                      /{period === 'yearly' ? 'рік' : 'міс'}
+                      /{period === 'yearly' ? t('billingPerYear') : t('billingPerMonth')}
                     </span>
                   )}
                 </div>
@@ -559,11 +576,11 @@ export default function BillingPage() {
 
                 {isCurrent ? (
                   <Button disabled className="w-full" variant="outline">
-                    Поточний план
+                    {t('billingCurrentPlan')}
                   </Button>
                 ) : plan.price === 0 ? (
                   <Button disabled className="w-full" variant="outline">
-                    Безкоштовний
+                    {t('billingFreePlan')}
                   </Button>
                 ) : isSelected ? (
                   <Button
@@ -575,7 +592,7 @@ export default function BillingPage() {
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                       <>
-                        Оновити
+                        {tCommon('update')}
                         <ArrowRight className="w-4 h-4 ml-2" />
                       </>
                     )}
@@ -586,7 +603,7 @@ export default function BillingPage() {
                     onClick={() => setSelectedPlanId(plan.id)}
                     className="w-full"
                   >
-                    Обрати
+                    {t('billingSelectPlan')}
                   </Button>
                 )}
               </CardContent>

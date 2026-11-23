@@ -3,40 +3,43 @@
  * черги, вебхуки та системні журнали зі статус-бейджами.
  */
 
-const ROWS = [
-  {
-    name: 'API-шлюз',
-    badge: 'OK',
-    tone: 'bg-success text-success-foreground',
-    meta: 'усі маршрути відповідають',
-  },
-  {
-    name: 'Кеш',
-    badge: 'OK',
-    tone: 'bg-success text-success-foreground',
-    meta: 'стан чинний',
-  },
-  {
-    name: 'Фонові задачі',
-    badge: '3 активні',
-    tone: 'bg-info text-info-foreground',
-    meta: 'завдання у виконанні',
-  },
-  {
-    name: 'Вебхуки',
-    badge: '200 OK',
-    tone: 'bg-success text-success-foreground',
-    meta: 'доставлено щойно',
-  },
-  {
-    name: 'Системний журнал',
-    badge: 'INFO',
-    tone: 'bg-secondary text-secondary-foreground',
-    meta: 'критичних помилок немає',
-  },
-];
+import { getTranslations } from 'next-intl/server';
 
-export function DevConsole() {
+export async function DevConsole() {
+  const t = await getTranslations('landing.console');
+
+  const ROWS = [
+    {
+      name: t('gateway'),
+      badge: 'OK',
+      tone: 'bg-success text-success-foreground',
+      meta: t('gatewayMeta'),
+    },
+    {
+      name: t('cache'),
+      badge: 'OK',
+      tone: 'bg-success text-success-foreground',
+      meta: t('cacheMeta'),
+    },
+    {
+      name: t('jobs'),
+      badge: t('jobsBadge'),
+      tone: 'bg-info text-info-foreground',
+      meta: t('jobsMeta'),
+    },
+    {
+      name: t('webhooks'),
+      badge: '200 OK',
+      tone: 'bg-success text-success-foreground',
+      meta: t('webhooksMeta'),
+    },
+    {
+      name: t('journal'),
+      badge: 'INFO',
+      tone: 'bg-secondary text-secondary-foreground',
+      meta: t('journalMeta'),
+    },
+  ];
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-inverse text-inverse-foreground shadow-lg">
       <div className="flex items-center gap-3 border-b border-white/10 px-5 py-3.5">
@@ -69,7 +72,7 @@ export function DevConsole() {
           className="inline-block h-3.5 w-0.5 animate-pulse bg-primary-foreground"
           aria-hidden="true"
         />
-        <span>оновлено щойно · журнали зберігаються в розділі «Логи»</span>
+        <span>{t('updatedNote')}</span>
       </div>
     </div>
   );

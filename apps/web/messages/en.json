@@ -959,7 +959,290 @@
     "tokensIn": "input tokens",
     "tokensOut": "output tokens",
     "byProviders": "By provider",
-    "noRequestsThisMonth": "No requests this month"
+    "noRequestsThisMonth": "No requests this month",
+    "keyError": "Key error",
+    "aiCopilotCardDescription": "AI for contact analysis, deal forecasting and automatic content generation",
+    "quickApiKeys": "API keys",
+    "quickApiKeysHint": "Configure the provider",
+    "quickUsage": "Usage",
+    "quickUsageHint": "Limits and statistics",
+    "quickLogs": "Logs",
+    "quickLogsHint": "Request history",
+    "integrationsTelegramDescription": "A bot for notifications and CRM management via Telegram",
+    "configureBot": "Configure bot",
+    "integrationsWhatsappDescription": "API for communicating with customers via WhatsApp",
+    "configureApi": "Configure API",
+    "integrationsDatabaseDescription": "Connect your own database (PostgreSQL, MySQL, MariaDB, MS SQL)",
+    "configureConnection": "Configure connection",
+    "rolesPageTitle": "Roles & Access Rights",
+    "roleManager": "Manager",
+    "roleViewer": "Viewer",
+    "roleOwnerDescription": "Full access to everything",
+    "roleAdminDescription": "Manage members and settings",
+    "roleManagerDescription": "Create and edit your own data",
+    "roleViewerDescription": "View-only access to data",
+    "roleLevel": "Level: {level}",
+    "matrixTitle": "Permission matrix: {role}",
+    "matrixDescription": "Access for the “{role}” role by module: view, edit, delete. Checkboxes can be toggled and saved (saving is local and demo — the server-side permission model is immutable)",
+    "matrixSaved": "Permission matrix saved",
+    "matrixSavedDescription": "Role “{role}”",
+    "matrixSaveError": "Couldn't save the permission matrix",
+    "matrixReset": "Edits reset to the default matrix",
+    "matrixColumnModule": "Module",
+    "matrixColumnRead": "View",
+    "matrixColumnWrite": "Edit",
+    "matrixColumnDelete": "Delete",
+    "matrixEmpty": "No modules",
+    "matrixCellAria": "{module}: {action}",
+    "resetEdits": "Reset edits",
+    "saveMatrix": "Save matrix",
+    "customRolesTitle": "Custom roles",
+    "customRolesDescription": "Currently 4 standard roles are supported. Custom roles with a flexible permission matrix will be available in future updates.",
+    "companiesPageSubtitle": "Manage companies and teams",
+    "createCompany": "Create company",
+    "newCompany": "New company",
+    "noCompaniesYet": "You don't have any companies yet",
+    "createFirstCompany": "Create your first company",
+    "tenantNotFound": "Company not found",
+    "backToList": "Back to the list",
+    "membersCount": "Members ({count})",
+    "tenantUpdateError": "Update failed",
+    "tenantMemberAddError": "Failed to add the member",
+    "tenantDeleteError": "Failed to delete",
+    "tenantDeleteConfirm": "Are you sure? This will delete the company permanently.",
+    "generalSettings": "General settings",
+    "companyInfoDescription": "Basic company information",
+    "tenantFieldName": "Name:",
+    "tenantFieldSlug": "Slug:",
+    "tenantFieldDomain": "Domain:",
+    "tenantFieldCreated": "Created:",
+    "slugLabel": "Slug",
+    "domainLabel": "Domain",
+    "aiSettingsTitle": "AI settings",
+    "aiSettingsDescription": "Choose an AI provider and enter an API key for the CRM's AI features",
+    "aiProviderLabel": "AI provider",
+    "apiKeyPrivacyNote": "Your key is stored only within your company. It is never shared with third parties.",
+    "getApiKey": "Get a {name} API key →",
+    "keyMasked": "Key: ••••",
+    "configure": "Configure",
+    "membersCardDescription": "Manage access to the company",
+    "adding": "Adding...",
+    "dangerZone": "Danger zone",
+    "dangerZoneDescription": "Deleting the company will erase all of its data. This action cannot be undone.",
+    "deleteCompany": "Delete company",
+    "teamPageSubtitle": "Manage members and roles",
+    "companySettings": "Company settings",
+    "inviteCardDescription": "Send an invitation via email",
+    "copyLink": "Copy",
+    "inviteValidNote": "The invitation is valid for 7 days. The link will be generated automatically.",
+    "emailLabel": "Email",
+    "sending": "Sending...",
+    "send": "Send",
+    "emailRequired": "Enter an email",
+    "inviteSentTo": "Invitation sent to {email}",
+    "inviteSent": "Invitation sent",
+    "inviteCreatedNoEmail": "The invitation was created, but the email wasn't sent — copy the link manually",
+    "emailNotSent": "Email not sent",
+    "copyLinkManually": "Copy the link manually",
+    "inviteSendError": "Failed to send the invitation",
+    "inviteSendFailed": "Couldn't send the invitation",
+    "roleUpdated": "Role updated",
+    "roleChangeError": "Couldn't change the role",
+    "removeMemberConfirm": "Are you sure you want to remove {name}?",
+    "memberFallback": "this member",
+    "memberRemoved": "Member removed",
+    "memberRemoveError": "Couldn't remove the member",
+    "revokeInviteConfirm": "Revoke the invitation?",
+    "inviteRevoked": "Invitation revoked",
+    "inviteRevokeError": "Couldn't revoke the invitation",
+    "currentMembersDescription": "Current company members",
+    "youSuffix": "(You)",
+    "memberActionsLabel": "Member actions",
+    "changeRole": "Change role",
+    "noMembers": "No members",
+    "pendingInvitesCount": "Pending invitations ({count})",
+    "pendingInvitesDescription": "Recently sent invitations",
+    "noPendingInvites": "No pending invitations",
+    "invitedByLine": "Invited by {name} · {date}",
+    "revokeInvite": "Revoke invitation",
+    "rolesAndPermissions": "Roles & permissions",
+    "roleOwnerFullDescription": "Full access. Can delete the company, change any settings and manage all members.",
+    "roleAdminFullDescription": "Can add/remove members, change roles, and manage contacts and deals.",
+    "roleMemberFullDescription": "Can view and edit contacts, deals and tasks within the company.",
+    "dbSharedLabel": "Shared database",
+    "dbSharedDescription": "Use the CRM system's database",
+    "dbPostgresqlLabel": "PostgreSQL",
+    "dbPostgresqlDescription": "Connect your own PostgreSQL database",
+    "dbMysqlLabel": "MySQL",
+    "dbMysqlDescription": "Connect your own MySQL database",
+    "dbMariadbLabel": "MariaDB",
+    "dbMariadbDescription": "Connect your own MariaDB database",
+    "dbSqlserverLabel": "MS SQL Server",
+    "dbSqlserverDescription": "Connect your own SQL Server database",
+    "dbHostRequired": "Enter a host",
+    "dbHostSpaces": "The host cannot contain spaces",
+    "dbUserRequired": "Enter a user",
+    "dbNameRequired": "Enter a database name",
+    "dbPortInvalid": "Port: an integer from 1 to 65535",
+    "dbCheckParams": "Check the connection parameters",
+    "dbFillRequired": "Fill in all required fields",
+    "dbProvideConnection": "Provide the connection parameters or a connection string",
+    "dbInvalidUrl": "Invalid connection string",
+    "dbUrlExample": "Example: postgresql://user:password@host:5432/database",
+    "dbTestSuccess": "Connection successful",
+    "dbTestFailed": "Connection test failed",
+    "dbVersion": "Version: {version}",
+    "dbSaveFailed": "Couldn't save",
+    "dbDisconnectedSuccess": "Disconnected from the external database",
+    "dbDisconnectFailed": "Couldn't disconnect",
+    "dbPageDescription": "Connect your own database to store your company's data",
+    "dbConfigLoadError": "Couldn't load the current config — showing default values",
+    "dbCurrentStatus": "Current status",
+    "dbTypeLabel": "Type:",
+    "dbErrorLabel": "Error: {message}",
+    "dbStatusShared": "Shared",
+    "dbTypeTitle": "Database type",
+    "dbConnectionParams": "Connection parameters",
+    "dbConnectionParamsHint": "Fill in the host, user and database name — the CRM will assemble the connection string automatically",
+    "dbHostLabel": "Host",
+    "dbPortLabel": "Port",
+    "dbNameLabel": "Database name",
+    "dbUserLabel": "User",
+    "dbPasswordLabel": "Password",
+    "dbOrConnectionString": "Or paste a full connection string",
+    "dbTestConnection": "Test connection",
+    "dbTestSuccessTitle": "Connection successful!",
+    "dbHowItWorks": "How does it work?",
+    "dbHowSharedTitle": "Shared database",
+    "dbHowSharedBody": "— your data is stored in the shared CRM system database",
+    "dbHowExternalTitle": "External database",
+    "dbHowExternalBody": "— your data is stored on your own server",
+    "dbHowTables": "After connecting, the CRM will automatically create tables in your database",
+    "dbHowDisconnect": "You can disconnect from the external database at any time",
+    "dbHowSupported": "Supported: PostgreSQL, MySQL, MariaDB, MS SQL Server",
+    "billingPlans": {
+      "free": {
+        "name": "Free",
+        "description": "For getting started",
+        "feature1": "1 user",
+        "feature2": "100 contacts",
+        "feature3": "20 deals",
+        "feature4": "50 AI requests/day"
+      },
+      "starter": {
+        "name": "Starter",
+        "description": "For small business",
+        "feature1": "3 users",
+        "feature2": "1,000 contacts",
+        "feature3": "200 deals",
+        "feature4": "500 AI requests/day",
+        "feature5": "3 pipelines"
+      },
+      "professional": {
+        "name": "Professional",
+        "description": "For sales teams",
+        "feature1": "10 users",
+        "feature2": "10,000 contacts",
+        "feature3": "2,000 deals",
+        "feature4": "1,500 AI requests/day",
+        "feature5": "10 pipelines",
+        "feature6": "Automations",
+        "feature7": "Reports"
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "description": "For large companies",
+        "feature1": "Unlimited users",
+        "feature2": "Unlimited contacts",
+        "feature3": "Unlimited deals",
+        "feature4": "5,000 AI requests/day",
+        "feature5": "Unlimited pipelines",
+        "feature6": "API access",
+        "feature7": "Priority support"
+      }
+    },
+    "billingSubscriptionLoadError": "Failed to load subscription",
+    "billingPaymentSuccess": "Payment successful! Your subscription has been updated.",
+    "billingPaymentCanceled": "Payment canceled.",
+    "billingCheckoutError": "Failed to create checkout",
+    "billingPortalError": "Failed to open subscription management",
+    "billingFreePrice": "Free",
+    "billingStatusActive": "Active",
+    "billingStatusTrialing": "Trial period",
+    "billingStatusPastDue": "Past due",
+    "billingStatusCanceled": "Canceled",
+    "billingCurrentSubscription": "Current subscription",
+    "billingPerMonth": "mo",
+    "billingPerYear": "yr",
+    "billingTrialDaysLeft": "{count, plural, one {# day} other {# days}}",
+    "billingValidUntil": "Valid until",
+    "billingUsageUsers": "Users",
+    "billingUsageContacts": "Contacts",
+    "billingUsageDeals": "Deals",
+    "billingUsageAiRequests": "AI requests (daily)",
+    "billingSelectedLabel": "Selected:",
+    "billingCancelSelection": "Clear selection",
+    "billingConfirmUpgrade": "Confirm upgrade",
+    "billingUpgradePlan": "Upgrade plan",
+    "billingManageSubscription": "Manage subscription",
+    "billingPaymentHistory": "Payment history",
+    "billingMonthly": "Monthly",
+    "billingYearly": "Yearly",
+    "billingPopular": "Popular",
+    "billingCurrentPlan": "Current plan",
+    "billingFreePlan": "Free",
+    "billingSelectPlan": "Select",
+    "billingHistoryStatusSucceeded": "Paid",
+    "billingHistoryStatusFailed": "Failed",
+    "billingHistoryStatusPending": "Pending",
+    "billingHistoryStatusRefunded": "Refunded",
+    "billingHistoryInvoiceColumn": "Invoice",
+    "billingHistoryAmountColumn": "Amount",
+    "billingHistoryDefaultDescription": "Subscription payment",
+    "billingHistoryDownloadInvoice": "Download invoice",
+    "billingHistoryDownloadInvoiceDemo": "Download invoice (demo PDF)",
+    "billingHistoryEmpty": "No payments",
+    "billingHistoryEmptyDescription": "No invoices yet",
+    "billingHistoryInvoiceDownloaded": "Invoice downloaded",
+    "billingHistoryDemoPdfNote": "Demo PDF",
+    "billingHistoryDownloadError": "Failed to download invoice",
+    "billingHistoryPdfTitle": "CRM-Next - Invoice (demo)",
+    "billingHistoryPdfDate": "Date:",
+    "billingHistoryPdfNumber": "Invoice:",
+    "billingHistoryPdfDescription": "Description:",
+    "billingHistoryPdfAmount": "Amount:",
+    "billingHistoryPdfStatus": "Status:",
+    "billingHistoryPdfNote": "Demo document generated client-side.",
+    "billingHistoryPdfDefaultDescription": "Subscription payment",
+    "auditActionDelete": "Deleted",
+    "auditActionLogin": "Login",
+    "auditActionLogout": "Logout",
+    "auditActionInvite": "Invite",
+    "auditActionRoleChange": "Role change",
+    "auditActionExport": "Export",
+    "auditActionImport": "Import",
+    "auditEntityContact": "Contact",
+    "auditEntityDeal": "Deal",
+    "auditEntityTask": "Task",
+    "auditEntityMember": "Member",
+    "auditEntitySettings": "Settings",
+    "auditEntityAuth": "Auth",
+    "auditEntityPipeline": "Pipeline",
+    "auditAllActions": "All actions",
+    "auditAllEntities": "All entities",
+    "auditSearchPlaceholder": "Search by action, entity, ID...",
+    "auditSearchLabel": "Search audit log",
+    "auditDateFrom": "Date from",
+    "auditDateTo": "Date to",
+    "auditExportCsv": "Export CSV",
+    "auditRecordsCount": "{count, plural, one {# record} other {# records}}",
+    "auditColumnUser": "User",
+    "auditColumnAction": "Action",
+    "auditColumnEntity": "Entity",
+    "auditEmpty": "The log is empty",
+    "auditExportEmpty": "No records to export",
+    "auditExportedCount": "{count, plural, one {Exported # record} other {Exported # records}}",
+    "auditExportDescription": "Current log page"
   },
   "team": {
     "title": "Team",
@@ -1579,6 +1862,326 @@
       "type": "Type",
       "priority": "Priority",
       "dueDate": "Due Date"
+    }
+  },
+  "landing": {
+    "cta": {
+      "tryFree": "Try it free",
+      "login": "Log in",
+      "openCrm": "Open CRM"
+    },
+    "nav": {
+      "capabilities": "Features",
+      "aiCopilot": "AI Co-Pilot",
+      "communication": "Communication",
+      "automation": "Automation",
+      "admin": "Administration",
+      "faq": "FAQ"
+    },
+    "header": {
+      "homeAria": "CRM-Next — home",
+      "sectionsAria": "Sections",
+      "menu": "Menu"
+    },
+    "hero": {
+      "headline": "No deal ever gets lost",
+      "subtitle": "Your customer base, sales pipeline, automation, tasks and analytics — all in one window. Interface available in Ukrainian.",
+      "secondaryCta": "See features",
+      "note": "Pipeline, tasks, communication and team control — without the spreadsheet chaos.",
+      "checkNoCard": "No card required",
+      "checkFree": "Free CRM services",
+      "checkUkrainian": "Ukrainian-language interface",
+      "chipRoles": "4 access roles",
+      "chipChannels": "3 channels",
+      "chipAi": "AI on your data"
+    },
+    "facts": {
+      "roles": "access roles: from viewer to owner",
+      "channels": "channels: Telegram, WhatsApp, Email",
+      "ai": "Co-Pilot with access to your data"
+    },
+    "funnel": {
+      "step1": "Step 1",
+      "step2": "Step 2",
+      "step3": "Step 3",
+      "chaos": {
+        "title": "Chaos",
+        "text": "Deals get lost in spreadsheets and messengers.",
+        "cta": "See the pipeline"
+      },
+      "order": {
+        "title": "Order",
+        "text": "Customer base, pipeline and automation in one window.",
+        "cta": "See automation"
+      },
+      "control": {
+        "title": "Control",
+        "text": "Roles, audit and AI answers from your data.",
+        "cta": "See controls"
+      }
+    },
+    "ai": {
+      "title": "Questions for your CRM — answered in seconds",
+      "body": "Co-Pilot reads your data within your role and answers in plain language: which deals are at risk, who to call today, how the week went.",
+      "check1": "Answers based only on your CRM — nothing made up",
+      "check2": "Usage is metered per tenant and visible in the log",
+      "check3": "You can connect your own AI provider API key"
+    },
+    "admin": {
+      "title": "Transparent system status — no need to call an admin",
+      "body": "Caches, task queues, webhooks and system logs are available to the admin without contacting support.",
+      "check1": "Real-time cache and task queue status",
+      "check2": "Webhooks: delivery and response codes",
+      "check3": "System logs and a dedicated “Logs” section"
+    },
+    "audience": {
+      "title": "Which teams CRM-Next is built for",
+      "b2b": {
+        "name": "B2B sales",
+        "text": "Long deals, several contacts, control at every stage."
+      },
+      "saas": {
+        "name": "SaaS & IT",
+        "text": "Leads from your website and forms are routed to managers right away."
+      },
+      "ecommerce": {
+        "name": "E-commerce",
+        "text": "Orders, payments and repeat sales in one window."
+      },
+      "services": {
+        "name": "Services",
+        "text": "Requests, bookings, reminders and a history for every client."
+      }
+    },
+    "security": {
+      "title": "Security and order in your data",
+      "body": "Owner, admin, member and viewer roles separate access. Sensitive fields are encrypted and user actions are recorded in the audit log.",
+      "itemMember": "Member sees their own and unassigned tasks",
+      "itemViewer": "Viewer has read-only access",
+      "itemApiKeys": "API keys are stored encrypted",
+      "itemAudit": "Changes and logins are visible in the audit log"
+    },
+    "faq": {
+      "title": "Frequently asked questions",
+      "q1": "Will a manager see other people's deals?",
+      "a1": "No. Members work with their own and unassigned tasks, the owner and admin see everything, and viewers can only read.",
+      "q2": "Can I move my existing database?",
+      "a2": "Yes. You can import contacts, find duplicates and clean up your database before launching the pipeline.",
+      "q3": "How does AI Co-Pilot work?",
+      "a3": "AI helps with next actions, statuses and short summaries based on your data. Usage is metered per tenant and visible in the log.",
+      "q4": "What about data security?",
+      "a4": "Role-based access, encryption of sensitive fields and an audit log for important actions."
+    },
+    "finalCta": {
+      "title": "Bring order to your sales this week",
+      "body": "Start with your database and pipeline, then add automation and AI suggestions."
+    },
+    "footer": {
+      "tagline": "Customer base · Pipeline · Automation · Analytics",
+      "legalAria": "Legal documents",
+      "oferta": "Public Offer",
+      "privacy": "Privacy Policy",
+      "dpa": "Data Processing Agreement (DPA)"
+    },
+    "dealJourney": {
+      "title": "Deal №1042 journey",
+      "moving": "moving",
+      "stages": {
+        "new": {
+          "name": "New inquiries",
+          "time": "yesterday"
+        },
+        "qualification": {
+          "name": "Qualification",
+          "time": "this morning"
+        },
+        "deal": {
+          "name": "Deal",
+          "time": "now"
+        },
+        "payment": {
+          "name": "Payment",
+          "time": "next"
+        }
+      },
+      "hereNow": "here now",
+      "slogan": "No deal ever gets lost",
+      "onTrack": "on track"
+    },
+    "aiDemo": {
+      "demos": {
+        "risk": {
+          "question": "Which deals are at risk?",
+          "answer": "3 deals with no activity for over 5 days: Orbit LLC, FOP Circle, Gamma. I would start with Orbit — ₴140K."
+        },
+        "today": {
+          "question": "Who should I reach out to today?",
+          "answer": "4 contacts with overdue tasks: Mary Koval, Ihor Savchuk, League, Anna Petrenko."
+        },
+        "week": {
+          "question": "Sales summary for the week",
+          "answer": "7 deals worth ₴410K. Best source — website leads: 4 of the 7 deals."
+        }
+      },
+      "hints": {
+        "risk": "Which deals are at risk?",
+        "today": "Who should I reach out to today?",
+        "week": "Weekly summary"
+      },
+      "think": {
+        "analysis": "Analyzing CRM data…",
+        "search": "Searching deals…",
+        "tasks": "Checking tasks…"
+      },
+      "badge": "natural language query",
+      "done": "Done",
+      "sourceChip": "source: deals · tasks",
+      "privateChip": "your data only",
+      "statusReady": "Answer ready",
+      "showExample": "Show example: {label}"
+    },
+    "merge": {
+      "title": "Import · deduplication",
+      "again": "Show again",
+      "duplicate": "possible duplicate",
+      "sourceSite": "Site",
+      "nameMaria": "Mary Koval",
+      "nameMariaShort": "M. Koval"
+    },
+    "comms": {
+      "title": "Inbox · all channels",
+      "channelsBadge": "3 channels",
+      "yesterday": "yesterday",
+      "waSnippet": "Can we do Tuesday at 15:00?",
+      "emailSnippet": "Invoice №1042 from Alpha",
+      "msg": {
+        "quoteRequest": "Hello, please send us a quote",
+        "quoteReceived": "Quote received, preparing a reply",
+        "waitingInvoice": "Agreed, waiting for the invoice",
+        "sendInvoice": "Please send the invoice"
+      },
+      "bubbleReply": "Sending it now — check your inbox 📎",
+      "bubbleThanks": "Thanks! We'll finalize the terms by Friday",
+      "placeholder": "Write a message…"
+    },
+    "roles": {
+      "title": "Team roles",
+      "auditTitle": "Audit log",
+      "auditNote": "Every action on data is recorded with its time and author",
+      "perms": {
+        "owner": "Full access, billing and team",
+        "admin": "Settings, integrations, roles",
+        "member": "Own and unassigned tasks",
+        "viewer": "Read-only, no export"
+      },
+      "statusRecorded": "recorded",
+      "statusDenied": "denied",
+      "justNow": "just now",
+      "events": {
+        "stageChanged": "Olena changed the stage of the Alpha deal",
+        "exportDenied": "viewer: contact export",
+        "integrationAdded": "Owner added the Telegram integration",
+        "taskClosed": "Mary closed the “Send a quote” task",
+        "noteAdded": "Ihor added a note to League",
+        "ownerChanged": "Olena changed the owner for Vector"
+      }
+    },
+    "rule": {
+      "ifThen": "If {cond}, then {act}",
+      "stepCondition": "Condition",
+      "stepAction": "Action",
+      "stepResult": "Result",
+      "conditions": {
+        "silent": "a deal has been silent for 3 days",
+        "leadNoReply": "a lead has not replied for 2 days",
+        "stuck": "a deal has been in stage for 7+ days"
+      },
+      "actions": {
+        "createTask": "create a task",
+        "telegram": "send a message on Telegram",
+        "highlight": "highlight in the pipeline"
+      },
+      "check": "Test",
+      "checking": "Testing…",
+      "passed": "Test passed: the rule will fire",
+      "note": "Rules are created by the admin · see the log in the “Automation” section"
+    },
+    "settings": {
+      "title": "Settings",
+      "badge": "API & integrations",
+      "keysLabel": "AI keys",
+      "connected": "connected",
+      "webhooksLabel": "Webhooks",
+      "webhooksActive": "2 active",
+      "aiLogTitle": "AI request log",
+      "aiLogDesc": "Usage per tenant · costs and limits",
+      "open": "Open →",
+      "note": "The tenant admin sets up custom AI keys, webhooks and integrations."
+    },
+    "console": {
+      "gateway": "API gateway",
+      "gatewayMeta": "all routes responding",
+      "cache": "Cache",
+      "cacheMeta": "status is current",
+      "jobs": "Background jobs",
+      "jobsBadge": "3 active",
+      "jobsMeta": "tasks in progress",
+      "webhooks": "Webhooks",
+      "webhooksMeta": "delivered just now",
+      "journal": "System log",
+      "journalMeta": "no critical errors",
+      "updatedNote": "updated just now · logs are kept in the “Logs” section"
+    },
+    "features": {
+      "navTitle": "Features",
+      "nav": {
+        "baza": "Database & pipeline",
+        "chat": "Communication",
+        "auto": "Automation",
+        "audit": "Analytics & access",
+        "ai": "AI & Settings"
+      },
+      "baza": {
+        "title": "Every deal in its place",
+        "body": "Deals move through stages and overdue ones are highlighted automatically.",
+        "check1": "Database import and contact deduplication",
+        "check2": "Customer card: communication, files, tasks",
+        "check3": "Drag-and-drop pipeline Kanban"
+      },
+      "chat": {
+        "title": "Conversations that never get lost",
+        "body": "Telegram, WhatsApp and Email in one shared inbox (no telephony)."
+      },
+      "channels": {
+        "telegram": "Chats, notes and reminders stay in the customer card.",
+        "whatsapp": "Customer messages are linked to contacts and deals.",
+        "email": "Emails and requests are linked to contacts and deals."
+      },
+      "auto": {
+        "title": "Rules work while you sell",
+        "body": "Rules assign leads and move deals on their own."
+      },
+      "audit": {
+        "title": "Control without micromanagement",
+        "body": "See lead sources and team workload, with role-based access: every action on data goes into the audit log."
+      },
+      "ai": {
+        "title": "Answers from your data, not thin air",
+        "body": "Connect your own AI keys, set up webhooks and integrations, and keep an eye on AI usage in the log."
+      }
+    },
+    "baza": {
+      "cardTitle": "Customer card",
+      "monogram": "MK",
+      "person": "Mary Koval",
+      "company": "Alpha LLC · website lead",
+      "stage": "Qualification",
+      "dealLabel": "Deal",
+      "dealValue": "₴120K",
+      "nextLabel": "Next action",
+      "nextValue": "Send a quote today",
+      "historyLabel": "History",
+      "historyValue": "12 events"
     }
   }
 }

@@ -959,7 +959,290 @@
     "tokensIn": "вхідних токенів",
     "tokensOut": "вихідних токенів",
     "byProviders": "По провайдерах",
-    "noRequestsThisMonth": "Немає запитів цього місяця"
+    "noRequestsThisMonth": "Немає запитів цього місяця",
+    "keyError": "Помилка ключа",
+    "aiCopilotCardDescription": "AI для аналізу контактів, прогнозування угод та автоматичного генерування контенту",
+    "quickApiKeys": "API-ключі",
+    "quickApiKeysHint": "Налаштувати провайдера",
+    "quickUsage": "Використання",
+    "quickUsageHint": "Ліміти та статистика",
+    "quickLogs": "Логи",
+    "quickLogsHint": "Історія запитів",
+    "integrationsTelegramDescription": "Бот для сповіщень та керування CRM через Telegram",
+    "configureBot": "Налаштувати бота",
+    "integrationsWhatsappDescription": "API для спілкування з клієнтами через WhatsApp",
+    "configureApi": "Налаштувати API",
+    "integrationsDatabaseDescription": "Підключення власної бази даних (PostgreSQL, MySQL, MariaDB, MS SQL)",
+    "configureConnection": "Налаштувати з'єднання",
+    "rolesPageTitle": "Ролі та права доступу",
+    "roleManager": "Менеджер",
+    "roleViewer": "Глядач",
+    "roleOwnerDescription": "Повний доступ до всього",
+    "roleAdminDescription": "Керування учасниками та налаштуваннями",
+    "roleManagerDescription": "Створення та редагування власних даних",
+    "roleViewerDescription": "Тільки перегляд даних",
+    "roleLevel": "Рівень: {level}",
+    "matrixTitle": "Матриця прав: {role}",
+    "matrixDescription": "Доступ ролі «{role}» за модулями: перегляд, запис, видалення. Позначки можна перемикати та зберігати (збереження локальне, демонстраційне — серверна модель прав незмінна)",
+    "matrixSaved": "Схему прав збережено",
+    "matrixSavedDescription": "Роль «{role}»",
+    "matrixSaveError": "Не вдалося зберегти схему прав",
+    "matrixReset": "Правки скидано до базової схеми",
+    "matrixColumnModule": "Модуль",
+    "matrixColumnRead": "Перегляд",
+    "matrixColumnWrite": "Запис",
+    "matrixColumnDelete": "Видалення",
+    "matrixEmpty": "Немає модулів",
+    "matrixCellAria": "{module}: {action}",
+    "resetEdits": "Скинути правки",
+    "saveMatrix": "Зберегти схему",
+    "customRolesTitle": "Кастомні ролі",
+    "customRolesDescription": "Наразі підтримуються 4 стандартні ролі. Кастомні ролі з гнучкою матрицею прав будуть доступні у наступних оновленнях.",
+    "companiesPageSubtitle": "Управління компаніями та командами",
+    "createCompany": "Створити компанію",
+    "newCompany": "Нова компанія",
+    "noCompaniesYet": "У вас ще немає компаній",
+    "createFirstCompany": "Створити першу компанію",
+    "tenantNotFound": "Компанію не знайдено",
+    "backToList": "Повернутися до списку",
+    "membersCount": "Учасники ({count})",
+    "tenantUpdateError": "Помилка оновлення",
+    "tenantMemberAddError": "Помилка додавання",
+    "tenantDeleteError": "Помилка видалення",
+    "tenantDeleteConfirm": "Ви впевнені? Це видалить компанію назавжди.",
+    "generalSettings": "Загальні налаштування",
+    "companyInfoDescription": "Основна інформація про компанію",
+    "tenantFieldName": "Назва:",
+    "tenantFieldSlug": "Slug:",
+    "tenantFieldDomain": "Домен:",
+    "tenantFieldCreated": "Створено:",
+    "slugLabel": "Slug",
+    "domainLabel": "Домен",
+    "aiSettingsTitle": "AI-налаштування",
+    "aiSettingsDescription": "Оберіть AI-провайдера та введіть API-ключ для AI-функцій CRM",
+    "aiProviderLabel": "AI-провайдер",
+    "apiKeyPrivacyNote": "Ваш ключ зберігається тільки у вашій компанії. Він не передається третім особам.",
+    "getApiKey": "Отримати API-ключ {name} →",
+    "keyMasked": "Ключ: ••••",
+    "configure": "Налаштувати",
+    "membersCardDescription": "Керування доступом до компанії",
+    "adding": "Додавання...",
+    "dangerZone": "Небезпечна зона",
+    "dangerZoneDescription": "Видалення компанії призведе до втрати всіх даних. Цю дію неможливо скасувати.",
+    "deleteCompany": "Видалити компанію",
+    "teamPageSubtitle": "Управління учасниками та ролями",
+    "companySettings": "Налаштування компанії",
+    "inviteCardDescription": "Надішліть запрошення на email",
+    "copyLink": "Копіювати",
+    "inviteValidNote": "Запрошення дійсне 7 днів. Посилання буде згенеровано автоматично.",
+    "emailLabel": "Email",
+    "sending": "Надсилання...",
+    "send": "Надіслати",
+    "emailRequired": "Вкажіть email",
+    "inviteSentTo": "Запрошення надіслано на {email}",
+    "inviteSent": "Запрошення надіслано",
+    "inviteCreatedNoEmail": "Запрошення створено, але лист не надіслано — скопіюйте посилання вручну",
+    "emailNotSent": "Лист не надіслано",
+    "copyLinkManually": "Скопіюйте посилання вручну",
+    "inviteSendError": "Помилка надсилання запрошення",
+    "inviteSendFailed": "Не вдалося надіслати запрошення",
+    "roleUpdated": "Роль оновлено",
+    "roleChangeError": "Не вдалося змінити роль",
+    "removeMemberConfirm": "Ви впевнені що хочете видалити {name}?",
+    "memberFallback": "учасника",
+    "memberRemoved": "Учасника видалено",
+    "memberRemoveError": "Не вдалося видалити учасника",
+    "revokeInviteConfirm": "Відкликати запрошення?",
+    "inviteRevoked": "Запрошення відкликано",
+    "inviteRevokeError": "Не вдалося відкликати запрошення",
+    "currentMembersDescription": "Поточні учасники компанії",
+    "youSuffix": "(Ви)",
+    "memberActionsLabel": "Дії з учасником",
+    "changeRole": "Змінити роль",
+    "noMembers": "Немає учасників",
+    "pendingInvitesCount": "Очікуючі запрошення ({count})",
+    "pendingInvitesDescription": "Нещодавно надіслані запрошення",
+    "noPendingInvites": "Немає очікуючих запрошень",
+    "invitedByLine": "Запросив {name} · {date}",
+    "revokeInvite": "Відкликати запрошення",
+    "rolesAndPermissions": "Ролі та дозволи",
+    "roleOwnerFullDescription": "Повний доступ. може видаляти компанію, змінювати будь-які налаштування, керувати всіма учасниками.",
+    "roleAdminFullDescription": "Може додавати/видаляти учасників, змінювати ролі, керувати контактами та угодами.",
+    "roleMemberFullDescription": "Може переглядати та редагувати контакти, угоди, задачі в межах компанії.",
+    "dbSharedLabel": "Спільна база даних",
+    "dbSharedDescription": "Використовувати базу даних CRM-системи",
+    "dbPostgresqlLabel": "PostgreSQL",
+    "dbPostgresqlDescription": "Підключити власну базу PostgreSQL",
+    "dbMysqlLabel": "MySQL",
+    "dbMysqlDescription": "Підключити власну базу MySQL",
+    "dbMariadbLabel": "MariaDB",
+    "dbMariadbDescription": "Підключити власну базу MariaDB",
+    "dbSqlserverLabel": "MS SQL Server",
+    "dbSqlserverDescription": "Підключити власну базу SQL Server",
+    "dbHostRequired": "Вкажіть хост",
+    "dbHostSpaces": "Хост не може містити пробіли",
+    "dbUserRequired": "Вкажіть користувача",
+    "dbNameRequired": "Вкажіть назву бази",
+    "dbPortInvalid": "Порт: ціле число від 1 до 65535",
+    "dbCheckParams": "Перевірте параметри з’єднання",
+    "dbFillRequired": "Заповніть усі обов’язкові поля",
+    "dbProvideConnection": "Вкажіть параметри з’єднання або рядок підключення",
+    "dbInvalidUrl": "Невірний рядок підключення",
+    "dbUrlExample": "Приклад: postgresql://user:password@host:5432/database",
+    "dbTestSuccess": "З’єднання успішне",
+    "dbTestFailed": "Тест з’єднання не пройшов",
+    "dbVersion": "Версія: {version}",
+    "dbSaveFailed": "Не вдалося зберегти",
+    "dbDisconnectedSuccess": "Відключено від зовнішньої бази даних",
+    "dbDisconnectFailed": "Не вдалося відключити",
+    "dbPageDescription": "Підключіть власну базу даних для зберігання даних вашої компанії",
+    "dbConfigLoadError": "Не вдалося завантажити поточний конфіг — показано значення за замовчуванням",
+    "dbCurrentStatus": "Поточний статус",
+    "dbTypeLabel": "Тип:",
+    "dbErrorLabel": "Помилка: {message}",
+    "dbStatusShared": "Спільна",
+    "dbTypeTitle": "Тип бази даних",
+    "dbConnectionParams": "Параметри з'єднання",
+    "dbConnectionParamsHint": "Заповніть хост, користувача та назву бази — CRM збере рядок підключення автоматично",
+    "dbHostLabel": "Хост (Host)",
+    "dbPortLabel": "Порт",
+    "dbNameLabel": "Назва бази",
+    "dbUserLabel": "Користувач",
+    "dbPasswordLabel": "Пароль",
+    "dbOrConnectionString": "Або готовий рядок підключення",
+    "dbTestConnection": "Тестувати з'єднання",
+    "dbTestSuccessTitle": "З'єднання успішне!",
+    "dbHowItWorks": "Як це працює?",
+    "dbHowSharedTitle": "Спільна база",
+    "dbHowSharedBody": "— ваші дані зберігаються в загальній базі CRM-системи",
+    "dbHowExternalTitle": "Зовнішня база",
+    "dbHowExternalBody": "— ваші дані зберігаються на вашому сервері",
+    "dbHowTables": "Після підключення CRM автоматично створить таблиці у вашій базі",
+    "dbHowDisconnect": "Ви можете відключитися від зовнішньої бази в будь-який момент",
+    "dbHowSupported": "Підтримуються: PostgreSQL, MySQL, MariaDB, MS SQL Server",
+    "billingPlans": {
+      "free": {
+        "name": "Безкоштовний",
+        "description": "Для ознайомлення",
+        "feature1": "1 користувач",
+        "feature2": "100 контактів",
+        "feature3": "20 угод",
+        "feature4": "50 AI-запитів/день"
+      },
+      "starter": {
+        "name": "Стартовий",
+        "description": "Для малого бізнесу",
+        "feature1": "3 користувача",
+        "feature2": "1,000 контактів",
+        "feature3": "200 угод",
+        "feature4": "500 AI-запитів/день",
+        "feature5": "3 воронки"
+      },
+      "professional": {
+        "name": "Професійний",
+        "description": "Для команд продажів",
+        "feature1": "10 користувачів",
+        "feature2": "10,000 контактів",
+        "feature3": "2,000 угод",
+        "feature4": "1,500 AI-запитів/день",
+        "feature5": "10 воронок",
+        "feature6": "Автоматизації",
+        "feature7": "Звіти"
+      },
+      "enterprise": {
+        "name": "Підприємство",
+        "description": "Для великих компаній",
+        "feature1": "Необмежено користувачів",
+        "feature2": "Необмежено контактів",
+        "feature3": "Необмежено угод",
+        "feature4": "5,000 AI-запитів/день",
+        "feature5": "Необмежено воронок",
+        "feature6": "API доступ",
+        "feature7": "Пріоритетна підтримка"
+      }
+    },
+    "billingSubscriptionLoadError": "Помилка завантаження підписки",
+    "billingPaymentSuccess": "Оплата успішна! Вашу підписку оновлено.",
+    "billingPaymentCanceled": "Оплату скасовано.",
+    "billingCheckoutError": "Не вдалося створити оплату",
+    "billingPortalError": "Не вдалося відкрити керування підпискою",
+    "billingFreePrice": "Безкоштовно",
+    "billingStatusActive": "Активна",
+    "billingStatusTrialing": "Пробний період",
+    "billingStatusPastDue": "Прострочена",
+    "billingStatusCanceled": "Скасована",
+    "billingCurrentSubscription": "Поточна підписка",
+    "billingPerMonth": "міс",
+    "billingPerYear": "рік",
+    "billingTrialDaysLeft": "{count} дн.",
+    "billingValidUntil": "Діє до",
+    "billingUsageUsers": "Користувачі",
+    "billingUsageContacts": "Контакти",
+    "billingUsageDeals": "Угоди",
+    "billingUsageAiRequests": "AI-запити (день)",
+    "billingSelectedLabel": "Обрано:",
+    "billingCancelSelection": "Скасувати вибір",
+    "billingConfirmUpgrade": "Підтвердити оновлення",
+    "billingUpgradePlan": "Оновити план",
+    "billingManageSubscription": "Керувати підпискою",
+    "billingPaymentHistory": "Історія платежів",
+    "billingMonthly": "Щомісячно",
+    "billingYearly": "Щорічно",
+    "billingPopular": "Популярний",
+    "billingCurrentPlan": "Поточний план",
+    "billingFreePlan": "Безкоштовний",
+    "billingSelectPlan": "Обрати",
+    "billingHistoryStatusSucceeded": "Сплачено",
+    "billingHistoryStatusFailed": "Помилка",
+    "billingHistoryStatusPending": "Очікує",
+    "billingHistoryStatusRefunded": "Повернення",
+    "billingHistoryInvoiceColumn": "Рахунок",
+    "billingHistoryAmountColumn": "Сума",
+    "billingHistoryDefaultDescription": "Оплата підписки",
+    "billingHistoryDownloadInvoice": "Завантажити рахунок",
+    "billingHistoryDownloadInvoiceDemo": "Завантажити рахунок (демонстраційний PDF)",
+    "billingHistoryEmpty": "Немає платежів",
+    "billingHistoryEmptyDescription": "Рахунків поки що немає",
+    "billingHistoryInvoiceDownloaded": "Рахунок завантажено",
+    "billingHistoryDemoPdfNote": "Демонстраційний PDF",
+    "billingHistoryDownloadError": "Не вдалося завантажити рахунок",
+    "billingHistoryPdfTitle": "CRM-Next - Invoice (demo)",
+    "billingHistoryPdfDate": "Date:",
+    "billingHistoryPdfNumber": "Invoice:",
+    "billingHistoryPdfDescription": "Description:",
+    "billingHistoryPdfAmount": "Amount:",
+    "billingHistoryPdfStatus": "Status:",
+    "billingHistoryPdfNote": "Demo document generated client-side.",
+    "billingHistoryPdfDefaultDescription": "Subscription payment",
+    "auditActionDelete": "Видалено",
+    "auditActionLogin": "Вхід",
+    "auditActionLogout": "Вихід",
+    "auditActionInvite": "Запрошення",
+    "auditActionRoleChange": "Зміна ролі",
+    "auditActionExport": "Експорт",
+    "auditActionImport": "Імпорт",
+    "auditEntityContact": "Контакт",
+    "auditEntityDeal": "Угода",
+    "auditEntityTask": "Задача",
+    "auditEntityMember": "Учасник",
+    "auditEntitySettings": "Налаштування",
+    "auditEntityAuth": "Авторизація",
+    "auditEntityPipeline": "Воронка",
+    "auditAllActions": "Всі дії",
+    "auditAllEntities": "Всі сутності",
+    "auditSearchPlaceholder": "Пошук за дією, сутністю, ID...",
+    "auditSearchLabel": "Пошук у журналі аудиту",
+    "auditDateFrom": "Дата від",
+    "auditDateTo": "Дата до",
+    "auditExportCsv": "Експорт CSV",
+    "auditRecordsCount": "{count} записів",
+    "auditColumnUser": "Користувач",
+    "auditColumnAction": "Дія",
+    "auditColumnEntity": "Сутність",
+    "auditEmpty": "Журнал порожній",
+    "auditExportEmpty": "Немає записів для експорту",
+    "auditExportedCount": "Експортовано записів: {count}",
+    "auditExportDescription": "Поточна сторінка журналу"
   },
   "team": {
     "title": "Команда",
@@ -1579,6 +1862,326 @@
       "type": "Тип",
       "priority": "Пріоритет",
       "dueDate": "Дата виконання"
+    }
+  },
+  "landing": {
+    "cta": {
+      "tryFree": "Спробувати безкоштовно",
+      "login": "Увійти",
+      "openCrm": "Відкрити CRM"
+    },
+    "nav": {
+      "capabilities": "Можливості",
+      "aiCopilot": "AI Co-Pilot",
+      "communication": "Комунікація",
+      "automation": "Автоматизація",
+      "admin": "Адміністрування",
+      "faq": "FAQ"
+    },
+    "header": {
+      "homeAria": "CRM-Next — на головну",
+      "sectionsAria": "Розділи",
+      "menu": "Меню"
+    },
+    "hero": {
+      "headline": "Жодна угода не губиться",
+      "subtitle": "База клієнтів, воронка продажу, автоматизація, завдання й аналітика — в одному вікні. Інтерфейс українською.",
+      "secondaryCta": "Дивитися можливості",
+      "note": "Воронка, завдання, комунікація та контроль команди — без хаосу в таблицях.",
+      "checkNoCard": "Без картки",
+      "checkFree": "Послуги CRM безкоштовно",
+      "checkUkrainian": "Інтерфейс українською",
+      "chipRoles": "4 ролі доступу",
+      "chipChannels": "3 канали",
+      "chipAi": "AI на ваших даних"
+    },
+    "facts": {
+      "roles": "ролі доступу: від глядача до власника",
+      "channels": "канали: Telegram, WhatsApp, Email",
+      "ai": "Co-Pilot з доступом до ваших даних"
+    },
+    "funnel": {
+      "step1": "Крок 1",
+      "step2": "Крок 2",
+      "step3": "Крок 3",
+      "chaos": {
+        "title": "Хаос",
+        "text": "Угоди губляться в таблицях і месенджерах.",
+        "cta": "Дивитися воронку"
+      },
+      "order": {
+        "title": "Порядок",
+        "text": "База, воронка й автоматизація в одному вікні.",
+        "cta": "Дивитися автоматизацію"
+      },
+      "control": {
+        "title": "Контроль",
+        "text": "Ролі, аудит і відповіді AI з ваших даних.",
+        "cta": "Дивитися контроль"
+      }
+    },
+    "ai": {
+      "title": "Питання до CRM — відповідь за секунди",
+      "body": "Co-Pilot читає ваші дані в межах вашої ролі та відповідає природною мовою: які угоди під ризиком, кому подзвонити сьогодні, які підсумки тижня.",
+      "check1": "Відповіді лише на основі вашої CRM — без вигадок",
+      "check2": "Використання рахується за тенантом і видно в журналі",
+      "check3": "Можна підключити власний API-ключ AI-провайдера"
+    },
+    "admin": {
+      "title": "Прозорий стан системи — без дзвінків адміну",
+      "body": "Кеш, черги завдань, вебхуки та системні журнали доступні адміністратору без звернення до підтримки.",
+      "check1": "Статус кешу та черг завдань у реальному часі",
+      "check2": "Вебхуки: доставка й коди відповідей",
+      "check3": "Системні журнали й розділ «Логи»"
+    },
+    "audience": {
+      "title": "Для яких команд підходить CRM-Next",
+      "b2b": {
+        "name": "B2B-продажі",
+        "text": "Довгі угоди, кілька контактів, контроль кожного етапу."
+      },
+      "saas": {
+        "name": "SaaS та IT",
+        "text": "Ліди з сайту й форм одразу розподіляються між менеджерами."
+      },
+      "ecommerce": {
+        "name": "E-commerce",
+        "text": "Замовлення, оплати й повторні продажі в одному вікні."
+      },
+      "services": {
+        "name": "Послуги",
+        "text": "Заявки, записи, нагадування й історія кожного клієнта."
+      }
+    },
+    "security": {
+      "title": "Безпека і порядок у даних",
+      "body": "Ролі owner, admin, member і viewer розділяють доступ. Чутливі поля шифруються, дії користувачів фіксуються в аудиті.",
+      "itemMember": "Member бачить свої та непризначені завдання",
+      "itemViewer": "Viewer має доступ лише для читання",
+      "itemApiKeys": "API-ключі зберігаються у зашифрованому вигляді",
+      "itemAudit": "Зміни й входи видно в журналі аудиту"
+    },
+    "faq": {
+      "title": "Часті запитання",
+      "q1": "Чи побачить менеджер чужі угоди?",
+      "a1": "Ні. Member працює зі своїми та непризначеними завданнями, owner і admin бачать усе, viewer лише читає.",
+      "q2": "Чи можна перенести наявну базу?",
+      "a2": "Так. Контакти можна імпортувати, знайти дублі й навести лад у базі перед запуском воронки.",
+      "q3": "Як працює AI Co-Pilot?",
+      "a3": "AI допомагає з наступними діями, статусами й короткими підсумками на основі ваших даних. Використання рахується за тенантом і видно в журналі.",
+      "q4": "Що з безпекою даних?",
+      "a4": "Доступ за ролями, шифрування чутливих полів і журнал аудиту для важливих дій."
+    },
+    "finalCta": {
+      "title": "Наведіть лад у продажах цього тижня",
+      "body": "Почніть з бази й воронки, далі підключіть автоматизацію та AI-підказки."
+    },
+    "footer": {
+      "tagline": "База клієнтів · Воронка · Автоматизація · Аналітика",
+      "legalAria": "Правова документація",
+      "oferta": "Публічна оферта",
+      "privacy": "Політика конфіденційності",
+      "dpa": "Договір обробки даних (DPA)"
+    },
+    "dealJourney": {
+      "title": "Шлях угоди №1042",
+      "moving": "рухається",
+      "stages": {
+        "new": {
+          "name": "Нові звернення",
+          "time": "вчора"
+        },
+        "qualification": {
+          "name": "Кваліфікація",
+          "time": "сьогодні вранці"
+        },
+        "deal": {
+          "name": "Угода",
+          "time": "зараз"
+        },
+        "payment": {
+          "name": "Оплата",
+          "time": "далі"
+        }
+      },
+      "hereNow": "зараз тут",
+      "slogan": "Жодна угода не губиться",
+      "onTrack": "на місці"
+    },
+    "aiDemo": {
+      "demos": {
+        "risk": {
+          "question": "Які угоди під ризиком?",
+          "answer": "3 угоди без активності більше 5 днів: ТОВ «Орбіта», ФОП «Коло», «Гама». Раджу почати з «Орбіта» — ₴140 тис."
+        },
+        "today": {
+          "question": "Кому написати сьогодні?",
+          "answer": "4 контакти з простроченими задачами: Марія Коваль, Ігор Савчук, «Ліга», Анна Петренко."
+        },
+        "week": {
+          "question": "Підсумок продажів за тиждень",
+          "answer": "7 угод на ₴410 тис. Найкраще джерело — заявки з сайту: 4 з 7 угод."
+        }
+      },
+      "hints": {
+        "risk": "Які угоди під ризиком?",
+        "today": "Кому написати сьогодні?",
+        "week": "Підсумок за тиждень"
+      },
+      "think": {
+        "analysis": "Аналізую дані CRM…",
+        "search": "Шукаю в угодах…",
+        "tasks": "Звіряю задачі…"
+      },
+      "badge": "запит природною мовою",
+      "done": "Готово",
+      "sourceChip": "джерело: угоди · задачі",
+      "privateChip": "лише ваші дані",
+      "statusReady": "Відповідь готова",
+      "showExample": "Показати приклад: {label}"
+    },
+    "merge": {
+      "title": "Імпорт · дедублікація",
+      "again": "Показати ще",
+      "duplicate": "можливий дублікат",
+      "sourceSite": "Сайт",
+      "nameMaria": "Марія Коваль",
+      "nameMariaShort": "М. Коваль"
+    },
+    "comms": {
+      "title": "Вхідні · усі канали",
+      "channelsBadge": "3 канали",
+      "yesterday": "вчора",
+      "waSnippet": "Домовимося на вівторок о 15:00?",
+      "emailSnippet": "Рахунок №1042 від «Альфа»",
+      "msg": {
+        "quoteRequest": "Добрий день, надішліть будь ласка КП",
+        "quoteReceived": "КП отримали, готуємо відповідь",
+        "waitingInvoice": "Домовились, чекаємо рахунок",
+        "sendInvoice": "Надішліть, будь ласка, рахунок"
+      },
+      "bubbleReply": "Вже надсилаю — перевірте пошту 📎",
+      "bubbleThanks": "Дякую! Погодимо умови до пʼятниці",
+      "placeholder": "Написати повідомлення…"
+    },
+    "roles": {
+      "title": "Ролі команди",
+      "auditTitle": "Журнал аудиту",
+      "auditNote": "Кожна дія з даними фіксується з часом і автором",
+      "perms": {
+        "owner": "Повний доступ, білінг і команда",
+        "admin": "Налаштування, інтеграції, ролі",
+        "member": "Свої та непризначені завдання",
+        "viewer": "Лише читання, без експорту"
+      },
+      "statusRecorded": "записано",
+      "statusDenied": "відмовлено",
+      "justNow": "щойно",
+      "events": {
+        "stageChanged": "Олена змінила етап угоди «Альфа»",
+        "exportDenied": "viewer: експорт контактів",
+        "integrationAdded": "Власник додав інтеграцію Telegram",
+        "taskClosed": "Марія закрила задачу «Надіслати КП»",
+        "noteAdded": "Ігор додав нотатку до «Ліга»",
+        "ownerChanged": "Олена змінила відповідального «Вектор»"
+      }
+    },
+    "rule": {
+      "ifThen": "Якщо {cond}, то {act}",
+      "stepCondition": "Умова",
+      "stepAction": "Дія",
+      "stepResult": "Результат",
+      "conditions": {
+        "silent": "угода мовчить 3 дні",
+        "leadNoReply": "лід без відповіді 2 дні",
+        "stuck": "угода в етапі 7+ днів"
+      },
+      "actions": {
+        "createTask": "створити задачу",
+        "telegram": "написати в Telegram",
+        "highlight": "підсвітити у воронці"
+      },
+      "check": "Перевірити",
+      "checking": "Перевіряю…",
+      "passed": "Перевірка пройдена: правило спрацює",
+      "note": "Правила створює адміністратор · журнал — у розділі «Автоматизація»"
+    },
+    "settings": {
+      "title": "Налаштування",
+      "badge": "API та інтеграції",
+      "keysLabel": "AI-ключі",
+      "connected": "підключено",
+      "webhooksLabel": "Вебхуки",
+      "webhooksActive": "2 активні",
+      "aiLogTitle": "Журнал AI-запитів",
+      "aiLogDesc": "Використання за тенантом · витрати й ліміти",
+      "open": "Відкрити →",
+      "note": "Власні ключі AI, вебхуки та інтеграції налаштовує адміністратор тенанта."
+    },
+    "console": {
+      "gateway": "API-шлюз",
+      "gatewayMeta": "усі маршрути відповідають",
+      "cache": "Кеш",
+      "cacheMeta": "стан чинний",
+      "jobs": "Фонові задачі",
+      "jobsBadge": "3 активні",
+      "jobsMeta": "завдання у виконанні",
+      "webhooks": "Вебхуки",
+      "webhooksMeta": "доставлено щойно",
+      "journal": "Системний журнал",
+      "journalMeta": "критичних помилок немає",
+      "updatedNote": "оновлено щойно · журнали зберігаються в розділі «Логи»"
+    },
+    "features": {
+      "navTitle": "Можливості",
+      "nav": {
+        "baza": "База і воронка",
+        "chat": "Комунікація",
+        "auto": "Автоматизація",
+        "audit": "Аналітика і доступ",
+        "ai": "AI & Налаштування"
+      },
+      "baza": {
+        "title": "Кожна угода на своєму місці",
+        "body": "Угоди рухаються етапами, прострочене підсвічується автоматично.",
+        "check1": "Імпорт бази та дедублікація контактів",
+        "check2": "Картка клієнта: комунікація, файли, завдання",
+        "check3": "Канбан воронки з drag-and-drop"
+      },
+      "chat": {
+        "title": "Листування, яке не губиться",
+        "body": "Telegram, WhatsApp та Email в єдиній вхідній скриньці (без телефонії)."
+      },
+      "channels": {
+        "telegram": "Листування, нотатки й нагадування залишаються в картці клієнта.",
+        "whatsapp": "Повідомлення клієнтів прив’язуються до контактів та угод.",
+        "email": "Листи й заявки прив’язуються до контактів та угод."
+      },
+      "auto": {
+        "title": "Правила працюють, поки ви продаєте",
+        "body": "Правила самі розподіляють лідів та рухають угоди."
+      },
+      "audit": {
+        "title": "Контроль без мікроменеджменту",
+        "body": "Видно джерела лідів і завантаженість команди, а доступ — за ролями: кожна дія з даними потрапляє в журнал аудиту."
+      },
+      "ai": {
+        "title": "Відповіді з ваших даних, а не з повітря",
+        "body": "Підключайте власні AI-ключі, налаштовуйте вебхуки та інтеграції, стежте за використанням AI у журналі."
+      }
+    },
+    "baza": {
+      "cardTitle": "Картка клієнта",
+      "monogram": "МК",
+      "person": "Марія Коваль",
+      "company": "ТОВ «Альфа» · лід з сайту",
+      "stage": "Кваліфікація",
+      "dealLabel": "Угода",
+      "dealValue": "₴120 тис.",
+      "nextLabel": "Наступна дія",
+      "nextValue": "Надіслати КП сьогодні",
+      "historyLabel": "Історія",
+      "historyValue": "12 подій"
     }
   }
 }

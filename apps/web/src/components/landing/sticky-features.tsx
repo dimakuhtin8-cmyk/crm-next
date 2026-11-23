@@ -11,6 +11,7 @@
 
 import { motion, MotionConfig, useReducedMotion } from 'framer-motion';
 import { Check } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { BazaPreview } from '@/components/landing/baza-preview';
@@ -23,38 +24,6 @@ import { SettingsPreview } from '@/components/landing/settings-preview';
 
 const MOVE_SPRING = { type: 'spring', stiffness: 320, damping: 30 } as const;
 const EXPO_OUT: [number, number, number, number] = [0.16, 1, 0.3, 1];
-
-const features = [
-  { id: 'baza', label: 'База і воронка' },
-  { id: 'chat', label: 'Комунікація' },
-  { id: 'auto', label: 'Автоматизація' },
-  { id: 'audit', label: 'Аналітика і доступ' },
-  { id: 'ai', label: 'AI & Налаштування' },
-];
-
-const CHANNEL_NOTES = [
-  {
-    name: 'Telegram',
-    text: 'Листування, нотатки й нагадування залишаються в картці клієнта.',
-    tone: 'bg-info-light text-info',
-  },
-  {
-    name: 'WhatsApp',
-    text: 'Повідомлення клієнтів прив’язуються до контактів та угод.',
-    tone: 'bg-success-light text-success',
-  },
-  {
-    name: 'Email',
-    text: 'Листи й заявки прив’язуються до контактів та угод.',
-    tone: 'bg-primary-light text-primary',
-  },
-];
-
-const BAZA_CHECKLIST = [
-  'Імпорт бази та дедублікація контактів',
-  'Картка клієнта: комунікація, файли, завдання',
-  'Канбан воронки з drag-and-drop',
-];
 
 /** Том розділу: розкривається clip-розгорткою по входу у вʼюпорт, один раз. */
 function Volume({ id, index, children }: { id: string; index: number; children: ReactNode }) {
@@ -81,10 +50,40 @@ function Volume({ id, index, children }: { id: string; index: number; children: 
 }
 
 export function StickyFeatures() {
+  const t = useTranslations('landing.features');
+  const tCta = useTranslations('landing.cta');
   const [activeTab, setActiveTab] = useState('baza');
   // Скоуп піддерева: у видачі Next лежить прихований prerender-дублікат
   // (div#S:0), тому document.getElementById брав би невидимі копії.
   const rootRef = useRef<HTMLDivElement>(null);
+
+  const features = [
+    { id: 'baza', label: t('nav.baza') },
+    { id: 'chat', label: t('nav.chat') },
+    { id: 'auto', label: t('nav.auto') },
+    { id: 'audit', label: t('nav.audit') },
+    { id: 'ai', label: t('nav.ai') },
+  ];
+
+  const CHANNEL_NOTES = [
+    {
+      name: 'Telegram',
+      text: t('channels.telegram'),
+      tone: 'bg-info-light text-info',
+    },
+    {
+      name: 'WhatsApp',
+      text: t('channels.whatsapp'),
+      tone: 'bg-success-light text-success',
+    },
+    {
+      name: 'Email',
+      text: t('channels.email'),
+      tone: 'bg-primary-light text-primary',
+    },
+  ];
+
+  const BAZA_CHECKLIST = [t('baza.check1'), t('baza.check2'), t('baza.check3')];
 
   useEffect(() => {
     const scope = rootRef.current ?? document;
@@ -121,7 +120,7 @@ export function StickyFeatures() {
         <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-12 lg:gap-12">
           {/* Sticky-навігація: плоский папір, активна — печатка */}
           <div className="z-10 flex gap-2 overflow-x-auto rounded-xl border border-border bg-background-secondary p-3 lg:sticky lg:top-28 lg:col-span-4 lg:block lg:space-y-1 lg:overflow-visible">
-            <h3 className="hidden px-4 pb-2 pt-2 text-xl font-bold lg:block">Можливості</h3>
+            <h3 className="hidden px-4 pb-2 pt-2 text-xl font-bold lg:block">{t('navTitle')}</h3>
             {features.map((feature) => (
               <button
                 key={feature.id}
@@ -147,17 +146,15 @@ export function StickyFeatures() {
               href="#trial"
               className="mt-2 inline-flex min-h-12 items-center justify-center rounded-xl bg-inverse px-7 text-sm font-bold text-inverse-foreground transition-colors hover:bg-[#3A352F]"
             >
-              Спробувати безкоштовно
+              {tCta('tryFree')}
             </SectionLink>
           </div>
 
           {/* Пʼять томів, розділених rib-лініями */}
           <div className="space-y-14 lg:col-span-8">
             <Volume id="section-baza" index={0}>
-              <h3 className="mb-2 text-2xl font-bold">Кожна угода на своєму місці</h3>
-              <p className="mb-6 text-foreground-secondary">
-                Угоди рухаються етапами, прострочене підсвічується автоматично.
-              </p>
+              <h3 className="mb-2 text-2xl font-bold">{t('baza.title')}</h3>
+              <p className="mb-6 text-foreground-secondary">{t('baza.body')}</p>
               <MergeDemo />
               <div className="mt-6 grid gap-6 sm:grid-cols-2">
                 <BazaPreview />
@@ -175,10 +172,8 @@ export function StickyFeatures() {
             </Volume>
 
             <Volume id="section-chat" index={1}>
-              <h3 className="mb-2 text-2xl font-bold">Листування, яке не губиться</h3>
-              <p className="mb-6 text-foreground-secondary">
-                Telegram, WhatsApp та Email в єдиній вхідній скриньці (без телефонії).
-              </p>
+              <h3 className="mb-2 text-2xl font-bold">{t('chat.title')}</h3>
+              <p className="mb-6 text-foreground-secondary">{t('chat.body')}</p>
               <CommsPreview />
               <div className="mt-6 divide-y divide-border border-y border-border">
                 {CHANNEL_NOTES.map((channel) => (
@@ -195,28 +190,20 @@ export function StickyFeatures() {
             </Volume>
 
             <Volume id="section-auto" index={2}>
-              <h3 className="mb-2 text-2xl font-bold">Правила працюють, поки ви продаєте</h3>
-              <p className="mb-6 text-foreground-secondary">
-                Правила самі розподіляють лідів та рухають угоди.
-              </p>
+              <h3 className="mb-2 text-2xl font-bold">{t('auto.title')}</h3>
+              <p className="mb-6 text-foreground-secondary">{t('auto.body')}</p>
               <RuleBuilder />
             </Volume>
 
             <Volume id="section-audit" index={3}>
-              <h3 className="mb-2 text-2xl font-bold">Контроль без мікроменеджменту</h3>
-              <p className="mb-6 text-foreground-secondary">
-                Видно джерела лідів і завантаженість команди, а доступ — за ролями: кожна дія з
-                даними потрапляє в журнал аудиту.
-              </p>
+              <h3 className="mb-2 text-2xl font-bold">{t('audit.title')}</h3>
+              <p className="mb-6 text-foreground-secondary">{t('audit.body')}</p>
               <RolesPreview />
             </Volume>
 
             <Volume id="section-ai" index={4}>
-              <h3 className="mb-2 text-2xl font-bold">Відповіді з ваших даних, а не з повітря</h3>
-              <p className="mb-6 text-foreground-secondary">
-                Підключайте власні AI-ключі, налаштовуйте вебхуки та інтеграції, стежте за
-                використанням AI у журналі.
-              </p>
+              <h3 className="mb-2 text-2xl font-bold">{t('ai.title')}</h3>
+              <p className="mb-6 text-foreground-secondary">{t('ai.body')}</p>
               <SettingsPreview />
             </Volume>
           </div>

@@ -8,8 +8,10 @@
 
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
+import { useTranslations } from 'next-intl';
 
 export function HeaderDesktopAuth({ locale }: { locale: string }) {
+  const t = useTranslations('landing');
   const { data: session, status } = useSession();
 
   if (status === 'authenticated' && session?.user) {
@@ -22,7 +24,7 @@ export function HeaderDesktopAuth({ locale }: { locale: string }) {
           href={`/${locale}/dashboard`}
           className="inline-flex min-h-11 items-center justify-center rounded-lg bg-inverse px-5 text-sm font-bold text-inverse-foreground shadow-[0_10px_24px_-12px_rgba(74,60,40,0.45)] transition-colors hover:bg-[#3A352F]"
         >
-          Відкрити CRM
+          {t('cta.openCrm')}
         </Link>
       </div>
     );
@@ -34,26 +36,27 @@ export function HeaderDesktopAuth({ locale }: { locale: string }) {
         href={`/${locale}/auth/login`}
         className="hidden text-sm font-semibold text-inverse-foreground underline-offset-4 hover:underline sm:inline"
       >
-        Увійти
+        {t('cta.login')}
       </Link>
       <Link
         href={`/${locale}/auth/register`}
         className="inline-flex min-h-11 items-center justify-center rounded-lg bg-inverse px-5 text-sm font-bold text-inverse-foreground shadow-[0_10px_24px_-12px_rgba(74,60,40,0.45)] transition-colors hover:bg-[#3A352F]"
       >
-        Спробувати безкоштовно
+        {t('cta.tryFree')}
       </Link>
     </div>
   );
 }
 
 export function HeaderMobileAuth({ locale }: { locale: string }) {
+  const t = useTranslations('landing');
   const { status } = useSession();
   const itemClass = 'block rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-secondary';
 
   if (status === 'authenticated') {
     return (
       <Link href={`/${locale}/dashboard`} className={itemClass}>
-        Відкрити CRM
+        {t('cta.openCrm')}
       </Link>
     );
   }
@@ -61,10 +64,10 @@ export function HeaderMobileAuth({ locale }: { locale: string }) {
   return (
     <>
       <Link href={`/${locale}/auth/login`} className={itemClass}>
-        Увійти
+        {t('cta.login')}
       </Link>
       <Link href={`/${locale}/auth/register`} className={itemClass}>
-        Спробувати безкоштовно
+        {t('cta.tryFree')}
       </Link>
     </>
   );

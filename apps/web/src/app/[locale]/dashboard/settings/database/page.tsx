@@ -1,6 +1,7 @@
 'use client';
 
 import { Loader2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
@@ -19,16 +20,30 @@ interface DatabaseConfig {
 const DB_OPTIONS: { value: DatabaseType; label: string; description: string }[] = [
   {
     value: 'shared',
-    label: 'Спільна база даних',
-    description: 'Використовувати базу даних CRM-системи',
+    label: 'settings.dbSharedLabel',
+    description: 'settings.dbSharedDescription',
   },
-  { value: 'postgresql', label: 'PostgreSQL', description: 'Підключити власну базу PostgreSQL' },
-  { value: 'mysql', label: 'MySQL', description: 'Підключити власну базу MySQL' },
-  { value: 'mariadb', label: 'MariaDB', description: 'Підключити власну базу MariaDB' },
-  { value: 'sqlserver', label: 'MS SQL Server', description: 'Підключити власну базу SQL Server' },
+  {
+    value: 'postgresql',
+    label: 'settings.dbPostgresqlLabel',
+    description: 'settings.dbPostgresqlDescription',
+  },
+  { value: 'mysql', label: 'settings.dbMysqlLabel', description: 'settings.dbMysqlDescription' },
+  {
+    value: 'mariadb',
+    label: 'settings.dbMariadbLabel',
+    description: 'settings.dbMariadbDescription',
+  },
+  {
+    value: 'sqlserver',
+    label: 'settings.dbSqlserverLabel',
+    description: 'settings.dbSqlserverDescription',
+  },
 ];
 
 export default function DatabaseSettingsPage() {
+  const t = useTranslations('settings');
+  const tCommon = useTranslations('common');
   const [config, setConfig] = useState<DatabaseConfig | null>(null);
   const [selectedType, setSelectedType] = useState<DatabaseType>('shared');
   const [databaseUrl, setDatabaseUrl] = useState('');
@@ -53,6 +68,10 @@ export default function DatabaseSettingsPage() {
     t === 'postgresql' ? 'postgresql' : t === 'sqlserver' ? 'sqlserver' : 'mysql';
   const defaultPortFor = (t: DatabaseType) =>
     t === 'postgresql' ? '5432' : t === 'sqlserver' ? '1433' : '3306';
+  const optionLabel = (type: string) => {
+    const option = DB_OPTIONS.find((o) => o.value === type);
+    return option ? t(option.label) : type;
+  };
 
   const updateDbField = (field: keyof typeof dbForm, value: string) => {
     setFieldErrors((prev) => ({ ...prev, [field]: undefined }));
@@ -73,20 +92,20 @@ export default function DatabaseSettingsPage() {
     if (hasAnyField) {
       const errs: typeof fieldErrors = {};
       const host = dbForm.host.trim();
-      if (!host) errs.host = 'Вкажіть хост';
-      else if (/\s/.test(host)) errs.host = 'Хост не може містити пробіли';
-      if (!dbForm.user.trim()) errs.user = 'Вкажіть користувача';
-      if (!dbForm.dbname.trim()) errs.dbname = 'Вкажіть назву бази';
+      if (!host) errs.host = t('dbHostRequired');
+      else if (/\s/.test(host)) errs.host = t('dbHostSpaces');
+      if (!dbForm.user.trim()) errs.user = t('dbUserRequired');
+      if (!dbForm.dbname.trim()) errs.dbname = t('dbNameRequired');
       if (dbForm.port.trim()) {
         const port = Number(dbForm.port);
         if (!Number.isInteger(port) || port < 1 || port > 65535) {
-          errs.port = 'Порт: ціле число від 1 до 65535';
+          errs.port = t('dbPortInvalid');
         }
       }
       setFieldErrors(errs);
       if (Object.keys(errs).length > 0) {
-        toast.error('Перевірте параметри з’єднання', {
-          description: 'Заповніть усі обов’язкові поля',
+        toast.error(t('dbCheckParams'), {
+          description: t('dbFillRequired'),
         });
         return false;
       }
@@ -96,12 +115,12 @@ export default function DatabaseSettingsPage() {
     // Класична форма порожня — перевіряємо готовий рядок підключення
     const url = databaseUrl.trim();
     if (!url) {
-      toast.error('Вкажіть параметри з’єднання або рядок підключення');
+      toast.error(t('dbProvideConnection'));
       return false;
     }
     if (!/^[a-z][a-z0-9+.-]*:\/\//.test(url)) {
-      toast.error('Невірний рядок підключення', {
-        description: 'Приклад: postgresql://user:password@host:5432/database',
+      toast.error(t('dbInvalidUrl'), {
+        description: t('dbUrlExample'),
       });
       return false;
     }
@@ -111,7 +130,7 @@ export default function DatabaseSettingsPage() {
   useEffect(() => {
     fetch('/api/tenant/database')
       .then((r) => {
-        if (!r.ok) throw new Error(`Помилка ${r.status}`);
+        if (!r.ok) throw new Error(tCommon('errors.requestStatus', { status: r.status }));
         return r.json();
       })
       .then((data) => {
@@ -142,17 +161,19 @@ export default function DatabaseSettingsPage() {
       const data = await res.json();
       if (data.success) {
         setTestResult(data.data);
-        toast.success('З’єднання успішне', {
-          description: data.data?.version ? `Версія: ${data.data.version}` : undefined,
+        toast.success(t('dbTestSuccess'), {
+          description: data.data?.version
+            ? t('dbVersion', { version: data.data.version })
+            : undefined,
         });
       } else {
-        const msg = data.error || 'Тест з’єднання не пройшов';
+        const msg = data.error || t('dbTestFailed');
         setTestResult({ success: false, error: msg });
-        toast.error('Тест з’єднання не пройшов', { description: msg });
+        toast.error(t('dbTestFailed'), { description: msg });
       }
     } catch {
-      setTestResult({ success: false, error: "Помилка з'єднання з сервером" });
-      toast.error('Тест з’єднання не пройшов', { description: "Помилка з'єднання з сервером" });
+      setTestResult({ success: false, error: tCommon('serverConnectionError') });
+      toast.error(t('dbTestFailed'), { description: tCommon('serverConnectionError') });
     } finally {
       setTesting(false);
     }
@@ -174,15 +195,15 @@ export default function DatabaseSettingsPage() {
       });
       const data = await res.json();
       if (data.success) {
-        toast.success('Налаштування збережено');
+        toast.success(t('settingsSaved'));
         setConfig((prev) =>
           prev ? { ...prev, type: data.data.type, status: data.data.status } : null,
         );
       } else {
-        toast.error('Не вдалося зберегти', { description: data.error });
+        toast.error(t('dbSaveFailed'), { description: data.error });
       }
     } catch {
-      toast.error('Помилка збереження', { description: "Помилка з'єднання з сервером" });
+      toast.error(tCommon('saveError'), { description: tCommon('serverConnectionError') });
     } finally {
       setSaving(false);
     }
@@ -200,13 +221,13 @@ export default function DatabaseSettingsPage() {
       if (data.success) {
         setSelectedType('shared');
         setDatabaseUrl('');
-        toast.success('Відключено від зовнішньої бази даних');
+        toast.success(t('dbDisconnectedSuccess'));
         setConfig((prev) => (prev ? { ...prev, type: 'shared', hasExternalDb: false } : null));
       } else {
-        toast.error('Не вдалося відключити', { description: data.error });
+        toast.error(t('dbDisconnectFailed'), { description: data.error });
       }
     } catch {
-      toast.error('Помилка відключення', { description: "Помилка з'єднання з сервером" });
+      toast.error(tCommon('disconnectError'), { description: tCommon('serverConnectionError') });
     } finally {
       setSaving(false);
     }
@@ -215,17 +236,11 @@ export default function DatabaseSettingsPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">База даних</h1>
-        <p className="text-foreground-muted">
-          Підключіть власну базу даних для зберігання даних вашої компанії
-        </p>
+        <h1 className="text-2xl font-bold">{t('databaseCardTitle')}</h1>
+        <p className="text-foreground-muted">{t('dbPageDescription')}</p>
       </div>
 
-      {loadError && (
-        <p className="text-sm text-danger">
-          Не вдалося завантажити поточний конфіг — показано значення за замовчуванням
-        </p>
-      )}
+      {loadError && <p className="text-sm text-danger">{t('dbConfigLoadError')}</p>}
 
       {/* Current Status */}
       {config && (
@@ -233,28 +248,27 @@ export default function DatabaseSettingsPage() {
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-medium">Поточний статус</h3>
+                <h3 className="font-medium">{t('dbCurrentStatus')}</h3>
                 <p className="text-sm text-foreground-muted mt-1">
-                  Тип:{' '}
-                  <span className="font-medium">
-                    {DB_OPTIONS.find((o) => o.value === config.type)?.label || config.type}
-                  </span>
+                  {t('dbTypeLabel')} <span className="font-medium">{optionLabel(config.type)}</span>
                 </p>
                 {config.lastError && (
-                  <p className="text-sm text-danger mt-1">Помилка: {config.lastError}</p>
+                  <p className="text-sm text-danger mt-1">
+                    {t('dbErrorLabel', { message: config.lastError })}
+                  </p>
                 )}
               </div>
               {config.type === 'shared' ? (
                 <span className="px-3 py-1 rounded-full text-sm font-medium bg-secondary text-foreground-muted">
-                  Спільна
+                  {t('dbStatusShared')}
                 </span>
               ) : config.status === 'active' ? (
                 <span className="px-3 py-1 rounded-full text-sm font-medium bg-success/10 text-success">
-                  Підключено
+                  {t('connected')}
                 </span>
               ) : (
                 <span className="px-3 py-1 rounded-full text-sm font-medium bg-danger/10 text-danger">
-                  Помилка
+                  {tCommon('error')}
                 </span>
               )}
             </div>
@@ -265,7 +279,7 @@ export default function DatabaseSettingsPage() {
       {/* Database Type Selection */}
       <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardContent className="p-5 space-y-4">
-          <h3 className="font-medium">Тип бази даних</h3>
+          <h3 className="font-medium">{t('dbTypeTitle')}</h3>
           <div className="grid gap-3">
             {DB_OPTIONS.map((option) => (
               <label
@@ -285,8 +299,8 @@ export default function DatabaseSettingsPage() {
                   className="mt-1"
                 />
                 <div>
-                  <p className="font-medium">{option.label}</p>
-                  <p className="text-sm text-foreground-muted">{option.description}</p>
+                  <p className="font-medium">{t(option.label)}</p>
+                  <p className="text-sm text-foreground-muted">{t(option.description)}</p>
                 </div>
               </label>
             ))}
@@ -301,16 +315,13 @@ export default function DatabaseSettingsPage() {
             {/* Classic field form (ТЗ): Host, Port, User, Password, DB Name */}
             <div className="space-y-4">
               <div>
-                <h3 className="font-medium">Параметри з&apos;єднання</h3>
-                <p className="text-sm text-foreground-muted">
-                  Заповніть хост, користувача та назву бази — CRM збере рядок підключення
-                  автоматично
-                </p>
+                <h3 className="font-medium">{t('dbConnectionParams')}</h3>
+                <p className="text-sm text-foreground-muted">{t('dbConnectionParamsHint')}</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2 space-y-1.5">
                   <Label htmlFor="db-host" className="text-xs text-foreground-muted">
-                    Хост (Host)
+                    {t('dbHostLabel')}
                   </Label>
                   <Input
                     id="db-host"
@@ -322,7 +333,7 @@ export default function DatabaseSettingsPage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="db-port" className="text-xs text-foreground-muted">
-                    Порт
+                    {t('dbPortLabel')}
                   </Label>
                   <Input
                     id="db-port"
@@ -335,7 +346,7 @@ export default function DatabaseSettingsPage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="db-name" className="text-xs text-foreground-muted">
-                    Назва бази
+                    {t('dbNameLabel')}
                   </Label>
                   <Input
                     id="db-name"
@@ -347,7 +358,7 @@ export default function DatabaseSettingsPage() {
                 </div>
                 <div className="col-span-2 space-y-1.5">
                   <Label htmlFor="db-user" className="text-xs text-foreground-muted">
-                    Користувач
+                    {t('dbUserLabel')}
                   </Label>
                   <Input
                     id="db-user"
@@ -359,7 +370,7 @@ export default function DatabaseSettingsPage() {
                 </div>
                 <div className="col-span-2 space-y-1.5">
                   <Label htmlFor="db-password" className="text-xs text-foreground-muted">
-                    Пароль
+                    {t('dbPasswordLabel')}
                   </Label>
                   <SecretInput
                     id="db-password"
@@ -377,7 +388,7 @@ export default function DatabaseSettingsPage() {
             {/* Manual connection string */}
             <div className="space-y-4">
               <div>
-                <h3 className="font-medium">Або готовий рядок підключення</h3>
+                <h3 className="font-medium">{t('dbOrConnectionString')}</h3>
                 <p className="text-sm text-foreground-muted">
                   {selectedType === 'postgresql' && 'postgresql://user:password@host:5432/database'}
                   {selectedType === 'mysql' && 'mysql://user:password@host:3306/database'}
@@ -402,16 +413,16 @@ export default function DatabaseSettingsPage() {
               <div className="flex gap-3">
                 <Button variant="outline" onClick={handleTest} disabled={testing}>
                   {testing && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                  {testing ? 'Тестування...' : "Тестувати з'єднання"}
+                  {testing ? t('testing') : t('dbTestConnection')}
                 </Button>
                 <Button onClick={handleSave} disabled={saving}>
                   {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                  {saving ? 'Збереження...' : 'Зберегти'}
+                  {saving ? t('saving') : tCommon('save')}
                 </Button>
                 {config?.hasExternalDb && (
                   <Button variant="destructive" onClick={handleDisconnect} disabled={saving}>
                     {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                    Відключити
+                    {tCommon('disconnect')}
                   </Button>
                 )}
               </div>
@@ -427,9 +438,11 @@ export default function DatabaseSettingsPage() {
                 >
                   {testResult.success ? (
                     <div>
-                      <p className="text-success font-medium">З&apos;єднання успішне!</p>
+                      <p className="text-success font-medium">{t('dbTestSuccessTitle')}</p>
                       {testResult.version && (
-                        <p className="text-sm text-success mt-1">Версія: {testResult.version}</p>
+                        <p className="text-sm text-success mt-1">
+                          {t('dbVersion', { version: testResult.version })}
+                        </p>
                       )}
                     </div>
                   ) : (
@@ -445,17 +458,17 @@ export default function DatabaseSettingsPage() {
       {/* Info Card */}
       <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardContent className="p-5">
-          <h3 className="font-medium mb-3">Як це працює?</h3>
+          <h3 className="font-medium mb-3">{t('dbHowItWorks')}</h3>
           <ul className="space-y-2 text-sm text-foreground-muted">
             <li>
-              • <strong>Спільна база</strong> — ваші дані зберігаються в загальній базі CRM-системи
+              • <strong>{t('dbHowSharedTitle')}</strong> {t('dbHowSharedBody')}
             </li>
             <li>
-              • <strong>Зовнішня база</strong> — ваші дані зберігаються на вашому сервері
+              • <strong>{t('dbHowExternalTitle')}</strong> {t('dbHowExternalBody')}
             </li>
-            <li>• Після підключення CRM автоматично створить таблиці у вашій базі</li>
-            <li>• Ви можете відключитися від зовнішньої бази в будь-який момент</li>
-            <li>• Підтримуються: PostgreSQL, MySQL, MariaDB, MS SQL Server</li>
+            <li>• {t('dbHowTables')}</li>
+            <li>• {t('dbHowDisconnect')}</li>
+            <li>• {t('dbHowSupported')}</li>
           </ul>
         </CardContent>
       </Card>

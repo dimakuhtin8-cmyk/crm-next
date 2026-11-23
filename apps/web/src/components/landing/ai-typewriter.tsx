@@ -3,6 +3,7 @@
 import { motion, MotionConfig } from 'framer-motion';
 import gsap from 'gsap';
 import { Check, Search, Sparkles } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 
 /**
@@ -13,29 +14,6 @@ import { useEffect, useRef, useState } from 'react';
  * При prefers-reduced-motion — статичний приклад.
  */
 
-const DEMOS = [
-  {
-    q: 'Які угоди під ризиком?',
-    a: '3 угоди без активності більше 5 днів: ТОВ «Орбіта», ФОП «Коло», «Гама». Раджу почати з «Орбіта» — ₴140 тис.',
-  },
-  {
-    q: 'Кому написати сьогодні?',
-    a: '4 контакти з простроченими задачами: Марія Коваль, Ігор Савчук, «Ліга», Анна Петренко.',
-  },
-  {
-    q: 'Підсумок продажів за тиждень',
-    a: '7 угод на ₴410 тис. Найкраще джерело — заявки з сайту: 4 з 7 угод.',
-  },
-];
-
-const HINTS = [
-  { label: 'Які угоди під ризиком?', demo: 0 },
-  { label: 'Кому написати сьогодні?', demo: 1 },
-  { label: 'Підсумок за тиждень', demo: 2 },
-];
-
-const THINK_LABELS = ['Аналізую дані CRM…', 'Шукаю в угодах…', 'Звіряю задачі…'];
-
 const TYPE_MS = 0.055;
 const THINK_S = 1.5;
 const STREAM_S = 0.07;
@@ -44,6 +22,7 @@ const HOLD_S = 3;
 type Phase = 'typing' | 'thinking' | 'answer';
 
 export function AiTypewriter() {
+  const t = useTranslations('landing.aiDemo');
   const [demo, setDemo] = useState(0);
   const [phase, setPhase] = useState<Phase>('typing');
   const [typed, setTyped] = useState('');
@@ -51,6 +30,29 @@ export function AiTypewriter() {
   const [thinkIdx, setThinkIdx] = useState(0);
   const [cycle, setCycle] = useState({ index: 0, nonce: 0 });
   const scopeRef = useRef<HTMLDivElement>(null);
+
+  const DEMOS = [
+    {
+      q: t('demos.risk.question'),
+      a: t('demos.risk.answer'),
+    },
+    {
+      q: t('demos.today.question'),
+      a: t('demos.today.answer'),
+    },
+    {
+      q: t('demos.week.question'),
+      a: t('demos.week.answer'),
+    },
+  ];
+
+  const HINTS = [
+    { label: t('hints.risk'), demo: 0 },
+    { label: t('hints.today'), demo: 1 },
+    { label: t('hints.week'), demo: 2 },
+  ];
+
+  const THINK_LABELS = [t('think.analysis'), t('think.search'), t('think.tasks')];
 
   const words = DEMOS[demo].a.split(' ');
   const streaming = phase === 'answer' && streamed < words.length;
@@ -134,7 +136,7 @@ export function AiTypewriter() {
             AI Co-Pilot
           </span>
           <span className="rounded-full bg-primary-light px-3 py-1 text-xs font-semibold text-primary">
-            запит природною мовою
+            {t('badge')}
           </span>
         </div>
 
@@ -180,7 +182,7 @@ export function AiTypewriter() {
                 className="mb-2 inline-flex items-center gap-1.5 text-xs font-bold text-success"
               >
                 <Check className="h-4 w-4" aria-hidden="true" />
-                Готово
+                {t('done')}
               </motion.p>
             )}
             {phase === 'answer' && (
@@ -202,16 +204,16 @@ export function AiTypewriter() {
                     className="mt-2 flex flex-wrap gap-2"
                   >
                     <span className="rounded-full bg-card px-2.5 py-0.5 text-[11px] font-semibold text-foreground-secondary">
-                      джерело: угоди · задачі
+                      {t('sourceChip')}
                     </span>
                     <span className="rounded-full bg-card px-2.5 py-0.5 text-[11px] font-semibold text-foreground-secondary">
-                      лише ваші дані
+                      {t('privateChip')}
                     </span>
                   </motion.div>
                 )}
                 {!streaming && (
                   <span className="sr-only" role="status">
-                    Відповідь готова
+                    {t('statusReady')}
                   </span>
                 )}
               </div>
@@ -225,7 +227,7 @@ export function AiTypewriter() {
               key={hint.label}
               type="button"
               onClick={() => setCycle((c) => ({ index: hint.demo, nonce: c.nonce + 1 }))}
-              aria-label={`Показати приклад: ${hint.label}`}
+              aria-label={t('showExample', { label: hint.label })}
               className={`inline-flex min-h-[44px] items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
                 demo === hint.demo
                   ? 'border-primary bg-primary-light text-primary'

@@ -2,6 +2,7 @@
 
 import { RefreshCw, ChevronLeft, ChevronRight, Download, Filter, Search } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 
@@ -21,28 +22,6 @@ type AuditLogEntry = {
   user?: { name: string | null; email: string | null } | null;
 };
 
-const ACTION_LABELS: Record<string, string> = {
-  create: 'Створено',
-  update: 'Оновлено',
-  delete: 'Видалено',
-  login: 'Вхід',
-  logout: 'Вихід',
-  invite: 'Запрошення',
-  role_change: 'Зміна ролі',
-  export: 'Експорт',
-  import: 'Імпорт',
-};
-
-const ENTITY_LABELS: Record<string, string> = {
-  contact: 'Контакт',
-  deal: 'Угода',
-  task: 'Задача',
-  member: 'Учасник',
-  settings: 'Налаштування',
-  auth: 'Авторизація',
-  pipeline: 'Воронка',
-};
-
 const ACTION_VARIANTS: Record<
   string,
   'default' | 'secondary' | 'success' | 'warning' | 'danger' | 'info'
@@ -59,6 +38,9 @@ const ACTION_VARIANTS: Record<
 };
 
 export default function AuditLogPage() {
+  const t = useTranslations('settings');
+  const tCommon = useTranslations('common');
+  const tDeals = useTranslations('deals');
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -70,6 +52,28 @@ export default function AuditLogPage() {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const limit = 20;
+
+  const ACTION_LABELS: Record<string, string> = {
+    create: tDeals('created'),
+    update: tDeals('updated'),
+    delete: t('auditActionDelete'),
+    login: t('auditActionLogin'),
+    logout: t('auditActionLogout'),
+    invite: t('auditActionInvite'),
+    role_change: t('auditActionRoleChange'),
+    export: t('auditActionExport'),
+    import: t('auditActionImport'),
+  };
+
+  const ENTITY_LABELS: Record<string, string> = {
+    contact: t('auditEntityContact'),
+    deal: t('auditEntityDeal'),
+    task: t('auditEntityTask'),
+    member: t('auditEntityMember'),
+    settings: t('auditEntitySettings'),
+    auth: t('auditEntityAuth'),
+    pipeline: t('auditEntityPipeline'),
+  };
 
   // Дебаунс пошукового рядка, щоб не фетчити на кожний символ
   useEffect(() => {
@@ -110,11 +114,18 @@ export default function AuditLogPage() {
   /** Демонстраційний експорт поточної вибірки журналу у CSV */
   const handleExportCsv = () => {
     if (logs.length === 0) {
-      toast.warning('Немає записів для експорту');
+      toast.warning(t('auditExportEmpty'));
       return;
     }
     const escapeCell = (value: string) => `"${value.replace(/"/g, '""')}"`;
-    const header = ['Дата', 'Користувач', 'Дія', 'Сутність', 'ID', 'IP'];
+    const header = [
+      tCommon('date'),
+      t('auditColumnUser'),
+      t('auditColumnAction'),
+      t('auditColumnEntity'),
+      'ID',
+      'IP',
+    ];
     const rows = logs.map((row) =>
       [
         formatDate(row.createdAt),
@@ -135,8 +146,8 @@ export default function AuditLogPage() {
     a.download = `audit-log-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success(`Експортовано записів: ${logs.length}`, {
-      description: 'Поточна сторінка журналу',
+    toast.success(t('auditExportedCount', { count: logs.length }), {
+      description: t('auditExportDescription'),
     });
   };
 
@@ -156,9 +167,9 @@ export default function AuditLogPage() {
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
         <Link href="/dashboard/settings" className="text-foreground-muted hover:text-foreground">
-          ← Назад
+          ← {tCommon('back')}
         </Link>
-        <h1 className="text-2xl font-bold">Журнал аудиту</h1>
+        <h1 className="text-2xl font-bold">{t('auditCardTitle')}</h1>
       </div>
 
       {/* Filters */}
@@ -175,10 +186,10 @@ export default function AuditLogPage() {
                     setPage(1);
                   }}
                   options={[
-                    { id: '', name: 'Всі дії' },
+                    { id: '', name: t('auditAllActions') },
                     ...Object.entries(ACTION_LABELS).map(([k, v]) => ({ id: k, name: v })),
                   ]}
-                  placeholder="Всі дії"
+                  placeholder={t('auditAllActions')}
                 />
               </div>
             </div>
@@ -191,10 +202,10 @@ export default function AuditLogPage() {
                     setPage(1);
                   }}
                   options={[
-                    { id: '', name: 'Всі сутності' },
+                    { id: '', name: t('auditAllEntities') },
                     ...Object.entries(ENTITY_LABELS).map(([k, v]) => ({ id: k, name: v })),
                   ]}
-                  placeholder="Всі сутності"
+                  placeholder={t('auditAllEntities')}
                 />
               </div>
             </div>
@@ -202,11 +213,11 @@ export default function AuditLogPage() {
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-muted" />
               <Input
                 type="search"
-                placeholder="Пошук за дією, сутністю, ID..."
+                placeholder={t('auditSearchPlaceholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-8"
-                aria-label="Пошук у журналі аудиту"
+                aria-label={t('auditSearchLabel')}
               />
             </div>
             <div className="flex items-center gap-2">
@@ -218,8 +229,8 @@ export default function AuditLogPage() {
                   setPage(1);
                 }}
                 className="w-36"
-                aria-label="Дата від"
-                title="Дата від"
+                aria-label={t('auditDateFrom')}
+                title={t('auditDateFrom')}
               />
               <span className="text-xs text-foreground-muted">—</span>
               <Input
@@ -230,8 +241,8 @@ export default function AuditLogPage() {
                   setPage(1);
                 }}
                 className="w-36"
-                aria-label="Дата до"
-                title="Дата до"
+                aria-label={t('auditDateTo')}
+                title={t('auditDateTo')}
               />
             </div>
             <Button variant="outline" size="sm" onClick={fetchLogs}>
@@ -239,9 +250,11 @@ export default function AuditLogPage() {
             </Button>
             <Button variant="outline" size="sm" onClick={handleExportCsv}>
               <Download className="w-4 h-4 mr-2" />
-              Експорт CSV
+              {t('auditExportCsv')}
             </Button>
-            <span className="text-sm text-foreground-muted ml-auto">{total} записів</span>
+            <span className="text-sm text-foreground-muted ml-auto">
+              {t('auditRecordsCount', { count: total })}
+            </span>
           </div>
         </CardContent>
       </Card>
@@ -259,7 +272,7 @@ export default function AuditLogPage() {
           columns={[
             {
               key: 'createdAt',
-              header: 'Дата',
+              header: tCommon('date'),
               className: 'px-3 py-2',
               render: (row) => (
                 <span className="whitespace-nowrap text-foreground-muted text-xs">
@@ -269,7 +282,7 @@ export default function AuditLogPage() {
             },
             {
               key: 'user',
-              header: 'Користувач',
+              header: t('auditColumnUser'),
               className: 'px-3 py-2',
               render: (row) =>
                 row.user?.name ||
@@ -277,7 +290,7 @@ export default function AuditLogPage() {
             },
             {
               key: 'action',
-              header: 'Дія',
+              header: t('auditColumnAction'),
               className: 'px-3 py-2',
               render: (row) => (
                 <Badge variant={ACTION_VARIANTS[row.action] ?? 'secondary'} className="text-xs">
@@ -287,7 +300,7 @@ export default function AuditLogPage() {
             },
             {
               key: 'entity',
-              header: 'Сутність',
+              header: t('auditColumnEntity'),
               className: 'px-3 py-2',
               render: (row) => ENTITY_LABELS[row.entity] || row.entity,
             },
@@ -312,7 +325,7 @@ export default function AuditLogPage() {
               ),
             },
           ]}
-          emptyMessage="Журнал порожній"
+          emptyMessage={t('auditEmpty')}
           pageSize={limit}
         />
       )}
@@ -329,7 +342,7 @@ export default function AuditLogPage() {
             <ChevronLeft className="w-4 h-4" />
           </Button>
           <span className="text-sm text-foreground-muted">
-            Сторінка {page} з {totalPages}
+            {tCommon('pageOf', { page, pages: totalPages })}
           </span>
           <Button
             variant="outline"

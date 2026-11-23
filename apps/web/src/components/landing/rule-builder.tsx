@@ -8,14 +8,11 @@
 
 import gsap from 'gsap';
 import { FlaskConical } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 
-const CONDITIONS = ['угода мовчить 3 дні', 'лід без відповіді 2 дні', 'угода в етапі 7+ днів'];
-const ACTIONS = ['створити задачу', 'написати в Telegram', 'підсвітити у воронці'];
-
-const PREVIEW = ['Умова', 'Дія', 'Результат'];
-
 export function RuleBuilder() {
+  const t = useTranslations('landing.rule');
   const [cond, setCond] = useState(0);
   const [act, setAct] = useState(0);
   const [tested, setTested] = useState(false);
@@ -23,6 +20,10 @@ export function RuleBuilder() {
   const scopeRef = useRef<HTMLDivElement>(null);
   const dotsRef = useRef<Array<HTMLSpanElement | null>>([]);
   const stepsRef = useRef<Array<HTMLDivElement | null>>([]);
+
+  const CONDITIONS = [t('conditions.silent'), t('conditions.leadNoReply'), t('conditions.stuck')];
+  const ACTIONS = [t('actions.createTask'), t('actions.telegram'), t('actions.highlight')];
+  const PREVIEW = [t('stepCondition'), t('stepAction'), t('stepResult')];
 
   useEffect(() => {
     if (!running) return;
@@ -66,12 +67,14 @@ export function RuleBuilder() {
   return (
     <div ref={scopeRef} className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
       <p className="text-sm font-bold">
-        Якщо {CONDITIONS[cond]}, то {ACTIONS[act]}
+        {t('ifThen', { cond: CONDITIONS[cond], act: ACTIONS[act] })}
       </p>
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <label className="block">
-          <span className="mb-1.5 block text-xs font-bold text-foreground-secondary">Умова</span>
+          <span className="mb-1.5 block text-xs font-bold text-foreground-secondary">
+            {t('stepCondition')}
+          </span>
           <select
             value={cond}
             onChange={(e) => {
@@ -88,7 +91,9 @@ export function RuleBuilder() {
           </select>
         </label>
         <label className="block">
-          <span className="mb-1.5 block text-xs font-bold text-foreground-secondary">Дія</span>
+          <span className="mb-1.5 block text-xs font-bold text-foreground-secondary">
+            {t('stepAction')}
+          </span>
           <select
             value={act}
             onChange={(e) => {
@@ -113,7 +118,7 @@ export function RuleBuilder() {
         className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl bg-inverse px-5 text-sm font-bold text-inverse-foreground transition-colors hover:bg-[#3A352F] disabled:opacity-50"
       >
         <FlaskConical className="h-4 w-4" aria-hidden="true" />
-        {running ? 'Перевіряю…' : 'Перевірити'}
+        {running ? t('checking') : t('check')}
       </button>
 
       <div className="mt-4 flex items-start gap-2" aria-hidden={!tested && !running}>
@@ -143,11 +148,11 @@ export function RuleBuilder() {
 
       {tested && (
         <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-success-light px-3 py-1.5 text-xs font-bold text-success">
-          Перевірка пройдена: правило спрацює
+          {t('passed')}
         </p>
       )}
       <p className="mt-3 border-t border-border pt-3 text-xs leading-5 text-foreground-secondary">
-        Правила створює адміністратор · журнал — у розділі «Автоматизація»
+        {t('note')}
       </p>
     </div>
   );

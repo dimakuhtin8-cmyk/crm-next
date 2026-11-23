@@ -8,44 +8,77 @@
 
 import { motion } from 'framer-motion';
 import { History } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 
-const ROLES = [
-  {
-    name: 'Owner',
-    tone: 'bg-primary text-primary-foreground',
-    permissions: 'Повний доступ, білінг і команда',
-  },
-  {
-    name: 'Admin',
-    tone: 'bg-primary-light text-primary',
-    permissions: 'Налаштування, інтеграції, ролі',
-  },
-  {
-    name: 'Member',
-    tone: 'bg-secondary text-foreground',
-    permissions: 'Свої та непризначені завдання',
-  },
-  {
-    name: 'Viewer',
-    tone: 'border border-border text-foreground-secondary',
-    permissions: 'Лише читання, без експорту',
-  },
-];
-
-const AUDIT = [
-  { time: '10:42', text: 'Олена змінила етап угоди «Альфа»', status: 'записано', ok: true },
-  { time: '10:38', text: 'viewer: експорт контактів', status: 'відмовлено', ok: false },
-  { time: '09:15', text: 'Власник додав інтеграцію Telegram', status: 'записано', ok: true },
-];
-
-const ARRIVAL_POOL = [
-  { time: 'щойно', text: 'Марія закрила задачу «Надіслати КП»', status: 'записано', ok: true },
-  { time: 'щойно', text: 'Ігор додав нотатку до «Ліга»', status: 'записано', ok: true },
-  { time: 'щойно', text: 'Олена змінила відповідального «Вектор»', status: 'записано', ok: true },
-];
-
 export function RolesPreview() {
+  const t = useTranslations('landing.roles');
+
+  const ROLES = [
+    {
+      name: 'Owner',
+      tone: 'bg-primary text-primary-foreground',
+      permissions: t('perms.owner'),
+    },
+    {
+      name: 'Admin',
+      tone: 'bg-primary-light text-primary',
+      permissions: t('perms.admin'),
+    },
+    {
+      name: 'Member',
+      tone: 'bg-secondary text-foreground',
+      permissions: t('perms.member'),
+    },
+    {
+      name: 'Viewer',
+      tone: 'border border-border text-foreground-secondary',
+      permissions: t('perms.viewer'),
+    },
+  ];
+
+  const AUDIT = [
+    {
+      time: '10:42',
+      text: t('events.stageChanged'),
+      status: t('statusRecorded'),
+      ok: true,
+    },
+    {
+      time: '10:38',
+      text: t('events.exportDenied'),
+      status: t('statusDenied'),
+      ok: false,
+    },
+    {
+      time: '09:15',
+      text: t('events.integrationAdded'),
+      status: t('statusRecorded'),
+      ok: true,
+    },
+  ];
+
+  const ARRIVAL_POOL = [
+    {
+      time: t('justNow'),
+      text: t('events.taskClosed'),
+      status: t('statusRecorded'),
+      ok: true,
+    },
+    {
+      time: t('justNow'),
+      text: t('events.noteAdded'),
+      status: t('statusRecorded'),
+      ok: true,
+    },
+    {
+      time: t('justNow'),
+      text: t('events.ownerChanged'),
+      status: t('statusRecorded'),
+      ok: true,
+    },
+  ];
+
   const [paused, setPaused] = useState(false);
   const [extra, setExtra] = useState<typeof AUDIT>([]);
   const arrivalRef = useRef(0);
@@ -68,7 +101,7 @@ export function RolesPreview() {
     >
       {/* Ролі */}
       <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
-        <p className="text-sm font-bold">Ролі команди</p>
+        <p className="text-sm font-bold">{t('title')}</p>
         <ul className="mt-3 space-y-2.5">
           {ROLES.map((role) => (
             <li
@@ -92,7 +125,7 @@ export function RolesPreview() {
       <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
         <div className="flex items-center gap-2">
           <History className="h-4 w-4 text-primary" aria-hidden="true" />
-          <p className="text-sm font-bold">Журнал аудиту</p>
+          <p className="text-sm font-bold">{t('auditTitle')}</p>
         </div>
         <ul className="mt-3 divide-y divide-border overflow-hidden rounded-xl border border-border bg-background-secondary">
           {AUDIT.map((entry) => (
@@ -136,7 +169,7 @@ export function RolesPreview() {
             className="h-1.5 w-1.5 animate-pulse-subtle rounded-full bg-primary"
             aria-hidden="true"
           />
-          Кожна дія з даними фіксується з часом і автором
+          {t('auditNote')}
         </p>
       </div>
     </div>

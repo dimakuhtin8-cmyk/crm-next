@@ -2,6 +2,7 @@
 
 import { Shield, Users, Crown, Eye, Loader2, RotateCcw, Save } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -35,28 +36,28 @@ const ROLE_CONFIG: Record<
   { label: string; color: string; icon: React.ReactNode; description: string }
 > = {
   owner: {
-    label: 'Власник',
+    label: 'team.owner',
     color: 'bg-primary/10 text-primary',
     icon: <Crown className="w-4 h-4" />,
-    description: 'Повний доступ до всього',
+    description: 'settings.roleOwnerDescription',
   },
   admin: {
-    label: 'Адміністратор',
+    label: 'team.admin',
     color: 'bg-info/10 text-info',
     icon: <Shield className="w-4 h-4" />,
-    description: 'Керування учасниками та налаштуваннями',
+    description: 'settings.roleAdminDescription',
   },
   member: {
-    label: 'Менеджер',
+    label: 'settings.roleManager',
     color: 'bg-success/10 text-success',
     icon: <Users className="w-4 h-4" />,
-    description: 'Створення та редагування власних даних',
+    description: 'settings.roleManagerDescription',
   },
   viewer: {
-    label: 'Глядач',
+    label: 'settings.roleViewer',
     color: 'bg-secondary text-foreground-muted',
     icon: <Eye className="w-4 h-4" />,
-    description: 'Тільки перегляд даних',
+    description: 'settings.roleViewerDescription',
   },
 };
 
@@ -81,6 +82,9 @@ type MatrixRow = {
 };
 
 export default function RolesSettingsPage() {
+  const t = useTranslations('settings');
+  const tCommon = useTranslations('common');
+  const tRoot = useTranslations();
   const [selectedRole, setSelectedRole] = useState<string>('member');
   // Локальні правки матриці (демонстраційні — рольову модель визначає сервер)
   const [overrides, setOverrides] = useState<Record<string, boolean>>(() =>
@@ -133,11 +137,13 @@ export default function RolesSettingsPage() {
       // імітація мережевого запиту — збереження локальне (демонстраційне)
       await new Promise((resolve) => setTimeout(resolve, 400));
       window.localStorage.setItem(MATRIX_STORAGE_PREFIX + selectedRole, JSON.stringify(overrides));
-      toast.success('Схему прав збережено', {
-        description: `Роль «${ROLE_CONFIG[selectedRole]?.label}»`,
+      toast.success(t('matrixSaved'), {
+        description: t('matrixSavedDescription', {
+          role: tRoot(ROLE_CONFIG[selectedRole]?.label ?? ''),
+        }),
       });
     } catch {
-      toast.error('Не вдалося зберегти схему прав');
+      toast.error(t('matrixSaveError'));
     } finally {
       setSaving(false);
     }
@@ -150,7 +156,7 @@ export default function RolesSettingsPage() {
     } catch {
       // localStorage недоступний — правки скидаються лише в стані
     }
-    toast.success('Правки скидано до базової схеми');
+    toast.success(t('matrixReset'));
   };
 
   const buildRows = (): MatrixRow[] => {
@@ -189,7 +195,7 @@ export default function RolesSettingsPage() {
         action === 'read' ? !row.hasRead : action === 'write' ? !row.hasWrite : !row.hasDelete
       }
       onCheckedChange={() => toggleCell(row, action)}
-      aria-label={`${row.module}: ${action}`}
+      aria-label={t('matrixCellAria', { module: row.module, action })}
     />
   );
 
@@ -197,9 +203,9 @@ export default function RolesSettingsPage() {
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
         <Link href="/dashboard/settings" className="text-foreground-muted hover:text-foreground">
-          ← Назад
+          ← {tCommon('back')}
         </Link>
-        <h1 className="text-2xl font-bold">Ролі та права доступу</h1>
+        <h1 className="text-2xl font-bold">{t('rolesPageTitle')}</h1>
       </div>
 
       {/* Role Cards */}
@@ -218,10 +224,10 @@ export default function RolesSettingsPage() {
               >
                 {config.icon}
               </div>
-              <h3 className="font-semibold text-sm">{config.label}</h3>
-              <p className="text-xs text-foreground-muted mt-1">{config.description}</p>
+              <h3 className="font-semibold text-sm">{tRoot(config.label)}</h3>
+              <p className="text-xs text-foreground-muted mt-1">{tRoot(config.description)}</p>
               <p className="text-xs text-foreground-muted mt-2">
-                Рівень: {ROLE_HIERARCHY[key as TenantRole]}
+                {t('roleLevel', { level: ROLE_HIERARCHY[key as TenantRole] })}
               </p>
             </CardContent>
           </Card>
@@ -231,11 +237,11 @@ export default function RolesSettingsPage() {
       {/* Permission Matrix */}
       <Card className="bg-card border-border shadow-sm rounded-xl">
         <CardHeader>
-          <CardTitle>Матриця прав: {ROLE_CONFIG[selectedRole]?.label}</CardTitle>
+          <CardTitle>
+            {t('matrixTitle', { role: tRoot(ROLE_CONFIG[selectedRole]?.label ?? '') })}
+          </CardTitle>
           <CardDescription>
-            Доступ ролі «{ROLE_CONFIG[selectedRole]?.label}» за модулями: перегляд, запис,
-            видалення. Позначки можна перемикати та зберігати (збереження локальне, демонстраційне —
-            серверна модель прав незмінна)
+            {t('matrixDescription', { role: tRoot(ROLE_CONFIG[selectedRole]?.label ?? '') })}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -244,20 +250,20 @@ export default function RolesSettingsPage() {
             columns={[
               {
                 key: 'module',
-                header: 'Модуль',
+                header: t('matrixColumnModule'),
                 render: (row) => <span className="font-medium">{row.module}</span>,
               },
-              { key: 'read', header: 'Перегляд', render: renderCheckbox('read') },
-              { key: 'write', header: 'Запис', render: renderCheckbox('write') },
-              { key: 'delete', header: 'Видалення', render: renderCheckbox('delete') },
+              { key: 'read', header: t('matrixColumnRead'), render: renderCheckbox('read') },
+              { key: 'write', header: t('matrixColumnWrite'), render: renderCheckbox('write') },
+              { key: 'delete', header: t('matrixColumnDelete'), render: renderCheckbox('delete') },
             ]}
-            emptyMessage="Немає модулів"
+            emptyMessage={t('matrixEmpty')}
           />
           <div className="flex items-center justify-end gap-2">
             {hasChanges && (
               <Button variant="outline" size="sm" onClick={handleResetMatrix} disabled={saving}>
                 <RotateCcw className="h-4 w-4 mr-2" />
-                Скинути правки
+                {t('resetEdits')}
               </Button>
             )}
             <Button size="sm" onClick={handleSaveMatrix} disabled={!hasChanges || saving}>
@@ -266,7 +272,7 @@ export default function RolesSettingsPage() {
               ) : (
                 <Save className="h-4 w-4 mr-2" />
               )}
-              {saving ? 'Збереження...' : 'Зберегти схему'}
+              {saving ? t('saving') : t('saveMatrix')}
             </Button>
           </div>
         </CardContent>
@@ -278,11 +284,8 @@ export default function RolesSettingsPage() {
           <div className="flex items-start gap-3">
             <Shield className="w-5 h-5 text-warning mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-medium text-warning">Кастомні ролі</p>
-              <p className="text-xs text-warning mt-1">
-                Наразі підтримуються 4 стандартні ролі. Кастомні ролі з гнучкою матрицею прав будуть
-                доступні у наступних оновленнях.
-              </p>
+              <p className="text-sm font-medium text-warning">{t('customRolesTitle')}</p>
+              <p className="text-xs text-warning mt-1">{t('customRolesDescription')}</p>
             </div>
           </div>
         </CardContent>

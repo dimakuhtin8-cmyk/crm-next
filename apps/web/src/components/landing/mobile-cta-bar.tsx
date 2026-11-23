@@ -5,9 +5,11 @@
  * лише на малих екранах. Суцільний папір, safe-area знизу.
  */
 
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
 export function MobileCtaBar({ locale }: { locale: string }) {
+  const t = useTranslations('landing');
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -25,7 +27,7 @@ export function MobileCtaBar({ locale }: { locale: string }) {
         href={`/${locale}/auth/register`}
         className="flex min-h-12 items-center justify-center rounded-xl bg-inverse px-7 text-sm font-bold text-inverse-foreground transition-colors hover:bg-[#3A352F]"
       >
-        Спробувати безкоштовно
+        {t('cta.tryFree')}
       </a>
     </div>
   );
