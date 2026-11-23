@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
 
 import { QuickSelect } from '@/components/quick-create';
@@ -31,6 +32,8 @@ interface ContactFormProps {
 
 export function ContactForm({ contactId, initialData }: ContactFormProps) {
   const router = useRouter();
+  const t = useTranslations('contacts');
+  const tRoot = useTranslations();
   const isEdit = !!contactId;
 
   const [form, setForm] = useState(
@@ -118,7 +121,7 @@ export function ContactForm({ contactId, initialData }: ContactFormProps) {
 
       router.push(isEdit ? `/dashboard/contacts/${contactId}` : '/dashboard/contacts');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Помилка збереження');
+      setError(err instanceof Error ? err.message : tRoot('common.saveError'));
     } finally {
       setLoading(false);
     }
@@ -128,7 +131,7 @@ export function ContactForm({ contactId, initialData }: ContactFormProps) {
     <div className="max-w-2xl mx-auto">
       <Card>
         <CardHeader>
-          <CardTitle>{isEdit ? 'Редагувати контакт' : 'Новий контакт'}</CardTitle>
+          <CardTitle>{isEdit ? t('edit') : t('newContact')}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -140,27 +143,29 @@ export function ContactForm({ contactId, initialData }: ContactFormProps) {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Ім'я *</label>
+                <label className="text-xs font-medium text-muted-foreground">
+                  {t('firstName')} *
+                </label>
                 <Input
                   value={form.firstName}
                   onChange={(e) => setForm({ ...form, firstName: e.target.value })}
                   required
-                  placeholder="Олександр"
+                  placeholder={t('firstNamePlaceholder')}
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Прізвище</label>
+                <label className="text-xs font-medium text-muted-foreground">{t('lastName')}</label>
                 <Input
                   value={form.lastName}
                   onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-                  placeholder="Петренко"
+                  placeholder={t('lastNamePlaceholder')}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Email</label>
+                <label className="text-xs font-medium text-muted-foreground">{t('email')}</label>
                 <Input
                   type="email"
                   value={form.email}
@@ -169,7 +174,7 @@ export function ContactForm({ contactId, initialData }: ContactFormProps) {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Телефон</label>
+                <label className="text-xs font-medium text-muted-foreground">{t('phone')}</label>
                 <Input
                   type="tel"
                   value={form.phone}
@@ -181,55 +186,53 @@ export function ContactForm({ contactId, initialData }: ContactFormProps) {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Компанія</label>
+                <label className="text-xs font-medium text-muted-foreground">{t('company')}</label>
                 <Input
                   value={form.company}
                   onChange={(e) => setForm({ ...form, company: e.target.value })}
-                  placeholder="Назва компанії"
+                  placeholder={tRoot('common.companyNamePlaceholder')}
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Посада</label>
+                <label className="text-xs font-medium text-muted-foreground">{t('position')}</label>
                 <Input
                   value={form.position}
                   onChange={(e) => setForm({ ...form, position: e.target.value })}
-                  placeholder="Менеджер з продажу"
+                  placeholder={t('positionPlaceholder')}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Статус</label>
+                <label className="text-xs font-medium text-muted-foreground">
+                  {tRoot('common.status')}
+                </label>
                 <QuickSelect
                   value={form.status}
                   onChange={(id) => setForm({ ...form, status: id })}
                   options={[
-                    { id: 'active', name: 'Активний' },
-                    { id: 'lead', name: 'Лід' },
-                    { id: 'client', name: 'Клієнт' },
-                    { id: 'inactive', name: 'Неактивний' },
+                    { id: 'active', name: t('status.active') },
+                    { id: 'lead', name: t('status.lead') },
+                    { id: 'client', name: t('status.client') },
+                    { id: 'inactive', name: t('status.inactive') },
                   ]}
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Джерело</label>
+                <label className="text-xs font-medium text-muted-foreground">{t('source')}</label>
                 <Input
                   value={form.source}
                   onChange={(e) => setForm({ ...form, source: e.target.value })}
-                  placeholder="Сайт, рекомендація, тощо"
+                  placeholder={t('sourcePlaceholder')}
                 />
               </div>
             </div>
 
             {/* Tags */}
             <div className="space-y-2">
-              <label className="text-xs font-medium text-muted-foreground">Теги</label>
-              {tagsError && (
-                <p className="text-xs text-destructive">
-                  Не вдалося завантажити теги — контакт можна зберегти без них
-                </p>
-              )}
+              <label className="text-xs font-medium text-muted-foreground">{t('tags')}</label>
+              {tagsError && <p className="text-xs text-destructive">{t('tagsLoadError')}</p>}
               <div className="flex gap-2 flex-wrap">
                 {tags.map((tag) => (
                   <button
@@ -254,25 +257,25 @@ export function ContactForm({ contactId, initialData }: ContactFormProps) {
               </div>
               <div className="flex gap-2 mt-2">
                 <Input
-                  placeholder="Новий тег"
+                  placeholder={t('newTag')}
                   value={newTagName}
                   onChange={(e) => setNewTagName(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleCreateTag())}
                   className="flex-1"
                 />
                 <Button type="button" variant="outline" onClick={handleCreateTag}>
-                  Додати тег
+                  {t('addTag')}
                 </Button>
               </div>
             </div>
 
             {/* Notes */}
             <div className="space-y-2">
-              <label className="text-xs font-medium text-muted-foreground">Нотатки</label>
+              <label className="text-xs font-medium text-muted-foreground">{t('notes')}</label>
               <textarea
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                placeholder="Додаткова інформація про контакт..."
+                placeholder={t('notesPlaceholder')}
                 rows={4}
                 className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-ring"
               />
@@ -280,10 +283,10 @@ export function ContactForm({ contactId, initialData }: ContactFormProps) {
 
             <div className="flex gap-3 pt-4">
               <Button type="submit" disabled={loading}>
-                {loading ? 'Збереження...' : isEdit ? 'Зберегти зміни' : 'Створити контакт'}
+                {loading ? t('saving') : isEdit ? tRoot('common.saveChanges') : t('createContact')}
               </Button>
               <Button type="button" variant="outline" onClick={() => router.back()}>
-                Скасувати
+                {tRoot('common.cancel')}
               </Button>
             </div>
           </form>

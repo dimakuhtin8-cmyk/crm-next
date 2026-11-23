@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
+import { useTranslations } from 'next-intl';
 import { useState, useRef, useEffect } from 'react';
 
 import { OPEN_PALETTE_EVENT } from '@/components/command-palette';
@@ -51,13 +52,6 @@ interface ReminderTask {
   reminderAt: string | null;
 }
 
-const priorityConfig: Record<string, { label: string; color: string }> = {
-  urgent: { label: 'Терміново', color: 'text-danger' },
-  high: { label: 'Високий', color: 'text-warning' },
-  medium: { label: 'Середній', color: 'text-info' },
-  low: { label: 'Низький', color: 'text-foreground-muted' },
-};
-
 const typeIcons: Record<string, React.ReactNode> = {
   task: <CheckSquare className="h-4 w-4" />,
   call: <Phone className="h-4 w-4" />,
@@ -67,6 +61,8 @@ const typeIcons: Record<string, React.ReactNode> = {
 };
 
 export function Header({ onMobileMenuToggle }: HeaderProps) {
+  const t = useTranslations('common');
+  const tRoot = useTranslations();
   const { data: session } = useSession();
   const { resolvedTheme, setTheme } = useTheme();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -130,30 +126,37 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
 
   const user = session?.user;
 
+  const priorityConfig: Record<string, { label: string; color: string }> = {
+    urgent: { label: tRoot('tasks.priorityUrgent'), color: 'text-danger' },
+    high: { label: tRoot('tasks.high'), color: 'text-warning' },
+    medium: { label: tRoot('tasks.medium'), color: 'text-info' },
+    low: { label: tRoot('tasks.low'), color: 'text-foreground-muted' },
+  };
+
   const quickActions = [
     {
-      label: 'Новий контакт',
+      label: tRoot('contacts.newContact'),
       type: 'contact' as const,
       href: null as string | null,
       icon: Users,
       color: 'text-foreground',
     },
     {
-      label: 'Нова угода',
+      label: tRoot('deals.newDeal'),
       type: 'deal' as const,
       href: null as string | null,
       icon: TrendingUp,
       color: 'text-foreground',
     },
     {
-      label: 'Нова задача',
+      label: tRoot('tasks.newTask'),
       type: 'task' as const,
       href: null as string | null,
       icon: CheckSquare,
       color: 'text-foreground',
     },
     {
-      label: 'Повідомлення',
+      label: tRoot('navigation.messages'),
       type: null,
       href: '/dashboard/messages',
       icon: MessageSquare,
@@ -176,7 +179,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
           <button
             className="rounded-xl p-2.5 text-foreground-muted hover:bg-secondary hover:text-foreground lg:hidden transition-colors duration-200"
             onClick={onMobileMenuToggle}
-            aria-label="Відкрити меню"
+            aria-label={t('openMenu')}
           >
             <svg
               className="h-5 w-5"
@@ -198,7 +201,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
             className="hidden sm:flex items-center gap-3 h-9 w-80 rounded-md border border-border bg-background-secondary px-4 text-sm text-foreground-muted hover:border-border-hover hover:bg-background-tertiary transition-all duration-200"
           >
             <Search className="h-4 w-4" />
-            <span className="flex-1 text-left">Пошук...</span>
+            <span className="flex-1 text-left">{t('search')}</span>
             <div className="flex items-center gap-1 text-xs text-foreground-muted/60">
               <Command className="h-3 w-3" />
               <span>K</span>
@@ -207,7 +210,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
           {/* Mobile search icon (same modal) */}
           <button
             onClick={openPalette}
-            aria-label="Пошук"
+            aria-label={t('searchLabel')}
             className="sm:hidden rounded-xl p-2.5 text-foreground-muted hover:bg-secondary hover:text-foreground transition-all duration-200"
           >
             <Search className="h-5 w-5" />
@@ -227,7 +230,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
               className="flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-bold text-primary-foreground transition-all duration-200 hover:bg-primary-hover"
             >
               <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Створити</span>
+              <span className="hidden sm:inline">{t('create')}</span>
             </button>
 
             {isQuickOpen && (
@@ -236,7 +239,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
                 <div className="absolute right-0 top-full z-50 mt-2 w-64 rounded-2xl border border-border bg-card shadow-xl overflow-hidden">
                   <div className="p-2">
                     <p className="px-3 py-2 text-xs font-semibold text-foreground-muted uppercase tracking-wider">
-                      Швидкі дії
+                      {tRoot('dashboard.quickActions')}
                     </p>
                     {quickActions.map((action) =>
                       action.type ? (
@@ -277,7 +280,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
           <button
             onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
             className="rounded-xl p-2.5 text-foreground-muted hover:bg-secondary hover:text-foreground transition-all duration-200"
-            title={resolvedTheme === 'dark' ? 'Світла тема' : 'Темна тема'}
+            title={resolvedTheme === 'dark' ? t('lightTheme') : t('darkTheme')}
           >
             {resolvedTheme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </button>
@@ -296,7 +299,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
                 setIsProfileOpen(false);
               }}
               className="relative rounded-xl p-2.5 text-foreground-muted hover:bg-secondary hover:text-foreground transition-all duration-200"
-              title="Сповіщення"
+              title={tRoot('dashboard.notifications')}
             >
               <Bell className="h-5 w-5" />
               {totalUnread > 0 && (
@@ -311,13 +314,13 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
                 <div className="fixed inset-0 z-40" onClick={() => setIsNotifOpen(false)} />
                 <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-2xl border border-border bg-card shadow-xl overflow-hidden">
                   <div className="flex items-center justify-between border-b border-border px-4 py-3">
-                    <h3 className="text-sm font-semibold">Нагадування</h3>
+                    <h3 className="text-sm font-semibold">{tRoot('tasks.reminders')}</h3>
                     <Link
                       href="/dashboard/timeline"
                       onClick={() => setIsNotifOpen(false)}
                       className="text-xs font-semibold text-foreground underline-offset-4 transition-colors hover:underline"
                     >
-                      Таймлайн →
+                      {t('timelineLink')}
                     </Link>
                   </div>
                   <div className="max-h-80 overflow-y-auto">
@@ -327,9 +330,11 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
                           <CheckSquare className="h-6 w-6 text-success" />
                         </div>
                         <p className="text-sm font-medium text-foreground-muted">
-                          Немає нагадувань
+                          {t('noReminders')}
                         </p>
-                        <p className="text-xs text-foreground-muted/70 mt-1">Все під контролем!</p>
+                        <p className="text-xs text-foreground-muted/70 mt-1">
+                          {t('allUnderControl')}
+                        </p>
                       </div>
                     ) : (
                       <>
@@ -337,7 +342,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
                           <div>
                             <div className="px-4 py-2 bg-danger/5 border-b border-border">
                               <p className="text-xs font-semibold text-danger">
-                                Протерміновано ({overdueReminders.length})
+                                {t('overdueCount', { count: overdueReminders.length })}
                               </p>
                             </div>
                             {overdueReminders.map((task) => (
@@ -378,7 +383,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
                           <div>
                             <div className="px-4 py-2 bg-primary/10 border-b border-border">
                               <p className="text-xs font-semibold text-foreground">
-                                Найближчі ({upcomingReminders.length})
+                                {t('upcomingCount', { count: upcomingReminders.length })}
                               </p>
                             </div>
                             {upcomingReminders.map((task) => (
@@ -424,14 +429,14 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
                       onClick={() => setIsNotifOpen(false)}
                       className="block rounded-lg bg-primary px-3 py-2 text-center text-xs font-bold text-primary-foreground transition-colors hover:bg-primary-hover"
                     >
-                      Відкрити всі сповіщення →
+                      {t('openAllNotifications')}
                     </Link>
                     <Link
                       href="/dashboard/tasks"
                       onClick={() => setIsNotifOpen(false)}
                       className="block text-center text-xs font-semibold text-foreground underline-offset-4 transition-colors hover:underline"
                     >
-                      Всі задачі →
+                      {t('allTasks')}
                     </Link>
                   </div>
                 </div>
@@ -457,7 +462,9 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
                 <div className="fixed inset-0 z-40" onClick={() => setIsProfileOpen(false)} />
                 <div className="absolute right-0 top-full z-50 mt-2 w-64 rounded-2xl border border-border bg-card shadow-xl overflow-hidden">
                   <div className="px-4 py-3 border-b border-border bg-secondary/30">
-                    <p className="text-sm font-semibold">{user?.name || 'Користувач'}</p>
+                    <p className="text-sm font-semibold">
+                      {user?.name || tRoot('settings.defaultUserName')}
+                    </p>
                     <p className="text-xs text-foreground-muted mt-0.5">{user?.email}</p>
                   </div>
                   <div className="p-2">
@@ -467,7 +474,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
                       className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-secondary transition-all duration-150"
                     >
                       <User className="h-4 w-4 text-foreground-muted" />
-                      Профіль
+                      {tRoot('settings.profile')}
                     </Link>
                     <Link
                       href="/dashboard/settings"
@@ -475,7 +482,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
                       className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-secondary transition-all duration-150"
                     >
                       <Settings className="h-4 w-4 text-foreground-muted" />
-                      Налаштування
+                      {tRoot('navigation.settings')}
                     </Link>
                   </div>
                   <div className="border-t border-border p-2">
@@ -487,7 +494,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
                       className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-danger hover:bg-danger-light transition-all duration-150"
                     >
                       <LogOut className="h-4 w-4" />
-                      Вийти
+                      {tRoot('auth.logout')}
                     </button>
                   </div>
                 </div>
@@ -504,10 +511,10 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
         onClose={() => setHeaderQuick(null)}
         title={
           headerQuick?.type === 'contact'
-            ? 'Новий контакт'
+            ? tRoot('contacts.newContact')
             : headerQuick?.type === 'deal'
-              ? 'Нова угода'
-              : 'Нова задача'
+              ? tRoot('deals.newDeal')
+              : tRoot('tasks.newTask')
         }
       >
         {headerQuick?.type === 'contact' && (

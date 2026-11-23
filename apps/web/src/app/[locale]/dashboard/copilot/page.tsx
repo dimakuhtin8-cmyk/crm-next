@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useState, useEffect, useRef } from 'react';
 
 import { QuickSelect } from '@/components/quick-create';
@@ -33,14 +34,6 @@ import {
 import { AI_PROVIDERS, getProvider } from '@/lib/ai/providers';
 import { useLocalePath } from '@/lib/use-locale-path';
 
-/** Стартові підказки — питання, що працюють на реальних даних (знімок CRM). */
-const STARTER_QUESTIONS = [
-  'Як справи з продажами?',
-  'Які угоди під ризиком?',
-  'Кому подзвонити сьогодні?',
-  'Підсумок за тиждень',
-];
-
 interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
@@ -49,14 +42,14 @@ interface ChatMessage {
   sources?: Array<{ id: string; type: string; name: string }>;
 }
 
-const THINKING_STEPS = ['Шукаю дані в CRM…', 'Аналізую дані CRM…', 'Формулюю відповідь…'];
-
 /** Живой статус "думаю": ротация этапов + пульсация, чтобы не выглядело зависшим. */
 function ThinkingStatus() {
+  const t = useTranslations('copilot');
   const [step, setStep] = useState(0);
+  const THINKING_STEPS = [t('thinking.step1'), t('thinking.step2'), t('thinking.step3')];
   useEffect(() => {
-    const t = setInterval(() => setStep((s) => (s + 1) % THINKING_STEPS.length), 3500);
-    return () => clearInterval(t);
+    const timer = setInterval(() => setStep((s) => (s + 1) % THINKING_STEPS.length), 3500);
+    return () => clearInterval(timer);
   }, []);
   return (
     <span className="text-xs text-foreground-muted animate-pulse">{THINKING_STEPS[step]}</span>
@@ -94,6 +87,9 @@ function renderRichText(text: string) {
 }
 
 export default function CopilotPage() {
+  const t = useTranslations('copilot');
+  const tCommon = useTranslations('common');
+  const tRoot = useTranslations();
   const [aiStatus, setAiStatus] = useState<'checking' | 'ready' | 'no-key'>('checking');
   const lp = useLocalePath();
   const [selectedProvider, setSelectedProvider] = useState('gemini');
@@ -233,7 +229,7 @@ export default function CopilotPage() {
   };
 
   const deleteSession = async (id: string) => {
-    if (!window.confirm('Видалити цю розмову?')) return;
+    if (!window.confirm(t('deleteChatConfirm'))) return;
     try {
       const r = await fetch(`/api/ai/sessions/${id}`, {
         method: 'DELETE',
@@ -335,8 +331,8 @@ export default function CopilotPage() {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: res.ok
-          ? json.result || json.response || 'Відповідь отримана'
-          : json.error || 'Помилка генерації',
+          ? json.result || json.response || t('responseReceived')
+          : json.error || t('generationError'),
         timestamp: new Date(),
         sources: Array.isArray(json.sources) ? json.sources : undefined,
       };
@@ -351,7 +347,7 @@ export default function CopilotPage() {
         {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: "Помилка з'єднання з AI. Перевірте підключення.",
+          content: t('aiConnectionError'),
           timestamp: new Date(),
         },
       ]);
@@ -377,6 +373,9 @@ export default function CopilotPage() {
     return selectedChatModel;
   })();
 
+  /** Стартові підказки — питання, що працюють на реальних даних (знімок CRM). */
+  const STARTER_QUESTIONS = [t('starter.q1'), t('starter.q2'), t('starter.q3'), t('starter.q4')];
+
   return (
     <div className="w-full h-[calc(100dvh-112px)] min-h-[480px] flex flex-col gap-4">
       {/* Quick Setup Panel */}
@@ -387,10 +386,10 @@ export default function CopilotPage() {
               <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary-light">
                 <Bot className="w-5 h-5 text-primary" />
               </div>
-              <h3 className="font-semibold text-lg">Підключіть AI</h3>
+              <h3 className="font-semibold text-lg">{t('connectTitle')}</h3>
             </div>
             <p className="text-sm text-foreground-muted mb-5 ml-[52px]">
-              Оберіть провайдера та введіть API-ключ. Це займає 30 секунд.
+              {t('connectDescription')}
             </p>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-5">
@@ -421,7 +420,7 @@ export default function CopilotPage() {
               <div className="p-4 rounded-xl bg-accent/50 border border-border/40 mb-5">
                 <p className="text-sm text-foreground-muted">{currentProvider.description}</p>
                 <p className="text-xs text-foreground-muted mt-1">
-                  <span className="font-medium">Безкоштовний тариф:</span>{' '}
+                  <span className="font-medium">{tRoot('settings.freeQuota')}</span>{' '}
                   {currentProvider.freeQuota}
                 </p>
               </div>
@@ -436,7 +435,7 @@ export default function CopilotPage() {
                     id: m.id,
                     name: `${m.name} — ${m.description}`,
                   }))}
-                  label="Модель"
+                  label={tRoot('settings.modelLabel')}
                 />
               </div>
             )}
@@ -444,7 +443,7 @@ export default function CopilotPage() {
             <div className="flex gap-2.5">
               <Input
                 type="password"
-                placeholder={currentProvider?.keyPlaceholder || 'API-ключ'}
+                placeholder={currentProvider?.keyPlaceholder || tRoot('settings.apiKeyTitle')}
                 value={quickKey}
                 onChange={(e) => setQuickKey(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleQuickSetup()}
@@ -462,7 +461,7 @@ export default function CopilotPage() {
                 ) : (
                   <span className="flex items-center gap-2">
                     <Save className="w-4 h-4" />
-                    Зберегти
+                    {tCommon('save')}
                   </span>
                 )}
               </Button>
@@ -476,7 +475,7 @@ export default function CopilotPage() {
                 className="inline-flex items-center gap-1.5 mt-4 text-sm text-primary hover:text-primary-hover font-medium transition-colors"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
-                Отримати API-ключ {currentProvider.name}
+                {t('getKey', { name: currentProvider.name })}
               </a>
             )}
 
@@ -485,7 +484,7 @@ export default function CopilotPage() {
                 href={lp('/dashboard/settings/ai-keys')}
                 className="inline-flex items-center gap-1.5 text-sm text-foreground-muted hover:text-foreground font-medium transition-colors"
               >
-                Усі налаштування AI-провайдерів →
+                {t('allProviderSettings')}
               </Link>
             </div>
           </CardContent>
@@ -494,7 +493,7 @@ export default function CopilotPage() {
 
       {aiStatus === 'ready' && justConnected && (
         <div className="flex items-center gap-2 px-1">
-          <span className="text-sm text-success">✅ AI підключено</span>
+          <span className="text-sm text-success">{t('aiConnected')}</span>
         </div>
       )}
 
@@ -510,13 +509,13 @@ export default function CopilotPage() {
               <div className="shrink-0 p-3 border-b border-border">
                 <Button onClick={newSession} className="w-full" variant="outline">
                   <Plus className="w-4 h-4 mr-2" />
-                  Нова розмова
+                  {t('newChat')}
                 </Button>
               </div>
               <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1">
                 {sessions.length === 0 && (
                   <p className="px-3 py-6 text-center text-xs text-foreground-muted">
-                    Поки що немає розмов
+                    {t('noChats')}
                   </p>
                 )}
                 {sessions.map((s) => (
@@ -529,7 +528,7 @@ export default function CopilotPage() {
                   >
                     <MessageSquare className="w-4 h-4 shrink-0 text-foreground-muted" />
                     <div className="flex-1 min-w-0">
-                      <p className="truncate text-sm font-medium">{s.title || 'Нова розмова'}</p>
+                      <p className="truncate text-sm font-medium">{s.title || t('newChat')}</p>
                       <p className="text-[11px] text-foreground-muted">
                         {new Date(s.updatedAt).toLocaleDateString('uk-UA', {
                           day: 'numeric',
@@ -540,8 +539,8 @@ export default function CopilotPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      title="Видалити"
-                      aria-label="Видалити розмову"
+                      title={tCommon('delete')}
+                      aria-label={t('deleteChatLabel')}
                       className="h-7 w-7 shrink-0 text-foreground-muted opacity-0 transition-all hover:bg-danger/10 hover:text-danger focus-visible:opacity-100 group-hover:opacity-100"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -566,10 +565,9 @@ export default function CopilotPage() {
                     <div className="w-16 h-16 rounded-2xl bg-primary-light flex items-center justify-center mb-4">
                       <Bot className="w-8 h-8 text-primary" />
                     </div>
-                    <h3 className="text-lg font-semibold mb-1">Як я можу допомогти?</h3>
+                    <h3 className="text-lg font-semibold mb-1">{t('emptyTitle')}</h3>
                     <p className="text-sm text-foreground-muted max-w-sm">
-                      Задайте питання про ваші контакти, угоди або завдання. Я проаналізую дані та
-                      допоможу.
+                      {t('emptyDescription')}
                     </p>
                     <div className="flex flex-wrap gap-2 mt-4 justify-center">
                       {STARTER_QUESTIONS.map((q) => (
@@ -618,12 +616,14 @@ export default function CopilotPage() {
                         </div>
                         {msg.role === 'assistant' && msg.sources && msg.sources.length > 0 && (
                           <div className="mt-2 flex flex-wrap gap-1.5 border-t border-border/50 pt-2">
-                            <span className="text-[11px] text-foreground-muted">На основі:</span>
+                            <span className="text-[11px] text-foreground-muted">
+                              {t('basedOn')}
+                            </span>
                             {msg.sources.map((s) => (
                               <span
                                 key={`${s.type}-${s.id}`}
                                 className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
-                                title={`${s.type === 'contact' ? 'Контакт' : 'Угода'}: ${s.name}`}
+                                title={`${s.type === 'contact' ? tRoot('deals.contact') : tRoot('tasks.deal')}: ${s.name}`}
                               >
                                 {s.type === 'contact' ? '👤' : '💼'} {s.name}
                               </span>
@@ -682,7 +682,7 @@ export default function CopilotPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      aria-label="Прикріпити файл"
+                      aria-label={t('attachFile')}
                       className="h-8 w-8 shrink-0 rounded-lg text-foreground-muted hover:text-foreground"
                     >
                       <Paperclip className="w-5 h-5" />
@@ -694,7 +694,7 @@ export default function CopilotPage() {
                       onKeyDown={handleKeyDown}
                       disabled={chatLoading}
                       placeholder={
-                        chatLoading ? 'AI відповідає — зачекайте…' : 'Напишіть повідомлення...'
+                        chatLoading ? t('inputPlaceholderLoading') : t('inputPlaceholder')
                       }
                       rows={1}
                       className="min-h-[24px] max-h-[120px] flex-1 border-0 bg-transparent px-0 py-0 leading-relaxed placeholder:text-foreground-muted/60 shadow-none focus-visible:ring-0 resize-none"
@@ -707,7 +707,7 @@ export default function CopilotPage() {
                     />
                     <Button
                       size="icon"
-                      aria-label="Надіслати"
+                      aria-label={t('send')}
                       onClick={sendMessage}
                       disabled={!inputValue.trim() || chatLoading}
                       className="h-8 w-8 shrink-0 rounded-lg bg-primary text-white shadow-md shadow-blue-500/30 hover:bg-primary-hover disabled:opacity-30"
@@ -718,9 +718,7 @@ export default function CopilotPage() {
 
                   {/* Bottom bar: model picker + disclaimer */}
                   <div className="flex items-center justify-between mt-2 px-1">
-                    <p className="text-[11px] text-foreground-muted/60">
-                      AI може помилятися. Перевіряйте важливу інформацію.
-                    </p>
+                    <p className="text-[11px] text-foreground-muted/60">{t('aiDisclaimer')}</p>
 
                     {/* Model picker */}
                     <div className="relative" data-tour="copilot-model">

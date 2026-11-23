@@ -14,6 +14,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
 
 import { DataError } from '@/components/data-error';
@@ -39,10 +40,10 @@ interface ReminderTask {
 }
 
 const priorityConfig: Record<string, { label: string; color: string }> = {
-  urgent: { label: 'Терміново', color: 'text-danger' },
-  high: { label: 'Високий', color: 'text-warning' },
-  medium: { label: 'Середній', color: 'text-info' },
-  low: { label: 'Низький', color: 'text-foreground-muted' },
+  urgent: { label: 'priority.urgent', color: 'text-danger' },
+  high: { label: 'priority.high', color: 'text-warning' },
+  medium: { label: 'priority.medium', color: 'text-info' },
+  low: { label: 'priority.low', color: 'text-foreground-muted' },
 };
 
 const typeIcons: Record<string, React.ReactNode> = {
@@ -83,12 +84,12 @@ function formatDateTime(value: string | null) {
 }
 
 /** Відносний час українською: «через 45 хв» / «2 год тому» / «вчора». */
-function relativeTime(value: string | null): string {
+function relativeTime(value: string | null, t: (key: string) => string): string {
   if (!value) return '—';
   const diffMs = new Date(value).getTime() - Date.now();
   const absSec = Math.abs(diffMs) / 1000;
   const sign = diffMs >= 0 ? 1 : -1;
-  if (absSec < 60) return 'зараз';
+  if (absSec < 60) return t('now');
   try {
     const rtf = new Intl.RelativeTimeFormat('uk', { numeric: 'auto' });
     if (absSec < 3600) return rtf.format(sign * Math.round(absSec / 60), 'minute');
@@ -107,6 +108,8 @@ function timeOfDay(value: string | null): string {
 }
 
 export default function NotificationsPage() {
+  const t = useTranslations('notifications');
+  const tCommon = useTranslations('common');
   const [overdue, setOverdue] = useState<ReminderTask[]>([]);
   const [upcoming, setUpcoming] = useState<ReminderTask[]>([]);
   const [appNotifs, setAppNotifs] = useState<AppNotification[]>([]);
@@ -120,11 +123,11 @@ export default function NotificationsPage() {
     setLoading(true);
     Promise.all([
       fetch('/api/tasks/reminders?hours=24').then((r) => {
-        if (!r.ok) throw new Error(`Нагадування: помилка ${r.status}`);
+        if (!r.ok) throw new Error(t('errors.remindersLoad', { status: r.status }));
         return r.json();
       }),
       fetch('/api/notifications').then((r) => {
-        if (!r.ok) throw new Error(`Сповіщення: помилка ${r.status}`);
+        if (!r.ok) throw new Error(t('errors.notificationsLoad', { status: r.status }));
         return r.json();
       }),
     ])
@@ -134,7 +137,7 @@ export default function NotificationsPage() {
         setAppNotifs(notifs.notifications || []);
       })
       .catch((err: unknown) => {
-        setLoadError(err instanceof Error ? err.message : 'Помилка завантаження');
+        setLoadError(err instanceof Error ? err.message : tCommon('errors.loadFailed'));
       })
       .finally(() => setLoading(false));
   };
@@ -150,7 +153,7 @@ export default function NotificationsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids: [id] }),
       });
-      if (!res.ok) throw new Error(`Помилка ${res.status}`);
+      if (!res.ok) throw new Error(tCommon('errors.requestStatus', { status: res.status }));
       setAppNotifs((prev) => prev.filter((n) => n.id !== id));
       window.dispatchEvent(new Event('notif-read'));
     } catch {
@@ -166,7 +169,7 @@ export default function NotificationsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
       });
-      if (!res.ok) throw new Error(`Помилка ${res.status}`);
+      if (!res.ok) throw new Error(tCommon('errors.requestStatus', { status: res.status }));
       setAppNotifs([]);
       window.dispatchEvent(new Event('notif-read'));
     } catch {
@@ -185,9 +188,9 @@ export default function NotificationsPage() {
   }, [overdue, upcoming, filter]);
 
   const tabs: Array<{ id: Filter; label: string; count: number }> = [
-    { id: 'all', label: 'Усі', count: overdue.length + upcoming.length },
-    { id: 'overdue', label: 'Протерміновані', count: overdue.length },
-    { id: 'upcoming', label: 'Найближчі', count: upcoming.length },
+    { id: 'all', label: tCommon('all'), count: overdue.length + upcoming.length },
+    { id: 'overdue', label: t('tabOverdue'), count: overdue.length },
+    { id: 'upcoming', label: t('tabUpcoming'), count: upcoming.length },
   ];
 
   return (
@@ -199,7 +202,7 @@ export default function NotificationsPage() {
           className="inline-flex items-center gap-1.5 text-sm font-semibold text-foreground-muted transition-colors hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
-          До огляду
+          {t('backToOverview')}
         </Link>
         <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -207,20 +210,18 @@ export default function NotificationsPage() {
               <Bell className="h-5 w-5 text-primary-foreground" />
             </span>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">Сповіщення</h1>
-              <p className="text-sm text-foreground-secondary">
-                Нагадування за найближчі 24 години
-              </p>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('title')}</h1>
+              <p className="text-sm text-foreground-secondary">{t('subtitle')}</p>
             </div>
           </div>
           <Button
             variant="outline"
             onClick={markAllRead}
             disabled={appNotifs.length === 0}
-            title="Позначити всі системні сповіщення прочитаними"
+            title={t('markAllReadTitle')}
           >
             <CheckCheck className="h-4 w-4" />
-            Позначити всі прочитаними
+            {t('markAllRead')}
           </Button>
         </div>
       </div>
@@ -250,7 +251,7 @@ export default function NotificationsPage() {
             className="gap-2"
           >
             <ChevronDown className={cn('h-4 w-4 transition-transform', !sysOpen && '-rotate-90')} />
-            Системні сповіщення
+            {t('systemNotifications')}
             <Badge variant="secondary">{appNotifs.length}</Badge>
           </Button>
 
@@ -260,7 +261,7 @@ export default function NotificationsPage() {
                 <Card
                   key={n.id}
                   onClick={() => markOneRead(n.id)}
-                  title="Позначити прочитаним"
+                  title={t('markReadTitle')}
                   className="cursor-pointer p-3 transition-colors hover:border-border-hover"
                 >
                   <div className="flex items-start gap-3">
@@ -276,14 +277,14 @@ export default function NotificationsPage() {
                       <div className="flex items-center gap-2">
                         <span
                           className="h-2 w-2 shrink-0 rounded-full bg-info"
-                          aria-label="Непрочитане"
+                          aria-label={t('unreadLabel')}
                         />
                         <p className="truncate text-sm font-semibold">{n.title}</p>
                       </div>
                       <p className="mt-0.5 text-xs text-foreground-muted">{n.message}</p>
                       <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-foreground-muted">
                         <span title={formatDateTime(n.createdAt)}>
-                          {relativeTime(n.createdAt)} · {timeOfDay(n.createdAt)}
+                          {relativeTime(n.createdAt, t)} · {timeOfDay(n.createdAt)}
                         </span>
                         {n.link && (
                           <Link
@@ -293,7 +294,7 @@ export default function NotificationsPage() {
                               'h-7 gap-1 px-2 text-2xs',
                             )}
                           >
-                            Відкрити
+                            {t('open')}
                             <ArrowRight className="h-3 w-3" />
                           </Link>
                         )}
@@ -319,8 +320,8 @@ export default function NotificationsPage() {
           <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/15">
             <CheckSquare className="h-6 w-6 text-foreground" />
           </span>
-          <p className="font-semibold">Немає сповіщень</p>
-          <p className="mt-1 text-sm text-foreground-muted">Все під контролем!</p>
+          <p className="font-semibold">{t('emptyTitle')}</p>
+          <p className="mt-1 text-sm text-foreground-muted">{t('emptyDescription')}</p>
         </Card>
       ) : (
         <div className="space-y-2">
@@ -347,8 +348,8 @@ export default function NotificationsPage() {
                       )}
                       title={formatDateTime(task.reminderAt)}
                     >
-                      {task.flag === 'overdue' ? 'Протерміновано · ' : ''}
-                      {relativeTime(task.reminderAt)} · {timeOfDay(task.reminderAt)}
+                      {task.flag === 'overdue' ? `${t('overdueBadge')} · ` : ''}
+                      {relativeTime(task.reminderAt, t)} · {timeOfDay(task.reminderAt)}
                     </p>
                   </div>
                   <span
@@ -357,7 +358,7 @@ export default function NotificationsPage() {
                       priorityConfig[task.priority]?.color,
                     )}
                   >
-                    {priorityConfig[task.priority]?.label}
+                    {priorityConfig[task.priority] ? t(priorityConfig[task.priority].label) : null}
                   </span>
                   <ChevronRight className="h-4 w-4 shrink-0 text-foreground-muted" />
                 </div>

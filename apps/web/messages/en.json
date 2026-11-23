@@ -16,7 +16,10 @@
     "copilot": "AI Co-Pilot",
     "documents": "Documents",
     "team": "Team",
-    "tenants": "Organizations"
+    "tenants": "Organizations",
+    "aiKeys": "AI keys",
+    "teamAndTenants": "Team and tenants",
+    "securityAudit": "Security audit"
   },
   "auth": {
     "login": "Sign In",
@@ -286,7 +289,16 @@
     "importErrorsTitle": "Errors:",
     "importRowError": "Row {row}: {error}",
     "importGoToContacts": "Go to contacts",
-    "importMore": "Import more"
+    "importMore": "Import more",
+    "createContact": "Create contact",
+    "addTag": "Add tag",
+    "newTag": "New tag",
+    "tagsLoadError": "Couldn't load tags — the contact can be saved without them",
+    "firstNamePlaceholder": "John",
+    "lastNamePlaceholder": "Smith",
+    "positionPlaceholder": "Sales manager",
+    "sourcePlaceholder": "Website, referral, etc.",
+    "notesPlaceholder": "Additional info about the contact..."
   },
   "deals": {
     "title": "Deals",
@@ -381,7 +393,12 @@
     "stageNumber": "Stage {number}",
     "addStage": "+ Add stage",
     "creating": "Creating...",
-    "confirmDeletePipeline": "Delete pipeline \"{name}\"?"
+    "confirmDeletePipeline": "Delete pipeline \"{name}\"?",
+    "titlePlaceholder": "Office rent",
+    "productsLabel": "Products",
+    "addProductRow": "+ Add",
+    "productNamePlaceholder": "Product name",
+    "noContact": "— No contact —"
   },
   "tasks": {
     "title": "Tasks",
@@ -441,7 +458,17 @@
     "deleteTask": "Delete task",
     "confirmDelete": "Delete this task?",
     "noTasks": "No tasks",
-    "pageOf": "Page {page} of {pages}"
+    "pageOf": "Page {page} of {pages}",
+    "titlePlaceholder": "Call the client",
+    "followUp": "Follow-up",
+    "unassigned": "Unassigned",
+    "recurringTask": "Recurring task",
+    "recurrenceRule": "Recurrence rule",
+    "recurrenceDaily": "Daily",
+    "recurrenceWeekly": "Weekly",
+    "recurrenceBiweekly": "Every 2 weeks",
+    "recurrenceMonthly": "Monthly",
+    "recurrenceQuarterly": "Quarterly"
   },
   "messages": {
     "title": "Messages",
@@ -449,7 +476,34 @@
     "compose": "Compose",
     "inbox": "Inbox",
     "sent": "Sent",
-    "drafts": "Drafts"
+    "drafts": "Drafts",
+    "noContact": "No contact",
+    "noMessages": "No messages",
+    "youPrefix": "You:",
+    "notSent": "Not sent",
+    "loadChatsError": "Failed to load chats",
+    "loadMessagesError": "Failed to load messages",
+    "sendError": "Failed to send message",
+    "aiEmptyError": "AI returned an empty response",
+    "aiDraftError": "Failed to generate AI draft",
+    "searchPlaceholder": "Search by name…",
+    "searchChatsLabel": "Search chats",
+    "retry": "Retry",
+    "notFound": "Nothing found",
+    "noChats": "No chats yet",
+    "notFoundDescription": "Try a different search or channel filter.",
+    "noChatsDescription": "Conversations with clients via Telegram and WhatsApp will appear here once the messengers are connected.",
+    "selectChatTitle": "Select a chat",
+    "selectChatDescription": "Your client conversations are listed on the left — click one to view the history and reply.",
+    "backToList": "Back to list",
+    "noMessagesYet": "No messages yet",
+    "noMessagesDescription": "Send the first message to your client or wait for a reply.",
+    "aiHint": "The AI draft was inserted into the input — edit it before sending.",
+    "closeHintLabel": "Dismiss hint",
+    "composerPlaceholder": "Write a message… (Enter — send, Shift+Enter — new line)",
+    "messageLabel": "Message text",
+    "aiDraft": "AI draft",
+    "send": "Send"
   },
   "analytics": {
     "title": "Analytics",
@@ -467,7 +521,25 @@
     "funnel": "Funnel",
     "activities": "Activities",
     "topManagers": "Top Managers",
-    "forecast": "Forecast"
+    "forecast": "Forecast",
+    "subtitle": "CRM trends and statistics",
+    "periodDays7": "Last 7 days",
+    "periodDays30": "Last 30 days",
+    "periodDays90": "Last 90 days",
+    "periodYear": "Last year",
+    "wonOfTotal": "{won} won of {total}",
+    "totalRevenue": "Total revenue",
+    "fromWonDeals": "From won deals",
+    "basedOnAverageDeal": "Based on average deal",
+    "activeDeals": "Active deals",
+    "inWorkPipeline": "In the active pipeline",
+    "revenueByMonth": "Revenue by month",
+    "activitiesByPeriod": "Activity for the period",
+    "dealsCount": "{count} deals",
+    "errors": {
+      "requestFailed": "Error {status}",
+      "loadFailed": "Failed to load"
+    }
   },
   "timeline": {
     "title": "Timeline",
@@ -477,7 +549,23 @@
     "emails": "Emails",
     "meetings": "Meetings",
     "tasks": "Tasks",
-    "notes": "Notes"
+    "notes": "Notes",
+    "pageTitle": "Timeline",
+    "activityTitle": "Activity",
+    "historyCount": "All activity history · {count} events",
+    "eventsCount": "{count} events",
+    "justNow": "just now",
+    "noActivities": "No activities",
+    "allTypes": "All types",
+    "viewContact": "View contact",
+    "activityTypes": {
+      "call": "Call",
+      "email": "Email",
+      "meeting": "Meeting",
+      "task": "Task",
+      "note": "Note",
+      "sms": "SMS"
+    }
   },
   "automation": {
     "title": "Automation",
@@ -491,7 +579,61 @@
     "rules": "Rules",
     "noRules": "No rules",
     "createFirst": "Create your first rule",
-    "presets": "Rule Templates"
+    "presets": "Rule Templates",
+    "subtitle": "Rules that run automatically when deal stages change",
+    "searchPlaceholder": "Search rules...",
+    "searchLabel": "Search rules",
+    "newRule": "New rule",
+    "confirmDelete": "Delete rule?",
+    "emptyTitle": "No automation rules",
+    "emptyDescription": "Create your first rule for automatic actions",
+    "notFoundTitle": "Nothing found",
+    "notFoundDescription": "No rules match \"{query}\"",
+    "ruleActionsLabel": "Rule actions",
+    "enableRule": "Enable rule",
+    "disableRule": "Disable rule",
+    "enable": "Enable",
+    "errors": {
+      "requestFailed": "Error {status}",
+      "loadFailed": "Failed to load"
+    },
+    "examples": {
+      "stageChangeNotify": {
+        "name": "Notify on stage change",
+        "desc": "Send Telegram/WhatsApp when a deal moves"
+      },
+      "wonDealTask": {
+        "name": "Task after won deal",
+        "desc": "Create a task \"Prepare contract\" when a deal is won"
+      },
+      "autoPriority": {
+        "name": "Auto-set priority",
+        "desc": "Set priority \"high\" for large deals"
+      },
+      "lostDealNotify": {
+        "name": "Notify on lost deal",
+        "desc": "Notify the team about a lost deal"
+      }
+    },
+    "logs": {
+      "title": "Automation logs",
+      "description": "History of automatic rule runs",
+      "cleanup": "Clear old",
+      "cleanupConfirm": "Delete logs older than 30 days?",
+      "cleanupError": "Failed to clear logs. Try again.",
+      "unknown": "Unknown",
+      "triggerStageChange": "Stage change",
+      "triggerDealWon": "Deal won",
+      "triggerDealLost": "Deal lost",
+      "triggerDealCreatedTimer": "Creation timer",
+      "triggerManual": "Manual run",
+      "allResults": "All results",
+      "successful": "Successful",
+      "errorsFilter": "Errors",
+      "found": "Found: {count}",
+      "empty": "No execution logs",
+      "loadMore": "Load more"
+    }
   },
   "copilot": {
     "title": "AI Co-Pilot",
@@ -506,7 +648,56 @@
     "result": "Result",
     "copy": "Copy",
     "about": "About AI Co-Pilot",
-    "aboutText": "AI Co-Pilot uses Ollama for local text generation. Install Ollama and a model (e.g., llama3.2)."
+    "aboutText": "AI Co-Pilot uses Ollama for local text generation. Install Ollama and a model (e.g., llama3.2).",
+    "thinking": {
+      "step1": "Searching CRM data…",
+      "step2": "Analyzing CRM data…",
+      "step3": "Composing an answer…"
+    },
+    "starter": {
+      "q1": "How are sales going?",
+      "q2": "Which deals are at risk?",
+      "q3": "Who should I call today?",
+      "q4": "Summary for the week"
+    },
+    "deleteChatConfirm": "Delete this chat?",
+    "deleteChatLabel": "Delete chat",
+    "responseReceived": "Response received",
+    "generationError": "Generation error",
+    "aiConnectionError": "Failed to connect to AI. Check your connection.",
+    "connectTitle": "Connect AI",
+    "connectDescription": "Choose a provider and enter an API key. It takes 30 seconds.",
+    "getKey": "Get {name} API key",
+    "allProviderSettings": "All AI provider settings →",
+    "aiConnected": "✅ AI connected",
+    "newChat": "New chat",
+    "noChats": "No chats yet",
+    "emptyTitle": "How can I help?",
+    "emptyDescription": "Ask about your contacts, deals, or tasks — I'll analyze the data and help.",
+    "basedOn": "Based on:",
+    "attachFile": "Attach file",
+    "inputPlaceholder": "Type a message...",
+    "inputPlaceholderLoading": "AI is replying — hold on…",
+    "send": "Send",
+    "aiDisclaimer": "AI can make mistakes. Verify important information.",
+    "errors": {
+      "requestFailed": "Error {status}",
+      "loadFailed": "Failed to load"
+    },
+    "logs": {
+      "title": "AI request logs",
+      "filters": "Filters:",
+      "allProviders": "All providers",
+      "statusSuccess": "Success",
+      "statusRateLimited": "Rate limit",
+      "statusTimeout": "Timeout",
+      "columnTime": "Time",
+      "columnProvider": "Provider",
+      "columnDuration": "Duration",
+      "columnRequest": "Request",
+      "noLogs": "No logs",
+      "pagination": "{total} entries, page {page} of {pages}"
+    }
   },
   "documents": {
     "title": "Documents",
@@ -525,7 +716,29 @@
     "notes": "Notes",
     "preview": "Preview",
     "hidePreview": "Hide Preview",
-    "downloadPdf": "Download PDF"
+    "downloadPdf": "Download PDF",
+    "created": "Created",
+    "deleteTemplateLabel": "Delete template {name}",
+    "confirmDeleteTemplate": "Delete template?",
+    "tryAgain": "Try again",
+    "templates": "Templates",
+    "gridView": "Grid",
+    "tableView": "Table",
+    "loadTemplateTitle": "Load template",
+    "noTemplates": "No templates",
+    "titlePlaceholder": "Service/project name",
+    "companyPlaceholder": "Company name",
+    "descriptionPlaceholder": "Service or project description",
+    "removeItemLabel": "Remove item",
+    "notesPlaceholder": "Additional terms, payment, warranty...",
+    "saveAsTemplate": "Save as template",
+    "saveTemplateDescription": "The current proposal data will be saved to your templates list for reuse.",
+    "templateNamePlaceholder": "Template name",
+    "errors": {
+      "loadTemplatesFailed": "Failed to load templates",
+      "saveTemplateFailed": "Failed to save the template. Try again.",
+      "deleteTemplateFailed": "Failed to delete the template. Try again."
+    }
   },
   "settings": {
     "title": "Settings",
@@ -911,7 +1124,31 @@
     "cmdStart": "Main menu",
     "cmdHelp": "Help",
     "cmdDeals": "Deal list",
-    "cmdTasks": "My tasks"
+    "cmdTasks": "My tasks",
+    "openMenu": "Open menu",
+    "searchLabel": "Search",
+    "lightTheme": "Light theme",
+    "darkTheme": "Dark theme",
+    "noReminders": "No reminders",
+    "allUnderControl": "All under control!",
+    "overdueCount": "Overdue ({count})",
+    "upcomingCount": "Upcoming ({count})",
+    "openAllNotifications": "Open all notifications →",
+    "allTasks": "All tasks →",
+    "timelineLink": "Timeline →",
+    "startTyping": "Start typing to search...",
+    "searching": "Searching...",
+    "nothingFound": "Nothing found",
+    "saveChanges": "Save changes",
+    "saveError": "Failed to save",
+    "companyNamePlaceholder": "Company name",
+    "selectPlaceholder": "Select...",
+    "all": "All",
+    "pageOf": "Page {page} of {pages}",
+    "errors": {
+      "loadFailed": "Failed to load",
+      "requestStatus": "Error {status}"
+    }
   },
   "stages": {
     "lead": "Lead",
@@ -1012,6 +1249,33 @@
       "removeStage": "Remove stage",
       "addStage": "+ Add stage",
       "submit": "Create pipeline"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "backToOverview": "Back to overview",
+    "subtitle": "Reminders for the next 24 hours",
+    "markAllReadTitle": "Mark all system notifications as read",
+    "markAllRead": "Mark all as read",
+    "systemNotifications": "System notifications",
+    "markReadTitle": "Mark as read",
+    "unreadLabel": "Unread",
+    "open": "Open",
+    "emptyTitle": "No notifications",
+    "emptyDescription": "Everything is under control!",
+    "overdueBadge": "Overdue",
+    "tabOverdue": "Overdue",
+    "tabUpcoming": "Upcoming",
+    "now": "now",
+    "priority": {
+      "urgent": "Urgent",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "errors": {
+      "remindersLoad": "Reminders: error {status}",
+      "notificationsLoad": "Notifications: error {status}"
     }
   }
 }

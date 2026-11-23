@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
 
 import { QuickSelect } from '@/components/quick-create';
@@ -43,6 +44,8 @@ interface DealFormProps {
 
 export function DealForm({ dealId, initialData }: DealFormProps) {
   const router = useRouter();
+  const t = useTranslations('deals');
+  const tRoot = useTranslations();
   const isEdit = !!dealId;
 
   const [form, setForm] = useState(
@@ -123,7 +126,7 @@ export function DealForm({ dealId, initialData }: DealFormProps) {
       if (!res.ok) throw new Error(data.error);
       router.push(isEdit ? `/dashboard/deals/${dealId}` : '/dashboard/deals');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Помилка');
+      setError(err instanceof Error ? err.message : tRoot('common.error'));
     } finally {
       setLoading(false);
     }
@@ -133,7 +136,7 @@ export function DealForm({ dealId, initialData }: DealFormProps) {
     <div className="max-w-3xl mx-auto">
       <Card>
         <CardHeader>
-          <CardTitle>{isEdit ? 'Редагувати угоду' : 'Нова угода'}</CardTitle>
+          <CardTitle>{isEdit ? t('edit') : t('newDeal')}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -144,18 +147,22 @@ export function DealForm({ dealId, initialData }: DealFormProps) {
             )}
 
             <div className="space-y-2">
-              <label className="text-xs font-medium text-muted-foreground">Назва *</label>
+              <label className="text-xs font-medium text-muted-foreground">
+                {tRoot('common.name')} *
+              </label>
               <Input
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 required
-                placeholder="Оренда офісу"
+                placeholder={t('titlePlaceholder')}
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Воронка *</label>
+                <label className="text-xs font-medium text-muted-foreground">
+                  {t('pipeline')} *
+                </label>
                 <QuickSelect
                   value={form.pipelineId}
                   onChange={(id) => {
@@ -166,7 +173,7 @@ export function DealForm({ dealId, initialData }: DealFormProps) {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Етап *</label>
+                <label className="text-xs font-medium text-muted-foreground">{t('stage')} *</label>
                 <QuickSelect
                   value={form.stageId}
                   onChange={(id) => setForm({ ...form, stageId: id })}
@@ -180,7 +187,7 @@ export function DealForm({ dealId, initialData }: DealFormProps) {
 
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Сума</label>
+                <label className="text-xs font-medium text-muted-foreground">{t('amount')}</label>
                 <Input
                   type="number"
                   value={form.value}
@@ -191,7 +198,9 @@ export function DealForm({ dealId, initialData }: DealFormProps) {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Валюта</label>
+                <label className="text-xs font-medium text-muted-foreground">
+                  {tRoot('documents.currency')}
+                </label>
                 <QuickSelect
                   value={form.currency}
                   onChange={(id) => setForm({ ...form, currency: id })}
@@ -203,7 +212,9 @@ export function DealForm({ dealId, initialData }: DealFormProps) {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Ймовірність (%)</label>
+                <label className="text-xs font-medium text-muted-foreground">
+                  {t('probability')} (%)
+                </label>
                 <Input
                   type="number"
                   value={form.probability}
@@ -216,7 +227,7 @@ export function DealForm({ dealId, initialData }: DealFormProps) {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Контакт</label>
+                <label className="text-xs font-medium text-muted-foreground">{t('contact')}</label>
                 <QuickSelect
                   value={form.contactId}
                   onChange={(id) => {
@@ -228,28 +239,28 @@ export function DealForm({ dealId, initialData }: DealFormProps) {
                     });
                   }}
                   options={[
-                    { id: '', name: '— Без контакту —' },
+                    { id: '', name: t('noContact') },
                     ...contacts.map((c) => ({
                       id: c.id,
                       name: `${c.firstName} ${c.lastName || ''}`.trim(),
                     })),
                   ]}
-                  placeholder="— Без контакту —"
+                  placeholder={t('noContact')}
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Компанія</label>
+                <label className="text-xs font-medium text-muted-foreground">{t('company')}</label>
                 <Input
                   value={form.company}
                   onChange={(e) => setForm({ ...form, company: e.target.value })}
-                  placeholder="Назва компанії"
+                  placeholder={tRoot('common.companyNamePlaceholder')}
                 />
               </div>
             </div>
 
             <div className="space-y-2">
               <label className="text-xs font-medium text-muted-foreground">
-                Очікуване закриття
+                {t('expectedCloseDate')}
               </label>
               <Input
                 type="date"
@@ -261,17 +272,19 @@ export function DealForm({ dealId, initialData }: DealFormProps) {
             {/* Products */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-medium text-muted-foreground">Продукти</label>
+                <label className="text-xs font-medium text-muted-foreground">
+                  {t('productsLabel')}
+                </label>
                 <Button type="button" variant="outline" size="sm" onClick={addProduct}>
-                  + Додати
+                  {t('addProductRow')}
                 </Button>
               </div>
               {form.products.length > 0 && (
                 <div className="space-y-2">
                   <div className="grid grid-cols-12 gap-2 text-xs font-medium text-foreground-muted">
-                    <div className="col-span-5">Назва</div>
-                    <div className="col-span-2">Кількість</div>
-                    <div className="col-span-3">Ціна</div>
+                    <div className="col-span-5">{tRoot('common.name')}</div>
+                    <div className="col-span-2">{t('quantity')}</div>
+                    <div className="col-span-3">{t('price')}</div>
                     <div className="col-span-2"></div>
                   </div>
                   {form.products.map((p, i) => (
@@ -280,7 +293,7 @@ export function DealForm({ dealId, initialData }: DealFormProps) {
                         className="col-span-5"
                         value={p.name}
                         onChange={(e) => updateProduct(i, 'name', e.target.value)}
-                        placeholder="Назва продукту"
+                        placeholder={t('productNamePlaceholder')}
                       />
                       <Input
                         className="col-span-2"
@@ -315,7 +328,9 @@ export function DealForm({ dealId, initialData }: DealFormProps) {
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-medium text-muted-foreground">Нотатки</label>
+              <label className="text-xs font-medium text-muted-foreground">
+                {tRoot('contacts.notes')}
+              </label>
               <textarea
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
@@ -326,10 +341,14 @@ export function DealForm({ dealId, initialData }: DealFormProps) {
 
             <div className="flex gap-3 pt-4">
               <Button type="submit" disabled={loading}>
-                {loading ? 'Збереження...' : isEdit ? 'Зберегти' : 'Створити угоду'}
+                {loading
+                  ? tRoot('contacts.saving')
+                  : isEdit
+                    ? tRoot('common.save')
+                    : t('createDeal')}
               </Button>
               <Button type="button" variant="outline" onClick={() => router.back()}>
-                Скасувати
+                {tRoot('common.cancel')}
               </Button>
             </div>
           </form>

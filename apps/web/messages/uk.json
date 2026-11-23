@@ -16,7 +16,10 @@
     "copilot": "AI Co-Pilot",
     "documents": "Документи",
     "team": "Команда",
-    "tenants": "Організації"
+    "tenants": "Організації",
+    "aiKeys": "AI-ключі",
+    "teamAndTenants": "Команда й тенанти",
+    "securityAudit": "Аудит безпеки"
   },
   "auth": {
     "login": "Увійти",
@@ -286,7 +289,16 @@
     "importErrorsTitle": "Помилки:",
     "importRowError": "Рядок {row}: {error}",
     "importGoToContacts": "Перейти до контактів",
-    "importMore": "Імпортувати ще"
+    "importMore": "Імпортувати ще",
+    "createContact": "Створити контакт",
+    "addTag": "Додати тег",
+    "newTag": "Новий тег",
+    "tagsLoadError": "Не вдалося завантажити теги — контакт можна зберегти без них",
+    "firstNamePlaceholder": "Олександр",
+    "lastNamePlaceholder": "Петренко",
+    "positionPlaceholder": "Менеджер з продажу",
+    "sourcePlaceholder": "Сайт, рекомендація, тощо",
+    "notesPlaceholder": "Додаткова інформація про контакт..."
   },
   "deals": {
     "title": "Угоди",
@@ -381,7 +393,12 @@
     "stageNumber": "Етап {number}",
     "addStage": "+ Додати етап",
     "creating": "Створення...",
-    "confirmDeletePipeline": "Видалити воронку \"{name}\"?"
+    "confirmDeletePipeline": "Видалити воронку \"{name}\"?",
+    "titlePlaceholder": "Оренда офісу",
+    "productsLabel": "Продукти",
+    "addProductRow": "+ Додати",
+    "productNamePlaceholder": "Назва продукту",
+    "noContact": "— Без контакту —"
   },
   "tasks": {
     "title": "Задачі",
@@ -441,7 +458,17 @@
     "deleteTask": "Видалити задачу",
     "confirmDelete": "Видалити задачу?",
     "noTasks": "Немає задач",
-    "pageOf": "Сторінка {page} з {pages}"
+    "pageOf": "Сторінка {page} з {pages}",
+    "titlePlaceholder": "Зателефонувати клієнту",
+    "followUp": "Фоллов-ап",
+    "unassigned": "Не призначено",
+    "recurringTask": "Повторювана задача",
+    "recurrenceRule": "Правило повторення",
+    "recurrenceDaily": "Щодня",
+    "recurrenceWeekly": "Щотижня",
+    "recurrenceBiweekly": "Кожні 2 тижні",
+    "recurrenceMonthly": "Щомісяця",
+    "recurrenceQuarterly": "Щокварталу"
   },
   "messages": {
     "title": "Повідомлення",
@@ -449,7 +476,34 @@
     "compose": "Написати",
     "inbox": "Вхідні",
     "sent": "Надіслані",
-    "drafts": "Чернетки"
+    "drafts": "Чернетки",
+    "noContact": "Без контакту",
+    "noMessages": "Немає повідомлень",
+    "youPrefix": "Ви:",
+    "notSent": "Не надіслано",
+    "loadChatsError": "Не вдалося завантажити чати",
+    "loadMessagesError": "Не вдалося завантажити повідомлення",
+    "sendError": "Не вдалося надіслати повідомлення",
+    "aiEmptyError": "AI повернув порожню відповідь",
+    "aiDraftError": "Не вдалося згенерувати AI-чернетку",
+    "searchPlaceholder": "Пошук за ім'ям…",
+    "searchChatsLabel": "Пошук чатів",
+    "retry": "Повторити",
+    "notFound": "Нічого не знайдено",
+    "noChats": "Чатів поки немає",
+    "notFoundDescription": "Спробуйте змінити пошуковий запит або фільтр каналу.",
+    "noChatsDescription": "Тут з'являться ваші розмови з клієнтами через Telegram та WhatsApp після підключення месенджерів.",
+    "selectChatTitle": "Оберіть чат",
+    "selectChatDescription": "Ліворуч список розмов з клієнтами — натисніть, щоб побачити історію та відповісти.",
+    "backToList": "Назад до списку",
+    "noMessagesYet": "Повідомлень ще немає",
+    "noMessagesDescription": "Напишіть перше повідомлення клієнту або зачекайте на його відповідь.",
+    "aiHint": "AI-чернетку вставлено у вікно введення — відредагуйте перед відправленням.",
+    "closeHintLabel": "Закрити підказку",
+    "composerPlaceholder": "Написати повідомлення… (Enter — надіслати, Shift+Enter — новий рядок)",
+    "messageLabel": "Текст повідомлення",
+    "aiDraft": "AI-чернетка",
+    "send": "Надіслати"
   },
   "analytics": {
     "title": "Аналітика",
@@ -467,7 +521,25 @@
     "funnel": "Воронка",
     "activities": "Активності",
     "topManagers": "Топ менеджери",
-    "forecast": "Прогноз"
+    "forecast": "Прогноз",
+    "subtitle": "Динаміка та статистика CRM",
+    "periodDays7": "За 7 днів",
+    "periodDays30": "За 30 днів",
+    "periodDays90": "За 90 днів",
+    "periodYear": "За рік",
+    "wonOfTotal": "{won} виграних з {total}",
+    "totalRevenue": "Загальна виручка",
+    "fromWonDeals": "Від виграних угод",
+    "basedOnAverageDeal": "На основі середньої угоди",
+    "activeDeals": "Активні угоди",
+    "inWorkPipeline": "У робочій воронці",
+    "revenueByMonth": "Виручка по місяцях",
+    "activitiesByPeriod": "Активності за період",
+    "dealsCount": "{count} угод",
+    "errors": {
+      "requestFailed": "Помилка {status}",
+      "loadFailed": "Помилка завантаження"
+    }
   },
   "timeline": {
     "title": "Хронологія",
@@ -477,7 +549,23 @@
     "emails": "Листи",
     "meetings": "Зустрічі",
     "tasks": "Задачі",
-    "notes": "Нотатки"
+    "notes": "Нотатки",
+    "pageTitle": "Таймлайн",
+    "activityTitle": "Активність",
+    "historyCount": "Історія всіх активностей · {count} подій",
+    "eventsCount": "{count} подій",
+    "justNow": "щойно",
+    "noActivities": "Немає активностей",
+    "allTypes": "Всі типи",
+    "viewContact": "Переглянути контакт",
+    "activityTypes": {
+      "call": "Дзвінок",
+      "email": "Лист",
+      "meeting": "Зустріч",
+      "task": "Задача",
+      "note": "Нотатка",
+      "sms": "SMS"
+    }
   },
   "automation": {
     "title": "Автоматизація",
@@ -491,7 +579,61 @@
     "rules": "Правила",
     "noRules": "Немає правил",
     "createFirst": "Створіть перше правило",
-    "presets": "Шаблони правил"
+    "presets": "Шаблони правил",
+    "subtitle": "Правила автоматичних дій при зміні етапів угод",
+    "searchPlaceholder": "Пошук правил...",
+    "searchLabel": "Пошук правил",
+    "newRule": "Нове правило",
+    "confirmDelete": "Видалити правило?",
+    "emptyTitle": "Немає правил автоматизації",
+    "emptyDescription": "Створіть перше правило для автоматичних дій",
+    "notFoundTitle": "Нічого не знайдено",
+    "notFoundDescription": "За запитом «{query}» правил немає",
+    "ruleActionsLabel": "Дії з правилом",
+    "enableRule": "Увімкнути правило",
+    "disableRule": "Вимкнути правило",
+    "enable": "Увімкнути",
+    "errors": {
+      "requestFailed": "Помилка {status}",
+      "loadFailed": "Помилка завантаження"
+    },
+    "examples": {
+      "stageChangeNotify": {
+        "name": "Сповіщення при зміні етапу",
+        "desc": "Надіслати Telegram/WhatsApp при переміщенні угоди"
+      },
+      "wonDealTask": {
+        "name": "Задача після виграної угоди",
+        "desc": "Створити задачу \"Підготувати договір\" при виграній угоді"
+      },
+      "autoPriority": {
+        "name": "Автоматичне встановлення пріоритету",
+        "desc": "Встановити пріоритет \"високий\" для великих угод"
+      },
+      "lostDealNotify": {
+        "name": "Сповіщення при втраченій угоді",
+        "desc": "Повідомити команду про втрачену угоду"
+      }
+    },
+    "logs": {
+      "title": "Логи автоматизації",
+      "description": "Історія виконання автоматичних правил",
+      "cleanup": "Очистити старі",
+      "cleanupConfirm": "Видалити логи старіші за 30 днів?",
+      "cleanupError": "Не вдалося очистити логи. Спробуйте ще раз.",
+      "unknown": "Невідомо",
+      "triggerStageChange": "Зміна стадії",
+      "triggerDealWon": "Виграш угоди",
+      "triggerDealLost": "Програш угоди",
+      "triggerDealCreatedTimer": "Таймер створення",
+      "triggerManual": "Ручне виконання",
+      "allResults": "Всі результати",
+      "successful": "Успішні",
+      "errorsFilter": "Помилки",
+      "found": "Знайдено: {count}",
+      "empty": "Немає логів виконання",
+      "loadMore": "Завантажити ще"
+    }
   },
   "copilot": {
     "title": "AI Co-Pilot",
@@ -506,7 +648,56 @@
     "result": "Результат",
     "copy": "Копіювати",
     "about": "Про AI Co-Pilot",
-    "aboutText": "AI Co-Pilot використовує Ollama для локальної генерації тексту. Потрібно встановити Ollama та модель."
+    "aboutText": "AI Co-Pilot використовує Ollama для локальної генерації тексту. Потрібно встановити Ollama та модель.",
+    "thinking": {
+      "step1": "Шукаю дані в CRM…",
+      "step2": "Аналізую дані CRM…",
+      "step3": "Формулюю відповідь…"
+    },
+    "starter": {
+      "q1": "Як справи з продажами?",
+      "q2": "Які угоди під ризиком?",
+      "q3": "Кому подзвонити сьогодні?",
+      "q4": "Підсумок за тиждень"
+    },
+    "deleteChatConfirm": "Видалити цю розмову?",
+    "deleteChatLabel": "Видалити розмову",
+    "responseReceived": "Відповідь отримана",
+    "generationError": "Помилка генерації",
+    "aiConnectionError": "Помилка з'єднання з AI. Перевірте підключення.",
+    "connectTitle": "Підключіть AI",
+    "connectDescription": "Оберіть провайдера та введіть API-ключ. Це займає 30 секунд.",
+    "getKey": "Отримати API-ключ {name}",
+    "allProviderSettings": "Усі налаштування AI-провайдерів →",
+    "aiConnected": "✅ AI підключено",
+    "newChat": "Нова розмова",
+    "noChats": "Поки що немає розмов",
+    "emptyTitle": "Як я можу допомогти?",
+    "emptyDescription": "Задайте питання про ваші контакти, угоди або завдання. Я проаналізую дані та допоможу.",
+    "basedOn": "На основі:",
+    "attachFile": "Прикріпити файл",
+    "inputPlaceholder": "Напишіть повідомлення...",
+    "inputPlaceholderLoading": "AI відповідає — зачекайте…",
+    "send": "Надіслати",
+    "aiDisclaimer": "AI може помилятися. Перевіряйте важливу інформацію.",
+    "errors": {
+      "requestFailed": "Помилка {status}",
+      "loadFailed": "Помилка завантаження"
+    },
+    "logs": {
+      "title": "Логи AI-запитів",
+      "filters": "Фільтри:",
+      "allProviders": "Всі провайдери",
+      "statusSuccess": "Успішно",
+      "statusRateLimited": "Ліміт",
+      "statusTimeout": "Тайм-аут",
+      "columnTime": "Час",
+      "columnProvider": "Провайдер",
+      "columnDuration": "Тривалість",
+      "columnRequest": "Запит",
+      "noLogs": "Немає логів",
+      "pagination": "{total} записів, сторінка {page} з {pages}"
+    }
   },
   "documents": {
     "title": "Документи",
@@ -525,7 +716,29 @@
     "notes": "Примітки",
     "preview": "Попередній перегляд",
     "hidePreview": "Приховати попередній перегляд",
-    "downloadPdf": "Завантажити PDF"
+    "downloadPdf": "Завантажити PDF",
+    "created": "Створено",
+    "deleteTemplateLabel": "Видалити шаблон {name}",
+    "confirmDeleteTemplate": "Видалити шаблон?",
+    "tryAgain": "Спробувати ще раз",
+    "templates": "Шаблони",
+    "gridView": "Сітка",
+    "tableView": "Таблиця",
+    "loadTemplateTitle": "Завантажити шаблон",
+    "noTemplates": "Немає шаблонів",
+    "titlePlaceholder": "Назва послуги/проєкту",
+    "companyPlaceholder": "Назва компанії",
+    "descriptionPlaceholder": "Опис послуги або проєкту",
+    "removeItemLabel": "Видалити позицію",
+    "notesPlaceholder": "Додаткові умови, оплата, гарантія...",
+    "saveAsTemplate": "Зберегти як шаблон",
+    "saveTemplateDescription": "Поточні дані КП збережуться у список шаблонів для повторного використання.",
+    "templateNamePlaceholder": "Назва шаблону",
+    "errors": {
+      "loadTemplatesFailed": "Помилка завантаження шаблонів",
+      "saveTemplateFailed": "Не вдалося зберегти шаблон. Спробуйте ще раз.",
+      "deleteTemplateFailed": "Не вдалося видалити шаблон. Спробуйте ще раз."
+    }
   },
   "settings": {
     "title": "Налаштування",
@@ -911,7 +1124,31 @@
     "cmdStart": "Головне меню",
     "cmdHelp": "Довідка",
     "cmdDeals": "Список угод",
-    "cmdTasks": "Мої задачі"
+    "cmdTasks": "Мої задачі",
+    "openMenu": "Відкрити меню",
+    "searchLabel": "Пошук",
+    "lightTheme": "Світла тема",
+    "darkTheme": "Темна тема",
+    "noReminders": "Немає нагадувань",
+    "allUnderControl": "Все під контролем!",
+    "overdueCount": "Протерміновано ({count})",
+    "upcomingCount": "Найближчі ({count})",
+    "openAllNotifications": "Відкрити всі сповіщення →",
+    "allTasks": "Всі задачі →",
+    "timelineLink": "Таймлайн →",
+    "startTyping": "Почніть вводити для пошуку...",
+    "searching": "Шукаю...",
+    "nothingFound": "Нічого не знайдено",
+    "saveChanges": "Зберегти зміни",
+    "saveError": "Помилка збереження",
+    "companyNamePlaceholder": "Назва компанії",
+    "selectPlaceholder": "Оберіть...",
+    "all": "Усі",
+    "pageOf": "Сторінка {page} з {pages}",
+    "errors": {
+      "loadFailed": "Помилка завантаження",
+      "requestStatus": "Помилка {status}"
+    }
   },
   "stages": {
     "lead": "Лід",
@@ -1012,6 +1249,33 @@
       "removeStage": "Видалити етап",
       "addStage": "+ Додати етап",
       "submit": "Створити воронку"
+    }
+  },
+  "notifications": {
+    "title": "Сповіщення",
+    "backToOverview": "До огляду",
+    "subtitle": "Нагадування за найближчі 24 години",
+    "markAllReadTitle": "Позначити всі системні сповіщення прочитаними",
+    "markAllRead": "Позначити всі прочитаними",
+    "systemNotifications": "Системні сповіщення",
+    "markReadTitle": "Позначити прочитаним",
+    "unreadLabel": "Непрочитане",
+    "open": "Відкрити",
+    "emptyTitle": "Немає сповіщень",
+    "emptyDescription": "Все під контролем!",
+    "overdueBadge": "Протерміновано",
+    "tabOverdue": "Протерміновані",
+    "tabUpcoming": "Найближчі",
+    "now": "зараз",
+    "priority": {
+      "urgent": "Терміново",
+      "high": "Високий",
+      "medium": "Середній",
+      "low": "Низький"
+    },
+    "errors": {
+      "remindersLoad": "Нагадування: помилка {status}",
+      "notificationsLoad": "Сповіщення: помилка {status}"
     }
   }
 }

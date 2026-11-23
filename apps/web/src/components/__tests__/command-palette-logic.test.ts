@@ -89,16 +89,16 @@ describe('settingsItemValue', () => {
 
 describe('emptyStateText', () => {
   it('підказка для короткого запиту', () => {
-    expect(emptyStateText('', false, false)).toBe('Почніть вводити для пошуку...');
-    expect(emptyStateText('а', false, false)).toBe('Почніть вводити для пошуку...');
+    expect(emptyStateText('', false, false)).toBe('common.startTyping');
+    expect(emptyStateText('а', false, false)).toBe('common.startTyping');
   });
 
   it('індикатор завантаження для валідного запиту', () => {
-    expect(emptyStateText('ivan', true, false)).toBe('Шукаю...');
+    expect(emptyStateText('ivan', true, false)).toBe('common.searching');
   });
 
   it('порожній стан коли нічого не знайдено', () => {
-    expect(emptyStateText('ivan', false, false)).toBe('Нічого не знайдено');
+    expect(emptyStateText('ivan', false, false)).toBe('common.nothingFound');
   });
 
   it('порожній рядок коли результати є (стан не відображається)', () => {

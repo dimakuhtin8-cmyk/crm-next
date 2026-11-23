@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
 
 import { QuickSelect } from '@/components/quick-create';
@@ -34,6 +35,8 @@ interface TaskFormProps {
 
 export function TaskForm({ taskId, initialData }: TaskFormProps) {
   const router = useRouter();
+  const t = useTranslations('tasks');
+  const tRoot = useTranslations();
   const isEdit = !!taskId;
   const [form, setForm] = useState(
     initialData || {
@@ -86,7 +89,7 @@ export function TaskForm({ taskId, initialData }: TaskFormProps) {
       if (!res.ok) throw new Error(data.error);
       router.push(isEdit ? `/dashboard/tasks/${taskId}` : '/dashboard/tasks');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Помилка');
+      setError(err instanceof Error ? err.message : tRoot('common.error'));
     } finally {
       setLoading(false);
     }
@@ -96,7 +99,7 @@ export function TaskForm({ taskId, initialData }: TaskFormProps) {
     <div className="max-w-2xl mx-auto">
       <Card>
         <CardHeader>
-          <CardTitle>{isEdit ? 'Редагувати задачу' : 'Нова задача'}</CardTitle>
+          <CardTitle>{isEdit ? t('edit') : t('newTask')}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -107,17 +110,21 @@ export function TaskForm({ taskId, initialData }: TaskFormProps) {
             )}
 
             <div className="space-y-2">
-              <label className="text-xs font-medium text-muted-foreground">Назва *</label>
+              <label className="text-xs font-medium text-muted-foreground">
+                {t('titleField')} *
+              </label>
               <Input
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 required
-                placeholder="Зателефонувати клієнту"
+                placeholder={t('titlePlaceholder')}
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-medium text-muted-foreground">Опис</label>
+              <label className="text-xs font-medium text-muted-foreground">
+                {t('description')}
+              </label>
               <textarea
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -128,29 +135,31 @@ export function TaskForm({ taskId, initialData }: TaskFormProps) {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Тип</label>
+                <label className="text-xs font-medium text-muted-foreground">
+                  {tRoot('quickCreate.task.typeLabel')}
+                </label>
                 <QuickSelect
                   value={form.type}
                   onChange={(id) => setForm({ ...form, type: id })}
                   options={[
-                    { id: 'task', name: 'Задача' },
-                    { id: 'call', name: 'Дзвінок' },
-                    { id: 'email', name: 'Лист' },
-                    { id: 'meeting', name: 'Зустріч' },
-                    { id: 'follow_up', name: 'Фоллов-ап' },
+                    { id: 'task', name: tRoot('quickCreate.task.types.task') },
+                    { id: 'call', name: tRoot('quickCreate.task.types.call') },
+                    { id: 'email', name: tRoot('quickCreate.task.types.email') },
+                    { id: 'meeting', name: tRoot('quickCreate.task.types.meeting') },
+                    { id: 'follow_up', name: t('followUp') },
                   ]}
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Пріоритет</label>
+                <label className="text-xs font-medium text-muted-foreground">{t('priority')}</label>
                 <QuickSelect
                   value={form.priority}
                   onChange={(id) => setForm({ ...form, priority: id })}
                   options={[
-                    { id: 'low', name: 'Низький' },
-                    { id: 'medium', name: 'Середній' },
-                    { id: 'high', name: 'Високий' },
-                    { id: 'urgent', name: 'Терміново' },
+                    { id: 'low', name: t('low') },
+                    { id: 'medium', name: t('medium') },
+                    { id: 'high', name: t('high') },
+                    { id: 'urgent', name: t('priorityUrgent') },
                   ]}
                 />
               </div>
@@ -158,35 +167,39 @@ export function TaskForm({ taskId, initialData }: TaskFormProps) {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Статус</label>
+                <label className="text-xs font-medium text-muted-foreground">
+                  {tRoot('common.status')}
+                </label>
                 <QuickSelect
                   value={form.status}
                   onChange={(id) => setForm({ ...form, status: id })}
                   options={[
-                    { id: 'todo', name: 'До виконання' },
-                    { id: 'in_progress', name: 'В роботі' },
-                    { id: 'done', name: 'Готово' },
-                    { id: 'cancelled', name: 'Скасовано' },
+                    { id: 'todo', name: t('todo') },
+                    { id: 'in_progress', name: t('inProgress') },
+                    { id: 'done', name: t('statusDone') },
+                    { id: 'cancelled', name: t('statusCancelled') },
                   ]}
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Відповідальний</label>
+                <label className="text-xs font-medium text-muted-foreground">{t('assignee')}</label>
                 <QuickSelect
                   value={form.assigneeId}
                   onChange={(id) => setForm({ ...form, assigneeId: id })}
                   options={[
-                    { id: '', name: 'Не призначено' },
+                    { id: '', name: t('unassigned') },
                     ...teamMembers.map((m) => ({ id: m.id, name: m.name || m.email || '?' })),
                   ]}
-                  placeholder="Не призначено"
+                  placeholder={t('unassigned')}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Дедлайн</label>
+                <label className="text-xs font-medium text-muted-foreground">
+                  {tRoot('quickCreate.task.dueDateLabel')}
+                </label>
                 <Input
                   type="datetime-local"
                   value={form.dueDate}
@@ -194,7 +207,9 @@ export function TaskForm({ taskId, initialData }: TaskFormProps) {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Нагадування</label>
+                <label className="text-xs font-medium text-muted-foreground">
+                  {t('reminders')}
+                </label>
                 <Input
                   type="datetime-local"
                   value={form.reminderAt}
@@ -212,36 +227,40 @@ export function TaskForm({ taskId, initialData }: TaskFormProps) {
                 className="h-4 w-4 rounded border-border"
               />
               <label htmlFor="recurring" className="text-sm font-medium">
-                Повторювана задача
+                {t('recurringTask')}
               </label>
             </div>
             {form.isRecurring && (
               <div className="space-y-2">
                 <label className="text-xs font-medium text-muted-foreground">
-                  Правило повторення
+                  {t('recurrenceRule')}
                 </label>
                 <QuickSelect
                   value={form.recurrenceRule}
                   onChange={(id) => setForm({ ...form, recurrenceRule: id })}
                   options={[
-                    { id: '', name: 'Оберіть...' },
-                    { id: 'daily', name: 'Щодня' },
-                    { id: 'weekly', name: 'Щотижня' },
-                    { id: 'biweekly', name: 'Кожні 2 тижні' },
-                    { id: 'monthly', name: 'Щомісяця' },
-                    { id: 'quarterly', name: 'Щокварталу' },
+                    { id: '', name: tRoot('common.selectPlaceholder') },
+                    { id: 'daily', name: t('recurrenceDaily') },
+                    { id: 'weekly', name: t('recurrenceWeekly') },
+                    { id: 'biweekly', name: t('recurrenceBiweekly') },
+                    { id: 'monthly', name: t('recurrenceMonthly') },
+                    { id: 'quarterly', name: t('recurrenceQuarterly') },
                   ]}
-                  placeholder="Оберіть..."
+                  placeholder={tRoot('common.selectPlaceholder')}
                 />
               </div>
             )}
 
             <div className="flex gap-3 pt-4">
               <Button type="submit" disabled={loading}>
-                {loading ? 'Збереження...' : isEdit ? 'Зберегти' : 'Створити задачу'}
+                {loading
+                  ? tRoot('contacts.saving')
+                  : isEdit
+                    ? tRoot('common.save')
+                    : t('createTask')}
               </Button>
               <Button type="button" variant="outline" onClick={() => router.back()}>
-                Скасувати
+                {tRoot('common.cancel')}
               </Button>
             </div>
           </form>

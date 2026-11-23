@@ -2,6 +2,7 @@
 
 import { Phone, Mail, Users, CheckSquare, StickyNote, MessageSquare, History } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
 import { DataError } from '@/components/data-error';
@@ -27,45 +28,45 @@ const typeConfig: Record<
     icon: <Phone className="h-4 w-4" />,
     dot: 'bg-info',
     chip: 'border-info/20 bg-info/10 text-info',
-    label: 'Дзвінок',
+    label: 'activityTypes.call',
   },
   email: {
     icon: <Mail className="h-4 w-4" />,
     dot: 'bg-primary',
     chip: 'border-primary/20 bg-primary/10 text-primary',
-    label: 'Лист',
+    label: 'activityTypes.email',
   },
   meeting: {
     icon: <Users className="h-4 w-4" />,
     dot: 'bg-warning',
     chip: 'border-warning/20 bg-warning/10 text-warning',
-    label: 'Зустріч',
+    label: 'activityTypes.meeting',
   },
   task: {
     icon: <CheckSquare className="h-4 w-4" />,
     dot: 'bg-foreground-muted',
     chip: 'border-border bg-secondary text-foreground-muted',
-    label: 'Задача',
+    label: 'activityTypes.task',
   },
   note: {
     icon: <StickyNote className="h-4 w-4" />,
     dot: 'bg-success',
     chip: 'border-success/20 bg-success/10 text-success',
-    label: 'Нотатка',
+    label: 'activityTypes.note',
   },
   sms: {
     icon: <MessageSquare className="h-4 w-4" />,
     dot: 'bg-danger',
     chip: 'border-danger/20 bg-danger/10 text-danger',
-    label: 'SMS',
+    label: 'activityTypes.sms',
   },
 };
 
 /** Відносний час українською (Intl.RelativeTimeFormat), фолбек — коротка дата. */
-function relativeTime(date: string): string {
+function relativeTime(date: string, t: (key: string) => string): string {
   const diffMs = Date.now() - new Date(date).getTime();
   const minutes = Math.floor(diffMs / 60000);
-  if (minutes < 1) return 'щойно';
+  if (minutes < 1) return t('justNow');
   try {
     const rtf = new Intl.RelativeTimeFormat('uk', { numeric: 'auto' });
     if (minutes < 60) return rtf.format(-minutes, 'minute');
@@ -80,6 +81,9 @@ function relativeTime(date: string): string {
 }
 
 export default function TimelinePage() {
+  const t = useTranslations('timeline');
+  const tCommon = useTranslations('common');
+  const tDeals = useTranslations('deals');
   const [activities, setActivities] = useState<Activity[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -98,13 +102,13 @@ export default function TimelinePage() {
       const params = new URLSearchParams({ page: String(page), limit: '50' });
       if (filterType) params.set('type', filterType);
       const res = await fetch(`/api/activity?${params}`);
-      if (!res.ok) throw new Error(`Помилка ${res.status}`);
+      if (!res.ok) throw new Error(tCommon('errors.requestStatus', { status: res.status }));
       const data = await res.json();
       setActivities(data.activities || []);
       setTotal(data.total || 0);
     } catch (err) {
       setActivities([]);
-      setLoadError(err instanceof Error ? err.message : 'Помилка завантаження');
+      setLoadError(err instanceof Error ? err.message : tCommon('errors.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -128,8 +132,8 @@ export default function TimelinePage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Таймлайн</h1>
-          <p className="text-sm text-foreground-muted">Історія всіх активностей · {total} подій</p>
+          <h1 className="text-2xl font-bold">{t('pageTitle')}</h1>
+          <p className="text-sm text-foreground-muted">{t('historyCount', { count: total })}</p>
         </div>
       </div>
 
@@ -142,10 +146,10 @@ export default function TimelinePage() {
         }}
       >
         <TabsList className="h-auto max-w-full justify-start overflow-x-auto">
-          <TabsTrigger value="all">Усі</TabsTrigger>
+          <TabsTrigger value="all">{tCommon('all')}</TabsTrigger>
           {Object.entries(typeConfig).map(([key, cfg]) => (
             <TabsTrigger key={key} value={key}>
-              {cfg.label}
+              {t(cfg.label)}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -164,7 +168,7 @@ export default function TimelinePage() {
         <Card>
           <CardContent className="py-12 text-center">
             <History className="mx-auto mb-4 h-12 w-12 text-foreground-muted" />
-            <p className="text-sm text-foreground-muted">Немає активностей</p>
+            <p className="text-sm text-foreground-muted">{t('noActivities')}</p>
           </CardContent>
         </Card>
       ) : (
@@ -208,7 +212,7 @@ export default function TimelinePage() {
                               </p>
                               <div className="flex shrink-0 items-center gap-1">
                                 <Badge variant="outline" className="px-1.5 py-0 text-2xs">
-                                  {cfg.label}
+                                  {t(cfg.label)}
                                 </Badge>
                                 <Badge
                                   variant={isAi ? 'info' : 'secondary'}
@@ -232,7 +236,7 @@ export default function TimelinePage() {
                                   minute: '2-digit',
                                 })}
                               >
-                                {relativeTime(activity.date)} ·{' '}
+                                {relativeTime(activity.date, t)} ·{' '}
                                 {when.toLocaleTimeString('uk', {
                                   hour: '2-digit',
                                   minute: '2-digit',
@@ -243,7 +247,7 @@ export default function TimelinePage() {
                                   href={`/dashboard/contacts/${activity.contactId}`}
                                   className="text-xs text-primary hover:underline"
                                 >
-                                  Контакт →
+                                  {tDeals('contact')} →
                                 </Link>
                               )}
                             </div>
@@ -268,10 +272,10 @@ export default function TimelinePage() {
             disabled={page <= 1}
             onClick={() => setPage(page - 1)}
           >
-            Назад
+            {tCommon('back')}
           </Button>
           <span className="text-sm text-foreground-muted">
-            Сторінка {page} з {Math.ceil(total / 50)}
+            {tCommon('pageOf', { page, pages: Math.ceil(total / 50) })}
           </span>
           <Button
             variant="outline"
@@ -279,7 +283,7 @@ export default function TimelinePage() {
             disabled={page >= Math.ceil(total / 50)}
             onClick={() => setPage(page + 1)}
           >
-            Далі
+            {tCommon('next')}
           </Button>
         </div>
       )}

@@ -15,6 +15,7 @@ import {
   Sparkles,
   X,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -91,8 +92,8 @@ const POLL_INTERVAL_MS = 5000;
 
 // ============ Helpers ============
 
-function chatTitle(chat: ChatItem): string {
-  if (!chat.contact) return 'Без контакту';
+function chatTitle(chat: ChatItem, t: (key: string) => string): string {
+  if (!chat.contact) return t('noContact');
   return [chat.contact.firstName, chat.contact.lastName].filter(Boolean).join(' ');
 }
 
@@ -112,11 +113,11 @@ function formatDate(iso: string): string {
   });
 }
 
-function previewText(chat: ChatItem): string {
-  if (!chat.lastMessage) return 'Немає повідомлень';
+function previewText(chat: ChatItem, t: (key: string) => string): string {
+  if (!chat.lastMessage) return t('noMessages');
   const prefix =
     chat.lastMessage.senderType === 'USER'
-      ? 'Ви: '
+      ? `${t('youPrefix')} `
       : chat.lastMessage.senderType === 'AI_AGENT'
         ? 'AI: '
         : '';
@@ -126,6 +127,7 @@ function previewText(chat: ChatItem): string {
 // ============ Message bubble ============
 
 function MessageBubble({ message }: { message: MessageItem }) {
+  const t = useTranslations('messages');
   const isMine = message.senderType === 'USER';
 
   return (
@@ -152,7 +154,7 @@ function MessageBubble({ message }: { message: MessageItem }) {
           {isMine && message.status === 'FAILED' && (
             <span className="flex items-center gap-1 text-danger">
               <AlertCircle className="h-4 w-4" />
-              Не надіслано
+              {t('notSent')}
             </span>
           )}
           {isMine && message.status === 'DELIVERED' && <Check className="h-4 w-4" />}
@@ -167,6 +169,8 @@ function MessageBubble({ message }: { message: MessageItem }) {
 // ============ Page ============
 
 export default function MessagesPage() {
+  const t = useTranslations('messages');
+  const tCommon = useTranslations('common');
   // Legacy: позначаємо старі Telegram/WhatsApp чати прочитаними при відвідуванні
   // (бейдж у навігації оновиться наступним тиком).
   useEffect(() => {
@@ -228,7 +232,7 @@ export default function MessagesPage() {
         }
       }
     } catch (err) {
-      setChatsError(err instanceof ApiError ? err.message : 'Не вдалося завантажити чати');
+      setChatsError(err instanceof ApiError ? err.message : t('loadChatsError'));
     } finally {
       setChatsLoaded(true);
     }
@@ -253,9 +257,7 @@ export default function MessagesPage() {
       setMessagesError(null);
     } catch (err) {
       if (!silent) {
-        setMessagesError(
-          err instanceof ApiError ? err.message : 'Не вдалося завантажити повідомлення',
-        );
+        setMessagesError(err instanceof ApiError ? err.message : t('loadMessagesError'));
       }
     } finally {
       if (!silent) setMessagesLoading(false);
@@ -331,7 +333,7 @@ export default function MessagesPage() {
         toast.error(err.message);
         loadChats();
       } else {
-        toast.error('Не вдалося надіслати повідомлення');
+        toast.error(t('sendError'));
       }
     } finally {
       setSending(false);
@@ -341,7 +343,7 @@ export default function MessagesPage() {
   const handleAiDraft = async () => {
     if (!selectedChat || aiLoading) return;
 
-    const customerName = chatTitle(selectedChat);
+    const customerName = chatTitle(selectedChat, t);
     const ordered = [...messages].reverse();
     const context = ordered
       .slice(-8)
@@ -364,13 +366,13 @@ export default function MessagesPage() {
       });
       const text = typeof res.result === 'string' ? res.result.trim() : '';
       if (!text) {
-        toast.error('AI повернув порожню відповідь');
+        toast.error(t('aiEmptyError'));
         return;
       }
       setDraft(text);
       setAiHintVisible(true);
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Не вдалося згенерувати AI-чернетку');
+      toast.error(err instanceof ApiError ? err.message : t('aiDraftError'));
     } finally {
       setAiLoading(false);
     }
@@ -390,8 +392,8 @@ export default function MessagesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Повідомлення</h1>
-          <p className="text-foreground-muted">Спілкування з клієнтами</p>
+          <h1 className="text-2xl font-bold">{t('title')}</h1>
+          <p className="text-foreground-muted">{t('description')}</p>
         </div>
       </div>
 
@@ -406,9 +408,9 @@ export default function MessagesPage() {
               <Input
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Пошук за ім'ям…"
+                placeholder={t('searchPlaceholder')}
                 className="pl-9"
-                aria-label="Пошук чатів"
+                aria-label={t('searchChatsLabel')}
               />
             </div>
 
@@ -417,7 +419,7 @@ export default function MessagesPage() {
               onValueChange={(value) => setChannelFilter(value as ChannelFilter)}
             >
               <TabsList className="h-auto w-full flex-wrap justify-start bg-transparent p-0">
-                <TabsTrigger value="ALL">Усі</TabsTrigger>
+                <TabsTrigger value="ALL">{tCommon('all')}</TabsTrigger>
                 <TabsTrigger value="TELEGRAM">Telegram</TabsTrigger>
                 <TabsTrigger value="WHATSAPP">WhatsApp</TabsTrigger>
                 <TabsTrigger value="EMAIL">Email</TabsTrigger>
@@ -443,24 +445,20 @@ export default function MessagesPage() {
               <div className="space-y-3 p-4 text-center">
                 <p className="text-sm text-danger">{chatsError}</p>
                 <Button variant="outline" size="sm" onClick={loadChats}>
-                  Повторити
+                  {t('retry')}
                 </Button>
               </div>
             ) : chats.length === 0 ? (
               <EmptyState
                 icon={<MessageSquare className="h-8 w-8" />}
-                title={hasChatsFilter ? 'Нічого не знайдено' : 'Чатів поки немає'}
-                description={
-                  hasChatsFilter
-                    ? 'Спробуйте змінити пошуковий запит або фільтр каналу.'
-                    : "Тут з'являться ваші розмови з клієнтами через Telegram та WhatsApp після підключення месенджерів."
-                }
+                title={hasChatsFilter ? t('notFound') : t('noChats')}
+                description={hasChatsFilter ? t('notFoundDescription') : t('noChatsDescription')}
                 className="py-10"
               />
             ) : (
               <ul className="space-y-1">
                 {chats.map((chat) => {
-                  const title = chatTitle(chat);
+                  const title = chatTitle(chat, t);
                   const ChannelIcon = CHANNEL_META[chat.channel].icon;
                   const isSelected = selectedChat?.id === chat.id;
 
@@ -489,7 +487,7 @@ export default function MessagesPage() {
                           </div>
                           <div className="mt-0.5 flex items-center gap-2">
                             <p className="truncate text-sm text-foreground-muted">
-                              {previewText(chat)}
+                              {previewText(chat, t)}
                             </p>
                             {chat.unreadCount > 0 && (
                               <Badge className="ml-auto shrink-0 px-1.5 py-0.5 text-[11px]">
@@ -514,8 +512,8 @@ export default function MessagesPage() {
           {!selectedChat ? (
             <EmptyState
               icon={<MessageSquare className="h-8 w-8" />}
-              title="Оберіть чат"
-              description="Ліворуч список розмов з клієнтами — натисніть, щоб побачити історію та відповісти."
+              title={t('selectChatTitle')}
+              description={t('selectChatDescription')}
               className="my-auto"
             />
           ) : (
@@ -526,14 +524,14 @@ export default function MessagesPage() {
                   type="button"
                   onClick={() => setSelectedChat(null)}
                   className="rounded-md p-1 hover:bg-secondary lg:hidden"
-                  aria-label="Назад до списку"
+                  aria-label={t('backToList')}
                 >
                   <ArrowLeft className="h-4 w-4" />
                 </button>
-                <Avatar name={chatTitle(selectedChat)} size="default" />
+                <Avatar name={chatTitle(selectedChat, t)} size="default" />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="truncate font-semibold">{chatTitle(selectedChat)}</span>
+                    <span className="truncate font-semibold">{chatTitle(selectedChat, t)}</span>
                     <Badge variant="secondary" className="gap-1">
                       {(() => {
                         const Icon = CHANNEL_META[selectedChat.channel].icon;
@@ -572,14 +570,14 @@ export default function MessagesPage() {
                       size="sm"
                       onClick={() => loadMessages(selectedChat.id, false)}
                     >
-                      Повторити
+                      {t('retry')}
                     </Button>
                   </div>
                 ) : orderedMessages.length === 0 ? (
                   <EmptyState
                     icon={<MessageSquare className="h-8 w-8" />}
-                    title="Повідомлень ще немає"
-                    description="Напишіть перше повідомлення клієнту або зачекайте на його відповідь."
+                    title={t('noMessagesYet')}
+                    description={t('noMessagesDescription')}
                     className="py-10"
                   />
                 ) : (
@@ -611,13 +609,11 @@ export default function MessagesPage() {
                 {aiHintVisible && (
                   <div className="flex items-start gap-2 rounded-lg border border-info/40 bg-info-light p-2 text-xs text-info">
                     <Sparkles className="mt-0.5 h-4 w-4 shrink-0" />
-                    <p className="flex-1">
-                      AI-чернетку вставлено у вікно введення — відредагуйте перед відправленням.
-                    </p>
+                    <p className="flex-1">{t('aiHint')}</p>
                     <button
                       type="button"
                       onClick={() => setAiHintVisible(false)}
-                      aria-label="Закрити підказку"
+                      aria-label={t('closeHintLabel')}
                       className="rounded p-0.5 hover:bg-info/10"
                     >
                       <X className="h-4 w-4" />
@@ -629,10 +625,10 @@ export default function MessagesPage() {
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
                   onKeyDown={handleDraftKeyDown}
-                  placeholder="Написати повідомлення… (Enter — надіслати, Shift+Enter — новий рядок)"
+                  placeholder={t('composerPlaceholder')}
                   rows={2}
                   className="min-h-[44px] resize-none"
-                  aria-label="Текст повідомлення"
+                  aria-label={t('messageLabel')}
                 />
 
                 <div className="flex items-center justify-between gap-2">
@@ -648,7 +644,7 @@ export default function MessagesPage() {
                     ) : (
                       <Sparkles className="h-4 w-4" />
                     )}
-                    AI-чернетка
+                    {t('aiDraft')}
                   </Button>
 
                   <Button
@@ -662,7 +658,7 @@ export default function MessagesPage() {
                     ) : (
                       <Send className="h-4 w-4" />
                     )}
-                    Надіслати
+                    {t('send')}
                   </Button>
                 </div>
               </div>

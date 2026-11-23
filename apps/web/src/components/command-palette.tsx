@@ -2,6 +2,7 @@
 
 import { Bot, CheckSquare, Settings, TrendingUp, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
 import {
@@ -28,6 +29,7 @@ export const OPEN_PALETTE_EVENT = 'crm:open-command-palette';
 
 export function CommandPalette() {
   const router = useRouter();
+  const tRoot = useTranslations();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<PaletteSearchResults | null>(null);
@@ -91,17 +93,17 @@ export function CommandPalette() {
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
       <CommandInput
-        placeholder="Пошук контактів, угод, задач..."
+        placeholder={tRoot('dashboard.search')}
         value={query}
         onValueChange={setQuery}
       />
       <CommandList>
-        <CommandEmpty>{emptyText}</CommandEmpty>
+        <CommandEmpty>{emptyText ? tRoot(emptyText) : ''}</CommandEmpty>
 
         {showResults && results && (
           <>
             {results.contacts.length > 0 && (
-              <CommandGroup heading="Контакти">
+              <CommandGroup heading={tRoot('navigation.contacts')}>
                 {results.contacts.map((c) => (
                   <CommandItem
                     key={`c-${c.id}`}
@@ -121,7 +123,7 @@ export function CommandPalette() {
             )}
 
             {results.deals.length > 0 && (
-              <CommandGroup heading="Угоди">
+              <CommandGroup heading={tRoot('navigation.deals')}>
                 {results.deals.map((d) => (
                   <CommandItem
                     key={`d-${d.id}`}
@@ -141,7 +143,7 @@ export function CommandPalette() {
             )}
 
             {results.tasks.length > 0 && (
-              <CommandGroup heading="Задачі">
+              <CommandGroup heading={tRoot('navigation.tasks')}>
                 {results.tasks.map((t) => (
                   <CommandItem
                     key={`t-${t.id}`}
@@ -162,11 +164,11 @@ export function CommandPalette() {
           </>
         )}
 
-        <CommandGroup heading="Налаштування">
+        <CommandGroup heading={tRoot('navigation.settings')}>
           {SETTINGS_ITEMS.map((item) => (
             <CommandItem
               key={item.href}
-              value={settingsItemValue(item)}
+              value={settingsItemValue({ ...item, label: tRoot(item.label) })}
               onSelect={() => go(item.href)}
             >
               {item.href.endsWith('ai-keys') ? (
@@ -174,7 +176,7 @@ export function CommandPalette() {
               ) : (
                 <Settings className="text-foreground-muted" />
               )}
-              <span className="truncate">{item.label}</span>
+              <span className="truncate">{tRoot(item.label)}</span>
             </CommandItem>
           ))}
         </CommandGroup>

@@ -18,18 +18,38 @@ export interface PaletteSearchResults {
   tasks: PaletteEntity[];
 }
 
-/** Статичні пункти групи «Налаштування» (швидка навігація). */
+/**
+ * Статичні пункти групи «Налаштування» (швидка навігація).
+ * label — ключ перекладу next-intl (див. command-palette.tsx: tRoot(item.label)).
+ * keywords — пошукові підказки для cmdk, не відображаються.
+ */
 export const SETTINGS_ITEMS: PaletteNavItem[] = [
-  { label: 'Налаштування', href: '/dashboard/settings', keywords: 'загальні settings' },
-  { label: 'Профіль', href: '/dashboard/settings/profile', keywords: 'акаунт email пароль' },
-  { label: 'AI-ключі', href: '/dashboard/settings/ai-keys', keywords: 'openai ключі провайдер' },
-  { label: 'Telegram-бот', href: '/dashboard/settings/telegram', keywords: 'бот інтеграція' },
+  { label: 'navigation.settings', href: '/dashboard/settings', keywords: 'загальні settings' },
   {
-    label: 'Команда й тенанти',
+    label: 'settings.profile',
+    href: '/dashboard/settings/profile',
+    keywords: 'акаунт email пароль',
+  },
+  {
+    label: 'settings.telegramBotCardTitle',
+    href: '/dashboard/settings/telegram',
+    keywords: 'бот інтеграція',
+  },
+  {
+    label: 'navigation.aiKeys',
+    href: '/dashboard/settings/ai-keys',
+    keywords: 'openai ключі провайдер',
+  },
+  {
+    label: 'navigation.teamAndTenants',
     href: '/dashboard/settings/tenants',
     keywords: 'колеги запрошення роль',
   },
-  { label: 'Аудит безпеки', href: '/dashboard/settings/audit', keywords: 'лог журнал безпека' },
+  {
+    label: 'navigation.securityAudit',
+    href: '/dashboard/settings/audit',
+    keywords: 'лог журнал безпека',
+  },
 ];
 
 /** Нормалізує відповідь /api/search до внутрішнього вигляду. */
@@ -73,11 +93,15 @@ export function settingsItemValue(item: PaletteNavItem): string {
   return `${item.label} ${item.keywords}`;
 }
 
-/** Який текст показувати у порожньому стані списку. */
+/**
+ * Ключ перекладу (next-intl) для порожнього стану списку.
+ * Повертаємо ключ, а не готовий текст: модуль чистий від React,
+ * переклад застосовує command-palette.tsx через tRoot().
+ */
 export function emptyStateText(query: string, loading: boolean, hasResults: boolean): string {
   const q = query.trim();
-  if (q.length < 2) return 'Почніть вводити для пошуку...';
-  if (loading) return 'Шукаю...';
+  if (q.length < 2) return 'common.startTyping';
+  if (loading) return 'common.searching';
   if (hasResults) return '';
-  return 'Нічого не знайдено';
+  return 'common.nothingFound';
 }

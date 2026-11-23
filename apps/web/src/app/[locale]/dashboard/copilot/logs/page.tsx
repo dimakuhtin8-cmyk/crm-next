@@ -2,6 +2,7 @@
 
 import { FileText, Filter, ChevronLeft, ChevronRight, Check, X, Clock } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
 
 import { DataError } from '@/components/data-error';
@@ -27,36 +28,39 @@ interface LogsResponse {
   limit: number;
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  success: {
-    label: 'Успішно',
-    color: 'bg-success/10 text-success',
-    icon: <Check className="w-3 h-3" />,
-  },
-  error: {
-    label: 'Помилка',
-    color: 'bg-danger/10 text-danger',
-    icon: <X className="w-3 h-3" />,
-  },
-  rate_limited: {
-    label: 'Ліміт',
-    color: 'bg-warning/10 text-warning',
-    icon: <Clock className="w-3 h-3" />,
-  },
-  timeout: {
-    label: 'Тайм-аут',
-    color: 'bg-warning/10 text-warning',
-    icon: <Clock className="w-3 h-3" />,
-  },
-};
-
 export default function CopilotLogsPage() {
+  const t = useTranslations('copilot');
+  const tCommon = useTranslations('common');
+  const tRoot = useTranslations();
   const [data, setData] = useState<LogsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [providerFilter, setProviderFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+    success: {
+      label: t('logs.statusSuccess'),
+      color: 'bg-success/10 text-success',
+      icon: <Check className="w-3 h-3" />,
+    },
+    error: {
+      label: tCommon('error'),
+      color: 'bg-danger/10 text-danger',
+      icon: <X className="w-3 h-3" />,
+    },
+    rate_limited: {
+      label: t('logs.statusRateLimited'),
+      color: 'bg-warning/10 text-warning',
+      icon: <Clock className="w-3 h-3" />,
+    },
+    timeout: {
+      label: t('logs.statusTimeout'),
+      color: 'bg-warning/10 text-warning',
+      icon: <Clock className="w-3 h-3" />,
+    },
+  };
 
   const fetchLogs = async () => {
     setLoading(true);
@@ -67,12 +71,12 @@ export default function CopilotLogsPage() {
 
     try {
       const res = await fetch(`/api/ai/logs?${params}`, { credentials: 'include' });
-      if (!res.ok) throw new Error(`Помилка ${res.status}`);
+      if (!res.ok) throw new Error(t('errors.requestFailed', { status: res.status }));
       const json = await res.json();
       setData(json);
     } catch (err) {
       setData(null);
-      setLoadError(err instanceof Error ? err.message : 'Помилка завантаження');
+      setLoadError(err instanceof Error ? err.message : t('errors.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -97,9 +101,9 @@ export default function CopilotLogsPage() {
     <div className="max-w-5xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
         <Link href="/dashboard/copilot" className="text-muted-foreground hover:text-foreground">
-          ← Назад
+          ← {tCommon('back')}
         </Link>
-        <h1 className="text-2xl font-bold">Логи AI-запитів</h1>
+        <h1 className="text-2xl font-bold">{t('logs.title')}</h1>
       </div>
 
       {/* Filters */}
@@ -108,7 +112,7 @@ export default function CopilotLogsPage() {
           <div className="flex flex-wrap gap-3 items-center">
             <div className="flex items-center gap-2">
               <Filter className="w-4 h-4 text-foreground-muted" />
-              <span className="text-sm font-medium">Фільтри:</span>
+              <span className="text-sm font-medium">{t('logs.filters')}</span>
             </div>
 
             <div className="w-44">
@@ -119,13 +123,13 @@ export default function CopilotLogsPage() {
                   setPage(1);
                 }}
                 options={[
-                  { id: '', name: 'Всі провайдери' },
+                  { id: '', name: t('logs.allProviders') },
                   ...AI_PROVIDERS.filter((p) => p.id !== 'custom').map((p) => ({
                     id: p.id,
                     name: p.name,
                   })),
                 ]}
-                placeholder="Всі провайдери"
+                placeholder={t('logs.allProviders')}
               />
             </div>
 
@@ -137,13 +141,13 @@ export default function CopilotLogsPage() {
                   setPage(1);
                 }}
                 options={[
-                  { id: '', name: 'Всі статуси' },
-                  { id: 'success', name: 'Успішно' },
-                  { id: 'error', name: 'Помилка' },
-                  { id: 'rate_limited', name: 'Ліміт' },
-                  { id: 'timeout', name: 'Тайм-аут' },
+                  { id: '', name: tRoot('contacts.allStatuses') },
+                  { id: 'success', name: t('logs.statusSuccess') },
+                  { id: 'error', name: tCommon('error') },
+                  { id: 'rate_limited', name: t('logs.statusRateLimited') },
+                  { id: 'timeout', name: t('logs.statusTimeout') },
                 ]}
-                placeholder="Всі статуси"
+                placeholder={tRoot('contacts.allStatuses')}
               />
             </div>
 
@@ -157,7 +161,7 @@ export default function CopilotLogsPage() {
                   setPage(1);
                 }}
               >
-                Скинути
+                {tRoot('tasks.reset')}
               </Button>
             )}
           </div>
@@ -178,22 +182,22 @@ export default function CopilotLogsPage() {
               <thead>
                 <tr className="border-b border-border">
                   <th className="text-left px-4 py-3 text-xs font-medium text-foreground-muted">
-                    Час
+                    {t('logs.columnTime')}
                   </th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-foreground-muted">
-                    Провайдер
+                    {t('logs.columnProvider')}
                   </th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-foreground-muted">
-                    Модель
+                    {tRoot('settings.modelLabel')}
                   </th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-foreground-muted">
-                    Статус
+                    {tCommon('status')}
                   </th>
                   <th className="text-right px-4 py-3 text-xs font-medium text-foreground-muted">
-                    Тривалість
+                    {t('logs.columnDuration')}
                   </th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-foreground-muted">
-                    Запит
+                    {t('logs.columnRequest')}
                   </th>
                 </tr>
               </thead>
@@ -243,7 +247,7 @@ export default function CopilotLogsPage() {
           ) : (
             <div className="p-5 text-center">
               <FileText className="w-10 h-10 mx-auto text-foreground-muted/40 mb-3" />
-              <p className="text-sm text-foreground-muted">Немає логів</p>
+              <p className="text-sm text-foreground-muted">{t('logs.noLogs')}</p>
             </div>
           )}
         </CardContent>
@@ -253,7 +257,7 @@ export default function CopilotLogsPage() {
       {data && data.total > data.limit && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-foreground-muted">
-            {data.total} записів, сторінка {data.page} з {totalPages}
+            {t('logs.pagination', { total: data.total, page: data.page, pages: totalPages })}
           </p>
           <div className="flex gap-2">
             <Button

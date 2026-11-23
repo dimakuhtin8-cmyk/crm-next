@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
 import { DataError } from '@/components/data-error';
@@ -27,6 +28,8 @@ const typeConfig: Record<string, { icon: string; color: string }> = {
 };
 
 export default function ActivityPage() {
+  const t = useTranslations('timeline');
+  const tCommon = useTranslations('common');
   const [activities, setActivities] = useState<Activity[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -45,13 +48,13 @@ export default function ActivityPage() {
       const params = new URLSearchParams({ page: String(page), limit: '50' });
       if (filterType) params.set('type', filterType);
       const res = await fetch(`/api/activity?${params}`);
-      if (!res.ok) throw new Error(`Помилка ${res.status}`);
+      if (!res.ok) throw new Error(tCommon('errors.requestStatus', { status: res.status }));
       const data = await res.json();
       setActivities(data.activities || []);
       setTotal(data.total || 0);
     } catch (err) {
       setActivities([]);
-      setLoadError(err instanceof Error ? err.message : 'Помилка завантаження');
+      setLoadError(err instanceof Error ? err.message : tCommon('errors.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -73,8 +76,8 @@ export default function ActivityPage() {
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Активність</h1>
-          <p className="text-foreground-muted">{total} подій</p>
+          <h1 className="text-2xl font-bold">{t('activityTitle')}</h1>
+          <p className="text-foreground-muted">{t('eventsCount', { count: total })}</p>
         </div>
         <div className="flex gap-2">
           <div className="w-44">
@@ -85,15 +88,15 @@ export default function ActivityPage() {
                 setPage(1);
               }}
               options={[
-                { id: '', name: 'Всі типи' },
-                { id: 'call', name: 'Дзвінки' },
-                { id: 'email', name: 'Листи' },
-                { id: 'meeting', name: 'Зустрічі' },
-                { id: 'task', name: 'Задачі' },
-                { id: 'note', name: 'Нотатки' },
+                { id: '', name: t('allTypes') },
+                { id: 'call', name: t('calls') },
+                { id: 'email', name: t('emails') },
+                { id: 'meeting', name: t('meetings') },
+                { id: 'task', name: t('tasks') },
+                { id: 'note', name: t('notes') },
                 { id: 'sms', name: 'SMS' },
               ]}
-              placeholder="Всі типи"
+              placeholder={t('allTypes')}
             />
           </div>
         </div>
@@ -110,7 +113,7 @@ export default function ActivityPage() {
       ) : Object.keys(grouped).length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
-            <p className="text-foreground-muted">Немає активностей</p>
+            <p className="text-foreground-muted">{t('noActivities')}</p>
           </CardContent>
         </Card>
       ) : (
@@ -155,7 +158,7 @@ export default function ActivityPage() {
                               href={`/dashboard/contacts/${activity.contactId}`}
                               className="text-xs text-primary hover:underline"
                             >
-                              Переглянути контакт →
+                              {t('viewContact')} →
                             </Link>
                           )}
                         </div>
@@ -177,10 +180,10 @@ export default function ActivityPage() {
             disabled={page <= 1}
             onClick={() => setPage(page - 1)}
           >
-            Назад
+            {tCommon('back')}
           </Button>
           <span className="text-sm text-foreground-muted">
-            Сторінка {page} з {Math.ceil(total / 50)}
+            {tCommon('pageOf', { page, pages: Math.ceil(total / 50) })}
           </span>
           <Button
             variant="outline"
@@ -188,7 +191,7 @@ export default function ActivityPage() {
             disabled={page >= Math.ceil(total / 50)}
             onClick={() => setPage(page + 1)}
           >
-            Далі
+            {tCommon('next')}
           </Button>
         </div>
       )}

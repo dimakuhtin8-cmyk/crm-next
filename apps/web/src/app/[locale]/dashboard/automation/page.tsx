@@ -1,6 +1,7 @@
 'use client';
 
 import { Ellipsis, Plus, Power, Search, Trash2, Workflow } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 
 import { QuickCreatePopover, QuickRuleForm } from '@/components/quick-create';
@@ -34,23 +35,26 @@ interface AutomationRule {
   createdAt: string;
 }
 
-const triggerLabels: Record<string, string> = {
-  stage_change: 'Зміна етапу',
-  deal_created: 'Створення угоди',
-  deal_won: 'Угода виграна',
-  deal_lost: 'Угода втрачена',
-  timer: 'Таймер',
-};
-
-const actionLabels: Record<string, string> = {
-  set_field: 'Встановити поле',
-  create_task: 'Створити задачу',
-  send_notification: 'Надіслати сповіщення',
-  move_deal: 'Перемістити угоду',
-  send_message: 'Надіслати повідомлення',
-};
-
 export default function AutomationPage() {
+  const t = useTranslations('automation');
+  const tCommon = useTranslations('common');
+  const tRoot = useTranslations();
+  const triggerLabels: Record<string, string> = {
+    stage_change: tRoot('quickCreate.triggers.stage_change'),
+    deal_created: tRoot('quickCreate.triggers.deal_created'),
+    deal_won: tRoot('quickCreate.triggers.deal_won'),
+    deal_lost: tRoot('quickCreate.triggers.deal_lost'),
+    timer: tRoot('quickCreate.triggers.timer'),
+  };
+
+  const actionLabels: Record<string, string> = {
+    set_field: tRoot('quickCreate.ruleActions.set_field'),
+    create_task: tRoot('quickCreate.ruleActions.create_task'),
+    send_notification: tRoot('quickCreate.ruleActions.send_notification'),
+    move_deal: tRoot('quickCreate.ruleActions.move_deal'),
+    send_message: tRoot('quickCreate.ruleActions.send_message'),
+  };
+
   const [rules, setRules] = useState<AutomationRule[]>([]);
   const [loading, setLoading] = useState(true);
   // Клієнтський пошук за ТЗ (виключно UI: фільтрує вже завантажений список,
@@ -104,7 +108,7 @@ export default function AutomationPage() {
   };
 
   const deleteRule = async (ruleId: string) => {
-    if (!confirm('Видалити правило?')) return;
+    if (!confirm(t('confirmDelete'))) return;
     await fetch(`/api/automation/rules?ruleId=${ruleId}`, { method: 'DELETE' });
     fetchRules();
   };
@@ -125,8 +129,8 @@ export default function AutomationPage() {
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Автоматизація</h1>
-          <p className="text-foreground-muted">Правила автоматичних дій при зміні етапів угод</p>
+          <h1 className="text-2xl font-bold">{t('title')}</h1>
+          <p className="text-foreground-muted">{t('subtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative w-56">
@@ -134,8 +138,8 @@ export default function AutomationPage() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Пошук правил..."
-              aria-label="Пошук правил"
+              placeholder={t('searchPlaceholder')}
+              aria-label={t('searchLabel')}
               className="pl-9"
             />
           </div>
@@ -147,7 +151,7 @@ export default function AutomationPage() {
             }}
           >
             <Plus className="h-4 w-4" />
-            Нове правило
+            {t('newRule')}
           </Button>
         </div>
         <QuickCreatePopover
@@ -157,7 +161,7 @@ export default function AutomationPage() {
             setQuickOpen(false);
             setRulePreset(null);
           }}
-          title="Нове правило"
+          title={t('newRule')}
         >
           <QuickRuleForm
             key={rulePreset ? rulePreset.name : 'blank'}
@@ -179,8 +183,8 @@ export default function AutomationPage() {
           <CardContent className="p-0">
             <EmptyState
               icon={<Workflow className="h-12 w-12" strokeWidth={1.5} />}
-              title="Немає правил автоматизації"
-              description="Створіть перше правило для автоматичних дій"
+              title={t('emptyTitle')}
+              description={t('emptyDescription')}
             />
           </CardContent>
         </Card>
@@ -189,8 +193,8 @@ export default function AutomationPage() {
           <CardContent className="p-0">
             <EmptyState
               icon={<Search className="h-12 w-12" strokeWidth={1.5} />}
-              title="Нічого не знайдено"
-              description={`За запитом «${search.trim()}» правил немає`}
+              title={t('notFoundTitle')}
+              description={t('notFoundDescription', { query: search.trim() })}
             />
           </CardContent>
         </Card>
@@ -203,7 +207,7 @@ export default function AutomationPage() {
                   <Switch
                     checked={rule.enabled}
                     onCheckedChange={() => toggleRule(rule.id, rule.enabled)}
-                    aria-label={rule.enabled ? 'Вимкнути правило' : 'Увімкнути правило'}
+                    aria-label={rule.enabled ? t('disableRule') : t('enableRule')}
                   />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm">{rule.name}</p>
@@ -229,7 +233,7 @@ export default function AutomationPage() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 shrink-0 text-foreground-muted"
-                        aria-label="Дії з правилом"
+                        aria-label={t('ruleActionsLabel')}
                       >
                         <Ellipsis className="h-4 w-4" />
                       </Button>
@@ -237,14 +241,14 @@ export default function AutomationPage() {
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => toggleRule(rule.id, rule.enabled)}>
                         <Power className="h-4 w-4" />
-                        {rule.enabled ? 'Вимкнути' : 'Увімкнути'}
+                        {rule.enabled ? tRoot('settings.disableButton') : t('enable')}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => deleteRule(rule.id)}
                         className="text-danger focus:text-danger"
                       >
                         <Trash2 className="h-4 w-4" />
-                        Видалити
+                        {tCommon('delete')}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -258,34 +262,34 @@ export default function AutomationPage() {
       {/* Preset rules */}
       <Card className="shadow-sm">
         <CardHeader className="border-b border-border">
-          <CardTitle>Шаблони правил</CardTitle>
+          <CardTitle>{t('presets')}</CardTitle>
         </CardHeader>
         <CardContent className="p-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
               {
-                name: 'Сповіщення при зміні етапу',
+                name: t('examples.stageChangeNotify.name'),
                 trigger: 'stage_change',
                 action: 'send_notification',
-                desc: 'Надіслати Telegram/WhatsApp при переміщенні угоди',
+                desc: t('examples.stageChangeNotify.desc'),
               },
               {
-                name: 'Задача після виграної угоди',
+                name: t('examples.wonDealTask.name'),
                 trigger: 'deal_won',
                 action: 'create_task',
-                desc: 'Створити задачу "Підготувати договір" при виграній угоді',
+                desc: t('examples.wonDealTask.desc'),
               },
               {
-                name: 'Автоматичне встановлення пріоритету',
+                name: t('examples.autoPriority.name'),
                 trigger: 'deal_created',
                 action: 'set_field',
-                desc: 'Встановити пріоритет "високий" для великих угод',
+                desc: t('examples.autoPriority.desc'),
               },
               {
-                name: 'Сповіщення при втраченій угоді',
+                name: t('examples.lostDealNotify.name'),
                 trigger: 'deal_lost',
                 action: 'send_notification',
-                desc: 'Повідомити команду про втрачену угоду',
+                desc: t('examples.lostDealNotify.desc'),
               },
             ].map((preset) => (
               <Card

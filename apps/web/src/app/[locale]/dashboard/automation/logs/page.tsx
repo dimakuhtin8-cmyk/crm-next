@@ -18,6 +18,7 @@ import {
   AlertTriangle,
   Filter,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
 
 import { DataError } from '@/components/data-error';
@@ -36,6 +37,9 @@ interface AutomationLog {
 }
 
 export default function AutomationLogsPage() {
+  const t = useTranslations('automation');
+  const tCommon = useTranslations('common');
+  const tRoot = useTranslations();
   const [logs, setLogs] = useState<AutomationLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -56,7 +60,7 @@ export default function AutomationLogsPage() {
       if (resultFilter !== 'all') params.set('result', resultFilter);
 
       const res = await fetch(`/api/automation/logs?${params}`);
-      if (!res.ok) throw new Error(`Помилка ${res.status}`);
+      if (!res.ok) throw new Error(t('errors.requestFailed', { status: res.status }));
       const data = await res.json();
       // API возвращает { logs, total, limit, offset } без обёртки data
       const payload = data.data ?? data;
@@ -64,21 +68,21 @@ export default function AutomationLogsPage() {
       setTotal(payload.total ?? 0);
     } catch (err) {
       setLogs([]);
-      setLoadError(err instanceof Error ? err.message : 'Помилка завантаження');
+      setLoadError(err instanceof Error ? err.message : t('errors.loadFailed'));
     } finally {
       setLoading(false);
     }
   };
 
   const handleCleanup = async () => {
-    if (!confirm('Видалити логи старіші за 30 днів?')) return;
+    if (!confirm(t('logs.cleanupConfirm'))) return;
 
     try {
       const res = await fetch('/api/automation/logs?olderThan=30', { method: 'DELETE' });
-      if (!res.ok) throw new Error(`Помилка ${res.status}`);
+      if (!res.ok) throw new Error(t('errors.requestFailed', { status: res.status }));
       fetchLogs();
     } catch {
-      alert('Не вдалося очистити логи. Спробуйте ще раз.');
+      alert(t('logs.cleanupError'));
     }
   };
 
@@ -96,28 +100,28 @@ export default function AutomationLogsPage() {
   const getResultBadge = (result: string) => {
     switch (result) {
       case 'success':
-        return <Badge variant="success">Успіх</Badge>;
+        return <Badge variant="success">{tCommon('success')}</Badge>;
       case 'error':
-        return <Badge variant="danger">Помилка</Badge>;
+        return <Badge variant="danger">{tCommon('error')}</Badge>;
       default:
-        return <Badge variant="warning">Невідомо</Badge>;
+        return <Badge variant="warning">{t('logs.unknown')}</Badge>;
     }
   };
 
   const getTriggerLabel = (trigger: string) => {
     switch (trigger) {
       case 'stage_change':
-        return 'Зміна стадії';
+        return t('logs.triggerStageChange');
       case 'deal_created':
-        return 'Створення угоди';
+        return tRoot('quickCreate.triggers.deal_created');
       case 'deal_won':
-        return 'Виграш угоди';
+        return t('logs.triggerDealWon');
       case 'deal_lost':
-        return 'Програш угоди';
+        return t('logs.triggerDealLost');
       case 'deal_created_timer':
-        return 'Таймер створення';
+        return t('logs.triggerDealCreatedTimer');
       case 'manual':
-        return 'Ручне виконання';
+        return t('logs.triggerManual');
       default:
         return trigger;
     }
@@ -126,13 +130,13 @@ export default function AutomationLogsPage() {
   const getActionLabel = (action: string) => {
     switch (action) {
       case 'send_notification':
-        return 'Надіслати сповіщення';
+        return tRoot('quickCreate.ruleActions.send_notification');
       case 'create_task':
-        return 'Створити задачу';
+        return tRoot('quickCreate.ruleActions.create_task');
       case 'set_field':
-        return 'Встановити поле';
+        return tRoot('quickCreate.ruleActions.set_field');
       case 'move_deal':
-        return 'Перемістити угоду';
+        return tRoot('quickCreate.ruleActions.move_deal');
       default:
         return action;
     }
@@ -153,19 +157,17 @@ export default function AutomationLogsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Логи автоматизації</h1>
-          <p className="text-foreground-muted text-sm mt-1">
-            Історія виконання автоматичних правил
-          </p>
+          <h1 className="text-2xl font-bold">{t('logs.title')}</h1>
+          <p className="text-foreground-muted text-sm mt-1">{t('logs.description')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={fetchLogs}>
             <RefreshCw className="h-4 w-4 mr-2" />
-            Оновити
+            {tCommon('update')}
           </Button>
           <Button variant="outline" onClick={handleCleanup}>
             <Trash2 className="h-4 w-4 mr-2" />
-            Очистити старі
+            {t('logs.cleanup')}
           </Button>
         </div>
       </div>
@@ -176,11 +178,11 @@ export default function AutomationLogsPage() {
           <div className="flex items-center gap-4">
             <Filter className="h-5 w-5 text-foreground-muted" />
             <Select value={resultFilter} onValueChange={setResultFilter}>
-              <option value="all">Всі результати</option>
-              <option value="success">Успішні</option>
-              <option value="error">Помилки</option>
+              <option value="all">{t('logs.allResults')}</option>
+              <option value="success">{t('logs.successful')}</option>
+              <option value="error">{t('logs.errorsFilter')}</option>
             </Select>
-            <div className="text-sm text-foreground-muted">Знайдено: {total}</div>
+            <div className="text-sm text-foreground-muted">{t('logs.found', { count: total })}</div>
           </div>
         </CardContent>
       </Card>
@@ -198,7 +200,7 @@ export default function AutomationLogsPage() {
         <Card>
           <CardContent className="p-5 text-center">
             <Activity className="h-12 w-12 text-foreground-muted mx-auto mb-4" />
-            <p className="text-foreground-muted">Немає логів виконання</p>
+            <p className="text-foreground-muted">{t('logs.empty')}</p>
           </CardContent>
         </Card>
       ) : (
@@ -246,7 +248,7 @@ export default function AutomationLogsPage() {
               fetchLogs();
             }}
           >
-            Завантажити ще
+            {t('logs.loadMore')}
           </Button>
         </div>
       )}
