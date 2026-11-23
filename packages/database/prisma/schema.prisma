@@ -146,6 +146,7 @@ model Tenant {
   aiChatSessions AiChatSession[]
   payments         Payment[]
   auditLogs        AuditLog[]
+  webhooks         Webhook[]
 }
 
 model TelegramChat {
@@ -285,6 +286,8 @@ model Contact {
   position  String?
   notes     String?
   source    String?
+  // Внешний код (1С/Excel/Google Таблицы) — ключ актуализации при импорте
+  externalId String?
   status    String   @default("active")
   aiSummary String?
   aiAnalyzedAt DateTime?
@@ -306,6 +309,7 @@ model Contact {
   @@index([tenantId, company])
   @@index([tenantId, status])
   @@index([tenantId, ownerId])
+  @@index([tenantId, externalId])
 }
 
 model Tag {
@@ -401,6 +405,8 @@ model Deal {
   winReason          String?
   lossReason         String?
   notes              String?
+  // Внешний код (1С/Excel/Google Таблицы) — ключ актуализации при импорте
+  externalId         String?
   aiScore            Int?
   aiScoredAt         DateTime?
   createdAt          DateTime  @default(now())
@@ -419,6 +425,7 @@ model Deal {
   @@index([tenantId, stageId])
   @@index([tenantId, status])
   @@index([tenantId, ownerId])
+  @@index([tenantId, externalId])
 }
 
 model DealProduct {
@@ -447,6 +454,8 @@ model Task {
   assigneeId    String?
   contactId     String?
   dealId        String?
+  // Внешний код (1С/Excel/Google Таблицы) — ключ актуализации при импорте
+  externalId    String?
   isRecurring   Boolean   @default(false)
   recurrenceRule String?
   createdAt     DateTime  @default(now())
@@ -460,6 +469,7 @@ model Task {
   @@index([tenantId, status])
   @@index([tenantId, assigneeId])
   @@index([tenantId, dueDate])
+  @@index([tenantId, externalId])
 }
 
 model TaskComment {
@@ -707,4 +717,20 @@ model StripeWebhookEvent {
 
   @@index([stripeEventId])
   @@index([eventType])
+}
+
+// Постійне сховище вихідних вебхуків (відвантаження змін назовні)
+model Webhook {
+  id        String   @id @default(cuid())
+  tenantId  String
+  url       String
+  secret    String
+  events    String[]
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, active])
 }
