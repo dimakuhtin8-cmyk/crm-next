@@ -1148,7 +1148,8 @@
     "errors": {
       "loadFailed": "Failed to load",
       "requestStatus": "Error {status}"
-    }
+    },
+    "rangeOf": "{from}–{to} of {total}"
   },
   "stages": {
     "lead": "Lead",
@@ -1276,6 +1277,238 @@
     "errors": {
       "remindersLoad": "Reminders: error {status}",
       "notificationsLoad": "Notifications: error {status}"
+    }
+  },
+  "aiProviders": {
+    "gemini": {
+      "freeQuota": "15 requests/min, 1500/day",
+      "description": "From Google. Best understanding of Ukrainian. 1M context.",
+      "models": {
+        "gemini-3-flash-preview": {
+          "description": "Current, verified with a live request"
+        },
+        "gemini-3-5-flash-lite": {
+          "description": "Fastest responses, verified with a live request"
+        },
+        "gemini-3-1-pro-preview": {
+          "description": "Flagship; may require billing"
+        }
+      }
+    },
+    "openai": {
+      "freeQuota": "$5 free credit on sign-up",
+      "description": "GPT-5.6 Sol, Terra, Luna — the flagship 2026 lineup.",
+      "models": {
+        "gpt-5-6-sol": {
+          "description": "Flagship for complex reasoning and coding tasks"
+        },
+        "gpt-5-6-terra": {
+          "description": "Balanced option (intelligence + moderate cost)"
+        },
+        "gpt-5-6-luna": {
+          "description": "Cost-efficient model for high request volumes"
+        },
+        "gpt-5-3-codex": {
+          "description": "Specialized for agentic coding"
+        }
+      }
+    },
+    "anthropic": {
+      "freeQuota": "Free credit on sign-up",
+      "description": "Claude 5 — the smartest AI for agents and coding. 1M context.",
+      "models": {
+        "claude-opus-5": {
+          "description": "For the hardest tasks"
+        },
+        "claude-opus-4": {
+          "description": "For complex tasks"
+        },
+        "claude-sonnet-4": {
+          "description": "Most efficient for daily tasks"
+        },
+        "claude-haiku-4-5": {
+          "description": "Fastest for quick answers"
+        }
+      }
+    },
+    "deepseek": {
+      "freeQuota": "~10M tokens free on sign-up",
+      "description": "V4 Flash and Pro — the cheapest AI in the world ($0.14/MTok).",
+      "models": {
+        "deepseek-chat": {
+          "description": "General-purpose model"
+        },
+        "deepseek-reasoner": {
+          "description": "Reasoning model (chain-of-thought)"
+        }
+      }
+    },
+    "groq": {
+      "freeQuota": "Generous free tier",
+      "description": "Fastest inference (~500 tps). Llama 4, GPT-OSS.",
+      "models": {
+        "openai-gpt-oss-120b": {
+          "description": "Flagship with reasoning and tool use"
+        },
+        "openai-gpt-oss-20b": {
+          "description": "Lightweight version for logic tasks"
+        },
+        "qwen-qwen3-6-27b": {
+          "description": "High-speed reasoning model"
+        }
+      }
+    },
+    "mistral": {
+      "freeQuota": "Free tier with limits",
+      "description": "French AI. Large 3 (675B MoE), Small 4, Codestral.",
+      "models": {
+        "mistral-large-latest": {
+          "description": "Flagship multimodal model (MoE)"
+        },
+        "mistral-small-latest": {
+          "description": "Efficient (instructions, logic, code)"
+        },
+        "ministral-8b-latest": {
+          "description": "Series of compact models (3B, 8B, 14B)"
+        },
+        "codestral-latest": {
+          "description": "Low-latency for code generation and debugging"
+        },
+        "open-mistral-nemo": {
+          "description": "Compact general-purpose model"
+        }
+      }
+    },
+    "together": {
+      "freeQuota": "$1 free credit",
+      "description": "200+ models. Llama 4, Qwen 3.8, DeepSeek, and more.",
+      "models": {
+        "meta-llama-Llama-3-3-70B-Instruct-Turbo": {
+          "description": "High-quality text analysis and translation"
+        },
+        "deepseek-ai-DeepSeek-V3-0324": {
+          "description": "Open LLM for logic and generation"
+        },
+        "Qwen-Qwen3-235B-A22B": {
+          "description": "For writing, debugging, and finding bugs in code"
+        },
+        "stabilityai-stable-diffusion-xl": {
+          "description": "Generates detailed graphics"
+        }
+      }
+    }
+  },
+  "cache": {
+    "title": "Cache monitor",
+    "description": "Real-time cache usage statistics",
+    "clear": "Clear cache",
+    "keys": "Keys",
+    "hits": "Hits",
+    "misses": "Misses",
+    "about": "Cache info",
+    "cacheType": "Cache type",
+    "maxEntries": "Max entries",
+    "eviction": "Cleanup",
+    "evictionValue": "Every 5 minutes (auto)",
+    "strategy": "Strategy"
+  },
+  "queues": {
+    "title": "Job queues",
+    "description": "Real-time background job monitoring",
+    "loadFailed": "Failed to load queues",
+    "clear": "Clear",
+    "pending": "Pending",
+    "processing": "Processing",
+    "attempts": "Attempts",
+    "download": "Download",
+    "recent": "Recent jobs",
+    "empty": "No jobs with this status yet",
+    "jobTypes": {
+      "title": "Job types",
+      "emailDescription": "Email campaigns",
+      "aiDescription": "Data processing",
+      "exportDescription": "File downloads",
+      "notificationsDescription": "Push and in-app"
+    },
+    "about": "Queue info",
+    "engine": "Engine",
+    "engineValue": "Postgres + external scheduler",
+    "retryStrategy": "Retry strategy",
+    "maxAttempts": "Max attempts",
+    "jobTimeout": "Job timeout",
+    "jobTimeoutValue": "30 seconds"
+  },
+  "webhooks": {
+    "title": "Webhooks",
+    "description": "Integrations with external services",
+    "searchPlaceholder": "Search by URL…",
+    "newWebhook": "New webhook",
+    "emptyTitle": "No webhooks yet",
+    "emptyDescription": "Create a webhook to integrate with external services",
+    "searchEmpty": "No webhooks found for this query",
+    "availableEvents": "Available events",
+    "method": "Method",
+    "events": "Events",
+    "switchLabel": "Webhook status",
+    "switchTitle": "Toggling unavailable: the API has no endpoint to change status"
+  },
+  "observability": {
+    "title": "Observability",
+    "description": "Real-time system health monitoring",
+    "errors": {
+      "fetchStatus": "SLO: {sloStatus}, metrics: {metricsStatus}"
+    },
+    "uptimeShort": "{days}d {hours}h {mins}m",
+    "statusHealthy": "All good",
+    "statusWarning": "Warning",
+    "statusCritical": "Critical",
+    "statusHealthyDesc": "All SLOs are within target",
+    "statusWarningDesc": "Some SLOs exceed acceptable limits",
+    "uptimeLabel": "Uptime",
+    "sloTarget": "Target: {target}%",
+    "sloBudget": "Budget: {percent}%",
+    "alerts": "Alerts",
+    "memoryHeap": "Memory (heap)",
+    "ofTotal": "of {total}",
+    "memoryRss": "Memory (RSS)",
+    "httpRequests": "HTTP requests",
+    "dbQueries": "DB queries",
+    "aiRequests": "AI requests",
+    "about": "About observability",
+    "windowLabel": "SLO measurement window",
+    "refreshLabel": "Metrics refresh",
+    "refreshValue": "Every 10 seconds",
+    "availabilityTarget": "Availability (target)",
+    "latencyTarget": "Latency p99 (target)"
+  },
+  "logs": {
+    "title": "System logs",
+    "description": "Monitoring system events and errors",
+    "clear": "Clear",
+    "stats": {
+      "total": "Total",
+      "info": "Info",
+      "warnings": "Warnings"
+    },
+    "searchPlaceholder": "Search logs...",
+    "levelFilterLabel": "Filter by level",
+    "allLevels": "All levels",
+    "filterErrors": "Errors (ERROR)",
+    "filterWarnings": "Warnings (WARN)",
+    "filterInfo": "Info (INFO)",
+    "emptyDescription": "Adjust the filters or wait for new events",
+    "columnLevel": "Level",
+    "columnMessage": "Message",
+    "mock": {
+      "systemStarted": "System started",
+      "cacheInitialized": "Cache initialized",
+      "slowQuery": "Slow database query",
+      "userLoggedIn": "User signed in",
+      "emailFailed": "Failed to send email",
+      "taskCreated": "New task created",
+      "rateLimit": "Rate limit approaching",
+      "aiRequest": "AI request completed",
+      "callClient": "Call the client"
     }
   }
 }

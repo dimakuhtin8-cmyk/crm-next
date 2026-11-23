@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter, useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
 import { QuickSelect } from '@/components/quick-create';
@@ -42,6 +43,7 @@ interface Tenant {
 export default function TenantDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const tRoot = useTranslations();
   const tenantId = params.id as string;
 
   const [tenant, setTenant] = useState<Tenant | null>(null);
@@ -316,9 +318,9 @@ export default function TenantDetailPage() {
                 if (!selectedProvider) return null;
                 return (
                   <div className="p-3 bg-secondary/50 rounded-lg text-xs text-foreground-muted">
-                    {selectedProvider.description}
+                    {tRoot(selectedProvider.description)}
                     <br />
-                    Безкоштовний тариф: {selectedProvider.freeQuota}
+                    {tRoot('settings.freeQuota')}: {tRoot(selectedProvider.freeQuota)}
                   </div>
                 );
               })()}
@@ -335,7 +337,7 @@ export default function TenantDetailPage() {
                       onChange={(id) => setForm((prev) => ({ ...prev, aiModel: id }))}
                       options={selectedProvider.models.map((model) => ({
                         id: model.id,
-                        name: `${model.name} — ${model.description}`,
+                        name: `${model.name} — ${tRoot(model.description)}`,
                       }))}
                     />
                   </div>

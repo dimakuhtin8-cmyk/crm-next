@@ -19,6 +19,7 @@ import {
   Trash2,
   Download,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
 
 import {
@@ -52,6 +53,8 @@ interface LogStats {
 const logStore: LogEntry[] = [];
 
 export default function LogsPage() {
+  const t = useTranslations('logs');
+  const tRoot = useTranslations();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [stats, setStats] = useState<LogStats>({ total: 0, errors: 0, warnings: 0, info: 0 });
   const [loading, setLoading] = useState(true);
@@ -72,55 +75,55 @@ export default function LogsPage() {
         {
           id: '1',
           level: 'info',
-          message: 'Система запущена',
+          message: t('mock.systemStarted'),
           timestamp: new Date(now.getTime() - 3600000).toISOString(),
         },
         {
           id: '2',
           level: 'info',
-          message: 'Кеш ініціалізовано',
+          message: t('mock.cacheInitialized'),
           context: { entries: 0, maxSize: 10000 },
           timestamp: new Date(now.getTime() - 3500000).toISOString(),
         },
         {
           id: '3',
           level: 'warn',
-          message: 'Повільний запит до бази даних',
+          message: t('mock.slowQuery'),
           context: { query: 'SELECT * FROM contacts', duration: '2.3s' },
           timestamp: new Date(now.getTime() - 1800000).toISOString(),
         },
         {
           id: '4',
           level: 'info',
-          message: 'Користувач увійшов в систему',
+          message: t('mock.userLoggedIn'),
           context: { email: 'admin@example.com' },
           timestamp: new Date(now.getTime() - 900000).toISOString(),
         },
         {
           id: '5',
           level: 'error',
-          message: 'Не вдалося надіслати email',
+          message: t('mock.emailFailed'),
           context: { to: 'user@example.com', error: 'SMTP connection timeout' },
           timestamp: new Date(now.getTime() - 600000).toISOString(),
         },
         {
           id: '6',
           level: 'info',
-          message: 'Створено нову задачу',
-          context: { title: 'Зателефонувати клієнту', userId: 'user_123' },
+          message: t('mock.taskCreated'),
+          context: { title: t('mock.callClient'), userId: 'user_123' },
           timestamp: new Date(now.getTime() - 300000).toISOString(),
         },
         {
           id: '7',
           level: 'warn',
-          message: 'Rate limit наближається',
+          message: t('mock.rateLimit'),
           context: { ip: '192.168.1.1', requests: 85, limit: 100 },
           timestamp: new Date(now.getTime() - 120000).toISOString(),
         },
         {
           id: '8',
           level: 'info',
-          message: 'AI запит виконано',
+          message: t('mock.aiRequest'),
           context: { action: 'analyze', duration: '1.2s' },
           timestamp: new Date(now.getTime() - 60000).toISOString(),
         },
@@ -202,7 +205,7 @@ export default function LogsPage() {
   const logColumns = [
     {
       key: 'timestamp',
-      header: 'Час',
+      header: tRoot('copilot.logs.columnTime'),
       className: 'p-2 w-[95px]',
       render: (log: LogEntry) => (
         <span className="font-mono text-xs text-foreground-muted">{formatTime(log.timestamp)}</span>
@@ -210,13 +213,13 @@ export default function LogsPage() {
     },
     {
       key: 'level',
-      header: 'Рівень',
+      header: t('columnLevel'),
       className: 'p-2 w-[95px]',
       render: (log: LogEntry) => levelBadge(log.level),
     },
     {
       key: 'message',
-      header: 'Повідомлення',
+      header: t('columnMessage'),
       className: 'p-2',
       render: (log: LogEntry) => (
         <div className="min-w-0">
@@ -237,21 +240,21 @@ export default function LogsPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Системні логи</h1>
-          <p className="text-foreground-muted text-sm mt-1">Моніторинг подій та помилок системи</p>
+          <h1 className="text-2xl font-bold">{t('title')}</h1>
+          <p className="text-foreground-muted text-sm mt-1">{t('description')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="h-4 w-4" />
-            Експорт
+            {tRoot('contacts.export')}
           </Button>
           <Button variant="outline" size="sm" onClick={handleClear}>
             <Trash2 className="h-4 w-4" />
-            Очистити
+            {t('clear')}
           </Button>
           <Button variant="outline" size="sm" onClick={fetchLogs}>
             <RefreshCw className="h-4 w-4" />
-            Оновити
+            {tRoot('common.update')}
           </Button>
         </div>
       </div>
@@ -265,7 +268,7 @@ export default function LogsPage() {
                 <Activity className="h-5 w-5 text-info" />
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-medium text-foreground-muted">Всього</p>
+                <p className="text-xs font-medium text-foreground-muted">{t('stats.total')}</p>
                 <p className="font-mono text-2xl font-bold">{stats.total}</p>
               </div>
             </div>
@@ -278,7 +281,7 @@ export default function LogsPage() {
                 <CheckCircle className="h-5 w-5 text-success" />
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-medium text-foreground-muted">Інфо</p>
+                <p className="text-xs font-medium text-foreground-muted">{t('stats.info')}</p>
                 <p className="font-mono text-2xl font-bold">{stats.info}</p>
               </div>
             </div>
@@ -291,7 +294,7 @@ export default function LogsPage() {
                 <AlertTriangle className="h-5 w-5 text-warning" />
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-medium text-foreground-muted">Попередження</p>
+                <p className="text-xs font-medium text-foreground-muted">{t('stats.warnings')}</p>
                 <p className="font-mono text-2xl font-bold">{stats.warnings}</p>
               </div>
             </div>
@@ -304,7 +307,9 @@ export default function LogsPage() {
                 <AlertCircle className="h-5 w-5 text-danger" />
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-medium text-foreground-muted">Помилки</p>
+                <p className="text-xs font-medium text-foreground-muted">
+                  {tRoot('automation.logs.errorsFilter')}
+                </p>
                 <p className="font-mono text-2xl font-bold">{stats.errors}</p>
               </div>
             </div>
@@ -318,7 +323,7 @@ export default function LogsPage() {
           <div className="flex flex-wrap items-center gap-3">
             <Input
               type="search"
-              placeholder="Пошук у логах..."
+              placeholder={t('searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="h-8 w-full min-w-[200px] flex-1 text-xs"
@@ -326,16 +331,16 @@ export default function LogsPage() {
             <Select
               value={levelFilter}
               onValueChange={setLevelFilter}
-              aria-label="Фільтр за рівнем"
+              aria-label={t('levelFilterLabel')}
               className="h-8 w-48 text-xs"
             >
-              <option value="all">Всі рівні</option>
-              <option value="error">Помилки (ERROR)</option>
-              <option value="warn">Попередження (WARN)</option>
-              <option value="info">Інфо (INFO)</option>
+              <option value="all">{t('allLevels')}</option>
+              <option value="error">{t('filterErrors')}</option>
+              <option value="warn">{t('filterWarnings')}</option>
+              <option value="info">{t('filterInfo')}</option>
             </Select>
             <span className="font-mono text-xs text-foreground-muted">
-              Знайдено: {filteredLogs.length}
+              {tRoot('automation.logs.found', { count: filteredLogs.length })}
             </span>
           </div>
         </CardContent>
@@ -353,8 +358,8 @@ export default function LogsPage() {
           <CardContent className="p-4">
             <EmptyState
               icon={<Activity className="h-12 w-12" />}
-              title="Немає логів"
-              description="Змініть фільтри або зачекайте на нові події"
+              title={tRoot('copilot.logs.noLogs')}
+              description={t('emptyDescription')}
             />
           </CardContent>
         </Card>

@@ -10,6 +10,7 @@
 'use client';
 
 import { Webhook, Plus } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useState, useEffect, useRef } from 'react';
 
 import { QuickCreatePopover, QuickWebhookForm } from '@/components/quick-create';
@@ -41,6 +42,9 @@ interface WebhookEvent {
 }
 
 export default function WebhooksPage() {
+  const t = useTranslations('webhooks');
+  const tCommon = useTranslations('common');
+  const tRoot = useTranslations();
   const [webhooks, setWebhooks] = useState<WebhookRow[]>([]);
   const [events, setEvents] = useState<WebhookEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,7 +81,7 @@ export default function WebhooksPage() {
   if (loading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">Вебхуки</h1>
+        <h1 className="text-2xl font-bold">{t('title')}</h1>
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-20 rounded-xl" />
@@ -94,7 +98,7 @@ export default function WebhooksPage() {
   const webhookColumns = [
     {
       key: 'method',
-      header: 'Метод',
+      header: t('method'),
       className: 'p-2 w-[90px]',
       render: () => (
         <Badge variant="success" className="font-mono">
@@ -114,15 +118,17 @@ export default function WebhooksPage() {
     },
     {
       key: 'events',
-      header: 'Події',
+      header: t('events'),
       className: 'p-2 w-[110px] font-mono text-xs text-foreground-muted',
       render: (webhook: WebhookRow) => (
-        <span title={webhook.events.join(', ')}>{webhook.events.length} подій</span>
+        <span title={webhook.events.join(', ')}>
+          {tRoot('timeline.eventsCount', { count: webhook.events.length })}
+        </span>
       ),
     },
     {
       key: 'createdAt',
-      header: 'Створено',
+      header: tRoot('deals.created'),
       className: 'p-2 w-[120px] text-xs text-foreground-muted',
       render: (webhook: WebhookRow) =>
         new Date(webhook.createdAt).toLocaleDateString('uk-UA', {
@@ -133,14 +139,14 @@ export default function WebhooksPage() {
     },
     {
       key: 'active',
-      header: 'Статус',
+      header: tCommon('status'),
       className: 'p-2 w-[90px]',
       render: (webhook: WebhookRow) => (
         <Switch
           checked={webhook.active}
           disabled
-          aria-label="Статус вебхука"
-          title="Перемикання недоступне: API не має endpoint для зміни статусу"
+          aria-label={t('switchLabel')}
+          title={t('switchTitle')}
         />
       ),
     },
@@ -150,27 +156,27 @@ export default function WebhooksPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Вебхуки</h1>
-          <p className="text-foreground-muted text-sm mt-1">Інтеграції з зовнішніми сервісами</p>
+          <h1 className="text-2xl font-bold">{t('title')}</h1>
+          <p className="text-foreground-muted text-sm mt-1">{t('description')}</p>
         </div>
         <div className="flex items-center gap-2">
           <Input
             type="search"
-            placeholder="Пошук за URL…"
+            placeholder={t('searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="h-8 w-56 text-xs"
           />
           <Button ref={quickBtnRef} size="sm" onClick={() => setQuickOpen(true)}>
             <Plus className="h-4 w-4" />
-            Створити вебхук
+            {tRoot('quickCreate.webhook.submit')}
           </Button>
         </div>
         <QuickCreatePopover
           anchorEl={quickBtnRef.current}
           open={quickOpen}
           onClose={() => setQuickOpen(false)}
-          title="Новий вебхук"
+          title={t('newWebhook')}
         >
           <QuickWebhookForm onCreated={handleQuickCreated} />
         </QuickCreatePopover>
@@ -182,12 +188,12 @@ export default function WebhooksPage() {
           <CardContent className="p-4">
             <EmptyState
               icon={<Webhook className="h-12 w-12" />}
-              title="Вебхуків поки немає"
-              description="Створіть вебхук для інтеграції з зовнішніми сервісами"
+              title={t('emptyTitle')}
+              description={t('emptyDescription')}
               action={
                 <Button size="sm" onClick={() => setQuickOpen(true)}>
                   <Plus className="h-4 w-4" />
-                  Створити вебхук
+                  {tRoot('quickCreate.webhook.submit')}
                 </Button>
               }
             />
@@ -198,14 +204,14 @@ export default function WebhooksPage() {
           columns={webhookColumns}
           data={visibleWebhooks}
           pageSize={20}
-          emptyMessage="Вебхуків за цим запитом не знайдено"
+          emptyMessage={t('searchEmpty')}
         />
       )}
 
       {/* Доступні події */}
       <Card className="shadow-sm">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold">Доступні події</CardTitle>
+          <CardTitle className="text-sm font-semibold">{t('availableEvents')}</CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">

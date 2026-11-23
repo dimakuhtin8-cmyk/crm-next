@@ -34,6 +34,7 @@ interface TestResult {
 export default function AiKeysSettingsPage() {
   const t = useTranslations('settings');
   const tCommon = useTranslations('common');
+  const tRoot = useTranslations();
   const [selectedProvider, setSelectedProvider] = useState('gemini');
   const [selectedModel, setSelectedModel] = useState('');
   const [apiKey, setApiKey] = useState('');
@@ -327,9 +328,10 @@ export default function AiKeysSettingsPage() {
 
           {currentProvider && (
             <div className="p-4 rounded-xl bg-accent/50 border border-border/40">
-              <p className="text-sm text-foreground-muted">{currentProvider.description}</p>
+              <p className="text-sm text-foreground-muted">{tRoot(currentProvider.description)}</p>
               <p className="text-xs text-foreground-muted mt-1">
-                <span className="font-medium">{t('freeQuota')}</span> {currentProvider.freeQuota}
+                <span className="font-medium">{t('freeQuota')}</span>{' '}
+                {tRoot(currentProvider.freeQuota)}
               </p>
             </div>
           )}
@@ -366,7 +368,7 @@ export default function AiKeysSettingsPage() {
                   : currentProvider.models
                 ).map((m) => ({
                   id: m.id,
-                  name: m.description ? `${m.name} — ${m.description}` : m.name,
+                  name: m.description ? `${m.name} — ${tRoot(m.description)}` : m.name,
                 }))}
                 label={t('modelLabel')}
               />

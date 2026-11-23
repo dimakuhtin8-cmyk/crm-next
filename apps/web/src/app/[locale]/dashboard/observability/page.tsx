@@ -21,6 +21,7 @@ import {
   Server,
   TrendingUp,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
 
 import { DataError } from '@/components/data-error';
@@ -55,6 +56,8 @@ interface MetricsData {
 }
 
 export default function ObservabilityPage() {
+  const t = useTranslations('observability');
+  const tRoot = useTranslations();
   const [sloData, setSloData] = useState<SLOData | null>(null);
   const [metricsData, setMetricsData] = useState<MetricsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -74,7 +77,12 @@ export default function ObservabilityPage() {
       ]);
 
       if (!sloRes.ok || !metricsRes.ok) {
-        throw new Error(`SLO: ${sloRes.status}, метрики: ${metricsRes.status}`);
+        throw new Error(
+          t('errors.fetchStatus', {
+            sloStatus: sloRes.status,
+            metricsStatus: metricsRes.status,
+          }),
+        );
       }
       const sloJson = await sloRes.json();
       setSloData(sloJson.data);
@@ -84,7 +92,9 @@ export default function ObservabilityPage() {
     } catch (err) {
       // тик опроса молча (warn), но первая загрузка — с ошибкой на экран
       console.warn('[observability] fetch failed');
-      setLoadError((prev) => prev ?? (err instanceof Error ? err.message : 'Помилка завантаження'));
+      setLoadError(
+        (prev) => prev ?? (err instanceof Error ? err.message : tRoot('common.errors.loadFailed')),
+      );
     } finally {
       setLoading(false);
     }
@@ -94,7 +104,7 @@ export default function ObservabilityPage() {
     const days = Math.floor(seconds / 86400);
     const hours = Math.floor((seconds % 86400) / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
-    return `${days}д ${hours}г ${mins}хв`;
+    return t('uptimeShort', { days, hours, mins });
   };
 
   const formatBytes = (bytes: number) => {
@@ -106,7 +116,7 @@ export default function ObservabilityPage() {
   if (loading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">Спостережуваність</h1>
+        <h1 className="text-2xl font-bold">{t('title')}</h1>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {[1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-40 rounded-xl" />
@@ -120,14 +130,12 @@ export default function ObservabilityPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Спостережуваність</h1>
-          <p className="text-foreground-muted text-sm mt-1">
-            Моніторинг здоров'я системи в реальному часі
-          </p>
+          <h1 className="text-2xl font-bold">{t('title')}</h1>
+          <p className="text-foreground-muted text-sm mt-1">{t('description')}</p>
         </div>
         <Button variant="outline" size="sm" onClick={fetchData}>
           <RefreshCw className="h-4 w-4" />
-          Оновити
+          {tRoot('common.update')}
         </Button>
       </div>
 
@@ -167,20 +175,18 @@ export default function ObservabilityPage() {
             <div>
               <h2 className="text-xl font-bold">
                 {sloData?.overall === 'healthy'
-                  ? 'Все нормально'
+                  ? t('statusHealthy')
                   : sloData?.overall === 'warning'
-                    ? 'Попередження'
-                    : 'Критична ситуація'}
+                    ? t('statusWarning')
+                    : t('statusCritical')}
               </h2>
               <p className="text-foreground-muted">
-                {sloData?.overall === 'healthy'
-                  ? 'Всі SLO в рамках норми'
-                  : 'Деякі SLO перевищують допустимі межі'}
+                {sloData?.overall === 'healthy' ? t('statusHealthyDesc') : t('statusWarningDesc')}
               </p>
             </div>
             {metricsData && (
               <div className="ml-auto text-right">
-                <p className="text-xs font-medium text-foreground-muted">Аптайм</p>
+                <p className="text-xs font-medium text-foreground-muted">{t('uptimeLabel')}</p>
                 <p className="font-mono text-lg font-bold">{formatUptime(metricsData.uptime)}</p>
               </div>
             )}
@@ -224,8 +230,8 @@ export default function ObservabilityPage() {
               </div>
 
               <div className="flex justify-between font-mono text-xs text-foreground-muted">
-                <span>Ціль: {slo.target}%</span>
-                <span>Бюджет: {slo.budget.remainingPercent}%</span>
+                <span>{t('sloTarget', { target: slo.target })}</span>
+                <span>{t('sloBudget', { percent: slo.budget.remainingPercent })}</span>
               </div>
             </CardContent>
           </Card>
@@ -238,7 +244,7 @@ export default function ObservabilityPage() {
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-sm font-semibold">
               <AlertTriangle className="h-4 w-4 text-warning" />
-              Алерти
+              {t('alerts')}
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
@@ -285,7 +291,7 @@ export default function ObservabilityPage() {
                   <Server className="h-5 w-5 text-primary" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-medium text-foreground-muted">Пам'ять (heap)</p>
+                  <p className="text-xs font-medium text-foreground-muted">{t('memoryHeap')}</p>
                   <p className="font-mono text-2xl font-bold">
                     {formatBytes(
                       metricsData.gauges.find((g) => g.name === 'system_memory_heap_used_bytes')
@@ -293,11 +299,12 @@ export default function ObservabilityPage() {
                     )}
                   </p>
                   <p className="truncate font-mono text-xs text-foreground-muted">
-                    з{' '}
-                    {formatBytes(
-                      metricsData.gauges.find((g) => g.name === 'system_memory_heap_total_bytes')
-                        ?.value || 0,
-                    )}
+                    {t('ofTotal', {
+                      total: formatBytes(
+                        metricsData.gauges.find((g) => g.name === 'system_memory_heap_total_bytes')
+                          ?.value || 0,
+                      ),
+                    })}
                   </p>
                 </div>
               </div>
@@ -311,7 +318,7 @@ export default function ObservabilityPage() {
                   <Server className="h-5 w-5 text-primary" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-medium text-foreground-muted">Пам'ять (RSS)</p>
+                  <p className="text-xs font-medium text-foreground-muted">{t('memoryRss')}</p>
                   <p className="font-mono text-2xl font-bold">
                     {formatBytes(
                       metricsData.gauges.find((g) => g.name === 'system_memory_rss_bytes')?.value ||
@@ -330,7 +337,7 @@ export default function ObservabilityPage() {
                   <TrendingUp className="h-5 w-5 text-success" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-medium text-foreground-muted">HTTP запити</p>
+                  <p className="text-xs font-medium text-foreground-muted">{t('httpRequests')}</p>
                   <p className="font-mono text-2xl font-bold">
                     {metricsData.counters.find((c) => c.name === 'http_requests_total')?.value || 0}
                   </p>
@@ -346,7 +353,7 @@ export default function ObservabilityPage() {
                   <Database className="h-5 w-5 text-info" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-medium text-foreground-muted">DB запити</p>
+                  <p className="text-xs font-medium text-foreground-muted">{t('dbQueries')}</p>
                   <p className="font-mono text-2xl font-bold">
                     {metricsData.counters.find((c) => c.name === 'db_queries_total')?.value || 0}
                   </p>
@@ -362,7 +369,7 @@ export default function ObservabilityPage() {
                   <Brain className="h-5 w-5 text-accent-foreground" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-medium text-foreground-muted">AI запити</p>
+                  <p className="text-xs font-medium text-foreground-muted">{t('aiRequests')}</p>
                   <p className="font-mono text-2xl font-bold">
                     {metricsData.counters.find((c) => c.name === 'ai_requests_total')?.value || 0}
                   </p>
@@ -376,26 +383,26 @@ export default function ObservabilityPage() {
       {/* Info */}
       <Card className="shadow-sm">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold">Про спостережуваність</CardTitle>
+          <CardTitle className="text-sm font-semibold">{t('about')}</CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
+              <p className="text-xs font-medium text-foreground-muted mb-1">{t('windowLabel')}</p>
+              <p className="font-mono text-sm font-medium">{tRoot('analytics.days30')}</p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-foreground-muted mb-1">{t('refreshLabel')}</p>
+              <p className="font-mono text-sm font-medium">{t('refreshValue')}</p>
+            </div>
+            <div>
               <p className="text-xs font-medium text-foreground-muted mb-1">
-                SLO вікно вимірювання
+                {t('availabilityTarget')}
               </p>
-              <p className="font-mono text-sm font-medium">30 днів</p>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-foreground-muted mb-1">Оновлення метрик</p>
-              <p className="font-mono text-sm font-medium">Кожні 10 секунд</p>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-foreground-muted mb-1">Доступність (ціль)</p>
               <p className="font-mono text-sm font-medium">99.9%</p>
             </div>
             <div>
-              <p className="text-xs font-medium text-foreground-muted mb-1">Затримка p99 (ціль)</p>
+              <p className="text-xs font-medium text-foreground-muted mb-1">{t('latencyTarget')}</p>
               <p className="font-mono text-sm font-medium">&lt; 500ms</p>
             </div>
           </div>

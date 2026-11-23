@@ -22,6 +22,7 @@ import {
   Download,
   Bell,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
 
 import { DataError } from '@/components/data-error';
@@ -61,6 +62,9 @@ type JobRow = {
 };
 
 export default function QueuesPage() {
+  const t = useTranslations('queues');
+  const tCommon = useTranslations('common');
+  const tRoot = useTranslations();
   const [stats, setStats] = useState<QueueStats | null>(null);
   const [jobs, setJobs] = useState<JobRow[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -78,7 +82,7 @@ export default function QueuesPage() {
     const [okStats, okJobs] = await Promise.all([fetchStats(), fetchJobs()]);
     if (!okStats || !okJobs) {
       // тик опроса молча (warn внутри), но первая загрузка — с ошибкой на экран
-      setLoadError((prev) => prev ?? 'Не вдалося завантажити черги');
+      setLoadError((prev) => prev ?? t('loadFailed'));
     } else {
       setLoadError(null);
     }
@@ -120,7 +124,7 @@ export default function QueuesPage() {
     setClearing(true);
     try {
       const res = await fetch('/api/v1/queue/stats', { method: 'DELETE' });
-      if (!res.ok) throw new Error(`Помилка ${res.status}`);
+      if (!res.ok) throw new Error(tCommon('errors.requestStatus', { status: res.status }));
       await fetchStats();
     } catch {
       console.warn('[queues] cleanup failed');
@@ -132,7 +136,7 @@ export default function QueuesPage() {
   if (loading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">Черги задач</h1>
+        <h1 className="text-2xl font-bold">{t('title')}</h1>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           {[1, 2, 3, 4].map((i) => (
             <Skeleton key={i} className="h-24 rounded-xl" />
@@ -158,7 +162,7 @@ export default function QueuesPage() {
     },
     {
       key: 'type',
-      header: 'Задача',
+      header: tRoot('quickCreate.task.types.task'),
       className: 'p-2',
       render: (job: JobRow) => (
         <div className="min-w-0">
@@ -173,7 +177,7 @@ export default function QueuesPage() {
     },
     {
       key: 'status',
-      header: 'Статус',
+      header: tCommon('status'),
       className: 'p-2 w-[130px]',
       render: (job: JobRow) => (
         <Badge
@@ -194,13 +198,13 @@ export default function QueuesPage() {
     },
     {
       key: 'attempts',
-      header: 'Спроби',
+      header: t('attempts'),
       className: 'p-2 w-[90px] font-mono text-xs',
       render: (job: JobRow) => `${job.attempts}/${job.maxAttempts}`,
     },
     {
       key: 'createdAt',
-      header: 'Створено',
+      header: tRoot('deals.created'),
       className: 'p-2 w-[120px] text-xs text-foreground-muted',
       render: (job: JobRow) =>
         new Date(job.createdAt).toLocaleString('uk', {
@@ -220,7 +224,7 @@ export default function QueuesPage() {
             href={`/api/queue/jobs/${job.id}/download`}
             className="text-xs font-medium text-primary hover:underline"
           >
-            Скачати
+            {t('download')}
           </a>
         ) : null,
     },
@@ -230,19 +234,17 @@ export default function QueuesPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Черги задач</h1>
-          <p className="text-foreground-muted text-sm mt-1">
-            Моніторинг фонових задач в реальному часі
-          </p>
+          <h1 className="text-2xl font-bold">{t('title')}</h1>
+          <p className="text-foreground-muted text-sm mt-1">{t('description')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={fetchAll}>
             <RefreshCw className="h-4 w-4" />
-            Оновити
+            {tCommon('update')}
           </Button>
           <Button variant="destructive" size="sm" onClick={handleCleanup} disabled={clearing}>
             <Trash2 className="h-4 w-4" />
-            Очистити
+            {t('clear')}
           </Button>
         </div>
       </div>
@@ -260,7 +262,7 @@ export default function QueuesPage() {
                     <Clock className="h-5 w-5 text-warning" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs font-medium text-foreground-muted">Очікують</p>
+                    <p className="text-xs font-medium text-foreground-muted">{t('pending')}</p>
                     <p className="font-mono text-2xl font-bold">{stats.pending}</p>
                   </div>
                 </div>
@@ -274,7 +276,7 @@ export default function QueuesPage() {
                     <Loader className="h-5 w-5 text-info animate-spin" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs font-medium text-foreground-muted">Обробляються</p>
+                    <p className="text-xs font-medium text-foreground-muted">{t('processing')}</p>
                     <p className="font-mono text-2xl font-bold">{stats.processing}</p>
                   </div>
                 </div>
@@ -288,7 +290,9 @@ export default function QueuesPage() {
                     <CheckCircle className="h-5 w-5 text-success" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs font-medium text-foreground-muted">Виконано</p>
+                    <p className="text-xs font-medium text-foreground-muted">
+                      {tRoot('tasks.done')}
+                    </p>
                     <p className="font-mono text-2xl font-bold">{stats.completed}</p>
                   </div>
                 </div>
@@ -302,7 +306,9 @@ export default function QueuesPage() {
                     <XCircle className="h-5 w-5 text-danger" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs font-medium text-foreground-muted">Помилки</p>
+                    <p className="text-xs font-medium text-foreground-muted">
+                      {tRoot('automation.logs.errorsFilter')}
+                    </p>
                     <p className="font-mono text-2xl font-bold">{stats.failed}</p>
                   </div>
                 </div>
@@ -313,7 +319,7 @@ export default function QueuesPage() {
           {/* Типи задач */}
           <Card className="shadow-sm">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold">Типи задач</CardTitle>
+              <CardTitle className="text-sm font-semibold">{t('jobTypes.title')}</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -321,28 +327,34 @@ export default function QueuesPage() {
                   <Mail className="h-5 w-5 shrink-0 text-info" />
                   <div className="min-w-0">
                     <p className="text-sm font-medium">Email</p>
-                    <p className="text-xs text-foreground-muted">Розсилка листів</p>
+                    <p className="text-xs text-foreground-muted">
+                      {t('jobTypes.emailDescription')}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-secondary/50">
                   <Brain className="h-5 w-5 shrink-0 text-primary" />
                   <div className="min-w-0">
                     <p className="text-sm font-medium">AI</p>
-                    <p className="text-xs text-foreground-muted">Обробка даних</p>
+                    <p className="text-xs text-foreground-muted">{t('jobTypes.aiDescription')}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-secondary/50">
                   <Download className="h-5 w-5 shrink-0 text-success" />
                   <div className="min-w-0">
-                    <p className="text-sm font-medium">Експорт</p>
-                    <p className="text-xs text-foreground-muted">Завантаження файлів</p>
+                    <p className="text-sm font-medium">{tRoot('contacts.export')}</p>
+                    <p className="text-xs text-foreground-muted">
+                      {t('jobTypes.exportDescription')}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-secondary/50">
                   <Bell className="h-5 w-5 shrink-0 text-warning" />
                   <div className="min-w-0">
-                    <p className="text-sm font-medium">Сповіщення</p>
-                    <p className="text-xs text-foreground-muted">Push та вбудовані</p>
+                    <p className="text-sm font-medium">{tRoot('notifications.title')}</p>
+                    <p className="text-xs text-foreground-muted">
+                      {t('jobTypes.notificationsDescription')}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -352,29 +364,29 @@ export default function QueuesPage() {
           {/* Останні задачі (реальні дані з БД) */}
           <div>
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-              <h3 className="font-semibold text-sm">Останні задачі</h3>
+              <h3 className="font-semibold text-sm">{t('recent')}</h3>
               <Tabs value={statusFilter} onValueChange={setStatusFilter}>
                 <TabsList className="h-8">
                   <TabsTrigger value="all" className="h-6 px-2.5 text-xs">
-                    Усі
+                    {tCommon('all')}
                     <span className="ml-1.5 font-mono text-[11px] text-foreground-muted">
                       {jobs.length}
                     </span>
                   </TabsTrigger>
                   <TabsTrigger value="pending" className="h-6 px-2.5 text-xs">
-                    Очікують
+                    {t('pending')}
                     <span className="ml-1.5 font-mono text-[11px] text-foreground-muted">
                       {stats.pending}
                     </span>
                   </TabsTrigger>
                   <TabsTrigger value="processing" className="h-6 px-2.5 text-xs">
-                    Обробляються
+                    {t('processing')}
                     <span className="ml-1.5 font-mono text-[11px] text-foreground-muted">
                       {stats.processing}
                     </span>
                   </TabsTrigger>
                   <TabsTrigger value="failed" className="h-6 px-2.5 text-xs">
-                    Помилки
+                    {tRoot('automation.logs.errorsFilter')}
                     <span className="ml-1.5 font-mono text-[11px] text-foreground-muted">
                       {stats.failed}
                     </span>
@@ -386,32 +398,38 @@ export default function QueuesPage() {
               columns={jobColumns}
               data={visibleJobs}
               pageSize={20}
-              emptyMessage="Задач цього статусу поки немає"
+              emptyMessage={t('empty')}
             />
           </div>
 
           {/* Информация */}
           <Card className="shadow-sm">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold">Про чергу</CardTitle>
+              <CardTitle className="text-sm font-semibold">{t('about')}</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs font-medium text-foreground-muted mb-1">Движок</p>
-                  <p className="font-mono text-sm font-medium">Postgres + зовнішній планувальник</p>
+                  <p className="text-xs font-medium text-foreground-muted mb-1">{t('engine')}</p>
+                  <p className="font-mono text-sm font-medium">{t('engineValue')}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-foreground-muted mb-1">Retry стратегія</p>
+                  <p className="text-xs font-medium text-foreground-muted mb-1">
+                    {t('retryStrategy')}
+                  </p>
                   <p className="font-mono text-sm font-medium">Exponential Backoff (1s → 16s)</p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-foreground-muted mb-1">Макс. спроб</p>
+                  <p className="text-xs font-medium text-foreground-muted mb-1">
+                    {t('maxAttempts')}
+                  </p>
                   <p className="font-mono text-sm font-medium">3</p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-foreground-muted mb-1">Таймаут задачі</p>
-                  <p className="font-mono text-sm font-medium">30 секунд</p>
+                  <p className="text-xs font-medium text-foreground-muted mb-1">
+                    {t('jobTimeout')}
+                  </p>
+                  <p className="font-mono text-sm font-medium">{t('jobTimeoutValue')}</p>
                 </div>
               </div>
             </CardContent>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import * as React from 'react';
 
 import { cn } from '@/lib/utils';
@@ -34,9 +35,10 @@ export function Table<T extends Record<string, unknown>>({
   selectedRows = [],
   onSelectionChange,
   onRowClick,
-  emptyMessage = 'Немає даних',
+  emptyMessage,
   className,
 }: TableProps<T>) {
+  const tCommon = useTranslations('common');
   const [sortKey, setSortKey] = React.useState<string | null>(null);
   const [sortDir, setSortDir] = React.useState<SortDirection>(null);
   const [page, setPage] = React.useState(0);
@@ -137,7 +139,7 @@ export function Table<T extends Record<string, unknown>>({
                   colSpan={columns.length + (selectable ? 1 : 0)}
                   className="px-4 py-12 text-center text-foreground-muted"
                 >
-                  {emptyMessage}
+                  {emptyMessage ?? tCommon('noData')}
                 </td>
               </tr>
             ) : (
@@ -177,8 +179,11 @@ export function Table<T extends Record<string, unknown>>({
       {totalPages > 1 && (
         <div className="flex items-center justify-between text-sm text-foreground-muted">
           <span>
-            {page * pageSize + 1}–{Math.min((page + 1) * pageSize, sortedData.length)} з{' '}
-            {sortedData.length}
+            {tCommon('rangeOf', {
+              from: page * pageSize + 1,
+              to: Math.min((page + 1) * pageSize, sortedData.length),
+              total: sortedData.length,
+            })}
           </span>
           <div className="flex gap-1">
             <button
@@ -186,7 +191,7 @@ export function Table<T extends Record<string, unknown>>({
               disabled={page === 0}
               className="rounded-lg px-3 py-1.5 hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              Назад
+              {tCommon('back')}
             </button>
             {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
               let pageNum: number;
@@ -217,7 +222,7 @@ export function Table<T extends Record<string, unknown>>({
               disabled={page === totalPages - 1}
               className="rounded-lg px-3 py-1.5 hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              Далі
+              {tCommon('next')}
             </button>
           </div>
         </div>

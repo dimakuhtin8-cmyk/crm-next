@@ -418,10 +418,12 @@ export default function CopilotPage() {
 
             {currentProvider && (
               <div className="p-4 rounded-xl bg-accent/50 border border-border/40 mb-5">
-                <p className="text-sm text-foreground-muted">{currentProvider.description}</p>
+                <p className="text-sm text-foreground-muted">
+                  {tRoot(currentProvider.description)}
+                </p>
                 <p className="text-xs text-foreground-muted mt-1">
                   <span className="font-medium">{tRoot('settings.freeQuota')}</span>{' '}
-                  {currentProvider.freeQuota}
+                  {tRoot(currentProvider.freeQuota)}
                 </p>
               </div>
             )}
@@ -433,7 +435,7 @@ export default function CopilotPage() {
                   onChange={setQuickModel}
                   options={currentProvider.models.map((m) => ({
                     id: m.id,
-                    name: `${m.name} — ${m.description}`,
+                    name: `${m.name} — ${tRoot(m.description)}`,
                   }))}
                   label={tRoot('settings.modelLabel')}
                 />
@@ -767,7 +769,7 @@ export default function CopilotPage() {
                                   >
                                     <span className="font-medium">{m.name}</span>
                                     <span className="text-xs text-foreground-muted mt-0.5">
-                                      {m.description}
+                                      {tRoot(m.description)}
                                     </span>
                                   </DropdownMenuItem>
                                 ))}

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import {
   BarChart,
   Bar,
@@ -23,10 +24,11 @@ interface ChartProps {
 }
 
 export function BarChartWidget({ data, height = 300 }: ChartProps) {
+  const tCommon = useTranslations('common');
   if (!data.length)
     return (
       <div className="h-[300px] flex items-center justify-center text-foreground-muted text-sm">
-        Немає даних
+        {tCommon('noData')}
       </div>
     );
 
@@ -51,10 +53,12 @@ export function BarChartWidget({ data, height = 300 }: ChartProps) {
 }
 
 export function RevenueChart({ data, height = 300 }: ChartProps) {
+  const t = useTranslations('analytics');
+  const tCommon = useTranslations('common');
   if (!data.length)
     return (
       <div className="h-[300px] flex items-center justify-center text-foreground-muted text-sm">
-        Немає даних
+        {tCommon('noData')}
       </div>
     );
 
@@ -71,7 +75,7 @@ export function RevenueChart({ data, height = 300 }: ChartProps) {
             borderRadius: '8px',
             color: 'var(--foreground)',
           }}
-          formatter={(value: number) => [`${value.toLocaleString('uk')} ₴`, 'Виручка']}
+          formatter={(value: number) => [`${value.toLocaleString('uk')} ₴`, t('revenue')]}
         />
         <Bar dataKey="revenue" fill="var(--success)" radius={[4, 4, 0, 0]} />
       </BarChart>
@@ -80,10 +84,11 @@ export function RevenueChart({ data, height = 300 }: ChartProps) {
 }
 
 export function LineChartWidget({ data, height = 300 }: ChartProps) {
+  const tCommon = useTranslations('common');
   if (!data.length)
     return (
       <div className="h-[300px] flex items-center justify-center text-foreground-muted text-sm">
-        Немає даних
+        {tCommon('noData')}
       </div>
     );
 
@@ -119,10 +124,11 @@ interface PieChartProps {
 }
 
 export function PieChartWidget({ data, height = 300 }: PieChartProps) {
+  const tCommon = useTranslations('common');
   if (!data.length)
     return (
       <div className="h-[300px] flex items-center justify-center text-foreground-muted text-sm">
-        Немає даних
+        {tCommon('noData')}
       </div>
     );
 
@@ -159,10 +165,11 @@ export function PieChartWidget({ data, height = 300 }: PieChartProps) {
 }
 
 export function FunnelChart({ data, height = 300 }: ChartProps) {
+  const tCommon = useTranslations('common');
   if (!data.length)
     return (
       <div className="h-[300px] flex items-center justify-center text-foreground-muted text-sm">
-        Немає даних
+        {tCommon('noData')}
       </div>
     );
 

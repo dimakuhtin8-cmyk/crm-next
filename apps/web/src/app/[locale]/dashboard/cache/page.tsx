@@ -19,6 +19,7 @@ import {
   BarChart3,
   Clock,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
 
 import { DataError } from '@/components/data-error';
@@ -35,6 +36,8 @@ interface CacheStats {
 }
 
 export default function CacheMonitorPage() {
+  const t = useTranslations('cache');
+  const tCommon = useTranslations('common');
   const [stats, setStats] = useState<CacheStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [clearing, setClearing] = useState(false);
@@ -50,13 +53,15 @@ export default function CacheMonitorPage() {
   const fetchStats = async () => {
     try {
       const res = await fetch('/api/v1/cache/stats');
-      if (!res.ok) throw new Error(`Помилка ${res.status}`);
+      if (!res.ok) throw new Error(tCommon('errors.requestStatus', { status: res.status }));
       const data = await res.json();
       setStats(data.data);
       setLoadError(null);
     } catch (err) {
       console.warn('[cache] stats fetch failed');
-      setLoadError((prev) => prev ?? (err instanceof Error ? err.message : 'Помилка завантаження'));
+      setLoadError(
+        (prev) => prev ?? (err instanceof Error ? err.message : tCommon('errors.loadFailed')),
+      );
     } finally {
       setLoading(false);
     }
@@ -70,7 +75,7 @@ export default function CacheMonitorPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tag: 'all' }),
       });
-      if (!res.ok) throw new Error(`Помилка ${res.status}`);
+      if (!res.ok) throw new Error(tCommon('errors.requestStatus', { status: res.status }));
       await fetchStats();
     } catch {
       console.warn('[cache] invalidate failed');
@@ -82,7 +87,7 @@ export default function CacheMonitorPage() {
   if (loading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">Моніторинг кешу</h1>
+        <h1 className="text-2xl font-bold">{t('title')}</h1>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
           {[1, 2, 3, 4, 5].map((i) => (
             <Skeleton key={i} className="h-24 rounded-xl" />
@@ -96,19 +101,17 @@ export default function CacheMonitorPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Моніторинг кешу</h1>
-          <p className="text-foreground-muted text-sm mt-1">
-            Статистика використання кешу в реальному часі
-          </p>
+          <h1 className="text-2xl font-bold">{t('title')}</h1>
+          <p className="text-foreground-muted text-sm mt-1">{t('description')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={fetchStats} disabled={loading}>
             <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
-            Оновити
+            {tCommon('update')}
           </Button>
           <Button variant="destructive" size="sm" onClick={handleClear} disabled={clearing}>
             <Trash2 className="h-4 w-4" />
-            Очистити кеш
+            {t('clear')}
           </Button>
         </div>
       </div>
@@ -158,7 +161,7 @@ export default function CacheMonitorPage() {
                     <Database className="h-5 w-5 text-primary" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs font-medium text-foreground-muted">Ключів</p>
+                    <p className="text-xs font-medium text-foreground-muted">{t('keys')}</p>
                     <p className="font-mono text-2xl font-bold">{stats.size}</p>
                   </div>
                 </div>
@@ -172,7 +175,7 @@ export default function CacheMonitorPage() {
                     <TrendingUp className="h-5 w-5 text-success" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs font-medium text-foreground-muted">Влучання</p>
+                    <p className="text-xs font-medium text-foreground-muted">{t('hits')}</p>
                     <p className="font-mono text-2xl font-bold">{stats.hits}</p>
                   </div>
                 </div>
@@ -186,7 +189,7 @@ export default function CacheMonitorPage() {
                     <TrendingDown className="h-5 w-5 text-danger" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs font-medium text-foreground-muted">Промахи</p>
+                    <p className="text-xs font-medium text-foreground-muted">{t('misses')}</p>
                     <p className="font-mono text-2xl font-bold">{stats.misses}</p>
                   </div>
                 </div>
@@ -248,24 +251,26 @@ export default function CacheMonitorPage() {
           {/* Информация */}
           <Card className="shadow-sm">
             <CardHeader>
-              <CardTitle className="text-sm font-semibold">Про кеш</CardTitle>
+              <CardTitle className="text-sm font-semibold">{t('about')}</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs font-medium text-foreground-muted mb-1">Тип кешу</p>
+                  <p className="text-xs font-medium text-foreground-muted mb-1">{t('cacheType')}</p>
                   <p className="font-mono text-sm font-medium">In-Memory (LRU)</p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-foreground-muted mb-1">Максимум записів</p>
+                  <p className="text-xs font-medium text-foreground-muted mb-1">
+                    {t('maxEntries')}
+                  </p>
                   <p className="font-mono text-sm font-medium">10,000</p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-foreground-muted mb-1">Очищення</p>
-                  <p className="font-mono text-sm font-medium">Кожні 5 хвилин (auto)</p>
+                  <p className="text-xs font-medium text-foreground-muted mb-1">{t('eviction')}</p>
+                  <p className="font-mono text-sm font-medium">{t('evictionValue')}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-foreground-muted mb-1">Стратегія</p>
+                  <p className="text-xs font-medium text-foreground-muted mb-1">{t('strategy')}</p>
                   <p className="font-mono text-sm font-medium">
                     Cache-Aside + Stale-While-Revalidate
                   </p>

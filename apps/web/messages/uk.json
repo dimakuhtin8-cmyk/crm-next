@@ -1148,7 +1148,8 @@
     "errors": {
       "loadFailed": "Помилка завантаження",
       "requestStatus": "Помилка {status}"
-    }
+    },
+    "rangeOf": "{from}–{to} з {total}"
   },
   "stages": {
     "lead": "Лід",
@@ -1276,6 +1277,238 @@
     "errors": {
       "remindersLoad": "Нагадування: помилка {status}",
       "notificationsLoad": "Сповіщення: помилка {status}"
+    }
+  },
+  "aiProviders": {
+    "gemini": {
+      "freeQuota": "15 запитів/хв, 1500/день",
+      "description": "Від Google. Найкраще розуміє українську мову. 1M контекст.",
+      "models": {
+        "gemini-3-flash-preview": {
+          "description": "Актуальна, перевірено живим запитом"
+        },
+        "gemini-3-5-flash-lite": {
+          "description": "Найшвидші відповіді, перевірено живим запитом"
+        },
+        "gemini-3-1-pro-preview": {
+          "description": "Флагман; може вимагати білінг"
+        }
+      }
+    },
+    "openai": {
+      "freeQuota": "Безкоштовний кредит $5 при реєстрації",
+      "description": "GPT-5.6 Sol, Terra, Luna — флагманська лінійка 2026.",
+      "models": {
+        "gpt-5-6-sol": {
+          "description": "Флагман для складних задач розмірковування та коду"
+        },
+        "gpt-5-6-terra": {
+          "description": "Збалансований варіант (інтелект + помірна вартість)"
+        },
+        "gpt-5-6-luna": {
+          "description": "Економічна модель для великих обсягів запитів"
+        },
+        "gpt-5-3-codex": {
+          "description": "Спеціалізована для агентного програмування"
+        }
+      }
+    },
+    "anthropic": {
+      "freeQuota": "Безкоштовний кредит при реєстрації",
+      "description": "Claude 5 — найрозумніший AI для агентів та коду. 1M контекст.",
+      "models": {
+        "claude-opus-5": {
+          "description": "Для найскладніших завдань"
+        },
+        "claude-opus-4": {
+          "description": "Для складних задач"
+        },
+        "claude-sonnet-4": {
+          "description": "Найефективніша для щоденних задач"
+        },
+        "claude-haiku-4-5": {
+          "description": "Найшвидша для швидких відповідей"
+        }
+      }
+    },
+    "deepseek": {
+      "freeQuota": "~10M токенів безкоштовно при реєстрації",
+      "description": "V4 Flash та Pro — найдешевший AI у світі ($0.14/MTok).",
+      "models": {
+        "deepseek-chat": {
+          "description": "Універсальна модель загального призначення"
+        },
+        "deepseek-reasoner": {
+          "description": "Модель розмірковування (chain-of-thought)"
+        }
+      }
+    },
+    "groq": {
+      "freeQuota": "Щедрий безкоштовний тариф",
+      "description": "Найшвидший інференс (~500 tps). Llama 4, GPT-OSS.",
+      "models": {
+        "openai-gpt-oss-120b": {
+          "description": "Флагманська з розмірковуванням та інструментами"
+        },
+        "openai-gpt-oss-20b": {
+          "description": "Легка версія для логічних задач"
+        },
+        "qwen-qwen3-6-27b": {
+          "description": "Високошвидкісна модель розмірковування"
+        }
+      }
+    },
+    "mistral": {
+      "freeQuota": "Безкоштовний тариф з обмеженнями",
+      "description": "Французький AI. Large 3 (675B MoE), Small 4, Codestral.",
+      "models": {
+        "mistral-large-latest": {
+          "description": "Флагманська мультимодальна модель (MoE)"
+        },
+        "mistral-small-latest": {
+          "description": "Ефективна (інструкції, логіка, код)"
+        },
+        "ministral-8b-latest": {
+          "description": "Серія компактних моделей (3B, 8B, 14B)"
+        },
+        "codestral-latest": {
+          "description": "Низьколатентна для генерації та відладки коду"
+        },
+        "open-mistral-nemo": {
+          "description": "Компактна універсальна модель"
+        }
+      }
+    },
+    "together": {
+      "freeQuota": "$1 безкоштовного кредиту",
+      "description": "200+ моделей. Llama 4, Qwen 3.8, DeepSeek, тощо.",
+      "models": {
+        "meta-llama-Llama-3-3-70B-Instruct-Turbo": {
+          "description": "Висока якість аналізу тексту та перекладу"
+        },
+        "deepseek-ai-DeepSeek-V3-0324": {
+          "description": "Відкрита LLM для логіки та генерації"
+        },
+        "Qwen-Qwen3-235B-A22B": {
+          "description": "Для написання, відладки та пошуку помилок у коді"
+        },
+        "stabilityai-stable-diffusion-xl": {
+          "description": "Генерація деталізованої графіки"
+        }
+      }
+    }
+  },
+  "cache": {
+    "title": "Моніторинг кешу",
+    "description": "Статистика використання кешу в реальному часі",
+    "clear": "Очистити кеш",
+    "keys": "Ключів",
+    "hits": "Влучання",
+    "misses": "Промахи",
+    "about": "Про кеш",
+    "cacheType": "Тип кешу",
+    "maxEntries": "Максимум записів",
+    "eviction": "Очищення",
+    "evictionValue": "Кожні 5 хвилин (auto)",
+    "strategy": "Стратегія"
+  },
+  "queues": {
+    "title": "Черги задач",
+    "description": "Моніторинг фонових задач в реальному часі",
+    "loadFailed": "Не вдалося завантажити черги",
+    "clear": "Очистити",
+    "pending": "Очікують",
+    "processing": "Обробляються",
+    "attempts": "Спроби",
+    "download": "Скачати",
+    "recent": "Останні задачі",
+    "empty": "Задач цього статусу поки немає",
+    "jobTypes": {
+      "title": "Типи задач",
+      "emailDescription": "Розсилка листів",
+      "aiDescription": "Обробка даних",
+      "exportDescription": "Завантаження файлів",
+      "notificationsDescription": "Push та вбудовані"
+    },
+    "about": "Про чергу",
+    "engine": "Движок",
+    "engineValue": "Postgres + зовнішній планувальник",
+    "retryStrategy": "Retry стратегія",
+    "maxAttempts": "Макс. спроб",
+    "jobTimeout": "Таймаут задачі",
+    "jobTimeoutValue": "30 секунд"
+  },
+  "webhooks": {
+    "title": "Вебхуки",
+    "description": "Інтеграції з зовнішніми сервісами",
+    "searchPlaceholder": "Пошук за URL…",
+    "newWebhook": "Новий вебхук",
+    "emptyTitle": "Вебхуків поки немає",
+    "emptyDescription": "Створіть вебхук для інтеграції з зовнішніми сервісами",
+    "searchEmpty": "Вебхуків за цим запитом не знайдено",
+    "availableEvents": "Доступні події",
+    "method": "Метод",
+    "events": "Події",
+    "switchLabel": "Статус вебхука",
+    "switchTitle": "Перемикання недоступне: API не має endpoint для зміни статусу"
+  },
+  "observability": {
+    "title": "Спостережуваність",
+    "description": "Моніторинг здоров'я системи в реальному часі",
+    "errors": {
+      "fetchStatus": "SLO: {sloStatus}, метрики: {metricsStatus}"
+    },
+    "uptimeShort": "{days}д {hours}г {mins}хв",
+    "statusHealthy": "Все нормально",
+    "statusWarning": "Попередження",
+    "statusCritical": "Критична ситуація",
+    "statusHealthyDesc": "Всі SLO в рамках норми",
+    "statusWarningDesc": "Деякі SLO перевищують допустимі межі",
+    "uptimeLabel": "Аптайм",
+    "sloTarget": "Ціль: {target}%",
+    "sloBudget": "Бюджет: {percent}%",
+    "alerts": "Алерти",
+    "memoryHeap": "Пам'ять (heap)",
+    "ofTotal": "з {total}",
+    "memoryRss": "Пам'ять (RSS)",
+    "httpRequests": "HTTP запити",
+    "dbQueries": "DB запити",
+    "aiRequests": "AI запити",
+    "about": "Про спостережуваність",
+    "windowLabel": "SLO вікно вимірювання",
+    "refreshLabel": "Оновлення метрик",
+    "refreshValue": "Кожні 10 секунд",
+    "availabilityTarget": "Доступність (ціль)",
+    "latencyTarget": "Затримка p99 (ціль)"
+  },
+  "logs": {
+    "title": "Системні логи",
+    "description": "Моніторинг подій та помилок системи",
+    "clear": "Очистити",
+    "stats": {
+      "total": "Всього",
+      "info": "Інфо",
+      "warnings": "Попередження"
+    },
+    "searchPlaceholder": "Пошук у логах...",
+    "levelFilterLabel": "Фільтр за рівнем",
+    "allLevels": "Всі рівні",
+    "filterErrors": "Помилки (ERROR)",
+    "filterWarnings": "Попередження (WARN)",
+    "filterInfo": "Інфо (INFO)",
+    "emptyDescription": "Змініть фільтри або зачекайте на нові події",
+    "columnLevel": "Рівень",
+    "columnMessage": "Повідомлення",
+    "mock": {
+      "systemStarted": "Система запущена",
+      "cacheInitialized": "Кеш ініціалізовано",
+      "slowQuery": "Повільний запит до бази даних",
+      "userLoggedIn": "Користувач увійшов в систему",
+      "emailFailed": "Не вдалося надіслати email",
+      "taskCreated": "Створено нову задачу",
+      "rateLimit": "Rate limit наближається",
+      "aiRequest": "AI запит виконано",
+      "callClient": "Зателефонувати клієнту"
     }
   }
 }
