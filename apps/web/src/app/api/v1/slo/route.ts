@@ -10,7 +10,7 @@ import { withAuth } from '@/lib/auth-guard';
 import { withErrorHandling, apiSuccess } from '@/lib/errors';
 import { sloMonitor, getSLODashboardData, checkAlerts } from '@/lib/observability/slo';
 
-export const GET = withAuth()(
+export const GET = withAuth({ minRole: 'admin' })(
   withErrorHandling(async (request: Request) => {
     const url = new URL(request.url);
 

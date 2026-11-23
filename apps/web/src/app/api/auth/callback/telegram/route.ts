@@ -65,12 +65,26 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
+      // Новый пользователь: создаём тенант и членство (как при email-регистрации),
+      // иначе все API будут отвечать 401 — у пользователя не будет компании
       user = await prisma.user.create({
         data: {
           telegramId,
           name: [first_name, last_name].filter(Boolean).join(' '),
           image: photo_url || null,
           emailVerified: new Date(),
+          hasOnboarded: true,
+          tenantMembers: {
+            create: {
+              tenant: {
+                create: {
+                  name: [first_name, last_name].filter(Boolean).join(' ') || 'Telegram',
+                  slug: `tg-${Date.now()}`,
+                },
+              },
+              role: 'owner',
+            },
+          },
         },
       });
     } else {
