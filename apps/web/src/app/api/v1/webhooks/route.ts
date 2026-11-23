@@ -14,7 +14,7 @@ import { addVersionHeaders } from '@/lib/api-versioning';
 import { extractUserId } from '@/lib/auth-utils';
 import { withErrorHandling, apiSuccess, ValidationError } from '@/lib/errors';
 import { getUserRole } from '@/lib/rbac';
-import { registerWebhook, getWebhooks, WEBHOOK_EVENTS } from '@/lib/webhooks';
+import { registerWebhook, unregisterWebhook, getWebhooks, WEBHOOK_EVENTS } from '@/lib/webhooks';
 
 export const GET = withErrorHandling(async (request: Request) => {
   const userId = await extractUserId(request as any);
@@ -108,4 +108,38 @@ export const POST = withErrorHandling(async (request: Request) => {
   );
 
   return addVersionHeaders(response, 'v1');
+});
+
+export const DELETE = withErrorHandling(async (request: Request) => {
+  const userId = await extractUserId(request as any);
+  if (!userId) {
+    return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 });
+  }
+
+  const member = await prisma.tenantMember.findFirst({
+    where: { userId },
+    select: { tenantId: true },
+  });
+
+  if (!member) {
+    return NextResponse.json({ error: 'Тенант не знайдено' }, { status: 404 });
+  }
+
+  // Вебхуки — раздел «Для адміністратора»: тільки owner/admin.
+  const role = await getUserRole(userId, member.tenantId);
+  if (role !== 'owner' && role !== 'admin') {
+    return NextResponse.json({ error: 'Недостатньо прав' }, { status: 403 });
+  }
+
+  const id = new URL(request.url).searchParams.get('id');
+  if (!id) {
+    throw new ValidationError('Необхідно вказати id');
+  }
+
+  const removed = await unregisterWebhook(member.tenantId, id);
+  if (!removed) {
+    return NextResponse.json({ error: 'Вебхук не знайдено' }, { status: 404 });
+  }
+
+  return addVersionHeaders(apiSuccess({ deleted: true }, 200), 'v1');
 });

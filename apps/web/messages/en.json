@@ -1450,7 +1450,9 @@
     "method": "Method",
     "events": "Events",
     "switchLabel": "Webhook status",
-    "switchTitle": "Toggling unavailable: the API has no endpoint to change status"
+    "switchTitle": "Toggling unavailable: the API has no endpoint to change status",
+    "confirmDelete": "Delete this webhook?",
+    "deleteError": "Failed to delete the webhook"
   },
   "observability": {
     "title": "Observability",

@@ -1450,7 +1450,9 @@
     "method": "Метод",
     "events": "Події",
     "switchLabel": "Статус вебхука",
-    "switchTitle": "Перемикання недоступне: API не має endpoint для зміни статусу"
+    "switchTitle": "Перемикання недоступне: API не має endpoint для зміни статусу",
+    "confirmDelete": "Видалити вебхук?",
+    "deleteError": "Не вдалося видалити вебхук"
   },
   "observability": {
     "title": "Спостережуваність",

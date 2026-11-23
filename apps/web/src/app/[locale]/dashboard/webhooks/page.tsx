@@ -78,6 +78,17 @@ export default function WebhooksPage() {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    if (!confirm(t('confirmDelete'))) return;
+    try {
+      const res = await fetch(`/api/v1/webhooks?id=${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error();
+      setWebhooks((prev) => prev.filter((w) => w.id !== id));
+    } catch {
+      alert(t('deleteError'));
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -148,6 +159,16 @@ export default function WebhooksPage() {
           aria-label={t('switchLabel')}
           title={t('switchTitle')}
         />
+      ),
+    },
+    {
+      key: 'actions',
+      header: tCommon('actions'),
+      className: 'p-2 w-[100px]',
+      render: (webhook: WebhookRow) => (
+        <Button variant="outline" size="sm" onClick={() => handleDelete(webhook.id)}>
+          {tCommon('delete')}
+        </Button>
       ),
     },
   ];
