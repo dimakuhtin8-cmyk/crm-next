@@ -1242,7 +1242,17 @@
     "auditEmpty": "Журнал порожній",
     "auditExportEmpty": "Немає записів для експорту",
     "auditExportedCount": "Експортовано записів: {count}",
-    "auditExportDescription": "Поточна сторінка журналу"
+    "auditExportDescription": "Поточна сторінка журналу",
+    "matrixModuleContacts": "Контакти",
+    "matrixModuleDeals": "Угоди",
+    "matrixModuleTasks": "Задачі",
+    "matrixModuleActivity": "Активність",
+    "matrixModulePipelines": "Воронки",
+    "matrixModuleAnalytics": "Аналітика",
+    "matrixModuleMembers": "Учасники",
+    "matrixModuleSettings": "Налаштування",
+    "matrixModuleAudit": "Аудит",
+    "matrixModuleMessages": "Повідомлення"
   },
   "team": {
     "title": "Команда",

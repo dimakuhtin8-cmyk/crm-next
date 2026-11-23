@@ -20,24 +20,24 @@ interface DatabaseConfig {
 const DB_OPTIONS: { value: DatabaseType; label: string; description: string }[] = [
   {
     value: 'shared',
-    label: 'settings.dbSharedLabel',
-    description: 'settings.dbSharedDescription',
+    label: 'dbSharedLabel',
+    description: 'dbSharedDescription',
   },
   {
     value: 'postgresql',
-    label: 'settings.dbPostgresqlLabel',
-    description: 'settings.dbPostgresqlDescription',
+    label: 'dbPostgresqlLabel',
+    description: 'dbPostgresqlDescription',
   },
-  { value: 'mysql', label: 'settings.dbMysqlLabel', description: 'settings.dbMysqlDescription' },
+  { value: 'mysql', label: 'dbMysqlLabel', description: 'dbMysqlDescription' },
   {
     value: 'mariadb',
-    label: 'settings.dbMariadbLabel',
-    description: 'settings.dbMariadbDescription',
+    label: 'dbMariadbLabel',
+    description: 'dbMariadbDescription',
   },
   {
     value: 'sqlserver',
-    label: 'settings.dbSqlserverLabel',
-    description: 'settings.dbSqlserverDescription',
+    label: 'dbSqlserverLabel',
+    description: 'dbSqlserverDescription',
   },
 ];
 

@@ -18,6 +18,21 @@ import {
 } from '@/components/ui';
 import { ROLE_HIERARCHY, PERMISSION_CATEGORIES, type TenantRole } from '@/lib/rbac';
 
+// Назви категорій прав у rbac.ts — ідентифікатори логіки (лишаються);
+// для відображення перекладаються через словник (uk — ті самі назви).
+const CATEGORY_LABEL_KEYS: Record<string, string> = {
+  Контакти: 'matrixModuleContacts',
+  Угоди: 'matrixModuleDeals',
+  Задачі: 'matrixModuleTasks',
+  Активність: 'matrixModuleActivity',
+  Воронки: 'matrixModulePipelines',
+  Аналітика: 'matrixModuleAnalytics',
+  Учасники: 'matrixModuleMembers',
+  Налаштування: 'matrixModuleSettings',
+  Аудит: 'matrixModuleAudit',
+  Повідомлення: 'matrixModuleMessages',
+};
+
 /** Демонстраційне локальне збереження правок матриці (серверна RBAC — незмінна) */
 const MATRIX_STORAGE_PREFIX = 'roles-matrix:';
 
@@ -170,7 +185,9 @@ export default function RolesSettingsPage() {
         overrides[`${category.name}:${action}`] ?? granted(action);
       return {
         id: category.name,
-        module: category.name,
+        module: CATEGORY_LABEL_KEYS[category.name]
+          ? t(CATEGORY_LABEL_KEYS[category.name])
+          : category.name,
         read: checked('read'),
         write: checked('write'),
         delete: checked('delete'),

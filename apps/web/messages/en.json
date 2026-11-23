@@ -1242,7 +1242,17 @@
     "auditEmpty": "The log is empty",
     "auditExportEmpty": "No records to export",
     "auditExportedCount": "{count, plural, one {Exported # record} other {Exported # records}}",
-    "auditExportDescription": "Current log page"
+    "auditExportDescription": "Current log page",
+    "matrixModuleContacts": "Contacts",
+    "matrixModuleDeals": "Deals",
+    "matrixModuleTasks": "Tasks",
+    "matrixModuleActivity": "Activity",
+    "matrixModulePipelines": "Pipelines",
+    "matrixModuleAnalytics": "Analytics",
+    "matrixModuleMembers": "Members",
+    "matrixModuleSettings": "Settings",
+    "matrixModuleAudit": "Audit",
+    "matrixModuleMessages": "Messages"
   },
   "team": {
     "title": "Team",
