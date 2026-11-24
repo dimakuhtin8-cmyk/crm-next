@@ -824,12 +824,14 @@ export default function DealsPage() {
           </div>
 
           <SheetFooter>
-            <Link
-              href={`/dashboard/deals/${openDealId}`}
-              className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-background px-4 text-sm font-medium transition-colors hover:bg-secondary"
-            >
-              {t('openDealPage')}
-            </Link>
+            {openDealId && (
+              <Link
+                href={`/dashboard/deals/${openDealId}`}
+                className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-background px-4 text-sm font-medium transition-colors hover:bg-secondary"
+              >
+                {t('openDealPage')}
+              </Link>
+            )}
             <SheetClose className="h-9 rounded-md px-4 text-sm font-medium text-foreground-muted transition-colors hover:bg-secondary">
               {tCommon('close')}
             </SheetClose>

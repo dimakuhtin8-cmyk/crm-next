@@ -775,12 +775,14 @@ export default function ContactsPage() {
           </div>
 
           <SheetFooter>
-            <Link
-              href={`/dashboard/contacts/${openId ?? ''}`}
-              className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-background px-4 text-sm font-medium transition-colors hover:bg-secondary"
-            >
-              {t('openFullCard')}
-            </Link>
+            {openId && (
+              <Link
+                href={`/dashboard/contacts/${openId}`}
+                className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-background px-4 text-sm font-medium transition-colors hover:bg-secondary"
+              >
+                {t('openFullCard')}
+              </Link>
+            )}
             <SheetClose className="h-9 rounded-md px-4 text-sm font-medium text-foreground-muted transition-colors hover:bg-secondary">
               {tCommon('close')}
             </SheetClose>
